@@ -3,10 +3,10 @@
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
 - **Task:** Tasks 6, 7, 8 in parallel (issues #17, #18, #19; PRs #21, #20, #22). Task 5 merged as update 23.
-- **Owner:** Copilot builds; Claude does a quick check and merges.
-- **Status:** Task 6 is complete in PR #21; latest main is merged, and it takes update 24 per the latest issue comment. Tasks 7 and 8 continue in parallel.
+- **Owner:** Copilot does the work; Claude reviews and merges.
+- **Status:** Task 6 is complete in PR #21; its latest issue comment requires the next free version, update 24. Tasks 7 and 8 continue in parallel.
 - **Next:** Mark PR #21 ready and post `DONE: Task 6` with its link on issue #17; Claude reviews and merges it into `update-24`.
-- **Last updated:** 2026-10-21 21:32 by Copilot
+- **Last updated:** 2026-10-21 21:35 by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
