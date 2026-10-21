@@ -4,9 +4,9 @@
 
 - **Task:** Task 8 (sound pack and mute, issue #19)
 - **Owner:** Copilot, on its own branch and PR (Cillian, 2026-10-21).
-- **Status:** Complete; release 23 (Build 61) is ready for review. Latest `main` is already an ancestor of this branch.
-- **Next:** Claude review and Cillian merge; post `DONE: Task 8` with the PR link.
-- **Last updated:** 2026-10-21 21:18 UTC by Copilot
+- **Status:** Implementation and checks are complete; PR #22 remains draft and GitHub reports `dirty`, despite a clean local merge with latest `main`.
+- **Next:** Mark PR #22 ready and post `DONE: Task 8` on issue #19, then Claude review and Cillian merge.
+- **Last updated:** 2026-10-21 21:22 UTC by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
