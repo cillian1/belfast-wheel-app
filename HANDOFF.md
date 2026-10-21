@@ -2,11 +2,11 @@
 
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
-- **Task:** Task 6: the new ghost (issue #17, PR #21); Tasks 7 and 8 are merged into `update-24`.
+- **Task:** Prepare the combined update 24 release from `update-24` to `main`.
 - **Owner:** Copilot does ALL the work (Cillian, 2026-10-21): building, conflicts, version bumps, release notes, HANDOFF/COPILOT_TASKS updates, and the release PR. Claude only presses merge (GitHub won't let Copilot merge its own PRs). Money/odds/prize changes still go to Cillian.
-- **Status:** Task 6 is validated and ready in PR #21; PRs #22, #24 and #26 are merged into `update-24` at `70dbd93`. The bundle/checks, both replay regression tests and all 10 scene captures pass; version 23/build 60 remain unchanged.
-- **Next:** Cillian reviews and merges PR #21 into `update-24`; Copilot prepares the single release PR after staging is complete.
-- **Last updated:** 2026-10-21 23:01 by Copilot
+- **Status:** Tasks 6–8 and replay reliability are merged into `update-24`; version 24 / Build 61 is set. Bundle, repository, replay regression and whitespace checks pass; the diff was reviewed, with payout, odds, prize and APK values unchanged.
+- **Next:** Commit and push the release changes, then open one ready-for-review PR to `main`. Do not merge it.
+- **Last updated:** 2026-10-21 23:04 by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
@@ -65,7 +65,7 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 
 ## Done log (history only, newest first; nothing here is current)
 
-- 2026-10-21: Task 6 new ghost ready in PR #21 for update 24; checked all 10 scenes at 360/412px, with version 23/build 60 unchanged.
+- 2026-10-21: Task 6 new ghost merged into `update-24` in PR #21; checked all 10 scenes at 360/412px.
 - 2026-10-21: Task 5 replay playback reliability and restart-safe pruning follow-up (PR #24) merged into `update-24`; version 23 / Build 60 unchanged.
 - 2026-10-21: Task 7 room glow-ups (PR #20) merged into `update-24`; visual-only wheel, tank and Pyramid polish, with version 23/build 60 unchanged.
 - 2026-10-21: Task 8 added synthesized room themes, milestone effects and a saved master mute (PR #22) for the combined update 24.

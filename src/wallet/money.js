@@ -65,7 +65,7 @@
         if (!m && o.eyebrow === 'Final answer' && /^€[\d.]+$/.test(o.title || '')) m = [0, o.title.slice(1)];
         const isPhelanTomb = /, Phelan['’]s Tomb$/.test(String(o.title || ''));
         if (m && isPhelanTomb && !isTest()) {
-          playSfx('jackpot');
+          try { playSfx('jackpot'); } catch (e) { console.warn('Jackpot sound failed', e); }
           run.paid = true;
           const prizeCents = W.payCents(m[1]);
           (async () => {
