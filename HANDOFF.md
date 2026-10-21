@@ -4,8 +4,8 @@
 
 - **Task:** Task 9 smoothness update (#23), part of update 25 with Task 10 (#25, PR #35, merged in).
 - **Owner:** Copilot.
-- **Status:** Ready for review in PR #34 against `update-25` (no version bump), `update-25` merged in. Quality Auto/High/Low, `?perf=1` HUD, press feedback, trimmed and tap-skippable waits. Bundle, check and replay tests pass; 360px looked fine. Per Cillian, remaining throttled profiling and multi-width checks were skipped. Note: shortened or skipped waits change how many ambient fireplace `Math.random()` calls happen before later draws (they are already frame-rate dependent); call-site order is unchanged. No money, odds or prize changes.
-- **Next:** Claude reviews; Cillian merges into `update-25`. The release PR `update-25` → `main` carries the bump.
+- **Status:** Ready for review in PR #34 against `update-25` (no version bump), `update-25` merged in. Re-scoped per Cillian: shortened/skipped waits are removed, so gameplay timing and `Math.random()` consumption are unchanged. Kept: Quality Auto/High/Low, Low mode, DPR cap, `?perf=1` frame meter, instant tap feedback. High-mode Stank worst frame was 11.8ms, accepted for now. No money, odds or prize changes.
+- **Next:** Claude reviews; Cillian merges into `update-25`. Later: shorter waits, with the fireplace on its own RNG. The release PR `update-25` → `main` carries the bump.
 - **Last updated:** 2026-10-22 by Copilot
 
 **Rules for this section:**
