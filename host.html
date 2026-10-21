@@ -40,7 +40,7 @@ li span{color:var(--mute);font-size:13px}
 <main id="main"><h1>Wheel Host</h1><p>Loading…</p></main>
 <div class="toast" id="toast"></div>
 <script>
-window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":8,"ev":10,"edge":0.99,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};
+window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":9,"ev":10,"edge":0.99,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};
 (function () {
   const CFG = window.WALLET_CFG, app = null, MIN_TOPUP = 100;
   // <shared> (also used by host.html, see tools/build.mjs)
@@ -55,6 +55,7 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
     get(k) { try { if (app && app.getPref) return app.getPref(k) || null; } catch (e) {} try { return localStorage.getItem(k); } catch (e) { return null; } },
     set(k, v) { try { if (app && app.setPref) app.setPref(k, v == null ? '' : v); } catch (e) {} try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} },
   };
+  const TEST_KEY = 'test', isTest = () => !!(W.me && W.me.test);
   const keyOf = name => name.trim().toLowerCase().replace(/[.#$\[\]\/\s]+/g, '_');
   function sha256(str) { // small pure-JS SHA-256 (crypto.subtle is not always there on file:// pages)
     const K = [], H = [], isP = n => { for (let f = 2; f * f <= n; f++) if (n % f === 0) return false; return true; };
@@ -148,7 +149,7 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
     let all, users, st;
     try { [all, users, st] = await Promise.all([db.get('reqs'), db.get('users'), db.get('stats')]); }
     catch (e) { toast('No connection'); return; }
-    all = Object.entries(all || {}); users = users || {}; st = st || {};
+    all = Object.entries(all || {}); users = Object.fromEntries(Object.entries(users || {}).filter(([, u]) => !u.test)); st = st || {}; // the test account plays with play money
     const wd = all.filter(([, r]) => r.kind === 'withdraw' && r.status === 'pending').sort((a, b) => a[1].at - b[1].at);
     const tops = all.filter(([, r]) => r.kind === 'topup' && r.status !== 'pending').sort((a, b) => b[1].at - a[1].at).slice(0, 40);
     const done = all.filter(([, r]) => r.kind === 'withdraw' && r.status !== 'pending').sort((a, b) => b[1].at - a[1].at).slice(0, 15);

@@ -1,8 +1,8 @@
 {
-  "game": 8,
+  "game": 9,
   "apk": 2,
   "gameBuild": 53,
-  "notes": "Bigger wheel, bet past €1",
+  "notes": "Watch other players live",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk"
 }

@@ -2,7 +2,7 @@
   "db": "https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app",
   "revolut": "cillian9bw",
   "repo": "cillian1/belfast-wheel-app",
-  "release": 8,
+  "release": 9,
   "apk": 2,
   "ev": 10,
   "edge": 0.99,
@@ -18,5 +18,5 @@
     90,
     100
   ],
-  "notes": "Bigger wheel, bet past €1"
+  "notes": "Watch other players live"
 }

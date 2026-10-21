@@ -74,7 +74,7 @@ window.WALLET_CFG = /*CFG*/{};
     let all, users, st;
     try { [all, users, st] = await Promise.all([db.get('reqs'), db.get('users'), db.get('stats')]); }
     catch (e) { toast('No connection'); return; }
-    all = Object.entries(all || {}); users = users || {}; st = st || {};
+    all = Object.entries(all || {}); users = Object.fromEntries(Object.entries(users || {}).filter(([, u]) => !u.test)); st = st || {}; // the test account plays with play money
     const wd = all.filter(([, r]) => r.kind === 'withdraw' && r.status === 'pending').sort((a, b) => a[1].at - b[1].at);
     const tops = all.filter(([, r]) => r.kind === 'topup' && r.status !== 'pending').sort((a, b) => b[1].at - a[1].at).slice(0, 40);
     const done = all.filter(([, r]) => r.kind === 'withdraw' && r.status !== 'pending').sort((a, b) => b[1].at - a[1].at).slice(0, 15);

@@ -21,6 +21,7 @@
     get(k) { try { if (app && app.getPref) return app.getPref(k) || null; } catch (e) {} try { return localStorage.getItem(k); } catch (e) { return null; } },
     set(k, v) { try { if (app && app.setPref) app.setPref(k, v == null ? '' : v); } catch (e) {} try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} },
   };
+  const TEST_KEY = 'test', isTest = () => !!(W.me && W.me.test);
   const keyOf = name => name.trim().toLowerCase().replace(/[.#$\[\]\/\s]+/g, '_');
   function sha256(str) { // small pure-JS SHA-256 (crypto.subtle is not always there on file:// pages)
     const K = [], H = [], isP = n => { for (let f = 2; f * f <= n; f++) if (n % f === 0) return false; return true; };
@@ -151,6 +152,28 @@ body{box-sizing:border-box;margin:0}
 .wlogin h1{text-align:center;margin-bottom:6px}
 .wtoast{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:70;background:#20252c;border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-size:14px;color:var(--chrome);box-shadow:0 8px 20px rgba(0,0,0,.5);transition:opacity .3s}
 .wtoast.gold{border-color:#f5d27a;color:#f8e4a6}
+.wbar .who.test{border:2px dashed #4fd1c5;background:rgba(20,70,68,.5)}.wbar .who.test small{color:#8ef0e6}.wbar .who.test b{color:#8ef0e6}
+body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;right:0;bottom:0;z-index:30;text-align:center;font:700 11px/1 var(--body);letter-spacing:.2em;padding:6px 0 calc(6px + env(safe-area-inset-bottom,0px));background:#0f4f4c;color:#c8fff8;pointer-events:none}
+.wlive{display:inline-flex;vertical-align:middle;margin-left:12px;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1.5px solid #ff4d4d;background:rgba(60,8,8,.85);color:#fff;font:700 13px/1 var(--body);letter-spacing:.12em;box-shadow:0 0 14px rgba(255,60,60,.35)}
+.wlive i{width:9px;height:9px;border-radius:50%;background:#ff3b3b;box-shadow:0 0 8px #ff3b3b;animation:wblink 1.2s ease-in-out infinite}
+.wlive em{font-style:normal;background:#ff3b3b;border-radius:999px;padding:2px 7px;letter-spacing:0;font-size:12px}
+.wlive em:empty{display:none}
+@keyframes wblink{50%{opacity:.25}}
+.wpl{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 4px;border-bottom:1px solid var(--line)}
+.wpl b{font-size:17px}.wpl small{display:block;color:var(--mute);font-size:12px;letter-spacing:.06em}
+.wpl small.on{color:#7dff9a}
+.wwatch{position:fixed;inset:0;z-index:60;background:#07090c;display:flex;flex-direction:column;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px));overflow-y:auto;color:var(--chrome)}
+.wwatch[hidden]{display:none}
+.wwatch .wwh{width:100%;max-width:560px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.wwatch .wwh b{font-size:18px}.wwatch .wwh small{display:block;color:var(--mute);font-size:12px}
+.wwatch .wscr{position:relative;width:min(100%,66vh,560px);aspect-ratio:1;border-radius:18px;overflow:hidden;background:#120b07;border:1px solid var(--line)}
+.wwatch .wscr img{width:100%;height:100%;display:block}
+.wwatch .wscr p{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;margin:0;color:var(--mute);font-size:15px}
+.wwatch .wscr ol{position:absolute;inset:0;margin:0;padding:18px 18px 18px 38px;display:flex;flex-direction:column;justify-content:center;gap:6px;font-size:15px;color:#f8e4a6;background:rgba(10,8,6,.88)}
+.wwatch .wvd{width:100%;max-width:560px;text-align:center}
+.wwatch .wvd small{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute)}
+.wwatch .wvd h3{margin:4px 0;font-family:var(--display);font-weight:400;font-size:24px;color:#f5d27a}
+.wwatch .wvd p{margin:0;font-size:15px;color:var(--chrome)}
 `;
   document.head.appendChild(el('style', null, css));
 
@@ -179,7 +202,8 @@ body{box-sizing:border-box;margin:0}
 
   function paint() {
     const me = W.me;
-    $w('wWho').innerHTML = `<small>${me ? esc(me.name) : 'Log in'}</small><b>${eur(me ? me.balance || 0 : 0)}</b>`;
+    $w('wWho').innerHTML = `<small>${me ? (me.test ? 'TEST' : esc(me.name)) : 'Log in'}</small><b>${eur(me ? me.balance || 0 : 0)}</b>`;
+    $w('wWho').classList.toggle('test', isTest()); document.body.classList.toggle('wtest', isTest());
     $w('wStake').textContent = stakeLbl(W.stake);
     $w('wLess').disabled = W.stake <= STAKES[0]; $w('wMore').disabled = !nextStake();
     if (typeof fitStage === 'function') fitStage();
@@ -225,8 +249,9 @@ body{box-sizing:border-box;margin:0}
         const u = await db.get('users/' + k);
         if (isNew) {
           if (u) return ($w('wErr').textContent = 'That name is taken. Log in instead, or pick another.');
-          await db.put('users/' + k, { name, pass: h, balance: 0, spins: 0, staked: 0, won: 0, biggest: 0, topped: 0, withdrawn: 0, created: now() });
-          db.txn('stats/players', n => (n || 0) + 1).catch(() => {});
+          const test = k === TEST_KEY; // play money, not real
+          await db.put('users/' + k, { name, pass: h, balance: test ? 10000 : 0, spins: 0, staked: 0, won: 0, biggest: 0, topped: 0, withdrawn: 0, created: now(), test: test || null });
+          if (!test) db.txn('stats/players', n => (n || 0) + 1).catch(() => {});
         } else {
           if (!u) return ($w('wErr').textContent = 'No account with that name. Tap New account.');
           if (u.pass !== h) return ($w('wErr').textContent = 'Wrong password.');
@@ -264,7 +289,7 @@ body{box-sizing:border-box;margin:0}
       if (short) { if (u) W.me = u; paint(); setBtn('Spin', false); charging = false; return topupSheet('Not enough credit for that stake.'); }
       W.me = u; paint();
       log(W.user, 'spin', -s);
-      db.txn('stats', st => { st = st || {}; st.spins = (st.spins || 0) + 1; st.staked = (st.staked || 0) + s; return st; }).catch(() => {});
+      if (!isTest()) db.txn('stats', st => { st = st || {}; st.spins = (st.spins || 0) + 1; st.staked = (st.staked || 0) + s; return st; }).catch(() => {});
     } catch (e) { setBtn('Spin', false); charging = false; toast('No connection. Spin not charged.'); return; }
     W.run = { stake: s, paid: false, live: true };
     charging = false;
@@ -272,8 +297,10 @@ body{box-sizing:border-box;margin:0}
   };
 
   const gameVerdict = setVerdict;
+  let lastVerdict = null; // what the player's screen says, for anyone watching
   setVerdict = function (o) {
     const r = gameVerdict(o);
+    lastVerdict = { e: String(o.eyebrow || ''), t: String(o.title || ''), b: String(o.body || '').slice(0, 240) };
     try {
       const run = W.run;
       if (run && !run.paid) {
@@ -292,7 +319,7 @@ body{box-sizing:border-box;margin:0}
       const u = await db.txn('users/' + W.user, u => { u.balance = (u.balance || 0) + c; u.won = (u.won || 0) + c; if (c > (u.biggest || 0)) u.biggest = c; return u; });
       W.me = u; paint();
       log(W.user, 'win', c, { stake, what: String(what || '').slice(0, 60) });
-      db.txn('stats', st => { st = st || {}; st.won = (st.won || 0) + c; if (c > (st.biggest || 0)) { st.biggest = c; st.biggestBy = W.me.name; } return st; }).catch(() => {});
+      if (!isTest()) db.txn('stats', st => { st = st || {}; st.won = (st.won || 0) + c; if (c > (st.biggest || 0)) { st.biggest = c; st.biggestBy = W.me.name; } return st; }).catch(() => {});
     } catch (e) { pendingWins.push([c, stake, what]); savePending(); toast('Win saved on this phone. It adds when you are back online.'); }
   }
   // wins that could not reach the database are kept and retried
@@ -306,6 +333,13 @@ body{box-sizing:border-box;margin:0}
   // ---------- top up (player pays Cillian on Revolut and confirms; the host page can reverse) ----------
   function topupSheet(msg) {
     if (!W.me) return showLogin();
+    if (isTest()) {
+      openSheet(`<h3>Play money</h3>${msg ? `<p class="err">${esc(msg)}</p>` : ''}<p>This is the test account. Its money is not real, so top it up for free.</p>
+        <button class="wbtn gold" id="wPlay" type="button">Add €50 play money</button><button class="wlink" type="button" id="wClose">Close</button>`);
+      $w('wPlay').onclick = async () => { try { W.me = await db.txn('users/' + W.user, u => { u.balance = (u.balance || 0) + 5000; return u; }); paint(); closeSheet(); toast('€50 play money added'); } catch (e) { toast('No connection'); } };
+      $w('wClose').onclick = closeSheet;
+      return;
+    }
     openSheet(`<h3>Top up</h3>
       ${msg ? `<p class="err">${esc(msg)}</p>` : ''}
       <p>Send any amount from €1 to <b>@${esc(CFG.revolut)}</b> on Revolut. When you come back, confirm what you sent and it goes straight on your balance.</p>
@@ -383,7 +417,7 @@ body{box-sizing:border-box;margin:0}
   }
   async function lbTab(body) {
     const [users, st] = await Promise.all([db.get('users'), db.get('stats')]);
-    const list = Object.values(users || {}), s = st || {};
+    const list = Object.values(users || {}).filter(u => !u.test), s = st || {};
     const board = (title, f, fmt) => {
       const top = list.filter(u => f(u)).sort((a, b) => f(b) - f(a)).slice(0, 5);
       return `<h4>${title}</h4><ul class="wlist">${top.map((u, i) => `<li><div>${['🥇', '🥈', '🥉', '4.', '5.'][i]} ${esc(u.name)}</div><b>${fmt(f(u))}</b></li>`).join('') || '<li>Nobody yet</li>'}</ul>`;
@@ -400,6 +434,7 @@ body{box-sizing:border-box;margin:0}
   // ---------- withdraw (request goes to the host screen; Cillian pays on Revolut) ----------
   function withdrawSheet() {
     const me = W.me;
+    if (isTest()) return toast('Test account money is not real, so it cannot be withdrawn.');
     const p = openSheet(`<h3>Withdraw</h3>
       <p>Your balance is <b>${eur(me.balance || 0)}</b>. It stays pending until Cillian sends it to your Revolut.</p>
       <input id="wAmt" inputmode="decimal" placeholder="Amount, e.g. 10">
@@ -423,6 +458,96 @@ body{box-sizing:border-box;margin:0}
         closeSheet(); toast('Withdrawal of ' + eur(a) + ' pending. Cillian will send it to @' + tag + '.', true);
       } catch (e) { $w('wErr').textContent = 'No connection. Try again.'; }
     };
+  }
+
+  // ---------- live: who is on now, and watching them play ----------
+  // live/{key} = { name, at, play } is a heartbeat. A watcher writes live/{key}/w/{them} = time every few seconds;
+  // only then does the player's phone send small JPEG frames of the wheel to livef/{key}. No watchers, no frames.
+  const ONLINE_MS = 90000, WATCH_MS = 20000, me4 = () => W.user || 'guest';
+  const liveBtn = el('button', 'wlive'); liveBtn.type = 'button'; liveBtn.innerHTML = '<i></i>WATCH<em></em>';
+  const hdr = document.querySelector('.app header > span'); if (hdr) hdr.appendChild(liveBtn); else appEl.prepend(liveBtn);
+  let others = [], watchers = 0, streaming = false;
+  function paintLive() { ($w('wLive') || liveBtn).querySelector('em').textContent = watchers ? '👁 ' + watchers : others.length ? String(others.length) : ''; }
+  async function heartbeat() {
+    if (document.hidden) return;
+    try {
+      if (W.user && W.me) await db.patch('live/' + W.user, { name: W.me.name, at: now(), play: !!(W.run && W.run.live) });
+      const all = await db.get('live') || {}, t = now();
+      others = Object.entries(all).filter(([k, v]) => k !== W.user && v && v.name && t - (v.at || 0) < ONLINE_MS).map(([k, v]) => Object.assign({ key: k }, v));
+      const w = (W.user && all[W.user] && all[W.user].w) || {};
+      watchers = Object.entries(w).filter(([k, v]) => k !== W.user && t - v < WATCH_MS).length;
+      paintLive();
+      if (watchers && !streaming && W.user) streamLoop();
+    } catch (e) {}
+  }
+  const shot = document.createElement('canvas'), pause = ms => new Promise(r => setTimeout(r, ms));
+  async function streamLoop() {
+    streaming = true; let i = 0, sinceCheck = now();
+    try {
+      while (watchers && !document.hidden && W.user) {
+        const t0 = now(), playing = typeof busy !== 'undefined' && busy;
+        const S = 256; shot.width = shot.height = S; const g = shot.getContext('2d');
+        g.fillStyle = '#120b07'; g.fillRect(0, 0, S, S);
+        const st = document.querySelector('.stage'), done = !!(st && st.classList.contains('done'));
+        g.drawImage(cv, 0, 0, S, S);
+        const fin = done ? [...document.querySelectorAll('#finalList li')].map(li => li.textContent).slice(0, 8) : null;
+        const capEl = document.getElementById('caption');
+        try {
+          await db.put('livef/' + W.user, { i: ++i, at: now(), f: shot.toDataURL('image/jpeg', .45), v: lastVerdict, cap: capEl ? capEl.textContent : '', fin, s: W.run && W.run.live ? W.run.stake : W.stake, bal: W.me ? W.me.balance || 0 : 0, play: playing });
+        } catch (e) { await pause(1500); }
+        // about 4 frames a second while the wheel moves, one every 1.5s when it sits still
+        const gap = (playing ? 280 : 1500) - (now() - t0); if (gap > 0) await pause(gap);
+        if (now() - sinceCheck > 5000) { sinceCheck = now(); await heartbeat(); }
+      }
+    } finally { streaming = false; }
+  }
+  liveBtn.id = 'wLive';
+  document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#wLive')) watchList(); });
+  async function watchList() {
+    const p = openSheet(`<h3>Watch live</h3><div id="wBody"><p>Looking for players…</p></div><button class="wlink" type="button" id="wClose">Close</button>`);
+    $w('wClose').onclick = closeSheet;
+    await heartbeat();
+    const body = $w('wBody'); if (!body) return;
+    body.innerHTML = others.length ? others.sort((a, b) => (b.play ? 1 : 0) - (a.play ? 1 : 0)).map(o => `<div class="wpl"><div><b>${esc(o.name)}</b><small class="${o.play ? 'on' : ''}">${o.play ? '● Spinning now' : 'Online'}</small></div><button class="wbtn gold small" type="button" data-k="${esc(o.key)}">Watch</button></div>`).join('')
+      : '<p>Nobody else has the wheel open right now. Check back in a minute.</p>';
+    body.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { const o = others.find(x => x.key === b.dataset.k); closeSheet(); watch(o.key, o.name); });
+  }
+  const view = el('div', 'wwatch'); view.hidden = true; document.body.appendChild(view);
+  let viewing = null;
+  async function watch(key, name) {
+    viewing = key; const mine = viewing;
+    view.hidden = false;
+    view.innerHTML = `<div class="wwh"><div><b>${esc(name)}</b><small id="wwSub">Connecting…</small></div><span class="wlive" style="margin:0"><i></i>LIVE</span></div>
+      <div class="wscr"><img id="wwImg" alt=""><ol id="wwFin" hidden></ol><p id="wwMsg">Asking ${esc(name)}'s phone for the picture…</p></div>
+      <div class="wvd"><small id="wwE"></small><h3 id="wwT"></h3><p id="wwB"></p><p id="wwC" style="color:var(--mute);margin-top:6px"></p></div>
+      <button class="wbtn" type="button" id="wwX" style="width:100%;max-width:560px">Stop watching</button>`;
+    $w('wwX').onclick = stopWatch;
+    let lastI = -1, ping = 0, got = now();
+    while (viewing === mine) {
+      const t0 = now();
+      if (t0 - ping > 4000) { ping = t0; db.put('live/' + key + '/w/' + me4(), now()).catch(() => {}); }
+      try {
+        const i = await db.get('livef/' + key + '/i');
+        if (viewing !== mine) break;
+        if (i != null && i !== lastI) {
+          const f = await db.get('livef/' + key);
+          if (viewing !== mine) break;
+          if (f && f.f) {
+            lastI = f.i; got = now(); $w('wwImg').src = f.f; $w('wwMsg').hidden = true;
+            $w('wwSub').textContent = `Bet ${stakeLbl(f.s || 10)} · balance ${eur(f.bal || 0)}${f.play ? ' · spinning' : ''}`;
+            const v = f.v || {}; $w('wwE').textContent = v.e || ''; $w('wwT').textContent = v.t || ''; $w('wwB').textContent = v.b || ''; $w('wwC').textContent = f.cap || '';
+            const fin = $w('wwFin'); fin.hidden = !f.fin; if (f.fin) fin.innerHTML = f.fin.map(x => `<li>${esc(x)}</li>`).join('');
+          }
+        } else if (now() - got > 12000) { // nothing new for a while: their app is closed or in the background
+          $w('wwMsg').hidden = false; $w('wwMsg').textContent = lastI < 0 ? `Asking ${name}'s phone for the picture…` : `${name} has stepped away. Waiting…`;
+        }
+      } catch (e) { const m = $w('wwMsg'); if (m) { m.hidden = false; m.textContent = 'No connection. Retrying…'; } await pause(1500); }
+      const gap = 250 - (now() - t0); if (gap > 0) await pause(gap);
+    }
+  }
+  function stopWatch() {
+    const key = viewing; viewing = null; view.hidden = true; view.innerHTML = '';
+    if (key) db.put('live/' + key + '/w/' + me4(), null).catch(() => {});
   }
 
   // ---------- updates (version.json in the GitHub repo) ----------
@@ -458,6 +583,12 @@ body{box-sizing:border-box;margin:0}
   checkUpdate();
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { refresh(); } });
   setInterval(() => { if (!busy && !document.hidden) refresh(); }, 30000);
+  heartbeat(); setInterval(() => { if (!streaming) heartbeat(); }, 15000);
+  // a quick look every 3s for someone who just started watching, so their picture starts fast
+  setInterval(async () => {
+    if (streaming || !W.user || document.hidden) return;
+    try { const w = await db.get('live/' + W.user + '/w') || {}, t = now(); watchers = Object.entries(w).filter(([k, v]) => k !== W.user && t - v < WATCH_MS).length; paintLive(); if (watchers && !streaming) streamLoop(); } catch (e) {}
+  }, 3000);
   // version.json is ~200 bytes; once a minute while the app is open is nothing for the phone
   setInterval(() => { if (!document.hidden) checkUpdate(); }, 60000);
 })();
