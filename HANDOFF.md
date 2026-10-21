@@ -4,9 +4,9 @@
 
 - **Task:** Task 5 (replays, PR #16, issue #12), then Tasks 6 → 7 → 8 (issues #17, #18, #19)
 - **Owner:** Copilot runs the whole queue from here (Cillian, 2026-10-21). Claude has stepped back.
-- **Status:** Task 5 in progress. When a task's PR is merged, Copilot starts the next open `copilot-task` issue in number order by itself, with no `/go` needed.
-- **Next:** Copilot self-reviews each PR and posts `DONE: Task N` on its issue; **Cillian merges**.
-- **Last updated:** 2026-10-21 22:05 by Claude
+- **Status:** Tasks 5–8 run IN PARALLEL (Cillian, 2026-10-21): each issue has its own Copilot PR. Before DONE, merge main in, fix conflicts yourself, take the next free version number.
+- **Next:** Copilot self-reviews each PR and posts `DONE: Task N` on its issue; Claude does a quick check and merges.
+- **Last updated:** 2026-10-21 22:12 by Claude
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
