@@ -8,7 +8,8 @@
   1. Finish #34 and post DONE (Claude merges #34 and #35 into `update-25`). Then open the release PR `update-25` → `main` (bump to 25, name it) and post DONE.
   2. Create branch `update-26` from main. **Wave 1 in parallel:** #39 (CI, goes first), #40, #41. Claude labels and starts them. Each gets a PR into `update-26`, no version bump.
   3. When #39, #40 and #41 are all merged into `update-26`, Claude starts **wave 2:** #42 and #43.
-  4. When wave 2 is merged, open the release PR `update-26` → `main` (bump to 26, name it) and post DONE.
+  4. When wave 2 is merged, Claude starts **wave 3:** #45 (frame-rate-independent RNG + shorter waits; odds check, any odds change waits for Cillian).
+  5. When wave 3 is merged, open the release PR `update-26` → `main` (bump to 26, name it) and post DONE.
 - **If stuck:** if a step fails twice (CI red you can't fix, a conflict you can't resolve, or anything touching money), stop. Post one note on that issue saying what's blocked and move on to the next independent step. Don't retry forever. Cillian checks in the morning.
 - **Last updated:** 2026-10-21 23:00 by Claude
 
