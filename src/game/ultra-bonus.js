@@ -41,14 +41,6 @@ function buildStank() {
   g.fillStyle = 'rgba(255,248,214,.7)'; g.fillText('S', c, c + R * .012 + D); g.fillStyle = '#3d2706'; g.fillText('S', c, c + R * .012);
   return k;
 }
-function buildGoldPointer() {
-  const k = mk(), g = k.getContext('2d');
-  g.save(); g.shadowColor = 'rgba(0,0,0,.7)'; g.shadowBlur = R * .03; g.shadowOffsetY = R * .015;
-  g.beginPath(); g.moveTo(c, c - R * .83); g.lineTo(c - R * .07, c - R * 1.035); g.quadraticCurveTo(c, c - R * 1.07, c + R * .07, c - R * 1.035); g.closePath();
-  g.fillStyle = grad(g, c - R * .07, 0, c + R * .07, 0, [[0, '#6b4510'], [.35, '#fff6d0'], [.5, '#c99a3a'], [.7, '#fff1b8'], [1, '#5a3c0c']]);
-  g.fill(); g.restore();
-  return k;
-}
 function buildStankBg() {
   const k = mk(), g = k.getContext('2d');
   const bg = g.createRadialGradient(c, c * .9, 0, c, c, N * .75);
@@ -209,9 +201,10 @@ function drawStank(now) {
   const dt = lastBallDraw ? Math.max(0, Math.min(.05, (now - lastBallDraw) / 1000)) : 0; lastBallDraw = now;
   ballPhase += dt * ballSpeed;
   ctx.drawImage(faces.stankBg, 0, 0);
-  drawScaled(faces.stank, rotS, STANK_SC);
+  drawScaled(faces.stank, rotS, STANK_SC); drawWheelRim(STANK_SC);
   ctx.globalCompositeOperation = 'overlay'; drawScaled(faces.sheen, 0, STANK_SC); ctx.globalCompositeOperation = 'source-over';
-  drawPointer(faces.goldPointer, STANK_SC);
+  drawWheelSweep(bingo.length > 0 && pickIdx < 0, STANK_SC);
+  drawPointer(faces.pointer, STANK_SC);
   const br = R * .064;
   bingo.forEach((b, i) => {
     if (i === pickIdx && handT >= 1) return;

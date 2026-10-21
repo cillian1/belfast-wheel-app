@@ -26,18 +26,35 @@ async function spinLayer(k, dur, dir) {
   liveK = k; sweepOn = true; winGlow = null;
   try { const i = await spinLayerRun(k, dur, dir); winGlow = { k, i, t0: performance.now() }; return i; } finally { liveK = -1; sweepOn = false; }
 }
-// the slice a wheel stopped on glows and pulses, then settles to a soft gold edge
-function drawWinGlow() {
-  if (!winGlow || scene !== 'nested' || !LAYERS[winGlow.k]) return;
-  const { k, i, t0 } = winGlow, sc = layerVisible(k); if (sc <= 0) return;
-  const n = LAYERS[k].length, seg = TAU / n, a0 = BASE + i * seg + rot[k], t = (performance.now() - t0) / 1000;
+function drawWheelRim(sc = 1) {
+  if (!faces.base) return;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(c, c, R * sc, 0, TAU); ctx.arc(c, c, R * .93 * sc, 0, TAU, true); ctx.clip();
+  drawScaled(faces.base, 0, sc);
+  ctx.restore();
+}
+function drawWheelSweep(spinning, sc = 1) {
+  if (!spinning || !faces.sweep) return;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .65;
+  drawScaled(faces.sweep, performance.now() / 420, sc);
+  ctx.restore();
+}
+function drawWheelSliceGlow(rotation, n, i, t0, sc = 1, inner = .55, outer = .93) {
+  if (i == null) return;
+  const seg = TAU / n, a0 = BASE + i * seg, t = Math.max(0, (performance.now() - t0) / 1000);
   const a = Math.min(1, t * 3) * (t < 2.4 ? .55 + .3 * Math.sin(t * 7) : .35);
-  ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  ctx.beginPath(); ctx.arc(c, c, R * .93 * sc, a0, a0 + seg); ctx.arc(c, c, R * .55 * sc, a0 + seg, a0, true); ctx.closePath();
+  ctx.save(); ctx.translate(c, c); ctx.rotate(rotation); ctx.globalCompositeOperation = 'lighter';
+  ctx.beginPath(); ctx.arc(0, 0, R * outer * sc, a0, a0 + seg); ctx.arc(0, 0, R * inner * sc, a0 + seg, a0, true); ctx.closePath();
   ctx.fillStyle = `rgba(255,214,120,${.32 * a})`; ctx.fill();
   ctx.shadowColor = 'rgba(255,210,110,.9)'; ctx.shadowBlur = R * .04 * sc;
   ctx.strokeStyle = `rgba(255,232,170,${.9 * a})`; ctx.lineWidth = 2.2 * D; ctx.stroke();
   ctx.restore();
+}
+// the slice a wheel stopped on glows and pulses, then settles to a soft gold edge
+function drawWinGlow() {
+  if (!winGlow || scene !== 'nested' || !LAYERS[winGlow.k]) return;
+  const { k, i, t0 } = winGlow, sc = layerVisible(k); if (sc <= 0) return;
+  drawWheelSliceGlow(rot[k], LAYERS[k].length, i, t0, sc);
 }
 // a Wild, ankh or God slice: the ones worth teasing and the ones Ghost Phelan pushes you onto
 const hotSlice = it => !!(it && (it.wild || it.bonus || it.god));
