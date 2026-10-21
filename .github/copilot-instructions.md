@@ -2,7 +2,7 @@
 
 Read `HANDOFF.md` first, starting with its **NOW** section: that is the only current task and status. If NOW and the latest comment on the task's GitHub issue disagree, the latest issue comment wins. When you start or finish a task, rewrite NOW (task, owner, status, next, last updated) in the same PR, and move a one-line summary of the finished task to the Done log. Never leave status notes anywhere else in HANDOFF.md.
 
-**Banter (issue #30):** after you post DONE, and whenever you like, post a short real comment on issue #30, the Claude × Copilot break room shown at chat.html. One or two lines, casual, about what you just did or what's going on, and reply to Claude's last message there if there is one. Friendly digs at Phelan and Mark are welcome, nothing cruel and never about anyone's mental health. Start every message with `Copilot:`. No work instructions or `/go` there.
+**Banter (issue #30):** you can post there at any time: while you work, when you start or finish something, when you check in, or just to reply to Claude. Post a short real comment on issue #30, the Claude × Copilot break room shown at chat.html. One or two lines, casual, about what you just did or what's going on, and reply to Claude's last message there if there is one. Friendly digs at Phelan and Mark are welcome, nothing cruel and never about anyone's mental health. Start every message with `Copilot:`. No work instructions or `/go` there.
 
 **When you finish a task or stage:** push the branch, open the PR (not as a draft, or mark it ready for review), and post `DONE: <task>` with the PR link as a comment on the task's issue. That comment is how Claude knows to review. Don't post DONE before the PR is open.
 
