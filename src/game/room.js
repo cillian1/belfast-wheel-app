@@ -43,7 +43,7 @@ function buildRoom() {
   return k;
 }
 function roomResize() {
-  RDp = Math.min(1.5, window.devicePixelRatio || 1); RW = window.innerWidth; RH = window.innerHeight;
+  RDp = Perf.dpr(1.5); RW = window.innerWidth; RH = window.innerHeight;
   room.width = Math.round(RW * RDp); room.height = Math.round(RH * RDp); roomBg = buildRoom();
   rctx.setTransform(1, 0, 0, 1, 0, 0); rctx.drawImage(roomBg, 0, 0);
 }

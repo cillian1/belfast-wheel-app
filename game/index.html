@@ -175,6 +175,9 @@ button:focus-visible,.btn:focus-within,.btn:focus-visible{outline:2px solid var(
   text-shadow:0 1px 0 rgba(255,255,255,.7);
   transition:transform .12s ease,filter .2s ease;
 }
+button:active,.btn:active{filter:brightness(1.25);transform:scale(.97)}
+button,.btn,label,a{touch-action:manipulation}
+.lowq .spin{transition:none}
 .spin:active{transform:translateY(1px) scale(.99)}
 .spin:disabled{filter:grayscale(.6) brightness(.7);cursor:default}
 .reset{min-height:26px;margin-top:-6px;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--mute)}
@@ -256,7 +259,7 @@ footer{position:fixed;top:8px;left:10px;z-index:5;color:rgba(220,225,230,.55);fo
 
 <canvas id="room" aria-hidden="true"></canvas>
 <div class="app">
-  <header><h1>WHEEL OF LIFE</h1><span><button class="link" id="sayBtn" type="button" hidden>Read it out</button> <button class="link" id="musicBtn" type="button">Music on</button> <button class="link" id="muteBtn" type="button" aria-label="Mute music and sound effects" aria-pressed="false">Mute</button></span></header>
+  <header><h1>WHEEL OF LIFE</h1><span><button class="link" id="sayBtn" type="button" hidden>Read it out</button> <button class="link" id="musicBtn" type="button">Music on</button> <button class="link" id="qualityBtn" type="button" aria-label="Graphics quality">Quality: Auto</button> <button class="link" id="muteBtn" type="button" aria-label="Mute music and sound effects" aria-pressed="false">Mute</button></span></header>
 
   <div class="stage"><canvas id="wheel" aria-label="The Wheel of Life. Tap to spin."></canvas><div class="final" id="finalCard" aria-live="polite"><span class="eyebrow">Final answer</span><ol id="finalList"></ol><p class="fquote" id="finalQuote"></p></div></div>
   <div class="wilds" id="wilds" aria-label="Wilds and Bonuses collected"><canvas class="wt" width="96" height="96"></canvas><canvas class="wt" width="96" height="96"></canvas><canvas class="wt" width="96" height="96"></canvas><span class="wgap"></span><canvas class="wt" width="96" height="96"></canvas><canvas class="wt" width="96" height="96"></canvas><canvas class="wt" width="96" height="96"></canvas></div>
@@ -306,6 +309,52 @@ const mod = (a, n) => ((a % n) + n) % n;
 const lerp = (a, b, t) => a + (b - a) * t;
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 const metres = () => pick([5, 10, 15, 20, 25, 30, 40, 50, 75, 100]);
+// ---------- perf ----------
+// Owns the quality setting (Auto / High / Low), low-end detection, the frame meter and the ?perf=1 overlay.
+const Perf = (() => {
+  const KEY = 'wol-quality', MODES = ['auto', 'high', 'low'], BUDGET_MS = 28, WINDOW_MS = 2000;
+  const store = (() => { try { return window.wolPref || null; } catch (e) { return null; } });
+  const read = () => { let v = null; try { const s = store(); v = s ? s.get(KEY) : localStorage.getItem(KEY); } catch (e) {} return MODES.includes(v) ? v : 'auto'; };
+  let setting = read(), slow = false, low = false, frames = 0, sum = 0, worst = 0, last = 0, winStart = 0, hud = null, hudT = 0;
+  const weak = () => { const n = navigator; return (n.hardwareConcurrency || 8) <= 4 || (n.deviceMemory || 8) <= 3; };
+  const compute = () => setting === 'low' || (setting === 'auto' && (slow || weak()));
+  const apply = () => {
+    const was = low; low = compute();
+    document.documentElement.classList.toggle('lowq', low);
+    if (btn) btn.textContent = 'Quality: ' + cap(setting);
+    if (was !== low) { try { resize(); roomResize(); } catch (e) {} }
+  };
+  // low-end mode drops canvas shadow/glow passes by turning every shadow colour transparent
+  try {
+    const proto = CanvasRenderingContext2D.prototype, d = Object.getOwnPropertyDescriptor(proto, 'shadowColor');
+    if (d && d.set) Object.defineProperty(proto, 'shadowColor', { configurable: true, enumerable: d.enumerable, get: d.get, set(v) { d.set.call(this, low ? 'rgba(0,0,0,0)' : v); } });
+  } catch (e) {}
+  const btn = $('#qualityBtn');
+  if (btn) btn.addEventListener('click', () => { setting = MODES[(MODES.indexOf(setting) + 1) % MODES.length]; slow = false; try { const s = store(); s ? s.set(KEY, setting) : localStorage.setItem(KEY, setting); } catch (e) {} apply(); });
+  window.addEventListener('wol-audio-preference-ready', () => { setting = read(); apply(); });
+  if (/[?&]perf=1\b/.test(location.search)) {
+    hud = document.createElement('div');
+    hud.style.cssText = 'position:fixed;left:4px;top:4px;z-index:99999;font:11px/1.3 monospace;color:#9f9;background:rgba(0,0,0,.7);padding:3px 5px;border-radius:4px;pointer-events:none;white-space:pre';
+    document.body.appendChild(hud);
+  }
+  function tick(now) {
+    requestAnimationFrame(tick);
+    if (document.hidden) { last = 0; return; }
+    const dt = last ? now - last : 0; last = now;
+    if (!dt || dt > 250) { winStart = now; frames = 0; sum = 0; return; } // a stall (tab switch, photo picker) isn't a slow device
+    if (!winStart) winStart = now;
+    frames++; sum += dt; if (dt > worst) worst = dt;
+    if (now - winStart >= WINDOW_MS) {
+      const avg = sum / frames;
+      if (hud) hud.textContent = `${Math.round(1000 / avg)} fps  avg ${avg.toFixed(1)} ms  worst ${worst.toFixed(0)} ms\nquality ${setting}${low ? ' (low)' : ''}`;
+      if (setting === 'auto' && !slow && avg > BUDGET_MS) { slow = true; apply(); }
+      winStart = now; frames = 0; sum = 0; worst = 0;
+    }
+  }
+  requestAnimationFrame(tick);
+  apply();
+  return { get low() { return low; }, dpr: cap => Math.min(cap, low ? 1.5 : cap, window.devicePixelRatio || 1) };
+})();
 // ---------- content ----------
 // Owns wheel content, run text, and move selection data.
 const MAIN = [
@@ -723,7 +772,7 @@ function buildRoom() {
   return k;
 }
 function roomResize() {
-  RDp = Math.min(1.5, window.devicePixelRatio || 1); RW = window.innerWidth; RH = window.innerHeight;
+  RDp = Perf.dpr(1.5); RW = window.innerWidth; RH = window.innerHeight;
   room.width = Math.round(RW * RDp); room.height = Math.round(RH * RDp); roomBg = buildRoom();
   rctx.setTransform(1, 0, 0, 1, 0, 0); rctx.drawImage(roomBg, 0, 0);
 }
@@ -1180,6 +1229,7 @@ function drawDice(sc) {
 }
 // Go deeper slices breathe a blue-violet glow with sparks drifting toward the centre
 function drawDeepGlow(sc) {
+  if (Perf.low) return;
   const t = performance.now() / 1000, seg = TAU / MAIN.length;
   ctx.save(); ctx.translate(c, c); ctx.scale(sc, sc); ctx.rotate(rot[0]); ctx.globalCompositeOperation = 'lighter';
   MAIN.forEach((s, i) => {
@@ -1204,7 +1254,7 @@ function idle(now) {
   idleRaf = 0;
   if (document.hidden) return;
   idleRaf = requestAnimationFrame(idle);
-  if (!busy && scene === 'nested' && zoom === 1 && now - lastIdle > 40) { lastIdle = now; liveK = 0; draw(); liveK = -1; }
+  if (!busy && scene === 'nested' && zoom === 1 && now - lastIdle > (Perf.low ? 33 : 40)) { lastIdle = now; liveK = 0; draw(); liveK = -1; }
 }
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && idleRaf) { cancelAnimationFrame(idleRaf); idleRaf = 0; }
@@ -1426,7 +1476,7 @@ function fitStage() {
 addEventListener('resize', fitStage); if (window.visualViewport) visualViewport.addEventListener('resize', fitStage);
 function resize() {
   const w = cv.clientWidth; if (!w) return;
-  D = Math.min(2, window.devicePixelRatio || 1);
+  D = Perf.dpr(2);
   const n = Math.round(w * D); if (n === N) return;
   const old = B ? { N } : null;
   N = cv.width = cv.height = n; c = N / 2; R = N / 2 * .935 * .82;
@@ -1634,7 +1684,15 @@ function animate(dur, step) {
     requestAnimationFrame(f);
   });
 }
-const wait = ms => new Promise(r => setTimeout(r, reduce ? Math.min(ms, 300) : ms));
+// idle pauses are trimmed, and a tap skips whatever pause is running so the next step starts at once
+const pendingWaits = new Set();
+const wait = ms => new Promise(r => {
+  if (reduce) ms = Math.min(ms, 300); else if (ms >= 600) ms = Math.round(ms * .75);
+  const done = () => { clearTimeout(t); pendingWaits.delete(done); r(); };
+  const t = setTimeout(done, ms);
+  if (ms >= 400) pendingWaits.add(done);
+});
+document.addEventListener('pointerdown', () => { [...pendingWaits].forEach(f => f()); }, true);
 const sliceAt = (r, n) => Math.floor(mod(-r, TAU) / (TAU / n)) % n;
 function target(n) { const i = Math.floor(Math.random() * n); return { i, a: (i + .15 + Math.random() * .7) * TAU / n }; }
 

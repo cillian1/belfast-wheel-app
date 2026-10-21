@@ -17,7 +17,15 @@ function animate(dur, step) {
     requestAnimationFrame(f);
   });
 }
-const wait = ms => new Promise(r => setTimeout(r, reduce ? Math.min(ms, 300) : ms));
+// idle pauses are trimmed, and a tap skips whatever pause is running so the next step starts at once
+const pendingWaits = new Set();
+const wait = ms => new Promise(r => {
+  if (reduce) ms = Math.min(ms, 300); else if (ms >= 600) ms = Math.round(ms * .75);
+  const done = () => { clearTimeout(t); pendingWaits.delete(done); r(); };
+  const t = setTimeout(done, ms);
+  if (ms >= 400) pendingWaits.add(done);
+});
+document.addEventListener('pointerdown', () => { [...pendingWaits].forEach(f => f()); }, true);
 const sliceAt = (r, n) => Math.floor(mod(-r, TAU) / (TAU / n)) % n;
 function target(n) { const i = Math.floor(Math.random() * n); return { i, a: (i + .15 + Math.random() * .7) * TAU / n }; }
 

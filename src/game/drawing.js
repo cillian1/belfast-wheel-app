@@ -66,6 +66,7 @@ function drawDice(sc) {
 }
 // Go deeper slices breathe a blue-violet glow with sparks drifting toward the centre
 function drawDeepGlow(sc) {
+  if (Perf.low) return;
   const t = performance.now() / 1000, seg = TAU / MAIN.length;
   ctx.save(); ctx.translate(c, c); ctx.scale(sc, sc); ctx.rotate(rot[0]); ctx.globalCompositeOperation = 'lighter';
   MAIN.forEach((s, i) => {
@@ -90,7 +91,7 @@ function idle(now) {
   idleRaf = 0;
   if (document.hidden) return;
   idleRaf = requestAnimationFrame(idle);
-  if (!busy && scene === 'nested' && zoom === 1 && now - lastIdle > 40) { lastIdle = now; liveK = 0; draw(); liveK = -1; }
+  if (!busy && scene === 'nested' && zoom === 1 && now - lastIdle > (Perf.low ? 33 : 40)) { lastIdle = now; liveK = 0; draw(); liveK = -1; }
 }
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && idleRaf) { cancelAnimationFrame(idleRaf); idleRaf = 0; }
@@ -312,7 +313,7 @@ function fitStage() {
 addEventListener('resize', fitStage); if (window.visualViewport) visualViewport.addEventListener('resize', fitStage);
 function resize() {
   const w = cv.clientWidth; if (!w) return;
-  D = Math.min(2, window.devicePixelRatio || 1);
+  D = Perf.dpr(2);
   const n = Math.round(w * D); if (n === N) return;
   const old = B ? { N } : null;
   N = cv.width = cv.height = n; c = N / 2; R = N / 2 * .935 * .82;

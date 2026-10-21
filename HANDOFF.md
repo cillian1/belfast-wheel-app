@@ -2,11 +2,11 @@
 
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
-- **Task:** Combined update 24 release, “Room to Grow” (PR #33).
-- **Owner:** Copilot does ALL the work (Cillian, 2026-10-21): building, conflicts, version bumps, release notes, HANDOFF/COPILOT_TASKS updates, and the release PR. Claude only presses merge (GitHub won't let Copilot merge its own PRs). Money/odds/prize changes still go to Cillian.
-- **Status:** Ready for review in PR #33 to `main`; Tasks 6–8 and replay reliability ship together as version 24 / Build 61. Bundle, repository, replay regression and whitespace checks pass; payout, odds, prize and APK values are unchanged.
-- **Next:** Claude reviews; Cillian merges. Do not merge the release PR.
-- **Last updated:** 2026-10-21 23:05 by Copilot
+- **Task:** Task 9 smoothness update (#23), part of update 25 with Task 10 (#25). PR targets `update-25`, no version bump.
+- **Owner:** Copilot.
+- **Status:** Built: `src/game/perf.js` (Quality Auto/High/Low saved with `pref`, low-end auto-detect, `?perf=1` overlay, DPR caps, shadow/glow passes off in low), press feedback and `touch-action: manipulation`, idle pauses trimmed 25% and a tap skips the running pause. No odds, prize or `Math.random()` order changes. Not yet measured on a throttled phone.
+- **Next:** Claude reviews; Cillian merges into `update-25`. Release PR `update-25` → `main` carries the bump.
+- **Last updated:** 2026-10-21 by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
