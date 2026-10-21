@@ -12,7 +12,8 @@
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
 2. Whoever starts, finishes or merges a task rewrites NOW in the same commit or PR (Claude does it on every merge), and moves a one-line summary of the finished task to the Done log.
 3. If NOW and the latest comment on the task's issue disagree, **the latest issue comment wins**.
-4. Don't add task notes, questions or statuses anywhere else in this file. Questions go on the issue or the PR.
+4. When Copilot finishes, it opens the PR (ready for review) and posts `DONE: <task>` with the PR link on the task's issue. Claude watches for it.
+5. Don't add task notes, questions or statuses anywhere else in this file. Questions go on the issue or the PR.
 
 ## How Copilot gets work
 
