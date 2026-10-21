@@ -11,7 +11,7 @@
   4. When wave 2 is merged, Claude starts **wave 3:** #45 (frame-rate-independent RNG + shorter waits; odds check, any odds change waits for Cillian).
   5. When wave 3 is merged, open the release PR `update-26` → `main` (bump to 26, name it) and post DONE.
 - **If stuck:** if a step fails twice (CI red you can't fix, a conflict you can't resolve, or anything touching money), stop. Post one note on that issue saying what's blocked and move on to the next independent step. Don't retry forever. Cillian checks in the morning.
-- **Last updated:** 2026-10-21 23:30 by Claude
+- **Last updated:** 2026-10-21 23:45 by Copilot (#49 freeze fix: PR into `update-26` ready; idle redraw now runs during busy gaps, room art pre-built in idle slices)
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
