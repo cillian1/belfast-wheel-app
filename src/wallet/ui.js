@@ -181,6 +181,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   function showTrophyToast() {
     if (!trophyToasts.length) { trophyToastTimer = 0; return; }
     const t = trophyToasts.shift();
+    soundEffect('trophy');
     toast(`${t.icon} ${t.name} trophy earned!`, true);
     trophyToastTimer = setTimeout(showTrophyToast, 2700);
   }
@@ -491,5 +492,12 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     $w('wUp').onclick = go; $w('wLater').onclick = () => { banner.hidden = true; snooze = now() + 10 * 60000; };
   }
   window.wolUpdateFailed = msg => { banner.hidden = false; banner.innerHTML = `<span>Update failed: ${esc(msg || 'no connection')}</span><button class="wbtn small" type="button" onclick="this.parentNode.hidden=true">OK</button>`; };
+  window.wolSetSoundMuted = muted => {
+    const value = setSoundMuted(muted);
+    pref.set('wol.soundMuted', value ? 'on' : 'off');
+    return value;
+  };
+  setSoundMuted(pref.get('wol.soundMuted') === 'on');
+  updateMuteButton();
   // version.json is ~200 bytes; once a minute while the app is open is nothing for the phone
   setInterval(() => { if (!document.hidden) checkUpdate(); }, 60000);

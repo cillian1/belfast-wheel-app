@@ -110,6 +110,7 @@ async function ghostTo(x, y, dur) { const x0 = ghost.x, y0 = ghost.y; await anim
 function waitTap(test) { const st = $('.stage'); st.classList.add('pick'); return new Promise(res => { tapPick = (x, y) => { const v = test(x, y); if (v != null) { tapPick = null; st.classList.remove('pick'); res(v); } }; }); }
 async function godRoom(steps) {
   roomHit = true; buzz([100, 50, 100, 50, 300]); Music.sting(4);
+  Music.setMode('god'); soundEffect('room');
   const floor = [];
   for (let j = 0; j < 14; j++) floor.push({ it: j % 5, x: N * (.08 + Math.random() * .84), y: N * (.6 + Math.random() * .33), s: N * (.1 + Math.random() * .05), r: (Math.random() - .5) * 1.2 });
   floor.sort((a, b) => a.y - b.y);

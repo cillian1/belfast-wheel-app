@@ -158,6 +158,7 @@ async function vaultRun(steps, cash, acts) {
 }
 async function bonusRun(steps, w = 3, b = 0) {
   roomHit = true; buzz([80, 60, 80, 60, 250]);
+  Music.setMode('stank'); soundEffect('room');
   ensureStank();
   setVerdict({ eyebrow: 'Ultra bonus', title: 'Three wilds', body: 'Something is waiting at 77 Bridgefield.', steps: steps.slice() });
   $('#caption').textContent = 'Ultra bonus';

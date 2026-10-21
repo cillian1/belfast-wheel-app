@@ -142,7 +142,7 @@ function sandStep(dt, rate) {
 }
 async function pyramidRun(steps) {
   roomHit = true; buzz([100, 50, 100, 50, 100, 50, 400]);
-  Music.setLevel(3); Music.sting(4);
+  Music.setMode('pyramid'); Music.setLevel(3); Music.sting(4); soundEffect('room');
   setTiles(3, 3); const bar = $('#wilds'); bar.classList.add('over', 'overW', 'overB');
   $('#caption').textContent = 'All six';
   await wait(1600);
@@ -247,6 +247,7 @@ async function pyramidRun(steps) {
 }
 async function monsterRun(steps, w = 0, b = 3) {
   roomHit = true; buzz([80, 60, 80, 60, 250]);
+  Music.setMode('monster'); soundEffect('room');
   setVerdict({ eyebrow: 'Bonus', title: 'Three ankhs', body: 'Get in. Hold on.', steps: steps.slice() });
   $('#caption').textContent = '';
   Music.setLevel(3); Music.sting(3);

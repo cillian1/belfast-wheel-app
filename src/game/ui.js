@@ -79,6 +79,7 @@ async function runMain() {
         steps.push({ text: cap(it.go()) }); setTiles(wilds, bonus);
       }
       if (ups++ < 3) {
+        soundEffect('up');
         setVerdict({ eyebrow: 'Going deeper', title: it.wild ? 'Wild, go back up' : it.bonus ? 'Bonus, go back up' : 'Go back up', body: '', steps: steps.slice(), flash: true });
         Music.sting(1); buzz([30, 30, 30]); await wait(500);
         await dive(1 / Math.pow(S, k - 1));

@@ -28,6 +28,7 @@ function drawRaceTag(ch) {
   ctx.restore();
 }
 async function chickenRace(steps, alive) {
+  Music.setMode('race'); soundEffect('room');
   const racers = [...alive.filter(ch => ch.special), ...alive.filter(ch => !ch.special)].slice(0, RACE_MAX), rest = alive.filter(ch => !racers.includes(ch));
   const names = [...RACE_NAMES].sort(() => Math.random() - .5);
   const vals = [5, 8, 10, 12, 15, 20, 25, 30].sort(() => Math.random() - .5), bigAt = Math.floor(Math.random() * racers.length);
@@ -63,7 +64,7 @@ async function chickenRace(steps, alive) {
   });
   racers.forEach(ch => { ch.dir = 1; ch.peck = 0; });
   await farmLoop(1.2, (dt, el) => { racers.forEach((ch, i) => { const u = Math.max(0, Math.min(1, (el - i * .1) * 3)); if (ch.tag.a < 1 && u >= 1) tick(.6, 1600 + i * 80); ch.tag.a = u; }); });
-  for (const n of ['3', '2', '1']) { chainNote = n; tick(1, 900); buzz(20); await farmLoop(.7, () => {}); }
+  for (const n of ['3', '2', '1']) { chainNote = n; soundEffect('countdown'); tick(1, 900); buzz(20); await farmLoop(.7, () => {}); }
   chainNote = 'Go!'; ting(); buzz(50);
   // 3. the race: the winner's finish time is fixed; Ghost Phelan sometimes trips a faster chicken near the line
   const w = Math.floor(Math.random() * racers.length), win = racers[w];
@@ -78,7 +79,7 @@ async function chickenRace(steps, alive) {
       if (ch === decoy && el >= tripAt) {
         p = el < tripAt + STUN ? tripP : Math.min(1, tripP + (el - tripAt - STUN) / ch.T);
         if (!ch.tripped) {
-          ch.tripped = true; ch.flash = .8; ghostSay = 'Whoops'; whoosh(); buzz([40, 30, 80]);
+          ch.tripped = true; ch.flash = .8; ghostSay = 'Whoops'; soundEffect('trip'); whoosh(); buzz([40, 30, 80]);
           for (let k = 0; k < 14; k++) feathers.push({ x: ch.x, y: ch.y - N * .02, vx: (Math.random() - .5) * N * .5, vy: -Math.random() * N * .4, r: Math.random() * 3, life: 1, col: ch.special === 'W' ? '#f3c94a' : ch.special === 'B' ? '#9b5de5' : '#fbf7ee' });
         }
         if (el < tripAt + STUN) { ch.peck = .9; ch.dir = Math.sin(el * 14) > 0 ? 1 : -1; ch.flash = Math.max(0, (ch.flash || 0) - dt); }
@@ -91,7 +92,7 @@ async function chickenRace(steps, alive) {
       if (!(ch === decoy && el >= tripAt && el < tripAt + STUN)) ch.ph += dt * (p < 1 ? 22 : 4);
       ch.p = p; ch.x = lerp(startX, raceLine, p);
       if (ch.done) { ch.post = (ch.post || 0) + dt; ch.x = raceLine + N * .07 * (1 - Math.exp(-ch.post * 2.5)); } // they run on past the line and slow down
-      if (p >= 1 && !ch.done) { ch.done = true; if (ch === win) { ting(); buzz([40, 50, 80]); chainNote = `${ch.name} wins!`; ch.glow = 1; ch.won = 1; } else tick(.8, 1400); }
+      if (p >= 1 && !ch.done) { ch.done = true; if (ch === win) { soundEffect('finish'); ting(); buzz([40, 50, 80]); chainNote = `${ch.name} wins!`; ch.glow = 1; ch.won = 1; } else tick(.8, 1400); }
     });
     // the ghost drifts in over the chicken he's about to trip, then floats off
     if (decoy) {
