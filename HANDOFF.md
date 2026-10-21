@@ -2,16 +2,16 @@
 
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
-- **Task:** Update 25 (Task 9 smoothness PR #34 + Task 10 Phelan voice PR #35, into `update-25`), then update 26 (Task 11, sub-tasks #39–#43).
-- **Owner:** Copilot builds overnight while Cillian sleeps. Copilot opens each PR and posts `DONE: Task …`, and **Claude does a quick check and merges**, then starts the next wave. Copilot does not merge. Anything that changes money, odds, prizes or payouts waits for Cillian.
-- **Status / order (in sequence):**
-  1. Update 25 shipped as "Smooth Operator" (game 25, build 62).
-  2. **Wave 1 STARTED (23:35):** #39, #40, #41 in parallel on `update-26`, plus **#49 (TOP PRIORITY: freezes between wheels/rooms, started 23:30)**. Each gets a PR into `update-26`, no version bump.
-  3. When #39, #40 and #41 are all merged into `update-26`, Claude starts **wave 2:** #42 and #43.
-  4. When wave 2 is merged, Claude starts **wave 3:** #45 (frame-rate-independent RNG + shorter waits; odds check, any odds change waits for Cillian).
-  5. When wave 3 is merged, open the release PR `update-26` → `main` (bump to 26, name it) and post DONE.
-- **If stuck:** if a step fails twice (CI red you can't fix, a conflict you can't resolve, or anything touching money), stop. Post one note on that issue saying what's blocked and move on to the next independent step. Don't retry forever. Cillian checks in the morning.
-- **Last updated:** 2026-10-21 23:30 by Claude
+- **Task:** Update 26 (Task 11). Update 25 "Smooth Operator" shipped (game 25, build 62).
+- **Owner:** Copilot builds overnight while Cillian sleeps. Copilot opens each PR into `update-26` and posts `DONE: Task …`. **Claude does a quick check and merges**, then starts the next wave. Copilot does not merge. Anything that changes money, odds, prizes or payouts waits for Cillian.
+- **PR #34 stays CLOSED. Do not reopen or sync it.** It shipped in update 25 (merged by hand). Its leftovers live in #45 (shorter waits) and #49 (freezes).
+- **Order:**
+  1. **Now, in parallel:** #49 freezes between wheels/rooms (**TOP PRIORITY**), plus wave 1: #39 → PR #46 (CI/template/release notes), #40 → PR #47 (notifications), #41 → PR #48 (offline + loading). All PRs target `update-26`, with no version bump.
+  2. **Wave 2** (Claude starts it when step 1 is merged): #42 (history + buttons), #43 (ghost reactions + country song).
+  3. **Wave 3, alone:** #45 (frame-rate-independent results + shorter waits; fast-sim odds check, and any odds change waits for Cillian).
+  4. **Release:** a PR `update-26` → `main` bumping to 26 with a name, notes and `Closes #…` for every sub-task, then post DONE.
+- **If stuck:** if a step fails twice, post one note on that issue saying what's blocked and move on to the next independent step. Don't retry forever. Cillian checks in the morning.
+- **Last updated:** 2026-10-21 23:32 by Claude
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
