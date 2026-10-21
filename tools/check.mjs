@@ -22,4 +22,13 @@ if (version.game !== config.gameVersion) {
   throw new Error(`version.json game (${version.game}) does not match gameVersion (${config.gameVersion})`);
 }
 
-console.log(`Checked ${scripts.length} inline scripts; game version ${version.game} matches gameVersion.`);
+if (html.includes('@@GHOST_SPRITE_BASE64@@')) throw new Error('Ghost sprite placeholder was not bundled');
+const ghostSprites = [...html.matchAll(/data:image\/webp;base64,([A-Za-z0-9+/=]+)/g)];
+if (ghostSprites.length !== 1) throw new Error(`Expected one embedded ghost sprite, found ${ghostSprites.length}`);
+const ghostSprite = Buffer.from(ghostSprites[0][1], 'base64');
+if (ghostSprite.length > 150 * 1024) throw new Error(`Embedded ghost sprite is too large (${ghostSprite.length} bytes)`);
+if (ghostSprite.toString('ascii', 0, 4) !== 'RIFF' || ghostSprite.toString('ascii', 8, 12) !== 'WEBP') {
+  throw new Error('Embedded ghost sprite is not a WebP image');
+}
+
+console.log(`Checked ${scripts.length} inline scripts; game version ${version.game} matches gameVersion; ghost sprite is embedded.`);

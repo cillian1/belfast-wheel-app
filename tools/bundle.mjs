@@ -49,11 +49,12 @@ function replaceMarker(html, marker, replacement) {
 
 let html = read('src/index.html');
 const newline = html.includes('\r\n') ? '\r\n' : '\n';
-const ghostSprite = readBuffer('assets/ghost.webp');
-if (ghostSprite.length > 150 * 1024) throw new Error('assets/ghost.webp must be no larger than 150 KB');
+const ghostSprite = readBuffer('assets/ghost-sprite.webp');
+if (ghostSprite.length > 150 * 1024) throw new Error('assets/ghost-sprite.webp must be no larger than 150 KB');
 html = replaceMarker(html, '<!-- @style-fonts -->', `<style>${newline}${read('src/css/fonts.css')}${newline}</style>`);
 html = replaceMarker(html, '<!-- @style-app -->', `<style>${newline}${read('src/css/app.css')}${newline}</style>`);
-html = replaceMarker(html, '<!-- @game-script -->', `<script>${newline}${gameModules.map(read).join('')}${newline}</script>`);
+const gameScript = gameModules.map(read).join('');
+html = replaceMarker(html, '<!-- @game-script -->', `<script>${newline}${gameScript}${newline}</script>`);
 html = replaceMarker(html, '<!-- @wallet-config -->', `<script>window.WALLET_CFG = ${read('src/config.json').trim()};</script>`);
 html = replaceMarker(html, '<!-- @ghost-sprite -->', `<script>const GHOST_SPRITE_DATA = 'data:image/webp;base64,${ghostSprite.toString('base64')}';</script>`);
 html = replaceMarker(html, '<!-- @wallet-script -->', `<script>${newline}${walletModules.map(read).join('')}${newline}</script>`);

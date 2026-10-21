@@ -129,12 +129,12 @@ async function ghostPhelan(k, i, near) {
   return dest;
 }
 function drawGhost() {
-  const g = ctx, s = R * .26, t = performance.now() / 1000, size = s * 1.8;
+  const g = ctx, s = R * .26, t = performance.now() / 1000, w = s * 1.8;
   if (!GHOST_IMAGE.complete || !GHOST_IMAGE.naturalWidth) return;
-  const w = size, h = size * GHOST_IMAGE.naturalHeight / GHOST_IMAGE.naturalWidth;
+  const h = w * GHOST_IMAGE.naturalHeight / GHOST_IMAGE.naturalWidth;
   g.save(); g.globalAlpha = ghost.a * .85;
-  g.translate(ghost.x + Math.sin(t * 1.8) * s * .012, ghost.y + Math.sin(t * 1.4) * s * .025);
-  g.rotate(Math.sin(t * 2) * .018);
+  g.translate(ghost.x + Math.sin(t * 1.8) * s * .015, ghost.y + Math.sin(t * 1.4) * s * .035);
+  g.rotate(Math.sin(t * 2) * .012);
   g.transform(1, 0, Math.sin(t * 2.4) * .018, 1, 0, 0);
   g.drawImage(GHOST_IMAGE, -w / 2, -h / 2, w, h);
   g.restore();
