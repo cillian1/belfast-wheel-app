@@ -31,14 +31,21 @@ li span{color:var(--mute);font-size:13px}
 .err{color:var(--red);min-height:1.2em;font-size:14px}
 .ok{color:var(--green)}
 .toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:#20252c;border:1px solid var(--gold);color:#f8e4a6;border-radius:999px;padding:8px 16px;font-size:14px;transition:opacity .3s;opacity:0;pointer-events:none}
-.tabs{display:flex;gap:6px}
-.tabs button{flex:1;background:none;color:var(--mute);font-weight:500}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{flex:1 1 30%;background:none;color:var(--mute);font-weight:500}
 .tabs button.on{color:var(--gold);border-color:var(--gold)}
+.viewer{position:fixed;inset:0;z-index:20;background:#07090c;display:flex;flex-direction:column}
+.viewer[hidden]{display:none}
+.viewer-bar{height:52px;display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:#15181c;border-bottom:1px solid var(--line)}
+.viewer iframe{border:0;flex:1;width:100%;min-height:0;background:#07090c}
+.viewer-list{display:flex;flex-direction:column;gap:4px}
+.viewer-list .acts{flex:none}
 </style>
 </head>
 <body>
 <main id="main"><h1>Wheel Host</h1><p>Loading…</p></main>
 <div class="toast" id="toast"></div>
+<div class="viewer" id="viewer" hidden><div class="viewer-bar"><b id="viewerTitle">Watch</b><button class="small" id="viewerClose" type="button">Close</button></div><iframe id="viewerFrame" title="Wheel viewer" allow="autoplay"></iframe></div>
 <script>
 window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":10,"ev":10,"edge":0.99,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};
 (function () {
@@ -122,6 +129,18 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
   const main = document.getElementById('main');
   const toast = msg => { const t = document.getElementById('toast'); t.textContent = msg; t.style.opacity = 1; clearTimeout(toast.t); toast.t = setTimeout(() => { t.style.opacity = 0; }, 2600); };
   let tab = 'money', cfg = {}, poll = 0;
+  const viewer = document.getElementById('viewer'), viewerFrame = document.getElementById('viewerFrame');
+  function closeViewer() { viewer.hidden = true; viewerFrame.src = 'about:blank'; }
+  function openViewer(params, title) {
+    const url = new URL('game/index.html', location.href);
+    Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
+    document.getElementById('viewerTitle').textContent = title;
+    viewerFrame.src = url.href; viewer.hidden = false;
+  }
+  document.getElementById('viewerClose').onclick = closeViewer;
+  window.addEventListener('message', e => {
+    if (e.origin === location.origin && e.source === viewerFrame.contentWindow && e.data && e.data.type === 'wol-viewer-close') closeViewer();
+  });
 
   // ---------- PIN (set on first use; the hash lives in config/pin) ----------
   async function gate(msg) {
@@ -151,7 +170,8 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
     catch (e) { toast('No connection'); return; }
     all = Object.entries(all || {}); users = Object.fromEntries(Object.entries(users || {}).filter(([, u]) => !u.test)); st = st || {}; // the test account plays with play money
     const wd = all.filter(([, r]) => r.kind === 'withdraw' && r.status === 'pending').sort((a, b) => a[1].at - b[1].at);
-    const tops = all.filter(([, r]) => r.kind === 'topup' && r.status !== 'pending').sort((a, b) => b[1].at - a[1].at).slice(0, 40);
+    const oldTops = all.filter(([, r]) => r.kind === 'topup' && r.status === 'pending').sort((a, b) => a[1].at - b[1].at);
+    const tops = all.filter(([, r]) => r.kind === 'topup' && ['credited', 'done', 'reversed'].includes(r.status)).sort((a, b) => b[1].at - a[1].at).slice(0, 40);
     const done = all.filter(([, r]) => r.kind === 'withdraw' && r.status !== 'pending').sort((a, b) => b[1].at - a[1].at).slice(0, 15);
     const owed = Object.values(users).reduce((a, u) => a + (u.balance || 0), 0);
     const inn = Object.values(users).reduce((a, u) => a + (u.topped || 0), 0), out = Object.values(users).reduce((a, u) => a + (u.withdrawn || 0), 0);
@@ -160,7 +180,7 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
         <div><small>Topped up</small><b>${eur(inn)}</b></div><div><small>Paid out</small><b>${eur(out)}</b></div>
         <div><small>Your fund</small><b>${eur(inn - out)}</b></div><div><small>Spins</small><b>${st.spins || 0}</b></div>
         <div><small>Staked</small><b>${eur(st.staked || 0)}</b></div><div><small>Won back</small><b>${eur(st.won || 0)}${st.staked ? ` <span>${Math.round(100 * (st.won || 0) / st.staked)}%</span>` : ''}</b></div></div>
-      <div class="tabs"><button type="button" data-t="money">Money</button><button type="button" data-t="players">Players</button><button type="button" data-t="settings">Settings</button></div>
+      <div class="tabs"><button type="button" data-t="money">Money</button><button type="button" data-t="players">Players</button><button type="button" data-t="settings">Settings</button><button type="button" data-t="live">Live</button><button type="button" data-t="replays">Replays</button></div>
       <div id="body"></div>`;
     main.querySelectorAll('.tabs button').forEach(b => { b.classList.toggle('on', b.dataset.t === tab); b.onclick = () => { tab = b.dataset.t; render(); }; });
     const body = document.getElementById('body');
@@ -169,6 +189,8 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
         <ul>${wd.map(([id, r]) => `<li><div><b>${esc(r.name)}</b> wants <b>${eur(r.a)}</b> to @${esc(r.tag)}<br><span>${when(r.at)}</span></div>
           <div class="acts"><button class="small" data-rev="${esc(r.tag)}" type="button">Revolut</button><button class="small gold" data-paid="${id}" type="button">Paid</button><button class="small red" data-cancel="${id}" type="button">✕</button></div></li>`).join('') || '<li><span>Nothing to pay</span></li>'}</ul>
         <p><span>Tap Revolut to open their page, send the money, then tap Paid. ✕ cancels it and puts the money back on their balance.</span></p>
+        <h2>Old top-up requests</h2>
+        <ul>${oldTops.map(([id, r]) => `<li><div><b>${esc(r.name)}</b> ${eur(r.a)}<br><span>${when(r.at)}</span></div><button class="small red" data-dismiss-topup="${esc(id)}" type="button">Dismiss</button></li>`).join('') || '<li><span>None</span></li>'}</ul>
         <h2>Top-ups (check they arrived in your Revolut)</h2>
         <ul>${tops.map(([id, r]) => `<li><div><b>${esc(r.name)}</b> ${eur(r.a)}<br><span>${when(r.at)}${r.status === 'reversed' ? ' · <b class="err">reversed</b>' : ''}</span></div>
           ${r.status === 'reversed' ? '' : `<button class="small red" data-undo="${id}" type="button">Reverse</button>`}</li>`).join('') || '<li><span>No top-ups yet</span></li>'}</ul>
@@ -178,6 +200,26 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
       body.innerHTML = `<h2>Balances</h2>
         <ul>${Object.entries(users).sort((a, b) => (b[1].balance || 0) - (a[1].balance || 0)).map(([k, u]) => `<li><div><b>${esc(u.name)}</b> ${eur(u.balance || 0)}<br><span>${u.spins || 0} spins · staked ${eur(u.staked || 0)} · won ${eur(u.won || 0)} · in ${eur(u.topped || 0)} · out ${eur(u.withdrawn || 0)}</span></div>
           <button class="small" data-adj="${k}" type="button">±</button></li>`).join('') || '<li><span>No players yet</span></li>'}</ul>`;
+    } else if (tab === 'live') {
+      let live;
+      try { live = await db.get('live') || {}; } catch (e) { toast('Could not load live players'); live = {}; }
+      const online = Object.entries(live).map(([key, value]) => Object.assign({ key }, value && value.p && value.p.name ? value.p : value))
+        .filter(player => player.key !== 'test' && player.name && now() - (player.at || 0) < 90000)
+        .sort((a, b) => Number(!!b.play) - Number(!!a.play) || b.at - a.at);
+      body.innerHTML = `<h2>Players online</h2><ul class="viewer-list">${online.map(player => `<li><div><b>${esc(player.name)}</b><br><span>${player.play ? 'Spinning now' : 'Online'}</span></div><button class="small gold" data-watch="${esc(player.key)}" data-name="${esc(player.name)}" type="button">Watch</button></li>`).join('') || '<li><span>Nobody is online right now.</span></li>'}</ul>`;
+      body.querySelectorAll('[data-watch]').forEach(b => b.onclick = () => openViewer({ watch: b.dataset.watch, name: b.dataset.name }, 'Live · ' + b.dataset.name));
+    } else if (tab === 'replays') {
+      const owners = Object.entries(users).filter(([key]) => key !== 'test');
+      let cards = [];
+      try {
+        cards = (await Promise.all(owners.map(async ([key, user]) => Object.entries(await db.get('rpm/' + key, '?orderBy="$key"&limitToLast=20') || {})
+          .map(([id, card]) => ({ id, name: user.name, ...card }))))).flat().sort((a, b) => b.at - a.at).slice(0, 50);
+      } catch (e) { toast('Could not load replays'); }
+      body.innerHTML = `<h2>Recent replays</h2><ul class="viewer-list">${cards.map(card => `<li><div><b>${esc(card.name)}</b> <span>${card.amt ? esc(card.amt) : 'no win'} · ${esc(card.room || 'Main wheel')}<br>${when(card.at)}</span></div><button class="small" data-replay="${esc(card.id)}" type="button">Replay</button></li>`).join('') || '<li><span>No replays yet.</span></li>'}</ul>`;
+      body.querySelectorAll('[data-replay]').forEach(b => {
+        const card = cards.find(item => item.id === b.dataset.replay);
+        b.onclick = () => openViewer({ replay: b.dataset.replay }, card ? `Replay · ${card.name}` : 'Replay');
+      });
     } else {
       const edge = cfg.edge || CFG.edge;
       body.innerHTML = `<h2>Payout</h2>
@@ -199,6 +241,7 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
     body.querySelectorAll('[data-rev]').forEach(b => b.onclick = () => window.open('https://revolut.me/' + b.dataset.rev, '_blank'));
     body.querySelectorAll('[data-paid]').forEach(b => b.onclick = () => payout(b.dataset.paid, true));
     body.querySelectorAll('[data-cancel]').forEach(b => b.onclick = () => twice(b, () => payout(b.dataset.cancel, false)));
+    body.querySelectorAll('[data-dismiss-topup]').forEach(b => b.onclick = () => dismissTopup(b.dataset.dismissTopup));
     body.querySelectorAll('[data-undo]').forEach(b => b.onclick = () => twice(b, () => reverse(b.dataset.undo)));
     body.querySelectorAll('[data-adj]').forEach(b => b.onclick = () => adjust(b.dataset.adj, users[b.dataset.adj]));
     clearInterval(poll); poll = setInterval(() => { if (!document.hidden && !main.querySelector('input:focus')) render(); }, 20000);
@@ -211,6 +254,14 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
       if (paid) { await db.txn('users/' + r.user, u => { u.withdrawn = (u.withdrawn || 0) + r.a; return u; }); toast('Marked paid'); }
       else { await db.txn('users/' + r.user, u => { u.balance = (u.balance || 0) + r.a; return u; }); await log(r.user, 'refund', r.a, { what: 'withdrawal cancelled' }); toast('Cancelled, money back on their balance'); }
       render();
+    } catch (e) { toast('No connection'); }
+  }
+  async function dismissTopup(id) {
+    try {
+      const r = await db.get('reqs/' + id);
+      if (!r || r.kind !== 'topup' || r.status !== 'pending') return render();
+      await db.patch('reqs/' + id, { status: 'dismissed', done: now() });
+      toast('Dismissed old top-up request'); render();
     } catch (e) { toast('No connection'); }
   }
   // a top-up that never showed up in Revolut: take it back off (the balance can go below zero if it was spent)

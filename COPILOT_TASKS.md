@@ -159,13 +159,15 @@ Merged into Task 4 below. Don't open a separate PR for it.
 
 **Done when:** runs save and play back, the tabs work at 320–412px, the host iframe works for live and replays, and pruning is shown in the PR to delete exactly the oldest entries. Bump to the next version with an update name.
 
+**Status (Task 5):** Implemented every non-test replay, 3,000-card oldest-first pruning, app Watch tabs, host Live/Replays viewers, and dismiss-only legacy top-ups; Me counts pending withdrawals only. Version 23 is “Replay Night”. `node tools/bundle.mjs`, `node tools/check.mjs`, host script parsing, and `git diff --check` pass. Edge mock-database tests cover save/playback, pruning, Mine/Everyone, test exclusion, and dismiss-without-credit; wallet, Watch sheet, and host layouts passed at 320, 360, and 412px. A sampled 10-second replay was 41 frames / 2,530 packed bytes. Live Firebase gameplay remains untested.
+
 ---
 
 ## Task 6: the new ghost (after Task 5 merges)
 
 Cillian wants **every** ghost in the game replaced by his new stink ghost: Ghost Phelan on the inner wheels, the God room / Zena ghost, the watch-message ghost and the Chicken Race trip. The source image will be at `assets/ghost-source.jpg`. It's a JPG with a **fake checkerboard painted into the background**, so cut it out properly: remove the checkerboard and keep the glow, the stink trails and the flies with soft alpha edges. Make a trimmed PNG/WebP sprite of ≤ 512 px (≤ 150 KB) and embed it in `game/index.html` as a data URI via the bundler, because phones load one file. Replace `drawGhost()` and `ghostImg()` so they draw the sprite at the same position, size and alpha, with a slow bob and a little wobble on the trails. Speech bubbles stay. Same timings and the same `Math.random()` calls. Check every ghost scene at 360 and 412px and put screenshots in the PR.
 
-**Status:** Replaced the shared game and Watch-message ghost renderers with the embedded 384×378 WebP (143,748 bytes). `node tools/bundle.mjs`, `node tools/check.mjs`, and the 242-callsite random-sequence check pass. Headless Chromium exercised inner wheel, God room, Zena room, Chicken Race, and Watch-message renders at 360×800 and 412×915:
+**Status:** Replaced the shared game and Watch-message ghost renderers with the embedded 384×378 WebP (143,748 bytes), and took update 24 per the latest issue comment after main moved to 23. `node tools/bundle.mjs`, `node tools/check.mjs`, and the 242-callsite random-sequence check pass. Headless Chromium exercised inner wheel, God room, Zena room, Chicken Race, and Watch-message renders at 360×800 and 412×915:
 
 ![Ghost scenes at 360px](screenshots/task-6/ghost-scenes-360.jpg)
 ![Ghost scenes at 412px](screenshots/task-6/ghost-scenes-412.jpg)
