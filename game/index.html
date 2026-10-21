@@ -1217,9 +1217,6 @@ function warmUp() {
   clearTimeout(warmTimer);
   const jobs = [];
   DEAD_KEYS.forEach(v => { for (let k = 1; k <= DEPTH; k++) jobs.push(() => deadFace(v, k)); });
-  // room art is built in idle slices too, so entering a room doesn't stall on it
-  jobs.push(ensureStank, () => { if (!faces.farm) faces.farm = buildFarm(); }, () => { if (!faces.cosmic) faces.cosmic = buildCosmic(); },
-    () => { if (!faces.can || faces.can.height !== Math.round(N * .066)) faces.can = buildCan(); });
   const next = () => { if (!jobs.length) return; if (busy && jobs.length) { warmTimer = setTimeout(next, 400); return; } jobs.shift()(); warmTimer = setTimeout(next, 60); };
   warmTimer = setTimeout(next, 1200);
 }
@@ -1357,8 +1354,8 @@ function idle(now) {
   idleRaf = 0;
   if (document.hidden) return;
   idleRaf = requestAnimationFrame(idle);
-  // the rim lights keep moving through the gaps between spins and scene changes: redraw whenever no run frame has drawn lately
-  if (scene === 'nested' && now - lastIdle > (Perf.low ? 33 : 40) && (!busy || performance.now() - lastDraw > 30)) {
+  // Keep the nested rim lights moving when a run pauses between wheel spins.
+  if (scene === 'nested' && now - lastIdle > (Perf.low ? 33 : 40) && (busy ? performance.now() - lastDraw > 30 : zoom === 1)) {
     lastIdle = now;
     if (liveK < 0 && zoom === 1) { liveK = 0; draw(); liveK = -1; } else draw();
   }

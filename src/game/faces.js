@@ -311,9 +311,6 @@ function warmUp() {
   clearTimeout(warmTimer);
   const jobs = [];
   DEAD_KEYS.forEach(v => { for (let k = 1; k <= DEPTH; k++) jobs.push(() => deadFace(v, k)); });
-  // room art is built in idle slices too, so entering a room doesn't stall on it
-  jobs.push(ensureStank, () => { if (!faces.farm) faces.farm = buildFarm(); }, () => { if (!faces.cosmic) faces.cosmic = buildCosmic(); },
-    () => { if (!faces.can || faces.can.height !== Math.round(N * .066)) faces.can = buildCan(); });
   const next = () => { if (!jobs.length) return; if (busy && jobs.length) { warmTimer = setTimeout(next, 400); return; } jobs.shift()(); warmTimer = setTimeout(next, 60); };
   warmTimer = setTimeout(next, 1200);
 }
