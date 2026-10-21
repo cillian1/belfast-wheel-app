@@ -45,8 +45,12 @@ function buildGoldPointer() {
   const k = mk(), g = k.getContext('2d');
   g.save(); g.shadowColor = 'rgba(0,0,0,.7)'; g.shadowBlur = R * .03; g.shadowOffsetY = R * .015;
   g.beginPath(); g.moveTo(c, c - R * .83); g.lineTo(c - R * .07, c - R * 1.035); g.quadraticCurveTo(c, c - R * 1.07, c + R * .07, c - R * 1.035); g.closePath();
-  g.fillStyle = grad(g, c - R * .07, 0, c + R * .07, 0, [[0, '#6b4510'], [.35, '#fff6d0'], [.5, '#c99a3a'], [.7, '#fff1b8'], [1, '#5a3c0c']]);
-  g.fill(); g.restore();
+  g.fillStyle = '#3d290a'; g.fill(); g.restore();
+  g.beginPath(); g.moveTo(c, c - R * .83); g.lineTo(c - R * .07, c - R * 1.035); g.quadraticCurveTo(c - R * .035, c - R * 1.065, c, c - R * 1.07); g.closePath();
+  g.fillStyle = grad(g, c - R * .07, 0, c, 0, [[0, '#fff9dd'], [.5, '#f3cf6e'], [1, '#8a5a12']]); g.fill();
+  g.beginPath(); g.moveTo(c, c - R * .83); g.lineTo(c + R * .07, c - R * 1.035); g.quadraticCurveTo(c + R * .035, c - R * 1.065, c, c - R * 1.07); g.closePath();
+  g.fillStyle = grad(g, c + R * .07, 0, c, 0, [[0, '#5a3c0c'], [.5, '#c99a3a'], [1, '#fff1b8']]); g.fill();
+  g.beginPath(); g.moveTo(c, c - R * .84); g.lineTo(c, c - R * 1.06); g.strokeStyle = 'rgba(255,255,230,.85)'; g.lineWidth = D; g.stroke();
   return k;
 }
 function buildStankBg() {
@@ -209,8 +213,9 @@ function drawStank(now) {
   const dt = lastBallDraw ? Math.max(0, Math.min(.05, (now - lastBallDraw) / 1000)) : 0; lastBallDraw = now;
   ballPhase += dt * ballSpeed;
   ctx.drawImage(faces.stankBg, 0, 0);
-  drawScaled(faces.stank, rotS, STANK_SC);
+  drawScaled(faces.stank, rotS, STANK_SC); drawWheelRim(STANK_SC);
   ctx.globalCompositeOperation = 'overlay'; drawScaled(faces.sheen, 0, STANK_SC); ctx.globalCompositeOperation = 'source-over';
+  drawWheelSweep(bingo.length > 0 && pickIdx < 0, STANK_SC);
   drawPointer(faces.goldPointer, STANK_SC);
   const br = R * .064;
   bingo.forEach((b, i) => {
