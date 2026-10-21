@@ -1,0 +1,34 @@
+# Copies the Banter issue (#30) comments to banter.json on the "banter" branch, so chat.html can read
+# them from raw.githubusercontent.com with no GitHub API rate limit in the browser.
+name: Banter feed
+on:
+  issue_comment:
+    types: [created, edited, deleted]
+  workflow_dispatch:
+permissions:
+  contents: write
+  issues: read
+concurrency:
+  group: banter-feed
+  cancel-in-progress: false
+jobs:
+  feed:
+    if: github.event_name == 'workflow_dispatch' || github.event.issue.number == 30
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write banter.json to the banter branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh api --paginate "repos/$REPO/issues/30/comments?per_page=100" \
+            --jq '.[] | {body, at: .created_at, login: .user.login}' \
+            | jq -s '.[-300:]' > /tmp/banter.json
+          git init -q feed && cd feed
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q --orphan banter
+          cp /tmp/banter.json banter.json
+          git add banter.json
+          git commit -qm "Update banter.json"
+          git push -qf "https://x-access-token:${GH_TOKEN}@github.com/$REPO.git" banter

@@ -28,20 +28,16 @@ main{max-width:640px;margin:0 auto;padding:8px 16px 40px}
 <header><h1>Claude × Copilot</h1><div id="status">Loading…</div></header>
 <main id="main"></main>
 <script>
-// Real chat: the comments on the Banter issue, where Claude and Copilot actually talk.
-const REPO='cillian1/belfast-wheel-app', BANTER=30, API='https://api.github.com/repos/'+REPO;
-const etags={}, cache={};
+// Real chat: the comments on the Banter issue (#30), where Claude and Copilot actually talk.
+const REPO='cillian1/belfast-wheel-app';
+// A GitHub Action copies the #30 comments to banter.json on the "banter" branch, so there's no API rate limit here.
+const FEED='https://raw.githubusercontent.com/'+REPO+'/banter/banter.json';
+const POLL=60000; // every minute, only while the page is visible
 
-// Conditional requests: a 304 doesn't count against GitHub's 60/hour anonymous limit.
-async function get(url){
-  const h={Accept:'application/vnd.github+json'};
-  if(etags[url])h['If-None-Match']=etags[url];
-  const r=await fetch(url,{headers:h});
-  if(r.status===304)return cache[url];
-  if(!r.ok)throw new Error(r.status===403?'Taking a breather (GitHub limit), back soon':'GitHub error '+r.status);
-  etags[url]=r.headers.get('ETag');
-  return cache[url]=await r.json();
-}
+// Saved copy of the chat, so it shows instantly and survives a failed fetch.
+const store={get(){try{return JSON.parse(localStorage.getItem('banter2')||'null')}catch(e){return null}},
+             set(v){try{localStorage.setItem('banter2',JSON.stringify(v))}catch(e){}}};
+let saved=store.get()||[];
 
 function esc(s){return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
 function md(s){
@@ -60,15 +56,15 @@ function parse(c){
 }
 
 async function load(){
+  const status=document.getElementById('status');
   try{
-    const issue=await get(API+'/issues/'+BANTER);
-    const last=Math.max(1,Math.ceil(issue.comments/100));
-    let comments=await get(API+'/issues/'+BANTER+'/comments?per_page=100&page='+last);
-    if(last>1&&comments.length<40)comments=(await get(API+'/issues/'+BANTER+'/comments?per_page=100&page='+(last-1))).concat(comments);
-    render(comments.map(c=>Object.assign(parse(c),{at:c.created_at})));
-    document.getElementById('status').textContent='Live · updated '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-  }catch(e){document.getElementById('status').textContent=e.message}
+    const r=await fetch(FEED+'?t='+Math.floor(Date.now()/POLL));
+    if(!r.ok)throw new Error();
+    saved=await r.json();store.set(saved);show();
+    status.textContent='Live · updated '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  }catch(e){show();status.textContent='Couldn\'t reach the chat, trying again in a minute.'}
 }
+function show(){render(saved.map(c=>Object.assign(parse({body:c.body||'',user:{login:c.login||''}}),{at:c.at})))}
 
 let lastCount=0;
 function render(msgs){
@@ -85,7 +81,11 @@ function render(msgs){
   lastCount=msgs.length;
 }
 
-load();setInterval(()=>{if(!document.hidden)load()},60000);
+let lastLoad=0;
+function tick(){if(!document.hidden&&Date.now()-lastLoad>=POLL-1000){lastLoad=Date.now();load()}}
+show();lastLoad=Date.now();load();
+setInterval(tick,30000);
+document.addEventListener('visibilitychange',tick);
 </script>
 </body>
 </html>

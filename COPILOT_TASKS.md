@@ -208,7 +208,28 @@ Cillian wants Phelan to talk. Phelan heckles **out loud** at his existing cameos
 - Respect the Task 8 **mute button** (and add a "Phelan voice on/off" toggle saved with `pref`).
 - Pick lines with a separate non-game RNG, **not** `Math.random()`, so the game's random order is unchanged. No gameplay, odds or payout changes.
 
-Status: done in `src/game/phelan-voice.js` (PR #35 to `update-25`). Bundle/check and stubbed-speech checks cover the saved toggle, mute, 8 s limit, en-IE voice, pitch/rate, unsupported browsers, and stopping at the final verdict. Gameplay `Math.random()` call sites are unchanged; voice remains available in low-end mode. Not tried on a real phone.
+## Task 11: update 26, housekeeping (ON HOLD until update 25 is on main)
+
+Simple, low-risk changes only. Ship as one update.
+1. **Fewer live notifications.** Stop the routine ones like "cillian landed on Mark's farm" (plain room entries / ordinary landings). Keep notifying for notable events only: a Chicken Race triggering, a jackpot, a big win (use the same threshold as the Big wins tab), and trophies. Find every place the live feed/toasts are posted (`feed`, watch messages) and filter at the source. The Watch mirror and replays are unchanged.
+2. **Tidy up the history list** (Me tab): one clean list, newest first, grouped by day. Each row shows an icon + plain label (Spin, Win, Top-up, Withdrawal, Gift), the amount in green/red, and the time. Collapse a spin and its win into one row ("Spin €10 → won €25"). Hide test runs and dismissed old requests. **Display only**: don't change how anything is recorded, charged or paid.
+3. **Clear offline banner.** When the connection drops, show a fixed "No connection, reconnecting…" banner (Firebase `.info/connected` plus `navigator.onLine`). Block starting a paid spin while offline, with a clear message instead of hanging, and hide the banner when it's back. Don't touch the charge/payout code itself; just gate the Spin button before it is called.
+4. **Slightly bigger buttons.** Make small buttons a bit bigger (at least ~44px tap targets) and give icon-only buttons a short label, checked at 320/360/412px. Keep the layout otherwise the same.
+5. **Loading states** on anything that loads from the database (History, Stats/Leaderboard, Replays/Big wins, host lists): show "Loading…" while it waits, "Nothing here yet" when it's empty, and "Couldn't load, tap to retry" after ~10 s or on an error.
+6. **Workflow tidy-up (repo only, no game change):**
+   - a. A CI workflow `.github/workflows/ci.yml` on every PR and push: `node tools/bundle.mjs` and fail if `game/index.html` differs, `node tools/check.mjs`, then load the game headless (Playwright/Chromium) at 360px with a seeded `Math.random`, run a quick spin, and fail on console errors. It also fails if the odds/sim output, the `Math.random()` call count or the prize/ev/edge values differ from main. Name the job `ci` so Cillian can make it a required check in branch protection (repo settings are his to change).
+   - b. Clean up merged/stale `copilot/*` branches and list what you deleted in the PR. Cillian turns on "Automatically delete head branches" in Settings.
+   - c. `.github/ISSUE_TEMPLATE/copilot-task.md` with the sections Goal, Files likely touched, Done when, Don't touch (money/odds/prizes), and the label `copilot-task`.
+   - d. Add a rule to `.github/copilot-instructions.md`: tasks running in parallel must not edit the same files. List the files you expect to touch on the issue before starting, and if they overlap with another open task, wait or coordinate on #30.
+7. **Stink ghost reactions.** The new ghost sprite reacts. On a near miss (pointer one slice off a big prize) it **pulls a face**: a quick squash and wince, a green tint, a short "ugh" bubble and an extra stink puff. On a big win (same threshold as the Big wins tab) it **cheers**: a jump, a spin, sparkle flies and a "WAHEY" bubble. Build these as transforms/overlays on the existing sprite (no new big images, ≤ 20 KB extra). Pick bubble text with a separate non-game RNG and keep the `Math.random()` order. Skip the extras in Low quality mode. Visual only.
+8. **Phelan's country song.** Rarely (about 1 in 15 bad runs, i.e. the run ends with nothing or less than the stake), Phelan sings a short country jingle (4–6 lines, ~10 s) about your run, using the Task 10 squeaky voice and a simple twangy WebAudio backing. Fill in the run's details (room, how much you lost, the near miss). The mute button and the Phelan voice toggle silence it, and it never plays over the verdict. Use a separate non-game RNG and keep the `Math.random()` order.
+
+**Split for parallel work (Claude, 2026-10-21):** each sub-task is its own issue and PR into the `update-26` holding branch.
+- Wave 1, in parallel: **11A** items 6a–d (repo/.github only, goes first so later PRs get CI); **11B** item 1 (notifications); **11C** items 3 and 5 (offline banner + loading states).
+- Wave 2, after wave 1 merges: **11D** items 2 and 4 (history + bigger buttons); **11E** items 7 and 8 (ghost reactions + country song).
+- Then one release PR `update-26` → `main` bumps the version.
+(No "what's new" screen: the update banner already covers it. No history filters.)
+No money, odds or prize changes; keep the `Math.random()` order.
 
 ---
 

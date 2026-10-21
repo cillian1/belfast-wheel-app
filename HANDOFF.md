@@ -2,10 +2,15 @@
 
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
-- **Task:** Task 9 smoothness update (#23), part of update 25 with Task 10 (#25, PR #35, merged in).
-- **Owner:** Copilot.
-- **Status:** Re-scoped and verified in PR #34 against synced `update-25` (no version bump): original waits, animations, and spin-start timing remain unchanged; shorter/skippable waits are deferred to issue #45 for update 26. Kept Quality Auto/High/Low, Low-mode rendering, DPR cap, `?perf=1` HUD, and immediate button feedback. The existing fireplace still consumes global `Math.random()` nine times per rendered frame; this PR keeps its 66ms draw gate and per-frame call count, but RAF timing remains variable, so no full-run/cross-device RNG invariance is claimed. Issue #45 owns isolating that ambient RNG alongside time-based waits. Bundle/check and replay playback pass. High-mode Stank worst was 11.8ms; its only Low sample was 7.9ms, with other Low rooms unmeasured. Live Watch and physical-phone checks were unavailable. No money, odds or prize changes.
-- **Next:** Claude reviews; Cillian merges into `update-25`. Issue #45 owns time-based shorter waits with the fireplace on its own RNG and an odds check; the release PR `update-25` → `main` carries the bump.
+- **Task:** Update 25 (Task 9 smoothness PR #34 + Task 10 Phelan voice PR #35, into `update-25`), then update 26 (Task 11, sub-tasks #39–#43).
+- **Owner:** Copilot builds overnight while Cillian sleeps. Copilot opens each PR and posts `DONE: Task …`, and **Claude does a quick check and merges**, then starts the next wave. Copilot does not merge. Anything that changes money, odds, prizes or payouts waits for Cillian.
+- **Status / order (in sequence):**
+  1. ~~Update 25~~ shipped as "Smooth Operator" (game 25, build 62). PR #34 remains open and unmerged after its branch sync to the latest `update-25`.
+  2. Create branch `update-26` from main. **Wave 1 in parallel:** #39 (CI, goes first), #40, #41. Claude labels and starts them. Each gets a PR into `update-26`, no version bump.
+  3. When #39, #40 and #41 are all merged into `update-26`, Claude starts **wave 2:** #42 and #43.
+  4. When wave 2 is merged, Claude starts **wave 3:** #45 (frame-rate-independent RNG + shorter waits; odds check, any odds change waits for Cillian).
+  5. When wave 3 is merged, open the release PR `update-26` → `main` (bump to 26, name it) and post DONE.
+- **If stuck:** if a step fails twice (CI red you can't fix, a conflict you can't resolve, or anything touching money), stop. Post one note on that issue saying what's blocked and move on to the next independent step. Don't retry forever. Cillian checks in the morning.
 - **Last updated:** 2026-10-22 by Copilot
 
 **Rules for this section:**
@@ -18,6 +23,16 @@
 ## How Copilot gets work
 
 Claude gives Copilot its work directly. Cillian isn't in the loop for routine work. Copilot's poll picks up **every open issue labelled `copilot-task`**, plus issues assigned to it and comments that mention @copilot, even when the issue isn't assigned to it (Claude can't assign through the API). Each issue links its section in `COPILOT_TASKS.md`. Do the oldest open one first.
+
+## How an update is planned (Claude, 2026-10-21)
+
+1. **Plan:** Cillian picks the items. Claude writes them as one numbered task in `COPILOT_TASKS.md` with an on-hold issue (no `copilot-task` label yet).
+2. **Split:** Claude splits the update into sub-task issues (Goal, Files likely touched, Done when, Don't touch), grouped so **no two parallel sub-tasks edit the same files**. Repo/CI work goes in wave 1. Anything touching shared game files (`motion.js`, `ui.js`, ghost code) is spread across waves.
+3. **Branch:** Claude creates the holding branch `update-N` from main when the previous update ships, then labels the wave-1 issues `copilot-task` and posts `@copilot /go`.
+4. **Build:** each sub-task gets its own PR into `update-N`, with no version bump. Before DONE, merge latest `update-N`, rebuild, run the checks, and post `DONE: Task …`.
+5. **Merge:** each PR is merged into `update-N` after a quick check. When a wave is all in, the next wave starts.
+6. **Release:** Copilot opens one PR `update-N` → `main` with the version bump, name, notes and footer, and posts DONE. It's merged and phones get it.
+7. **Talk:** progress notes and questions go on the sub-task issue. Chat goes on #30.
 
 ## What's live
 
@@ -65,13 +80,12 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 
 ## Done log (history only, newest first; nothing here is current)
 
-- 2026-10-22: Task 9 performance and input update, no version bump, ready in PR #34 to `update-25`; wait shortening/skipping deferred to issue #45 for update 26.
-- 2026-10-21: Task 10 Phelan voice lines (PR #35) ready for review in `update-25`; speech respects mute and preference, is isolated from gameplay RNG, and stops at results.
 - 2026-10-21: Combined Tasks 6–8 and replay reliability as update 24 “Room to Grow” (Build 61); ready for review in PR #33 to `main`.
 - 2026-10-21: Task 6 new ghost merged into `update-24` in PR #21; checked all 10 scenes at 360/412px.
 - 2026-10-21: Task 5 replay playback reliability and restart-safe pruning follow-up (PR #24) merged into `update-24`; version 23 / Build 60 unchanged.
 - 2026-10-21: Task 7 room glow-ups (PR #20) merged into `update-24`; visual-only wheel, tank and Pyramid polish, with version 23/build 60 unchanged.
 - 2026-10-21: Task 8 added synthesized room themes, milestone effects and a saved master mute (PR #22) for the combined update 24.
+- 2026-10-21: update 25 "Smooth Operator": Task 9 smoothness (#34, shorter waits moved to #45), Task 10 Phelan voice (#35), wheat pointer (#37).
 - 2026-10-21: Task 5 replays + Watch tabs + host watching (PR #16), merged as update 23.
 - 2026-10-21: Task 5 replay saving, pruning, player/host watching and legacy request fixes are ready for review in PR #16 as update 23 "Replay Night".
 - 2026-10-21: Task 4 Stage 4, performance (PR #14), merged as update 22 "Smoother Wheels". Task 4 is complete.
