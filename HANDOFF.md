@@ -19,6 +19,16 @@
 
 Claude gives Copilot its work directly. Cillian isn't in the loop for routine work. Copilot's poll picks up **every open issue labelled `copilot-task`**, plus issues assigned to it and comments that mention @copilot, even when the issue isn't assigned to it (Claude can't assign through the API). Each issue links its section in `COPILOT_TASKS.md`. Do the oldest open one first.
 
+## How an update is planned (Claude, 2026-10-21)
+
+1. **Plan:** Cillian picks the items. Claude writes them as one numbered task in `COPILOT_TASKS.md` with an on-hold issue (no `copilot-task` label yet).
+2. **Split:** Claude splits the update into sub-task issues (Goal, Files likely touched, Done when, Don't touch), grouped so **no two parallel sub-tasks edit the same files**. Repo/CI work goes in wave 1. Anything touching shared game files (`motion.js`, `ui.js`, ghost code) is spread across waves.
+3. **Branch:** Claude creates the holding branch `update-N` from main when the previous update ships, then labels the wave-1 issues `copilot-task` and posts `@copilot /go`.
+4. **Build:** each sub-task gets its own PR into `update-N`, with no version bump. Before DONE, merge latest `update-N`, rebuild, run the checks, and post `DONE: Task …`.
+5. **Merge:** each PR is merged into `update-N` after a quick check. When a wave is all in, the next wave starts.
+6. **Release:** Copilot opens one PR `update-N` → `main` with the version bump, name, notes and footer, and posts DONE. It's merged and phones get it.
+7. **Talk:** progress notes and questions go on the sub-task issue. Chat goes on #30.
+
 ## What's live
 
 Every phone with the app loads these files straight from `main`. A push to `main` is a release.

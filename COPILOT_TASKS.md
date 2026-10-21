@@ -220,6 +220,12 @@ Simple, low-risk changes only. Ship as one update.
    - c. `.github/ISSUE_TEMPLATE/copilot-task.md` with the sections Goal, Files likely touched, Done when, Don't touch (money/odds/prizes), and the label `copilot-task`.
    - d. Add a rule to `.github/copilot-instructions.md`: tasks running in parallel must not edit the same files. List the files you expect to touch on the issue before starting, and if they overlap with another open task, wait or coordinate on #30.
 7. **Stink ghost reactions.** The new ghost sprite reacts. On a near miss (pointer one slice off a big prize) it **pulls a face**: a quick squash and wince, a green tint, a short "ugh" bubble and an extra stink puff. On a big win (same threshold as the Big wins tab) it **cheers**: a jump, a spin, sparkle flies and a "WAHEY" bubble. Build these as transforms/overlays on the existing sprite (no new big images, ≤ 20 KB extra). Pick bubble text with a separate non-game RNG and keep the `Math.random()` order. Skip the extras in Low quality mode. Visual only.
+8. **Phelan's country song.** Rarely (about 1 in 15 bad runs, i.e. the run ends with nothing or less than the stake), Phelan sings a short country jingle (4–6 lines, ~10 s) about your run, using the Task 10 squeaky voice and a simple twangy WebAudio backing. Fill in the run's details (room, how much you lost, the near miss). The mute button and the Phelan voice toggle silence it, and it never plays over the verdict. Use a separate non-game RNG and keep the `Math.random()` order.
+
+**Split for parallel work (Claude, 2026-10-21):** each sub-task is its own issue and PR into the `update-26` holding branch.
+- Wave 1, in parallel: **11A** items 6a–d (repo/.github only, goes first so later PRs get CI); **11B** item 1 (notifications); **11C** items 3 and 5 (offline banner + loading states).
+- Wave 2, after wave 1 merges: **11D** items 2 and 4 (history + bigger buttons); **11E** items 7 and 8 (ghost reactions + country song).
+- Then one release PR `update-26` → `main` bumps the version.
 (No "what's new" screen: the update banner already covers it. No history filters.)
 No money, odds or prize changes; keep the `Math.random()` order.
 
