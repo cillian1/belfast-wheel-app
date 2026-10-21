@@ -284,11 +284,11 @@ footer{position:fixed;top:8px;left:10px;z-index:5;color:rgba(220,225,230,.55);fo
   <input class="vh" type="file" id="lib" accept="image/*">
 
 
-  <footer>Build 58 · app 19<br><small style="font-size:8.5px;letter-spacing:.04em">Tomb Raider</small></footer>
+  <footer>Build 59 · app 20<br><small style="font-size:8.5px;letter-spacing:.04em">Fowl Play</small></footer>
 </div>
 
 <script>
-const BUILD = 58;
+const BUILD = 59;
 const $ = s => document.querySelector(s);
 const TAU = Math.PI * 2, BASE = -Math.PI / 2;
 const LABEL_FONT = '"IBM Plex Sans Condensed","Arial Narrow",sans-serif';
@@ -753,7 +753,31 @@ function buildBase() {
   g.beginPath(); g.arc(c, c, R, 0, TAU); g.fillStyle = '#0c0e11'; g.fill(); g.restore();
   chromeRim(g, R * .93, R);
   weather(g, R * .93, R);
+  // the rim reads as a rounded tube: dark at both edges, lit along the crown, a hot highlight where the light hits
+  const tube = g.createRadialGradient(c, c, R * .93, c, c, R);
+  tube.addColorStop(0, 'rgba(0,0,0,.55)'); tube.addColorStop(.28, 'rgba(0,0,0,0)'); tube.addColorStop(.5, 'rgba(255,255,255,.16)'); tube.addColorStop(.72, 'rgba(0,0,0,0)'); tube.addColorStop(1, 'rgba(0,0,0,.6)');
+  g.beginPath(); g.arc(c, c, R, 0, TAU); g.arc(c, c, R * .93, 0, TAU, true); g.fillStyle = tube; g.fill('evenodd');
+  g.save(); g.lineCap = 'round'; g.shadowColor = 'rgba(255,255,255,.9)'; g.shadowBlur = R * .03;
+  g.beginPath(); g.arc(c, c, R * .962, -2.55, -1.75); g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = R * .012; g.stroke();
+  g.beginPath(); g.arc(c, c, R * .962, .55, .95); g.strokeStyle = 'rgba(255,255,255,.18)'; g.lineWidth = R * .008; g.stroke();
+  g.restore();
   for (let i = 0; i < 24; i++) { const a = i * TAU / 24; stud(g, c + Math.cos(a) * R * .965, c + Math.sin(a) * R * .965, R * .012); }
+  return k;
+}
+// a soft beam of light that sweeps round the wheel while it spins
+function buildSweep() {
+  const k = mk(), g = k.getContext('2d'), r = R * .93;
+  g.save(); g.translate(c, c);
+  for (let j = -24; j <= 24; j++) { // a bell-shaped fan of thin wedges
+    const a = j * .018, w = Math.exp(-(j * j) / 120);
+    g.beginPath(); g.moveTo(0, 0); g.arc(0, 0, r, a - .0095, a + .0095); g.closePath();
+    g.fillStyle = `rgba(255,244,214,${.32 * w})`; g.fill();
+  }
+  g.restore();
+  g.globalCompositeOperation = 'destination-in'; // brightest toward the rim, nothing at the hub
+  const fadeIn = g.createRadialGradient(c, c, R * .2, c, c, r);
+  fadeIn.addColorStop(0, 'rgba(0,0,0,0)'); fadeIn.addColorStop(.55, 'rgba(0,0,0,.6)'); fadeIn.addColorStop(1, 'rgba(0,0,0,1)');
+  g.fillStyle = fadeIn; g.fillRect(0, 0, N, N);
   return k;
 }
 // Go back up: three chevrons pointing out toward the wheel above
@@ -890,6 +914,9 @@ function buildSheen() {
     [.55, 'rgba(0,0,0,.25)'], [.65, 'rgba(255,255,255,0)'], [.71, 'rgba(255,255,255,.3)'], [.76, 'rgba(255,255,255,0)'], [1, 'rgba(0,0,0,.35)']
   ]);
   g.fillRect(0, 0, N, N);
+  const lip = g.createRadialGradient(c, c, R * .84, c, c, R * .93);
+  lip.addColorStop(0, 'rgba(0,0,0,0)'); lip.addColorStop(1, 'rgba(0,0,0,.6)');
+  g.fillStyle = lip; g.fillRect(0, 0, N, N);
   return k;
 }
 // a stalk of wheat for the farm wheel: ear of grain at the bottom pointing in, stalk above
@@ -915,11 +942,23 @@ function buildWheatPointer() {
 function buildPointer() {
   const k = mk(), g = k.getContext('2d');
   g.save(); g.shadowColor = 'rgba(0,0,0,.7)'; g.shadowBlur = R * .03; g.shadowOffsetY = R * .015;
-  g.beginPath(); g.moveTo(c, c - R * .83); g.lineTo(c - R * .065, c - R * 1.035); g.quadraticCurveTo(c, c - R * 1.07, c + R * .065, c - R * 1.035); g.closePath();
-  g.fillStyle = grad(g, c - R * .065, 0, c + R * .065, 0, [[0, '#4d555e'], [.35, '#ffffff'], [.5, '#aab3bc'], [.7, '#eef2f5'], [1, '#3b4249']]);
-  g.fill(); g.restore();
-  g.strokeStyle = 'rgba(164,126,224,.9)'; g.lineWidth = 1.3 * D; g.stroke();
-  stud(g, c, c - R * .985, R * .02);
+  const tip = c - R * .83, top = c - R * 1.035, crown = c - R * 1.07, hw = R * .065;
+  const outline = () => { g.beginPath(); g.moveTo(c, tip); g.lineTo(c - hw, top); g.quadraticCurveTo(c, crown, c + hw, top); g.closePath(); };
+  outline(); g.fillStyle = '#20252b'; g.fill(); g.restore(); // the drop shadow, under both faces
+  // two bevelled faces meeting at a ridge: the left catches the light, the right falls into shade
+  g.beginPath(); g.moveTo(c, tip); g.lineTo(c - hw, top); g.quadraticCurveTo(c - hw * .5, crown + R * .008, c, crown + R * .012); g.closePath();
+  g.fillStyle = grad(g, c - hw, top, c, tip, [[0, '#ffffff'], [.45, '#dfe5ea'], [1, '#8f99a3']]); g.fill();
+  g.beginPath(); g.moveTo(c, tip); g.lineTo(c + hw, top); g.quadraticCurveTo(c + hw * .5, crown + R * .008, c, crown + R * .012); g.closePath();
+  g.fillStyle = grad(g, c + hw, top, c, tip, [[0, '#5a636d'], [.5, '#8b959f'], [1, '#3a4148']]); g.fill();
+  g.beginPath(); g.moveTo(c, tip + R * .01); g.lineTo(c, crown + R * .014); g.strokeStyle = 'rgba(255,255,255,.85)'; g.lineWidth = D; g.stroke();
+  outline(); g.strokeStyle = 'rgba(164,126,224,.9)'; g.lineWidth = 1.3 * D; g.stroke();
+  // the jewel on the pivot
+  const jy = c - R * .985, jr = R * .024;
+  stud(g, c, jy, jr * 1.25);
+  const gem = g.createRadialGradient(c - jr * .35, jy - jr * .4, 0, c, jy, jr);
+  gem.addColorStop(0, '#f6e8ff'); gem.addColorStop(.3, '#b98cf0'); gem.addColorStop(.75, '#5b2a96'); gem.addColorStop(1, '#2a0f4a');
+  g.beginPath(); g.arc(c, jy, jr, 0, TAU); g.fillStyle = gem; g.fill();
+  g.beginPath(); g.arc(c - jr * .3, jy - jr * .35, jr * .28, 0, TAU); g.fillStyle = 'rgba(255,255,255,.75)'; g.fill();
   return k;
 }
 function buildFinal() {
@@ -1044,7 +1083,7 @@ function warmUp() {
   warmTimer = setTimeout(next, 1200);
 }
 function build() {
-  faces.dart = buildDart(); faces.base = buildBase(); faces.pointer = buildPointer(); faces.sheen = buildSheen();
+  faces.dart = buildDart(); faces.base = buildBase(); faces.pointer = buildPointer(); faces.sheen = buildSheen(); faces.sweep = buildSweep();
   ringCache.clear(); faces.layers = LAYERS.map((items, k) => k ? ringFor(k, runOrders[k - 1]) : buildRing(items, PALS[k]));
   faces.wheat = buildWheatPointer();
   faces.wall = buildWall(); faces.light = buildLight(); faces.pbevel = buildPlatterBevel(); faces.well = buildWell();
@@ -1206,6 +1245,10 @@ function drawNested() {
     }
   }
   ctx.globalCompositeOperation = 'overlay'; ctx.drawImage(faces.sheen, 0, 0); ctx.globalCompositeOperation = 'source-over';
+  drawWinGlow();
+  const tNow = performance.now();
+  sweepA = Math.max(0, Math.min(1, sweepA + (sweepOn ? .06 : -.04)));
+  if (sweepA > 0 && faces.sweep) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = sweepA; drawScaled(faces.sweep, tNow / 420, 1); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; }
   ctx.restore();
   if (streak > 0) {
     ctx.save(); ctx.translate(c, c);
@@ -1488,9 +1531,23 @@ const wait = ms => new Promise(r => setTimeout(r, reduce ? Math.min(ms, 300) : m
 const sliceAt = (r, n) => Math.floor(mod(-r, TAU) / (TAU / n)) % n;
 function target(n) { const i = Math.floor(Math.random() * n); return { i, a: (i + .15 + Math.random() * .7) * TAU / n }; }
 
+let sweepOn = false, sweepA = 0, winGlow = null;
 async function spinLayer(k, dur, dir) {
-  liveK = k;
-  try { return await spinLayerRun(k, dur, dir); } finally { liveK = -1; }
+  liveK = k; sweepOn = true; winGlow = null;
+  try { const i = await spinLayerRun(k, dur, dir); winGlow = { k, i, t0: performance.now() }; return i; } finally { liveK = -1; sweepOn = false; }
+}
+// the slice a wheel stopped on glows and pulses, then settles to a soft gold edge
+function drawWinGlow() {
+  if (!winGlow || scene !== 'nested' || !LAYERS[winGlow.k]) return;
+  const { k, i, t0 } = winGlow, sc = layerVisible(k); if (sc <= 0) return;
+  const n = LAYERS[k].length, seg = TAU / n, a0 = BASE + i * seg + rot[k], t = (performance.now() - t0) / 1000;
+  const a = Math.min(1, t * 3) * (t < 2.4 ? .55 + .3 * Math.sin(t * 7) : .35);
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  ctx.beginPath(); ctx.arc(c, c, R * .93 * sc, a0, a0 + seg); ctx.arc(c, c, R * .55 * sc, a0 + seg, a0, true); ctx.closePath();
+  ctx.fillStyle = `rgba(255,214,120,${.32 * a})`; ctx.fill();
+  ctx.shadowColor = 'rgba(255,210,110,.9)'; ctx.shadowBlur = R * .04 * sc;
+  ctx.strokeStyle = `rgba(255,232,170,${.9 * a})`; ctx.lineWidth = 2.2 * D; ctx.stroke();
+  ctx.restore();
 }
 // a Wild, ankh or God slice: the ones worth teasing and the ones Ghost Phelan pushes you onto
 const hotSlice = it => !!(it && (it.wild || it.bonus || it.god));
@@ -1913,7 +1970,7 @@ function setVerdict({ eyebrow = 'The wheel says', title, body = '', steps = null
 function setBtn(text, disabled) { spinBtn.textContent = text; spinBtn.disabled = disabled; }
 
 async function backToMain() {
-  ghost = null; ghostSay = ''; doorPick = null; tapPick = null; $('.stage').classList.remove('pick');
+  winGlow = null; ghost = null; ghostSay = ''; doorPick = null; tapPick = null; $('.stage').classList.remove('pick');
   hideFinal(); sayLast = null; try { speechSynthesis.cancel(); } catch (e) {}
   if (scene !== 'nested' && scene !== 'photo') {
     // the room keeps drawing while it fades out, so its state is only cleared once the main wheel is back
@@ -2126,6 +2183,9 @@ async function runMain() {
   if (m.special === 'own') {
     finalSteps = [{ text: m.t, dest: true }];
     said = ['Final answer', 'Reject all commands', 'Go your own way'];
+  } else if (m.race) {
+    finalSteps = [...steps, { text: m.t, dest: true }];
+    said = ['Final answer', 'Chicken Race', `${m.name} wins`, `That one is worth ${$m(m.prize)} euro`];
   } else {
     finalSteps = [...steps, { text: m.t, dest: true }];
     said = ['Final answer', ...moves.map((s, i) => (i === 0 ? 'First, ' : 'Then, ') + s.text.toLowerCase()), (moves.length ? 'Then, ' : '') + dest.b.replace(/^and /, ''), m.special === 'leave' ? 'And leave Mark alone' : 'And ' + m.t.charAt(0).toLowerCase() + m.t.slice(1)];
@@ -3702,7 +3762,7 @@ Object.keys(MARK_BY_DEST).forEach(k => MARK_BY_DEST[k].forEach((it, i) => it.t =
 const LEAVE = { lbl: ['LEAVE MARK', 'ALONE'], t: 'Leave Mark alone', b: 'No question for Mark this time. He gets away with it.', special: 'leave' };
 const OWNWAY = { lbl: ['GO YOUR', 'OWN WAY'], t: 'Reject all commands, go your own way', b: 'Forget everything the wheels said. Go wherever you like.', special: 'own' };
 
-let pipes = null, carried = [], d6 = [], d6Sum = 0, chickens = [], arrows = [], fires = [], feathers = [], camX = 0, markItems = [], rotM = 0, formT = [], showMark = 0, chainNote = '';
+let pipes = null, carried = [], d6 = [], d6Sum = 0, chickens = [], arrows = [], fires = [], feathers = [], camX = 0, markItems = [], rotM = 0, formT = [], showMark = 0, chainNote = '', raceLine = 0;
 
 function pathWithLengths(pts) { const L = [0]; for (let i = 1; i < pts.length; i++) L.push(L[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1])); return { pts, L, total: L[L.length - 1] }; }
 function pathAt(p, s) {
@@ -4045,10 +4105,12 @@ function drawFarm(now) {
     gr.addColorStop(0, `rgba(255,230,140,${a})`); gr.addColorStop(.5, `rgba(255,110,30,${a * .7})`); gr.addColorStop(1, 'rgba(255,60,0,0)');
     ctx.fillStyle = gr; ctx.fillRect(f.x - camX - N * .08, f.y - N * .1, N * .16, N * .14);
   });
+  if (raceLine) drawRaceLine();
   [...chickens].sort((a, b) => a.y - b.y).forEach(ch => {
     if (!ch.alive || ch.slice || ch.pop <= .01) return;
     if (ch.glow > 0) { const gr = ctx.createRadialGradient(ch.x - camX, ch.y - N * .01, 0, ch.x - camX, ch.y - N * .01, N * .06); gr.addColorStop(0, ch.special === 'B' ? `rgba(190,140,255,${ch.glow})` : `rgba(255,225,120,${ch.glow})`); gr.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(ch.x - camX, ch.y - N * .01, N * .06, 0, TAU); ctx.fill(); }
     drawChicken(ctx, ch.x - camX, ch.y, N * .055 * ch.pop, ch.dir, ch.ph, ch.peck, ch.flash || 0, ch.special);
+    if (ch.tag) drawRaceTag(ch);
   });
   carried.forEach(b => {
     if (b.s <= .01) return;
@@ -4136,7 +4198,7 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
   if (!faces.farm) faces.farm = buildFarm();
   if (!snap || snap.width !== N) snap = mk();
   { const g = snap.getContext('2d'); g.clearRect(0, 0, N, N); dots.forEach(p => p.hide = true); draw(); g.drawImage(cv, 0, 0); dots.forEach(p => p.hide = false); }
-  d6 = []; scene = 'farm'; Music.setMode('farm'); camX = 0; chickens = []; arrows = []; fires = []; feathers = []; markItems = []; formT = []; showMark = 0; chainNote = ''; snapA = 1;
+  d6 = []; scene = 'farm'; Music.setMode('farm'); camX = 0; chickens = []; arrows = []; fires = []; feathers = []; markItems = []; formT = []; showMark = 0; chainNote = ''; raceLine = 0; snapA = 1;
   dots.forEach((p, i) => {
     p.sx = p.x; p.sy = p.y; p.delay = .1 + (i / Math.max(1, dots.length)) * .5;
     chickens.push({ x: N * (.08 + Math.random() * .84), y: N * (.64 + Math.random() * .28), dir: Math.random() < .5 ? -1 : 1, ph: 0, peck: 0, alive: true, pop: 0 });
@@ -4252,6 +4314,7 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
       if (walkChicken(ch, dt, N * .12)) { ch.wait = .4 + Math.random() * .9; ch.tx = Math.max(N * 1.06, Math.min(N * 1.94, ch.x + (Math.random() - .5) * N * .3)); ch.ty = Math.max(N * .65, Math.min(N * .94, ch.y + (Math.random() - .5) * N * .15)); }
     });
   });
+  if (Math.random() < RACE_CHANCE) return await chickenRace(steps, alive);
   // 5. chickens become slices and fly up into Mark's wheel
   const n = Math.min(alive.length, 16);
   // questions about where the chart sent you come first, then the general ones
@@ -4299,6 +4362,124 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
   });
   rotM = mod(rotM, TAU); ting(); buzz([40, 50, 80]);
   return markItems[tg.i];
+}
+
+// ---------- Chicken Race: 1 in 4 farm runs, the survivors dance, then race for the prizes on their tags ----------
+const RACE_CHANCE = .25, RACE_MAX = 8, RACE_T = 6;
+const RACE_NAMES = ['Clucky', 'Nugget', 'Henrietta', 'Peggy', 'Drumstick', 'Eggbert', 'Feathers', 'Big Bertha', 'Colonel', 'Scrambles', 'Goldie', 'Penny'];
+const racePay = v => typeof $m === 'function' ? $m(v) : v;
+function drawRaceLine() {
+  const x = raceLine - camX, sq = N * .018, y0 = N * .58, y1 = N * .97;
+  for (let y = y0, j = 0; y < y1; y += sq, j++) for (let q = 0; q < 2; q++) { ctx.fillStyle = (j + q) % 2 ? '#111' : '#f4f0e4'; ctx.fillRect(x + q * sq - sq, y, sq, Math.min(sq, y1 - y)); }
+  ctx.fillStyle = '#6b4a2a'; ctx.fillRect(x - sq * 1.3, y0 - N * .06, sq * .3, N * .06); ctx.fillRect(x + sq * 1, y0 - N * .06, sq * .3, N * .06);
+  ctx.fillStyle = '#d62a20'; ctx.fillRect(x - sq * 1.3, y0 - N * .065, sq * 2.6, N * .022);
+  ctx.font = `800 ${N * .016}px ${LABEL_FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff3d0'; ctx.fillText('FINISH', x, y0 - N * .054);
+}
+function drawRaceTag(ch) {
+  const tg = ch.tag; if (!tg || !(tg.a > 0)) return;
+  const w = N * (tg.special ? .145 : .1), h = N * .034, x = ch.x - camX - N * .045 - w / 2, y = ch.y - N * .035, sc = 1 + (ch.won || 0) * .3;
+  const spc = tg.special === 'W' ? '#ffd76a' : '#c9a0ff';
+  ctx.save(); ctx.globalAlpha = tg.a; ctx.translate(x + w / 2, y); ctx.scale(sc, sc);
+  if (ch.won) { ctx.shadowColor = 'rgba(255,215,90,1)'; ctx.shadowBlur = N * .03; }
+  rrect(ctx, -w / 2, -h / 2, w, h, h * .4);
+  ctx.fillStyle = tg.big ? '#d9a21b' : 'rgba(30,20,10,.85)'; ctx.fill(); ctx.shadowBlur = 0;
+  ctx.lineWidth = (tg.special ? 2.5 : 1.5) * D; ctx.strokeStyle = tg.special ? spc : 'rgba(255,240,200,.7)'; ctx.stroke();
+  ctx.font = `800 ${N * .022}px ${LABEL_FONT}`; ctx.textBaseline = 'middle';
+  const txt = `€${racePay(tg.v)}`;
+  if (tg.special) {
+    ctx.textAlign = 'left'; ctx.fillStyle = tg.big ? '#2a1a05' : '#fff3d0'; ctx.fillText(txt, -w / 2 + N * .01, D);
+    ctx.font = `800 ${N * .016}px ${LABEL_FONT}`; ctx.textAlign = 'right'; ctx.fillStyle = tg.big ? '#2a1a05' : spc; ctx.fillText('1.5×', w / 2 - N * .01, D);
+  } else { ctx.textAlign = 'center'; ctx.fillStyle = tg.big ? '#2a1a05' : '#fff3d0'; ctx.fillText(txt, 0, D); }
+  ctx.restore();
+}
+async function chickenRace(steps, alive) {
+  const racers = [...alive.filter(ch => ch.special), ...alive.filter(ch => !ch.special)].slice(0, RACE_MAX), rest = alive.filter(ch => !racers.includes(ch));
+  const names = [...RACE_NAMES].sort(() => Math.random() - .5);
+  const vals = [5, 8, 10, 12, 15, 20, 25, 30].sort(() => Math.random() - .5), bigAt = Math.floor(Math.random() * racers.length);
+  racers.forEach((ch, i) => {
+    const base = i === bigAt ? pick([80, 100, 120]) : vals[i % vals.length];
+    ch.name = names[i % names.length];
+    ch.tag = { v: ch.special ? Math.round(base * 1.5) : base, big: i === bigAt, special: ch.special || null, a: 0 };
+  });
+  setVerdict({ eyebrow: 'Something’s up', title: 'Chicken Race', body: 'The chickens won’t sit still.', steps: steps.slice(), flash: true });
+  $('#caption').textContent = 'Chicken Race';
+  Music.sting(2); buzz([30, 40, 30, 40, 60]);
+  // 1. they dance; the ones who don't make the line-up wander off
+  rest.forEach(ch => { ch.tx = N * 2.3; ch.ty = ch.y; });
+  racers.forEach(ch => { ch.by = ch.y; });
+  await farmLoop(2.4, (dt, el) => {
+    racers.forEach((ch, i) => {
+      const b = el * 9 + i * 1.3; ch.y = ch.by - Math.abs(Math.sin(b)) * N * .02; ch.peck = Math.max(0, Math.sin(b * 2)) * .6;
+      ch.dir = Math.sin(el * 3.5 + i) > 0 ? 1 : -1; ch.ph += dt * 10;
+      if (Math.random() < .02) ch.glow = .5;
+    });
+    rest.forEach(ch => walkChicken(ch, dt, N * .45));
+    if (Math.random() < .08) tick(.4, 1200 + Math.random() * 800);
+  });
+  rest.forEach(ch => ch.alive = false);
+  // 2. into the lanes, tags up
+  const startX = N * 1.22; raceLine = N * 1.84;
+  const lanes = racers.map((ch, i) => N * (.63 + (racers.length > 1 ? i / (racers.length - 1) : .5) * .32));
+  [...racers].sort((a, b) => a.y - b.y).forEach((ch, i) => { ch.tx = startX; ch.ty = lanes[i]; });
+  setVerdict({ eyebrow: 'Chicken Race', title: 'Take your marks', body: 'Each chicken carries its prize. The winner’s is yours.', steps: steps.slice(), flash: false });
+  await farmLoop(3, (dt, el) => {
+    let all = true; racers.forEach(ch => { if (!walkChicken(ch, dt, N * .4)) all = false; });
+    return all && el > .8;
+  });
+  racers.forEach(ch => { ch.dir = 1; ch.peck = 0; });
+  await farmLoop(1.2, (dt, el) => { racers.forEach((ch, i) => { const u = Math.max(0, Math.min(1, (el - i * .1) * 3)); if (ch.tag.a < 1 && u >= 1) tick(.6, 1600 + i * 80); ch.tag.a = u; }); });
+  for (const n of ['3', '2', '1']) { chainNote = n; tick(1, 900); buzz(20); await farmLoop(.7, () => {}); }
+  chainNote = 'Go!'; ting(); buzz(50);
+  // 3. the race: the winner's finish time is fixed; Ghost Phelan sometimes trips a faster chicken near the line
+  const w = Math.floor(Math.random() * racers.length), win = racers[w];
+  const others = racers.filter(ch => ch !== win), decoy = others.length && Math.random() < .35 ? pick(others) : null;
+  racers.forEach(ch => { ch.T = ch === win ? RACE_T : ch === decoy ? RACE_T - .55 : RACE_T + .25 + Math.random() * 1.1; ch.wob = Math.random() * TAU; ch.p = 0; ch.done = false; });
+  const tripP = .88, tripAt = decoy ? tripP * decoy.T : 99, STUN = 1.3;
+  let leaderNoted = null;
+  await farmLoop(RACE_T + 3.5, (dt, el) => {
+    if (el > .9 && chainNote === 'Go!') chainNote = '';
+    racers.forEach(ch => {
+      let p;
+      if (ch === decoy && el >= tripAt) {
+        p = el < tripAt + STUN ? tripP : Math.min(1, tripP + (el - tripAt - STUN) / ch.T);
+        if (!ch.tripped) {
+          ch.tripped = true; ch.flash = .8; ghostSay = 'Whoops'; whoosh(); buzz([40, 30, 80]);
+          for (let k = 0; k < 14; k++) feathers.push({ x: ch.x, y: ch.y - N * .02, vx: (Math.random() - .5) * N * .5, vy: -Math.random() * N * .4, r: Math.random() * 3, life: 1, col: ch.special === 'W' ? '#f3c94a' : ch.special === 'B' ? '#9b5de5' : '#fbf7ee' });
+        }
+        if (el < tripAt + STUN) { ch.peck = .9; ch.dir = Math.sin(el * 14) > 0 ? 1 : -1; ch.flash = Math.max(0, (ch.flash || 0) - dt); }
+        else { ch.dir = 1; ch.flash = 0; }
+      } else {
+        const u = Math.min(1, el / ch.T);
+        p = u + .035 * Math.sin(u * Math.PI) * Math.sin(el * 2.4 + ch.wob);
+      }
+      p = Math.max(ch.p, Math.min(1, p));
+      if (!(ch === decoy && el >= tripAt && el < tripAt + STUN)) ch.ph += dt * (p < 1 ? 22 : 4);
+      ch.p = p; ch.x = lerp(startX, raceLine, p);
+      if (ch.done) { ch.post = (ch.post || 0) + dt; ch.x = raceLine + N * .07 * (1 - Math.exp(-ch.post * 2.5)); } // they run on past the line and slow down
+      if (p >= 1 && !ch.done) { ch.done = true; if (ch === win) { ting(); buzz([40, 50, 80]); chainNote = `${ch.name} wins!`; ch.glow = 1; ch.won = 1; } else tick(.8, 1400); }
+    });
+    // the ghost drifts in over the chicken he's about to trip, then floats off
+    if (decoy) {
+      const gx = decoy.x - camX, gy = decoy.y - N * .14, t0 = tripAt - 1;
+      if (el >= t0 && el < tripAt + 1.6) {
+        if (!ghost) ghost = { x: N * 1.15, y: gy, a: 0, side: 1 };
+        if (el < tripAt) { const e = easeOut((el - t0) / 1); ghost.x = lerp(N * 1.15, gx + N * .04, e); ghost.y = gy; ghost.a = Math.min(1, e * 2); }
+        else { const e = (el - tripAt) / 1.6; ghost.x = gx + N * .04 - e * N * .2; ghost.y = gy - e * N * .1; ghost.a = 1 - e; }
+      } else if (ghost && el >= tripAt + 1.6) { ghost = null; ghostSay = ''; }
+    }
+    const lead = racers.reduce((a, b) => b.p > a.p ? b : a);
+    if (lead !== leaderNoted && el > 1 && el < RACE_T - .3 && !win.done) { leaderNoted = lead; $('#caption').textContent = `${lead.name} leads`; }
+    return racers.every(ch => ch.done) && el > RACE_T + .6;
+  });
+  ghost = null; ghostSay = '';
+  win.glow = 1; $('#caption').textContent = `${win.name} wins`;
+  await farmLoop(1.6, (dt, el) => { win.y = win.ty - Math.abs(Math.sin(el * 8)) * N * .025; win.peck = Math.max(0, Math.sin(el * 16)) * .6; win.glow = Math.max(win.glow, .6); });
+  const v = win.tag.v;
+  return {
+    t: `Chicken Race: ${win.name} wins`,
+    b: `${win.special ? (win.special === 'W' ? 'A gold' : 'A purple') + ' chicken, 1.5× on the tag. ' : ''}${decoy ? `Ghost Phelan tripped ${decoy.name} at the line. ` : ''}${win.name} carried €${racePay(v)}.`,
+    prize: v, race: true, name: win.name,
+  };
 }
 
 // ---------- Show me ----------
@@ -4546,7 +4727,7 @@ if (document.fonts && document.fonts.load) {
 }
 </script>
 
-<script>window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":19,"ev":15.1078,"edge":0.995,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};</script>
+<script>window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":20,"ev":16.24,"edge":0.995,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};</script>
 <script>
 // ---------- wallet layer for the Android app ----------
 // Injected after the game's own script by tools/build.mjs. It wraps spin() and setVerdict(),
@@ -5182,7 +5363,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   const MIRROR = ['N', 'c', 'R', 'D', 'scene', 'zoom', 'fade', 'DEPTH', 'evenA', 'FINAL', 'B', 'dice', 'rotF', 'flatT', 'balls', 'ballR', 'counts', 'winner', 'banner',
     'rotP', 'hi', 'hiA', 'domeBulge', 'pAng', 'ghost', 'ghostSay', 'dots', 'boostA', 'boostNew', 'wellBalls', 'introT', 'camT', 'hallZ', 'doorT', 'flash', 'rotS',
     'bingo', 'ballSpeed', 'ballPhase', 'pickIdx', 'handT', 'liftT', 'handClosed', 'prize', 'roul', 'vault', 'coaster', 'planet', 'mon', 'rotC', 'zena', 'god', 'pyr',
-    'pipes', 'carried', 'd6', 'd6Sum', 'chickens', 'arrows', 'fires', 'feathers', 'camX', 'markItems', 'rotM', 'formT', 'showMark', 'chainNote',
+    'pipes', 'carried', 'd6', 'd6Sum', 'chickens', 'arrows', 'fires', 'feathers', 'camX', 'markItems', 'rotM', 'formT', 'showMark', 'chainNote', 'raceLine',
     'rot', 'deadA', 'deadTo', 'deadFrom'];
   const SLOW = ['N', 'c', 'R', 'D', 'FINAL', 'B', 'ord', 'boostNew', 'markItems'];
   const ANGLES = ['rotF', 'rotP', 'rotS', 'rotC', 'rotM', 'pAng'];
