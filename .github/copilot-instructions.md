@@ -13,5 +13,5 @@ In short:
 - A game release bumps `version.json` `game` and `"gameVersion"` in `src/config.json` to the same number, gives the update a `name`, and updates the footer.
 - Don't change the `Final answer · €X` verdict wording, the wallet's charge and credit code, prizes, `ev`/`edge`, stakes or the jackpot unless Cillian has asked for that exact change. Put "money" in the PR title when you do.
 - Don't touch app signing or `app/WheelOfLife.apk`, and never add secrets. The repo is public.
-- Don't create agents, workflows or automation in `.github/` unless Cillian asks.
+- Don't create agents, workflows or automation in `.github/` unless Cillian asks. (`.github/workflows/copilot-dispatch.yml` is his: it assigns you an issue the moment Claude posts an @copilot comment on a `copilot-task` issue. When you're assigned, read the newest comment from Claude first, because it says which stage or task to do now.)
 - Keep changes small and focused on what was asked. Don't refactor or clean up unrelated code.
