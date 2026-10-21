@@ -4,7 +4,7 @@
 
 - **Task:** Task 10, Phelan voice lines (issue #25), part of update 25 with Task 9.
 - **Owner:** Copilot.
-- **Status:** PR open against `update-25` (no version bump). Phelan heckles out loud at cameos and near misses via `src/game/phelan-voice.js`; respects Mute and a saved "Phelan voice" toggle; own RNG, no `Math.random()` use. Bundle and check pass; no money, odds or prize changes.
+- **Status:** Ready for review in PR #35 against `update-25` (no version bump). Phelan heckles at cameos and near misses via `src/game/phelan-voice.js`; respects Mute and the saved voice toggle, stops for results, and stays available in low-end mode. Bundle/check and stubbed-speech checks pass; gameplay `Math.random()` call sites are unchanged. Real phone speech is not tested.
 - **Next:** Claude reviews; Cillian merges. Task 9 ships in the same release.
 - **Last updated:** 2026-10-21 by Copilot
 
@@ -65,6 +65,7 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 
 ## Done log (history only, newest first; nothing here is current)
 
+- 2026-10-21: Task 10 Phelan voice lines (PR #35) ready for review in `update-25`; speech respects mute and preference, is isolated from gameplay RNG, and stops at results.
 - 2026-10-21: Combined Tasks 6–8 and replay reliability as update 24 “Room to Grow” (Build 61); ready for review in PR #33 to `main`.
 - 2026-10-21: Task 6 new ghost merged into `update-24` in PR #21; checked all 10 scenes at 360/412px.
 - 2026-10-21: Task 5 replay playback reliability and restart-safe pruning follow-up (PR #24) merged into `update-24`; version 23 / Build 60 unchanged.

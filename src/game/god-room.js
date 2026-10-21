@@ -211,7 +211,7 @@ async function godRoom(steps) {
   god.rot = mod(god.rot, TAU); god.spinning = false; god.winner = tg.i; god.winAt = performance.now();
   const prize = GOD_PRIZES[tg.i];
   ting(); Music.sting(4); buzz(prize >= 100 ? [100, 50, 100, 50, 400] : [40, 40, 80]);
-  god.say = prize >= 100 ? `€${$m(prize)}. Don't tell Mark.` : `€${$m(prize)}. Better than a toaster.`; phelanSay(god.say); draw();
+  god.say = prize >= 100 ? `€${$m(prize)}. Don't tell Mark.` : `€${$m(prize)}. Better than a toaster.`; draw();
   setVerdict({ eyebrow: 'Final answer · €' + $m(prize), title: 'The God wheel pays €' + $m(prize), body: '', steps: steps.slice(), q: quote() });
   await wait(1600);
   speak(['Final answer', ...spokenMoves(steps), `The God wheel pays ${$m(prize)} euro`, roomAct('god')]);

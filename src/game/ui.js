@@ -2,6 +2,7 @@
 // Owns verdict presentation and main-run orchestration.
 const spinBtn = $('#spinBtn'), plate = $('#verdict');
 function setVerdict({ eyebrow = 'The wheel says', title, body = '', steps = null, q = null, show = false, photo = false, flash = true }) {
+  if (/^Final answer/.test(eyebrow)) phelanStop();
   $('#vEyebrow').textContent = eyebrow; $('#vTitle').textContent = title;
   $('#vBody').textContent = body; $('#vBody').hidden = !body;
   const ol = $('#vSteps'); ol.innerHTML = '';
