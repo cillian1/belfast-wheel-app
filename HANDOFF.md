@@ -2,11 +2,11 @@
 
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
-- **Task:** Combined update 24 release, “Room to Grow” (PR #33).
-- **Owner:** Copilot does ALL the work (Cillian, 2026-10-21): building, conflicts, version bumps, release notes, HANDOFF/COPILOT_TASKS updates, and the release PR. Claude only presses merge (GitHub won't let Copilot merge its own PRs). Money/odds/prize changes still go to Cillian.
-- **Status:** Ready for review in PR #33 to `main`; Tasks 6–8 and replay reliability ship together as version 24 / Build 61. Bundle, repository, replay regression and whitespace checks pass; payout, odds, prize and APK values are unchanged.
-- **Next:** Claude reviews; Cillian merges. Do not merge the release PR.
-- **Last updated:** 2026-10-21 23:05 by Copilot
+- **Task:** Visual-only Mark farm-wheel wheat pointer.
+- **Owner:** Copilot implements and tests the focused visual change; Claude reviews PR #37 to `update-25`, and Cillian merges.
+- **Status:** Ready for review in PR #37 to `update-25`; uses the existing wheat pointer art, changes no selection or `Math.random()` order, and leaves version 24 / Build 61 unchanged.
+- **Next:** Claude reviews and merges this pointer-only PR into `update-25`; Tasks 9 and 10 remain in their separate PRs, with the later release PR carrying the version bump. Do not merge.
+- **Last updated:** 2026-10-21 23:38 by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
@@ -65,6 +65,7 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 
 ## Done log (history only, newest first; nothing here is current)
 
+- 2026-10-21: Mark's farm-wheel pointer now uses existing wheat art (visual only, no selection, RNG-order or version changes); validated in Edge and PR #37 targets `update-25`.
 - 2026-10-21: Combined Tasks 6–8 and replay reliability as update 24 “Room to Grow” (Build 61); ready for review in PR #33 to `main`.
 - 2026-10-21: Task 6 new ghost merged into `update-24` in PR #21; checked all 10 scenes at 360/412px.
 - 2026-10-21: Task 5 replay playback reliability and restart-safe pruning follow-up (PR #24) merged into `update-24`; version 23 / Build 60 unchanged.
