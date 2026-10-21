@@ -4,8 +4,8 @@
 
 - **Task:** Task 9 smoothness update (#23), part of update 25 with Task 10 (#25, PR #35, merged in).
 - **Owner:** Copilot.
-- **Status:** Ready for review in PR #34 against `update-25` (no version bump), `update-25` merged in. Re-scoped per Cillian: shortened/skipped waits are removed, so gameplay timing and `Math.random()` consumption are unchanged. Kept: Quality Auto/High/Low, Low mode, DPR cap, `?perf=1` frame meter, instant tap feedback. High-mode Stank worst frame was 11.8ms, accepted for now. No money, odds or prize changes.
-- **Next:** Claude reviews; Cillian merges into `update-25`. Later: shorter waits, with the fireplace on its own RNG. The release PR `update-25` → `main` carries the bump.
+- **Status:** Re-scoped and verified in PR #34 against synced `update-25` (no version bump): original waits, animations, and spin-start timing remain unchanged; shorter/skippable waits are deferred to issue #45 for update 26. Kept Quality Auto/High/Low, Low-mode rendering, DPR cap, `?perf=1` HUD, and immediate button feedback. The existing fireplace still consumes global `Math.random()` nine times per rendered frame; this PR keeps its 66ms draw gate and per-frame call count, but RAF timing remains variable, so no full-run/cross-device RNG invariance is claimed. Issue #45 owns isolating that ambient RNG alongside time-based waits. Bundle/check and replay playback pass. High-mode Stank worst was 11.8ms; its only Low sample was 7.9ms, with other Low rooms unmeasured. Live Watch and physical-phone checks were unavailable. No money, odds or prize changes.
+- **Next:** Claude reviews; Cillian merges into `update-25`. Issue #45 owns time-based shorter waits with the fireplace on its own RNG and an odds check; the release PR `update-25` → `main` carries the bump.
 - **Last updated:** 2026-10-22 by Copilot
 
 **Rules for this section:**
@@ -65,6 +65,7 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 
 ## Done log (history only, newest first; nothing here is current)
 
+- 2026-10-22: Task 9 performance and input update, no version bump, ready in PR #34 to `update-25`; wait shortening/skipping deferred to issue #45 for update 26.
 - 2026-10-21: Task 10 Phelan voice lines (PR #35) ready for review in `update-25`; speech respects mute and preference, is isolated from gameplay RNG, and stops at results.
 - 2026-10-21: Combined Tasks 6–8 and replay reliability as update 24 “Room to Grow” (Build 61); ready for review in PR #33 to `main`.
 - 2026-10-21: Task 6 new ghost merged into `update-24` in PR #21; checked all 10 scenes at 360/412px.
