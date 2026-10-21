@@ -210,7 +210,9 @@ Cillian wants Phelan to talk. Phelan heckles **out loud** at his existing cameos
 
 Simple, low-risk changes only. Ship as one update.
 1. **Fewer live notifications.** Stop the routine ones like "cillian landed on Mark's farm" (plain room entries / ordinary landings). Keep notifying for notable events only: a Chicken Race triggering, a jackpot, a big win (use the same threshold as the Big wins tab), and trophies. Find every place the live feed/toasts are posted (`feed`, watch messages) and filter at the source. The Watch mirror and replays are unchanged.
-2. More items will be added here once Cillian picks them.
+2. **Tidy up the history list** (Me tab): one clean list, newest first, grouped by day. Each row shows an icon + plain label (Spin, Win, Top-up, Withdrawal, Gift), the amount in green/red, and the time. Collapse a spin and its win into one row ("Spin €10 → won €25"). Hide test runs and dismissed old requests. **Display only**: don't change how anything is recorded, charged or paid.
+3. **Clear offline banner.** When the connection drops, show a fixed "No connection, reconnecting…" banner (Firebase `.info/connected` plus `navigator.onLine`). Block starting a paid spin while offline, with a clear message instead of hanging, and hide the banner when it's back. Don't touch the charge/payout code itself; just gate the Spin button before it is called.
+(No "what's new" screen: the update banner already covers it.)
 No money, odds or prize changes; keep the `Math.random()` order.
 
 ---
