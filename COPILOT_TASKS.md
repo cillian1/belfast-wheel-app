@@ -213,6 +213,7 @@ Simple, low-risk changes only. Ship as one update.
 2. **Tidy up the history list** (Me tab): one clean list, newest first, grouped by day. Each row shows an icon + plain label (Spin, Win, Top-up, Withdrawal, Gift), the amount in green/red, and the time. Collapse a spin and its win into one row ("Spin €10 → won €25"). Hide test runs and dismissed old requests. **Display only**: don't change how anything is recorded, charged or paid.
 3. **Clear offline banner.** When the connection drops, show a fixed "No connection, reconnecting…" banner (Firebase `.info/connected` plus `navigator.onLine`). Block starting a paid spin while offline, with a clear message instead of hanging, and hide the banner when it's back. Don't touch the charge/payout code itself; just gate the Spin button before it is called.
 4. **Slightly bigger buttons.** Make small buttons a bit bigger (at least ~44px tap targets) and give icon-only buttons a short label, checked at 320/360/412px. Keep the layout otherwise the same.
+5. **Loading states** on anything that loads from the database (History, Stats/Leaderboard, Replays/Big wins, host lists): show "Loading…" while it waits, "Nothing here yet" when it's empty, and "Couldn't load, tap to retry" after ~10 s or on an error.
 (No "what's new" screen: the update banner already covers it. No history filters.)
 No money, odds or prize changes; keep the `Math.random()` order.
 
