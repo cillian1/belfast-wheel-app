@@ -2,10 +2,10 @@
 
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
-- **Task:** Task 5 (replays, PR #16, issue #12), then Tasks 6 → 7 → 8 (issues #17, #18, #19)
-- **Owner:** Copilot runs the whole queue from here (Cillian, 2026-10-21). Claude has stepped back.
-- **Status:** Task 5 implementation complete and self-reviewed; PR #16 reconciled with current `main`, local checks and focused tests passing, ready for Cillian's review and unmerged.
-- **Next:** Cillian verifies and merges PR #16; Copilot then starts the next open `copilot-task` issue in number order.
+- **Task:** Task 5 follow-up: persist replay-pruning cadence across restarts (Issue #12), alongside Tasks 6–8 in parallel (issues #17, #18, #19).
+- **Owner:** Copilot builds; Cillian verifies and merges. Claude has stepped back.
+- **Status:** Task 5 shipped as update 23 in PR #16. The persistence fix and restart/pruning regression test are in progress; Tasks 6–8 remain parallel work.
+- **Next:** Validate and open a ready-for-review follow-up PR; Cillian verifies and merges it, with auto-merge off until then.
 - **Last updated:** 2026-10-21 22:08 by Copilot
 
 **Rules for this section:**
@@ -65,6 +65,7 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 
 ## Done log (history only, newest first; nothing here is current)
 
+- 2026-10-21: Task 5 replays + Watch tabs + host watching (PR #16), merged as update 23.
 - 2026-10-21: Task 5 replay saving, pruning, player/host watching and legacy request fixes are ready for review in PR #16 as update 23 "Replay Night".
 - 2026-10-21: Task 4 Stage 4, performance (PR #14), merged as update 22 "Smoother Wheels". Task 4 is complete.
 - 2026-10-21: Task 4 Stage 4 performance pass (PR #14), with a size-keyed Pyramid cache, allocation reductions, and hidden-tab animation pausing.
