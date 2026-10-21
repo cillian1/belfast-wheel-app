@@ -206,6 +206,8 @@ Cillian wants Phelan to talk. Phelan heckles **out loud** at his existing cameos
 - Respect the Task 8 **mute button** (and add a "Phelan voice on/off" toggle saved with `pref`).
 - Pick lines with a separate non-game RNG, **not** `Math.random()`, so the game's random order is unchanged. No gameplay, odds or payout changes.
 
+Status: done in `src/game/phelan-voice.js` (PR #35 to `update-25`). Bundle/check and stubbed-speech checks cover the saved toggle, mute, 8 s limit, en-IE voice, pitch/rate, unsupported browsers, and stopping at the final verdict. Gameplay `Math.random()` call sites are unchanged; voice remains available in low-end mode. Not tried on a real phone.
+
 ---
 
 ## When you finish a task

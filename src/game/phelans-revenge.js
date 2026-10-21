@@ -55,7 +55,7 @@ async function phelanRevenge() {
   Music.setMode('revenge'); playSfx('revenge');
   ghost = { x: N * 1.2, y: N * .4, a: .95, side: 1 }; Music.sting(2); buzz([30, 60, 30, 60, 30]);
   await animate(900, t => { ghost.x = lerp(N * 1.2, N * .62, easeOut(t)); draw(); });
-  ghostSay = 'Not one in the green. My turn.';
+  ghostSay = 'Not one in the green. My turn.'; phelanSay(ghostSay);
   await animate(2400, t => { ghost.y = N * .4 - Math.abs(Math.sin(t * 20)) * N * .02; draw(); });
   ghostSay = '';
   setVerdict({ eyebrow: "Phelan's revenge", title: "Zena's house", body: '' });
@@ -84,7 +84,7 @@ async function phelanRevenge() {
   });
   zena.rot = mod(zena.rot, TAU); zena.spinning = false; zena.winner = tg.i; zena.winAt = performance.now(); ting(); buzz([40, 50, 80]);
   const r = { ...items[tg.i], phelan: true };
-  zena.say = pick(['Enjoy that, lads.', 'Revenge is sweet.', "That's for the room.", 'Zena says hi.']); draw();
+  zena.say = pick(['Enjoy that, lads.', 'Revenge is sweet.', "That's for the room.", 'Zena says hi.']); phelanSay(zena.say); draw();
   await wait(1500);
   return r;
 }

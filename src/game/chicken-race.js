@@ -79,7 +79,7 @@ async function chickenRace(steps, alive) {
       if (ch === decoy && el >= tripAt) {
         p = el < tripAt + STUN ? tripP : Math.min(1, tripP + (el - tripAt - STUN) / ch.T);
         if (!ch.tripped) {
-          ch.tripped = true; ch.flash = .8; ghostSay = 'Whoops'; playSfx('trip'); whoosh(); buzz([40, 30, 80]);
+          ch.tripped = true; ch.flash = .8; ghostSay = 'Whoops'; phelanSay(ghostSay); playSfx('trip'); whoosh(); buzz([40, 30, 80]);
           for (let k = 0; k < 14; k++) feathers.push({ x: ch.x, y: ch.y - N * .02, vx: (Math.random() - .5) * N * .5, vy: -Math.random() * N * .4, r: Math.random() * 3, life: 1, col: ch.special === 'W' ? '#f3c94a' : ch.special === 'B' ? '#9b5de5' : '#fbf7ee' });
         }
         if (el < tripAt + STUN) { ch.peck = .9; ch.dir = Math.sin(el * 14) > 0 ? 1 : -1; ch.flash = Math.max(0, (ch.flash || 0) - dt); }

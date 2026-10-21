@@ -264,7 +264,7 @@ footer{position:fixed;top:8px;left:10px;z-index:5;color:rgba(220,225,230,.55);fo
   <p class="caption" id="caption">Land on Go deeper and you fall through the wheels.</p>
 
   <button class="spin" id="spinBtn" type="button">Spin</button>
-  <div class="reset" id="resetRow"><button type="button" id="autoBtn">Auto spin</button><button type="button" id="resetBtn">Reset spin</button><span id="resetAsk" hidden>Are you sure? <button type="button" id="resetYes">Yes</button><button type="button" id="resetNo">No</button></span></div>
+  <div class="reset" id="resetRow"><button type="button" id="autoBtn">Auto spin</button><button type="button" id="phelanBtn" aria-pressed="true">Phelan voice on</button><button type="button" id="resetBtn">Reset spin</button><span id="resetAsk" hidden>Are you sure? <button type="button" id="resetYes">Yes</button><button type="button" id="resetNo">No</button></span></div>
 
   <section class="plate" id="verdict" aria-live="polite">
     <span class="eyebrow" id="vEyebrow">The wheel says</span>
@@ -1722,6 +1722,7 @@ async function spinLayerRun(k, dur, dir) {
       draw();
     });
     rot[k] = r0; draw();
+    if (ghostNear) phelanSay(phelanLine('near'));
   }
   ting(); buzz([30, 40, 60]);
   return t.i;
@@ -1733,6 +1734,7 @@ async function ghostPhelan(k, i, near) {
   setVerdict({ eyebrow: 'Something cold', title: 'Ghost Phelan', body: '', flash: true });
   Music.sting(2); buzz([20, 80, 20, 80, 20]);
   ghost = { x: N * 1.15, y: py + R * .15, a: 0, side: near || 1 };
+  ghostSay = phelanLine('cameo'); phelanSay(ghostSay);
   await animate(1100, p => { const e = easeOut(p); ghost.x = lerp(N * 1.15, px + R * .22 * ghost.side, e); ghost.y = py + R * .15 + Math.sin(p * 6) * R * .02; ghost.a = Math.min(1, p * 2); draw(); });
   let last = sliceAt(rot[k], n);
   await animate(near ? 900 : 500, p => {
@@ -1742,7 +1744,7 @@ async function ghostPhelan(k, i, near) {
   });
   if (near) { rot[k] = mod(r0 + push, TAU); ting(); buzz([60, 40, 120]); }
   await animate(1000, p => { ghost.x = px + R * .22 * ghost.side - R * .08 * ghost.side - p * N * .9; ghost.y -= R * .004; ghost.a = 1 - p; draw(); });
-  ghost = null; draw();
+  ghost = null; ghostSay = ''; draw();
   return dest;
 }
 function drawGhost() {
@@ -2075,6 +2077,7 @@ function countSlots() {
 // Owns verdict presentation and main-run orchestration.
 const spinBtn = $('#spinBtn'), plate = $('#verdict');
 function setVerdict({ eyebrow = 'The wheel says', title, body = '', steps = null, q = null, show = false, photo = false, flash = true }) {
+  if (/^Final answer/.test(eyebrow)) phelanStop();
   $('#vEyebrow').textContent = eyebrow; $('#vTitle').textContent = title;
   $('#vBody').textContent = body; $('#vBody').hidden = !body;
   const ol = $('#vSteps'); ol.innerHTML = '';
@@ -3258,7 +3261,7 @@ async function phelanRevenge() {
   Music.setMode('revenge'); playSfx('revenge');
   ghost = { x: N * 1.2, y: N * .4, a: .95, side: 1 }; Music.sting(2); buzz([30, 60, 30, 60, 30]);
   await animate(900, t => { ghost.x = lerp(N * 1.2, N * .62, easeOut(t)); draw(); });
-  ghostSay = 'Not one in the green. My turn.';
+  ghostSay = 'Not one in the green. My turn.'; phelanSay(ghostSay);
   await animate(2400, t => { ghost.y = N * .4 - Math.abs(Math.sin(t * 20)) * N * .02; draw(); });
   ghostSay = '';
   setVerdict({ eyebrow: "Phelan's revenge", title: "Zena's house", body: '' });
@@ -3287,7 +3290,7 @@ async function phelanRevenge() {
   });
   zena.rot = mod(zena.rot, TAU); zena.spinning = false; zena.winner = tg.i; zena.winAt = performance.now(); ting(); buzz([40, 50, 80]);
   const r = { ...items[tg.i], phelan: true };
-  zena.say = pick(['Enjoy that, lads.', 'Revenge is sweet.', "That's for the room.", 'Zena says hi.']); draw();
+  zena.say = pick(['Enjoy that, lads.', 'Revenge is sweet.', "That's for the room.", 'Zena says hi.']); phelanSay(zena.say); draw();
   await wait(1500);
   return r;
 }
@@ -3413,7 +3416,7 @@ async function godRoom(steps) {
   setVerdict({ eyebrow: 'The God slice', title: 'Phelan’s shop', body: '', steps: steps.slice() });
   await crossTo(() => { scene = 'god'; ghost = { x: -N * .2, y: N * .42, a: .95, side: 1 }; }, 900);
   await ghostTo(N * .3, N * .42, 1400);
-  god.say = 'Welcome to the shop, lads.'; draw(); await wait(1800);
+  god.say = 'Welcome to the shop, lads.'; phelanSay(god.say); draw(); await wait(1800);
   god.say = "Let's see what's in the pile."; draw(); await wait(1400); god.say = '';
   // he picks a bit of scrap and it bursts into cards
   const f = pick(floor), deck = SCRAP[f.it];
@@ -3477,7 +3480,7 @@ async function godRoom(steps) {
   if (lost) {
     const cons = 0;
     await ghostTo(N * .62, N * .4, 700);
-    god.say = pick(MOCK); draw(); await wait(2600); god.say = `Here. €${$m(cons)} for your trouble.`; draw(); await wait(1800);
+    god.say = pick(MOCK); phelanSay(god.say); draw(); await wait(2600); god.say = `Here. €${$m(cons)} for your trouble.`; draw(); await wait(1800);
     setVerdict({ eyebrow: 'Final answer · €' + $m(cons), title: 'Phelan keeps the rest', body: '', steps: steps.slice(), q: quote() });
     speak(['Final answer', ...spokenMoves(steps), `Phelan gives you ${$m(cons)} euro for your trouble`, roomAct('god')]);
     return;
@@ -3748,6 +3751,7 @@ async function pyramidRun(steps) {
   // Ghost Phelan swoops in and helps himself to one of them
   const pickI = Math.floor(Math.random() * PYR_PRIZES.length), p = pyr.plaques[pickI];
   ghost = { x: -N * .2, y: N * .2, a: 1, side: 1 }; Music.sting(2); buzz([20, 80, 20, 80, 20]);
+  phelanSay(p.v === 2500 ? "Phelan's Tomb. That's mine now." : phelanLine('cameo'));
   setVerdict({ eyebrow: 'Something cold', title: 'Ghost Phelan', body: '', flash: true });
   const g0 = { x: ghost.x, y: ghost.y };
   await animate(1500, t => { const e = easeInOut(t); ghost.x = lerp(g0.x, p.x, e); ghost.y = lerp(g0.y, p.y - R * .2, e) - Math.sin(t * Math.PI) * N * .1; draw(); });
@@ -3807,7 +3811,7 @@ async function monsterRun(steps, w = 0, b = 3) {
   ghost = { x: N * 1.2, y: N * .42, a: .95, side: 1 }; Music.sting(2); buzz([30, 60, 30, 60, 30]);
   await animate(900, t => { ghost.x = lerp(N * 1.2, N * .62, easeOut(t)); draw(); });
   ghostSay = 'Hahah not so easy!';
-  try { if (window.speechSynthesis) sayNow(['Hahah, not so easy!']); } catch (e) {}
+  phelanSay(ghostSay);
   await animate(2600, t => { ghost.y = N * .42 + Math.abs(Math.sin(t * 22)) * -N * .02; ghost.x = N * .62 + Math.sin(t * 14) * N * .008; draw(); });
   ghostSay = '';
   await animate(800, t => { ghost.x = lerp(N * .62, N * 1.2, easeInOut(t)); ghost.a = .95 * (1 - t); draw(); });
@@ -4621,7 +4625,7 @@ async function chickenRace(steps, alive) {
       if (ch === decoy && el >= tripAt) {
         p = el < tripAt + STUN ? tripP : Math.min(1, tripP + (el - tripAt - STUN) / ch.T);
         if (!ch.tripped) {
-          ch.tripped = true; ch.flash = .8; ghostSay = 'Whoops'; playSfx('trip'); whoosh(); buzz([40, 30, 80]);
+          ch.tripped = true; ch.flash = .8; ghostSay = 'Whoops'; phelanSay(ghostSay); playSfx('trip'); whoosh(); buzz([40, 30, 80]);
           for (let k = 0; k < 14; k++) feathers.push({ x: ch.x, y: ch.y - N * .02, vx: (Math.random() - .5) * N * .5, vy: -Math.random() * N * .4, r: Math.random() * 3, life: 1, col: ch.special === 'W' ? '#f3c94a' : ch.special === 'B' ? '#9b5de5' : '#fbf7ee' });
         }
         if (el < tripAt + STUN) { ch.peck = .9; ch.dir = Math.sin(el * 14) > 0 ? 1 : -1; ch.flash = Math.max(0, (ch.flash || 0) - dt); }
@@ -4815,7 +4819,7 @@ function paintMuteButton() {
 }
 paintMuteButton();
 window.addEventListener('wol-audio-preference-ready', paintMuteButton);
-muteBtn.addEventListener('click', () => { audio(); Music.toggleMute(); paintMuteButton(); });
+muteBtn.addEventListener('click', () => { audio(); if (Music.toggleMute()) phelanStop(); paintMuteButton(); });
 
 const wildTiles = [...document.querySelectorAll('.wt')];
 function paintTile(k, kind) {
@@ -4904,6 +4908,61 @@ function speak(lines) {
   } catch (e) {}
 }
 sayBtn.addEventListener('click', () => { if (!sayLast) return; sayBtn.classList.remove('pulse'); sayBtn.textContent = 'Read it out'; try { sayNow(sayLast); } catch (e) {} });
+// ---------- Phelan heckles out loud ----------
+// Owns Phelan's spoken lines (browser speech only). Lines live in PHELAN_LINES so recordings could replace them later.
+const PHELAN_LINES = {
+  cameo: ['Hahah not so easy!', 'Whoops.', 'Welcome to the shop, lads.', 'Not one in the green. My turn.', 'Enjoy that, lads.', 'Revenge is sweet.', "That's for the room.", 'Zena says hi.', "Don't tell Mark.", 'Better than a toaster.', 'Boo. Did I scare you?', 'Mine now, thanks.', 'Ah here, who left that lying about?', 'I was only passing.'],
+  near: ['So close. Not that close.', 'Ah, the edge of it. Cruel.', 'One slice. One. Sure look at you.', 'You could nearly smell it.', 'The wheel says no.', 'Mark would have got that.', 'Another inch and I would have cried.', 'Do you want a tissue or a hug?', 'Almost. Almost is not money.', 'Next time, maybe. Maybe not.', "That's a lovely wee near miss.", 'Phelan saw that.', 'The pointer got cold feet.', 'Even the wheel feels sorry for you.'],
+};
+// a tiny seeded generator of its own, so picking a heckle never touches Math.random() and the game's random order stays put
+let phelanSeed = (Date.now() ^ 0x9e3779b9) >>> 0, phelanLastAt = -1e9, phelanOn = null, phelanDone = [], phelanSpeaking = false;
+function phelanRand() {
+  phelanSeed = (phelanSeed + 0x6d2b79f5) >>> 0; let t = phelanSeed;
+  t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+  return ((t ^ t >>> 14) >>> 0) / 4294967296;
+}
+function phelanLine(kind) {
+  const all = PHELAN_LINES[kind], fresh = all.filter(l => !phelanDone.includes(l)), from = fresh.length ? fresh : all;
+  const l = from[Math.floor(phelanRand() * from.length)];
+  phelanDone = phelanDone.concat(l).slice(-Math.floor(all.length / 2));
+  return l;
+}
+function phelanVoiceOn() {
+  if (phelanOn === null) { try { if (!window.wolPref) return true; phelanOn = window.wolPref.get('wol-phelan-voice') !== 'off'; } catch (e) { return true; } }
+  return phelanOn;
+}
+function phelanStop() {
+  if (!phelanSpeaking) return;
+  phelanSpeaking = false;
+  try { window.speechSynthesis.cancel(); } catch (e) {}
+  Music.duck(1);
+}
+// say a line out loud: at most one every 8 seconds, never over the verdict or anything already being read, and never when muted
+function phelanSay(text) {
+  try {
+    const sy = window.speechSynthesis, now = performance.now();
+    if (!sy || !text || !phelanVoiceOn() || Music.muted || now - phelanLastAt < 8000) return false;
+    if (sy.speaking || sy.pending || $('.stage').classList.contains('done') || /^Final answer/.test($('#vEyebrow').textContent)) return false;
+    if (!sayVoice) pickVoice();
+    const u = new SpeechSynthesisUtterance(text);
+    u.pitch = 2; u.rate = 1.35; u.volume = 1; u.lang = sayVoice ? sayVoice.lang : 'en-GB';
+    if (sayVoice) u.voice = sayVoice;
+    u.onstart = () => Music.duck(.25);
+    u.onend = u.onerror = () => { phelanSpeaking = false; Music.duck(1); };
+    phelanLastAt = now; phelanSpeaking = true; sy.speak(u);
+    return true;
+  } catch (e) { phelanSpeaking = false; return false; }
+}
+const phelanBtn = $('#phelanBtn');
+function paintPhelanButton() { const on = phelanVoiceOn(); phelanBtn.textContent = on ? 'Phelan voice on' : 'Phelan voice off'; phelanBtn.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+paintPhelanButton();
+window.addEventListener('wol-audio-preference-ready', () => { phelanOn = null; paintPhelanButton(); });
+phelanBtn.addEventListener('click', () => {
+  phelanOn = !phelanVoiceOn();
+  try { window.wolPref && window.wolPref.set('wol-phelan-voice', phelanOn ? 'on' : 'off'); } catch (e) {}
+  if (!phelanOn) phelanStop();
+  paintPhelanButton();
+});
 // ---------- boot ----------
 // Owns initial canvas sizing, input handlers, and game startup.
 fitStage();

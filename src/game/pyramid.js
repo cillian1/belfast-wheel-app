@@ -237,6 +237,7 @@ async function pyramidRun(steps) {
   // Ghost Phelan swoops in and helps himself to one of them
   const pickI = Math.floor(Math.random() * PYR_PRIZES.length), p = pyr.plaques[pickI];
   ghost = { x: -N * .2, y: N * .2, a: 1, side: 1 }; Music.sting(2); buzz([20, 80, 20, 80, 20]);
+  phelanSay(p.v === 2500 ? "Phelan's Tomb. That's mine now." : phelanLine('cameo'));
   setVerdict({ eyebrow: 'Something cold', title: 'Ghost Phelan', body: '', flash: true });
   const g0 = { x: ghost.x, y: ghost.y };
   await animate(1500, t => { const e = easeInOut(t); ghost.x = lerp(g0.x, p.x, e); ghost.y = lerp(g0.y, p.y - R * .2, e) - Math.sin(t * Math.PI) * N * .1; draw(); });
@@ -296,7 +297,7 @@ async function monsterRun(steps, w = 0, b = 3) {
   ghost = { x: N * 1.2, y: N * .42, a: .95, side: 1 }; Music.sting(2); buzz([30, 60, 30, 60, 30]);
   await animate(900, t => { ghost.x = lerp(N * 1.2, N * .62, easeOut(t)); draw(); });
   ghostSay = 'Hahah not so easy!';
-  try { if (window.speechSynthesis) sayNow(['Hahah, not so easy!']); } catch (e) {}
+  phelanSay(ghostSay);
   await animate(2600, t => { ghost.y = N * .42 + Math.abs(Math.sin(t * 22)) * -N * .02; ghost.x = N * .62 + Math.sin(t * 14) * N * .008; draw(); });
   ghostSay = '';
   await animate(800, t => { ghost.x = lerp(N * .62, N * 1.2, easeInOut(t)); ghost.a = .95 * (1 - t); draw(); });

@@ -2,11 +2,11 @@
 
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
-- **Task:** Combined update 24 release, “Room to Grow” (PR #33).
-- **Owner:** Copilot does ALL the work (Cillian, 2026-10-21): building, conflicts, version bumps, release notes, HANDOFF/COPILOT_TASKS updates, and the release PR. Claude only presses merge (GitHub won't let Copilot merge its own PRs). Money/odds/prize changes still go to Cillian.
-- **Status:** Ready for review in PR #33 to `main`; Tasks 6–8 and replay reliability ship together as version 24 / Build 61. Bundle, repository, replay regression and whitespace checks pass; payout, odds, prize and APK values are unchanged.
-- **Next:** Claude reviews; Cillian merges. Do not merge the release PR.
-- **Last updated:** 2026-10-21 23:05 by Copilot
+- **Task:** Task 10, Phelan voice lines (issue #25), part of update 25 with Task 9.
+- **Owner:** Copilot.
+- **Status:** Ready for review in PR #35 against `update-25` (no version bump). Phelan heckles at cameos and near misses via `src/game/phelan-voice.js`; respects Mute and the saved voice toggle, stops for results, and stays available in low-end mode. Bundle/check and stubbed-speech checks pass; gameplay `Math.random()` call sites are unchanged. Real phone speech is not tested.
+- **Next:** Claude reviews; Cillian merges. Task 9 ships in the same release.
+- **Last updated:** 2026-10-21 by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
@@ -65,6 +65,7 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 
 ## Done log (history only, newest first; nothing here is current)
 
+- 2026-10-21: Task 10 Phelan voice lines (PR #35) ready for review in `update-25`; speech respects mute and preference, is isolated from gameplay RNG, and stops at results.
 - 2026-10-21: Combined Tasks 6–8 and replay reliability as update 24 “Room to Grow” (Build 61); ready for review in PR #33 to `main`.
 - 2026-10-21: Task 6 new ghost merged into `update-24` in PR #21; checked all 10 scenes at 360/412px.
 - 2026-10-21: Task 5 replay playback reliability and restart-safe pruning follow-up (PR #24) merged into `update-24`; version 23 / Build 60 unchanged.
