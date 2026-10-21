@@ -5,8 +5,8 @@
 - **Task:** Task 6: the new ghost (issue #17, PR #21); Tasks 7 and 8 are merged into `update-24`.
 - **Owner:** Copilot does ALL the work (Cillian, 2026-10-21): building, conflicts, version bumps, release notes, HANDOFF/COPILOT_TASKS updates, and the release PR. Claude only presses merge (GitHub won't let Copilot merge its own PRs). Money/odds/prize changes still go to Cillian.
 - **Status:** Task 6 is validated and ready in PR #21; PRs #22, #24 and #26 are merged into `update-24` at `70dbd93`. The bundle/checks, both replay regression tests and all 10 scene captures pass; version 23/build 60 remain unchanged.
-- **Next:** Commit and push Task 6, mark PR #21 ready, and post `DONE: Task 6`. Cillian merges it into `update-24`; Copilot prepares the single release PR after staging is complete.
-- **Last updated:** 2026-10-21 22:59 by Copilot
+- **Next:** Cillian reviews and merges PR #21 into `update-24`; Copilot prepares the single release PR after staging is complete.
+- **Last updated:** 2026-10-21 23:01 by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
