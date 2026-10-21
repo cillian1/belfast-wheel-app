@@ -183,6 +183,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   function showTrophyToast() {
     if (!trophyToasts.length) { trophyToastTimer = 0; return; }
     const t = trophyToasts.shift();
+    playSfx('trophy');
     toast(`${t.icon} ${t.name} trophy earned!`, true);
     trophyToastTimer = setTimeout(showTrophyToast, 2700);
   }

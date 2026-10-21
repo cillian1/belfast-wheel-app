@@ -52,6 +52,7 @@ function drawZena(now) {
 }
 async function phelanRevenge() {
   // he turns up in the pinball pit, laughing at the empty green chute
+  Music.setMode('revenge'); playSfx('revenge');
   ghost = { x: N * 1.2, y: N * .4, a: .95, side: 1 }; Music.sting(2); buzz([30, 60, 30, 60, 30]);
   await animate(900, t => { ghost.x = lerp(N * 1.2, N * .62, easeOut(t)); draw(); });
   ghostSay = 'Not one in the green. My turn.';

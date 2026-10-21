@@ -2,11 +2,11 @@
 
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
-- **Task:** Task 5 replay reliability follow-up (PR #24), alongside the remaining update-24 tasks 6 and 8 (PRs #21 and #22).
+- **Task:** Task 5 replay reliability follow-up (PR #24) targeting `update-24`, alongside the remaining Task 6 work (PR #21).
 - **Owner:** Copilot implements and validates; Cillian verifies and merges. Do not merge this PR from this session.
-- **Status:** PR #24 targets `update-24`; the latest update-24 merge, including the already-merged PR #20 work, is being integrated. Version 23 remains unchanged. PRs #21 and #22 remain separate and open.
-- **Next:** Resolve the handoff conflict, rebuild and rerun replay/check validation, then report PR #24 ready for Cillian; do not merge.
-- **Last updated:** 2026-10-21 22:43 by Copilot
+- **Status:** The replay branch now includes `update-24` tip `ed18b54915a4cc9087dcd6b44b8624c0fb1869b9`, including merged PRs #20 and #22; replay fixes and tests are preserved. Bundle/check, playback/pruning regressions, and whitespace validation pass. Task 6 PR #21 remains open. Version 23 / Build 60 are unchanged.
+- **Next:** Commit the resolved update-24 merge, push PR #24, and confirm its base/head are ready for Cillian; do not merge.
+- **Last updated:** 2026-10-21 22:46 by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
@@ -67,6 +67,7 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 
 - 2026-10-21: Task 5 replay playback reliability and restart-safe pruning follow-up ready for review in PR #24.
 - 2026-10-21: Task 7 room glow-ups (PR #20) merged into `update-24`; visual-only wheel, tank and Pyramid polish, with version 23/build 60 unchanged.
+- 2026-10-21: Task 8 added synthesized room themes, milestone effects and a saved master mute (PR #22) for the combined update 24.
 - 2026-10-21: Task 5 replays + Watch tabs + host watching (PR #16), merged as update 23.
 - 2026-10-21: Task 5 replay saving, pruning, player/host watching and legacy request fixes are ready for review in PR #16 as update 23 "Replay Night".
 - 2026-10-21: Task 4 Stage 4, performance (PR #14), merged as update 22 "Smoother Wheels". Task 4 is complete.

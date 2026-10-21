@@ -151,7 +151,7 @@ function flipSound() {
   if (!AC) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
   o.type = 'triangle'; o.frequency.setValueAtTime(180, t); o.frequency.exponentialRampToValueAtTime(70, t + .08);
   g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.12, t + .005); g.gain.exponentialRampToValueAtTime(.0001, t + .1);
-  o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + .11);
+  o.connect(g); g.connect(effectsOutput()); o.start(t); o.stop(t + .11);
 }
 function pinStep(P, h) {
   const rb = P.rb, G = N * 1.5, play = P.balls.filter(b => b.state === 'play');
@@ -511,7 +511,7 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
   if (!faces.farm) faces.farm = buildFarm();
   if (!snap || snap.width !== N) snap = mk();
   { const g = snap.getContext('2d'); g.clearRect(0, 0, N, N); dots.forEach(p => p.hide = true); draw(); g.drawImage(cv, 0, 0); dots.forEach(p => p.hide = false); }
-  d6 = []; scene = 'farm'; Music.setMode('farm'); camX = 0; chickens = []; arrows = []; fires = []; feathers = []; markItems = []; formT = []; showMark = 0; chainNote = ''; raceLine = 0; snapA = 1; markSpinning = false; markWin = null;
+  d6 = []; scene = 'farm'; Music.setMode('farm'); playSfx('farm'); camX = 0; chickens = []; arrows = []; fires = []; feathers = []; markItems = []; formT = []; showMark = 0; chainNote = ''; raceLine = 0; snapA = 1; markSpinning = false; markWin = null;
   dots.forEach((p, i) => {
     p.sx = p.x; p.sy = p.y; p.delay = .1 + (i / Math.max(1, dots.length)) * .5;
     chickens.push({ x: N * (.08 + Math.random() * .84), y: N * (.64 + Math.random() * .28), dir: Math.random() < .5 ? -1 : 1, ph: 0, peck: 0, alive: true, pop: 0 });
