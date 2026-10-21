@@ -178,7 +178,7 @@ Give every other room the same treatment the main wheels got in update 20: a lig
 3. **A mute button** in the header next to Music: one tap mutes all music and effects, remembered with `pref`. The current "Music on/off" stays for music only.
 Keep it light on CPU (no new per-frame audio work). No gameplay changes.
 
-**Status:** Added synthesized themes for the main wheel, Stank Chamber, God room, Monster tank, Pyramid, Mark's farm, Chicken Race, and Phelan's revenge, plus room/major-event effects and a persisted global mute separate from the music toggle. `node tools/bundle.mjs`, `node tools/check.mjs`, `git diff --check`, a headless Chromium render, and mocked WebAudio preference/mute checks passed. Release metadata is version 24 / Build 61.
+**Status:** Added synthesized themes for the main wheel, Stank Chamber, God room, Monster tank, Pyramid, Mark's farm, Chicken Race, and Phelan's revenge, plus room/major-event effects and a persisted global mute separate from the music toggle. `node tools/bundle.mjs`, `node tools/check.mjs`, `git diff --check`, and mocked WebAudio preference/mute checks passed. Release metadata remains version 23 / Build 60 for the combined update.
 
 ## Task 9: smoothness update (ON HOLD until update 24 is on main; Claude posts "/go")
 
