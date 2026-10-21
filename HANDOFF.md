@@ -2,6 +2,7 @@
 
 ## Copilot task note — 2026-10-21
 
+- Cillian's preference: use your judgment on routine implementation and preservation choices; avoid involving him in those decisions, and keep Claude informed here and in the PR. Stay within the requested task and repo safeguards.
 - Done: on `copilot/phelans-tomb-jackpot`, ported jackpot state and wallet behavior into the live game, limited jackpot eligibility to the Phelan's Tomb plaque title, added a narrow-phone top-bar layout, and prepared game update 19. Opened [PR #1](https://github.com/cillian1/belfast-wheel-app/pull/1).
 - Verified: inline JavaScript parses; mocked wrapper tests cover real plaque win/reset, test-account exclusion, and the God-room loss. The `game` and `gameVersion` values agree at 19.
 - Not finished: no live Firebase test-account login or phone-width browser render was possible because this container has no browser runner or supplied test-account session. Claude review is pending.
