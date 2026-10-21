@@ -1,9 +1,9 @@
 {
   "game": 23,
   "apk": 3,
-  "gameBuild": 61,
-  "notes": "New music and sounds for every room, with a global mute",
+  "gameBuild": 60,
+  "notes": "Save every run and watch games live",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk",
-  "name": "Soundtrack and Sound Pack"
+  "name": "Replay Night"
 }

@@ -287,12 +287,12 @@ footer{position:fixed;top:8px;left:10px;z-index:5;color:rgba(220,225,230,.55);fo
   <input class="vh" type="file" id="lib" accept="image/*">
 
 
-  <footer>Build 61 · app 23<br><small style="font-size:8.5px;letter-spacing:.04em">Soundtrack and Sound Pack</small></footer>
+  <footer>Build 60 · app 23<br><small style="font-size:8.5px;letter-spacing:.04em">Replay Night</small></footer>
 </div>
 
 <script>
 // Owns shared game constants, geometry, and utility functions.
-const BUILD = 61;
+const BUILD = 60;
 const $ = s => document.querySelector(s);
 const TAU = Math.PI * 2, BASE = -Math.PI / 2;
 const LABEL_FONT = '"IBM Plex Sans Condensed","Arial Narrow",sans-serif';
@@ -5027,6 +5027,8 @@ if (document.fonts && document.fonts.load) {
 .wboard li>div{min-width:0;overflow-wrap:anywhere}
 .wboard li>b{flex:none}
 .wyou{margin-left:5px;color:#f5d27a;font-size:11px;white-space:nowrap}
+.wplayers{display:flex;gap:6px;overflow-x:auto;padding:2px 0;max-width:100%}
+.wplayers .wbtn{white-space:nowrap}
 .wlist{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
 .wlist li{display:flex;justify-content:space-between;gap:10px;align-items:center;border-bottom:1px solid #22272e;padding:6px 0;font-size:14px}
 .wlist li span{color:var(--mute);font-size:12px}
@@ -5323,7 +5325,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   }
   async function meTab(body, me) {
     const tx = await db.get('tx/' + W.user, '?orderBy="$key"&limitToLast=40') || {};
-    const reqs = Object.entries(await db.get('reqs').catch(() => null) || {}).filter(([, r]) => r.user === W.user && r.status === 'pending');
+    const reqs = Object.entries(await db.get('reqs').catch(() => null) || {}).filter(([, r]) => r.user === W.user && r.kind === 'withdraw' && r.status === 'pending');
     const net = (me.won || 0) - (me.staked || 0);
     const rows = Object.values(tx).sort((a, b) => b.at - a.at);
     const name = { spin: 'Spin', win: 'Win', topup: 'Top-up', withdraw: 'Withdrawal', refund: 'Refund', adjust: 'Adjustment', payout: 'Paid out' };
@@ -5653,7 +5655,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   // ---------- big wins are saved as their state frames, so anyone can rewatch them later ----------
   // Owns highlight recording, compression, and live-feed publishing.
   // hlm/{id} is the small card for the list, hld/{id} the frames (gzipped where the phone can)
-  let rec = null, wasBusy = false, feedRoom = '';
+  let rec = null, wasBusy = false, feedRoom = '', pruneUser = '', savesSincePrune = 49;
   async function pack(text) {
     try {
       if (typeof CompressionStream === 'undefined') return { z: 0, s: text };
@@ -5672,7 +5674,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   // runs on every phone a few times a second: records the run, spots the big moments for the live feed
   setInterval(() => {
     const playing = typeof busy !== 'undefined' && busy;
-    if (playing && !wasBusy) { rec = { t0: now(), last: null, frames: [], room: '', win: null, stake: W.run && W.run.live ? W.run.stake : W.stake }; feedRoom = ''; }
+    if (playing && !wasBusy) { rec = { t0: now(), last: null, frames: [], room: '', win: null, stake: W.run && W.run.live ? W.run.stake : W.stake, user: W.user, name: W.me && W.me.name, test: isTest() || W.user === TEST_KEY }; feedRoom = ''; }
     wasBusy = playing;
     if (!rec) return;
     try {
@@ -5689,14 +5691,37 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     } catch (e) {}
     if (!playing) { // the run is over
       const r = rec; rec = null;
-      if (r.win && r.room && W.user && !isTest() && parseFloat(r.win.amt.slice(1)) >= Math.max(1, (r.stake || 10) / 10)) saveHighlight(r); // big wins only: €1+ and 10x the bet
+      if (r.user && !r.test) saveReplay(r).catch(e => { console.error('Replay save failed', e); toast('Could not save this replay.'); });
+      if (r.win && r.room && r.user && !r.test && parseFloat(r.win.amt.slice(1)) >= Math.max(1, (r.stake || 10) / 10)) saveHighlight(r); // big wins only: €1+ and 10x the bet
     }
   }, 250);
+  async function pruneReplays(user) {
+    if (pruneUser !== user) { pruneUser = user; savesSincePrune = 49; }
+    if (++savesSincePrune < 50) return;
+    savesSincePrune = 0;
+    const keys = Object.keys(await db.get('rpm/' + user, '?shallow=true') || {}).sort();
+    if (keys.length <= 3000) return;
+    const oldest = keys.slice(0, keys.length - 3000);
+    for (let i = 0; i < oldest.length; i += 50) {
+      const batch = oldest.slice(i, i + 50);
+      await Promise.all(batch.flatMap(id => [db.put('rpm/' + user + '/' + id, null), db.put('rpd/' + id, null)]));
+    }
+  }
+  async function saveReplay(r) {
+    const data = await pack(JSON.stringify(r.frames));
+    const id = await db.push('rpm/' + r.user, {
+      at: r.t0, stake: r.stake, amt: r.win ? r.win.amt : '', title: r.win ? r.win.title.slice(0, 80) : '',
+      room: r.room || 'Main wheel', len: r.frames.length ? r.frames[r.frames.length - 1][0] : 0,
+    });
+    await db.put('rpd/' + id, data);
+    try { await pruneReplays(r.user); }
+    catch (e) { console.error('Replay pruning failed', e); toast('Could not prune old replays.'); }
+  }
   async function saveHighlight(r) {
     try {
-      feed(`${W.me.name} won ${r.win.amt} in ${r.room} 💰`);
+      if (W.user === r.user && W.me) feed(`${r.name || W.me.name} won ${r.win.amt} in ${r.room} 💰`);
       const data = await pack(JSON.stringify(r.frames));
-      const id = await db.push('hlm', { by: W.user, name: W.me.name, at: now(), amt: r.win.amt, title: r.win.title.slice(0, 80), room: r.room, len: r.frames.length ? r.frames[r.frames.length - 1][0] : 0 });
+      const id = await db.push('hlm', { by: r.user, name: r.name || '', at: now(), amt: r.win.amt, title: r.win.title.slice(0, 80), room: r.room, len: r.frames.length ? r.frames[r.frames.length - 1][0] : 0 });
       await db.put('hld/' + id, data);
     } catch (e) {}
   }
@@ -5754,22 +5779,45 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   liveBtn.id = 'wLive';
   document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#wLive')) watchList(); });
   async function watchList() {
-    const p = openSheet(`<h3>Watch live</h3><div id="wBody"><p>Looking for players…</p></div><button class="wlink" type="button" id="wClose">Close</button>`);
-    $w('wClose').onclick = closeSheet;
-    await heartbeat();
-    const body = $w('wBody'); if (!body) return;
-    body.innerHTML = others.length ? others.sort((a, b) => (b.play ? 1 : 0) - (a.play ? 1 : 0)).map(o => `<div class="wpl"><div><b>${esc(o.name)}</b><small class="${o.play ? 'on' : ''}">${o.play ? '● Spinning now' : 'Online'}</small></div><button class="wbtn gold small" type="button" data-k="${esc(o.key)}">Watch</button></div>`).join('')
-      : '<p>Nobody else has the wheel open right now. Check back in a minute.</p>';
-    body.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { const o = others.find(x => x.key === b.dataset.k); closeSheet(); watch(o.key, o.name); });
-    // big wins anyone can rewatch
-    try {
-      const hl = Object.entries(await db.get('hlm', '?orderBy="$key"&limitToLast=15') || {}).reverse();
-      if (hl.length && $w('wBody')) {
-        const box = el('div'); box.innerHTML = '<h4>Big wins to rewatch</h4>' + hl.map(([id, h]) => `<div class="wpl"><div><b>${esc(h.name)}</b> <span class="amt">${esc(h.amt)}</span><small>${esc(h.room)} · ${when(h.at)}</small></div><button class="wbtn small" type="button" data-h="${esc(id)}">Replay</button></div>`).join('');
-        $w('wBody').appendChild(box);
-        box.querySelectorAll('[data-h]').forEach(b => b.onclick = () => replay(b.dataset.h, (hl.find(x => x[0] === b.dataset.h) || [])[1]));
-      }
-    } catch (e) {}
+    let tab = 'live', scope = 'mine', player = 'all', limit = 20;
+    const render = async () => {
+      const p = openSheet(`<h3>Watch</h3>
+        <div class="wtabs">${[['live', 'Live'], ['wins', 'Big wins'], ['replays', 'Replays']].map(([key, label]) => `<button data-tab="${key}" type="button">${label}</button>`).join('')}</div>
+        <div id="wBody"><p>Loading…</p></div><button class="wlink" type="button" id="wClose">Close</button>`);
+      p.querySelectorAll('[data-tab]').forEach(b => { b.classList.toggle('on', b.dataset.tab === tab); b.onclick = () => { tab = b.dataset.tab; render(); }; });
+      $w('wClose').onclick = closeSheet;
+      const body = $w('wBody');
+      try {
+        if (tab === 'live') {
+          await heartbeat();
+          body.innerHTML = others.length ? others.slice().sort((a, b) => (b.play ? 1 : 0) - (a.play ? 1 : 0)).map(o => `<div class="wpl"><div><b>${esc(o.name)}</b><small class="${o.play ? 'on' : ''}">${o.play ? '● Spinning now' : 'Online'}</small></div><button class="wbtn gold small" type="button" data-watch="${esc(o.key)}">Watch</button></div>`).join('')
+            : '<p>Nobody else has the wheel open right now. Check back in a minute.</p>';
+          body.querySelectorAll('[data-watch]').forEach(b => b.onclick = () => { const o = others.find(x => x.key === b.dataset.watch); if (o) { closeSheet(); watch(o.key, o.name); } });
+        } else if (tab === 'wins') {
+          const hl = Object.entries(await db.get('hlm', '?orderBy="$key"&limitToLast=20') || {}).sort((a, b) => b[1].at - a[1].at);
+          body.innerHTML = hl.map(([id, h]) => `<div class="wpl"><div><b>${esc(h.name)}</b> <span class="amt">${esc(h.amt)}</span><small>${esc(h.room)} · ${when(h.at)}</small></div><button class="wbtn small" type="button" data-h="${esc(id)}">Replay</button></div>`).join('') || '<p>No big wins to rewatch yet.</p>';
+          body.querySelectorAll('[data-h]').forEach(b => b.onclick = () => { const item = hl.find(x => x[0] === b.dataset.h); if (item) replay(item[0], item[1], 'hld'); });
+        } else {
+          const users = Object.entries(await db.get('users') || {}).filter(([key, user]) => key !== TEST_KEY && !user.test);
+          const owners = scope === 'mine' ? users.filter(([key]) => key === W.user) : player === 'all' ? users : users.filter(([key]) => key === player);
+          body.innerHTML = `<div class="wtabs"><button data-scope="mine" type="button">Mine</button><button data-scope="everyone" type="button">Everyone</button></div>
+            ${scope === 'everyone' ? `<div class="wplayers"><button class="wbtn small${player === 'all' ? ' sel' : ''}" data-player="all" type="button">All</button>${users.map(([key, user]) => `<button class="wbtn small${player === key ? ' sel' : ''}" data-player="${esc(key)}" type="button">${esc(user.name)}</button>`).join('')}</div>` : ''}
+            <div id="wReplayRows"><p>Loading replays…</p></div>`;
+          body.querySelectorAll('[data-scope]').forEach(b => { b.classList.toggle('on', b.dataset.scope === scope); b.onclick = () => { scope = b.dataset.scope; player = 'all'; limit = 20; render(); }; });
+          body.querySelectorAll('[data-player]').forEach(b => b.onclick = () => { player = b.dataset.player; limit = 20; render(); });
+          const cards = (await Promise.all(owners.map(async ([key, user]) => Object.entries(await db.get('rpm/' + key, `?orderBy="$key"&limitToLast=${limit}`) || {}).map(([id, card]) => ({ id, by: key, name: user.name, ...card })))))
+            .flat().sort((a, b) => b.at - a.at || b.id.localeCompare(a.id)).slice(0, limit);
+          const rows = $w('wReplayRows');
+          rows.innerHTML = cards.map(card => `<div class="wpl"><div><b>${esc(card.name)}</b> <span class="amt">${card.amt ? esc(card.amt) : 'no win'}</span><small>${esc(card.room || 'Main wheel')} · ${when(card.at)}</small></div><button class="wbtn small" type="button" data-replay="${esc(card.id)}">Replay</button></div>`).join('') || '<p>No replays yet.</p>';
+          rows.querySelectorAll('[data-replay]').forEach(b => b.onclick = () => { const card = cards.find(x => x.id === b.dataset.replay); if (card) replay(card.id, card, 'rpd'); });
+          if (cards.length === limit) {
+            const more = el('button', 'wbtn'); more.type = 'button'; more.textContent = 'Show more';
+            more.onclick = () => { limit += 20; render(); }; rows.appendChild(more);
+          }
+        }
+      } catch (e) { body.innerHTML = '<p class="err">Could not load watch data. Try again.</p>'; }
+    };
+    await render();
   }
   const view = el('div', 'wwatch'); view.hidden = true; document.body.appendChild(view);
   let viewing = null;
@@ -5864,7 +5912,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   async function watch(key, name) {
     if (typeof busy !== 'undefined' && busy) return toast('Finish your spin first');
     closeSheet();
-    viewing = key; const mine = viewing;
+    viewing = 'live:' + key; const mine = viewing;
     const S = mirrorScreen(name, 'Connecting…', true);
     S.say(`Connecting to ${name}'s phone…`);
     $w('wwSend').onclick = async () => {
@@ -5893,13 +5941,14 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
       const gap = 80 - (now() - t0); if (gap > 0) await pause(gap);
     }
   }
-  async function replay(id, card) {
+  async function replay(id, card, path = 'hld') {
     if (typeof busy !== 'undefined' && busy) return toast('Finish your spin first');
     closeSheet();
-    viewing = 'hl:' + id; const mine = viewing;
-    const S = mirrorScreen(`${card.name}: ${card.amt}`, `${card.room} · ${when(card.at)}`, false);
+    viewing = (path === 'hld' ? 'hl:' : 'rp:') + id; const mine = viewing;
+    card = card || {};
+    const S = mirrorScreen(`${card.name || 'Replay'}${card.amt ? ': ' + card.amt : ''}`, `${card.room || 'Replay'}${card.at ? ' · ' + when(card.at) : ''}`, false);
     let frames;
-    try { frames = JSON.parse(await unpack(await db.get('hld/' + id))); } catch (e) { return S.say('That replay would not load.'); }
+    try { frames = JSON.parse(await unpack(await db.get(path + '/' + id))); } catch (e) { return S.say('That replay would not load.'); }
     if (!frames || !frames.length) return S.say('That replay is empty.');
     let st = {}; const t0 = performance.now();
     for (const [t, d] of frames) {
@@ -5912,27 +5961,40 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   }
   function stopWatch() {
     const key = viewing; viewing = null; view.hidden = true; view.innerHTML = '';
-    const done = () => location.reload(); // the game underneath was drawing someone else's run: start it fresh
-    if (key && !key.startsWith('hl:')) db.put('live/' + key + '/w/' + me4(), null).then(done, done); else done();
+    const done = () => {
+      if (viewerMode) {
+        if (window.parent !== window) window.parent.postMessage({ type: 'wol-viewer-close' }, location.origin);
+      } else location.reload(); // the game underneath was drawing someone else's run: start it fresh
+    };
+    if (key && key.startsWith('live:')) db.put('live/' + key.slice(5) + '/w/' + me4(), null).then(done, done); else done();
   }
   // ---------- boot ----------
   // Owns wallet startup and initial state restoration.
+  const viewerParams = new URLSearchParams(location.search);
+  const viewerWatch = viewerParams.get('watch'), viewerReplay = viewerParams.get('replay');
+  const viewerMode = !!(viewerWatch || viewerReplay);
   const savedStake = +pref.get('wol.stake'); if (okStake(savedStake)) W.stake = savedStake;
-  W.user = pref.get('wol.user');
+  W.user = viewerMode ? null : pref.get('wol.user');
   W.jackpot = JACKPOT_START;
   paint();
-  if (W.user) refresh(); else showLogin();
-  refreshJackpot();
-  checkUpdate();
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) { refresh(); refreshJackpot(); } });
-  setInterval(() => { if (!busy && !document.hidden) refresh(); }, 30000);
-  heartbeat(); setTimeout(heartbeat, 2500); setInterval(() => { if (!streaming) heartbeat(); }, 15000); // the second one runs once the account has loaded
-  // a quick look every 3s for someone who just started watching, so their picture starts fast
-  setInterval(async () => {
-    if (W.user && !streaming && !document.hidden) checkMsgs();
-    if (streaming || !W.user || document.hidden) return;
-    try { const w = await db.get('live/' + W.user + '/w') || {}, t = now(); watchers = Object.entries(w).filter(([k, v]) => k !== W.user && t - v < WATCH_MS).length; paintLive(); if (watchers && !streaming) streamLoop(); } catch (e) {}
-  }, 3000);
+  if (viewerMode) {
+    liveBtn.hidden = true; ticker.hidden = true;
+    if (viewerWatch) watch(viewerWatch, viewerParams.get('name') || viewerWatch);
+    else replay(viewerReplay, { name: 'Replay', room: 'Replay' }, 'rpd');
+  } else {
+    if (W.user) refresh(); else showLogin();
+    refreshJackpot();
+    checkUpdate();
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { refresh(); refreshJackpot(); } });
+    setInterval(() => { if (!busy && !document.hidden) refresh(); }, 30000);
+    heartbeat(); setTimeout(heartbeat, 2500); setInterval(() => { if (!streaming) heartbeat(); }, 15000); // the second one runs once the account has loaded
+    // a quick look every 3s for someone who just started watching, so their picture starts fast
+    setInterval(async () => {
+      if (W.user && !streaming && !document.hidden) checkMsgs();
+      if (streaming || !W.user || document.hidden) return;
+      try { const w = await db.get('live/' + W.user + '/w') || {}, t = now(); watchers = Object.entries(w).filter(([k, v]) => k !== W.user && t - v < WATCH_MS).length; paintLive(); if (watchers && !streaming) streamLoop(); } catch (e) {}
+    }, 3000);
+  }
   // ---------- notes from the host (gifts and messages): a card that stays on screen until it's tapped away ----------
   // Owns host notes and gift notifications.
   let noteShowing = false;
