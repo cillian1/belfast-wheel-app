@@ -2,11 +2,11 @@
 
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
-- **Task:** Task 7 (issue #18, PR #20); Tasks 6 and 8 continue in parallel for update 24.
-- **Owner:** Copilot does ALL the work (Cillian, 2026-10-21): building, conflicts, version bumps, release notes, HANDOFF/COPILOT_TASKS updates, and the release PR. Claude only presses merge (GitHub won't let Copilot merge its own PRs). Money/odds/prize changes still go to Cillian.
-- **Status:** Task 7 is ready for review in PR #20 targeting `update-24`; version 23/build 60 remain unchanged for the combined release.
-- **Next:** Copilot posts `DONE: Task 7`; Cillian merges this PR into `update-24`. Once Tasks 6–8 are integrated, Copilot prepares the single update 24 release PR to `main`.
-- **Last updated:** 2026-10-21 22:38 by Copilot
+- **Task:** Task 8 (sound pack and mute, issue #19)
+- **Owner:** Copilot builds and prepares the release; Claude reviews and merges PRs.
+- **Status:** Sound pack and glow-ups are merged in this branch; PR #22 targets `update-24` with version 23 / Build 60 unchanged for the combined update.
+- **Next:** Claude reviews and merges PR #22 into `update-24`; Copilot opens the update-24 → main release PR after Tasks 6–8 land.
+- **Last updated:** 2026-10-21 21:38 UTC by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
@@ -65,6 +65,7 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 
 ## Done log (history only, newest first; nothing here is current)
 
+- 2026-10-21: Task 8 added synthesized room themes, milestone effects and a saved master mute (PR #22) for the combined update 24.
 - 2026-10-21: Task 7 room glow-ups ready in PR #20 for the combined update 24; visual-only wheel, tank and Pyramid polish, with version 23/build 60 unchanged.
 - 2026-10-21: Task 5 replays + Watch tabs + host watching (PR #16), merged as update 23.
 - 2026-10-21: Task 5 replay saving, pruning, player/host watching and legacy request fixes are ready for review in PR #16 as update 23 "Replay Night".

@@ -111,7 +111,7 @@ function drawGodRoom(now) {
 async function ghostTo(x, y, dur) { const x0 = ghost.x, y0 = ghost.y; await animate(dur, t => { const e = easeInOut(t); ghost.x = lerp(x0, x, e); ghost.y = lerp(y0, y, e) + Math.sin(t * Math.PI * 2) * N * .01; draw(); }); }
 function waitTap(test) { const st = $('.stage'); st.classList.add('pick'); return new Promise(res => { tapPick = (x, y) => { const v = test(x, y); if (v != null) { tapPick = null; st.classList.remove('pick'); res(v); } }; }); }
 async function godRoom(steps) {
-  roomHit = true; buzz([100, 50, 100, 50, 300]); Music.sting(4);
+  roomHit = true; Music.setMode('god'); playSfx('god'); buzz([100, 50, 100, 50, 300]); Music.sting(4);
   const floor = [];
   for (let j = 0; j < 14; j++) floor.push({ it: j % 5, x: N * (.08 + Math.random() * .84), y: N * (.6 + Math.random() * .33), s: N * (.1 + Math.random() * .05), r: (Math.random() - .5) * 1.2 });
   floor.sort((a, b) => a.y - b.y);

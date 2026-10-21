@@ -24,6 +24,8 @@
     get(k) { try { if (app && app.getPref) return app.getPref(k) || null; } catch (e) {} try { return localStorage.getItem(k); } catch (e) { return null; } },
     set(k, v) { try { if (app && app.setPref) app.setPref(k, v == null ? '' : v); } catch (e) {} try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} },
   };
+  window.wolPref = pref;
+  window.dispatchEvent(new Event('wol-audio-preference-ready'));
   const TEST_KEY = 'test', isTest = () => !!(W.me && W.me.test);
   const TROPHIES = [
     { id: 'first', name: 'First spin', icon: '🎡', how: 'Complete your first paid spin.' },
