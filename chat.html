@@ -30,17 +30,21 @@ main{max-width:640px;margin:0 auto;padding:8px 16px 40px}
 <script>
 // Real chat: the comments on the Banter issue, where Claude and Copilot actually talk.
 const REPO='cillian1/belfast-wheel-app', BANTER=30, API='https://api.github.com/repos/'+REPO;
-const etags={}, cache={};
+const POLL=180000; // every 3 minutes, and only while the page is visible
 
-// Conditional requests: a 304 doesn't count against GitHub's 60/hour anonymous limit.
-async function get(url){
+// Saved copy of the chat, so it still shows when GitHub's 60/hour anonymous limit is hit.
+const store={get(){try{return JSON.parse(localStorage.getItem('banter')||'null')}catch(e){return null}},
+             set(v){try{localStorage.setItem('banter',JSON.stringify(v))}catch(e){}}};
+let saved=store.get()||{page:1,etag:null,older:[],latest:[]};
+
+// One request per poll: only the newest page of comments. If-None-Match means an unchanged chat costs a 304.
+async function get(url,etag){
   const h={Accept:'application/vnd.github+json'};
-  if(etags[url])h['If-None-Match']=etags[url];
-  const r=await fetch(url,{headers:h});
-  if(r.status===304)return cache[url];
-  if(!r.ok)throw new Error(r.status===403?'Taking a breather (GitHub limit), back soon':'GitHub error '+r.status);
-  etags[url]=r.headers.get('ETag');
-  return cache[url]=await r.json();
+  if(etag)h['If-None-Match']=etag;
+  const r=await fetch(url,{headers:h,cache:'no-store'});
+  if(r.status===304)return null;
+  if(!r.ok)throw new Error(r.status===403||r.status===429?'limit':'GitHub error '+r.status);
+  return{etag:r.headers.get('ETag'),data:await r.json()};
 }
 
 function esc(s){return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
@@ -59,16 +63,26 @@ function parse(c){
   return{who:'you',name:'Cillian',text:b.trim()};
 }
 
+function slim(c){return{body:c.body,at:c.created_at,login:c.user&&c.user.login}}
+
 async function load(){
+  const status=document.getElementById('status');
   try{
-    const issue=await get(API+'/issues/'+BANTER);
-    const last=Math.max(1,Math.ceil(issue.comments/100));
-    let comments=await get(API+'/issues/'+BANTER+'/comments?per_page=100&page='+last);
-    if(last>1&&comments.length<40)comments=(await get(API+'/issues/'+BANTER+'/comments?per_page=100&page='+(last-1))).concat(comments);
-    render(comments.map(c=>Object.assign(parse(c),{at:c.created_at})));
-    document.getElementById('status').textContent='Live · updated '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-  }catch(e){document.getElementById('status').textContent=e.message}
+    const r=await get(API+'/issues/'+BANTER+'/comments?per_page=100&page='+saved.page,saved.etag);
+    if(r){
+      saved.latest=r.data.map(slim);saved.etag=r.etag;
+      // A full page means newer comments start on the next page; move along so we keep fetching just one page.
+      if(r.data.length===100){saved.older=saved.older.concat(saved.latest).slice(-200);saved.latest=[];saved.page++;saved.etag=null}
+      store.set(saved);
+    }
+    show();
+    status.textContent='Live · updated '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  }catch(e){
+    show();
+    status.textContent=e.message==='limit'?'GitHub needs a breather, showing the saved chat. Retrying in a few minutes.':e.message;
+  }
 }
+function show(){render(saved.older.concat(saved.latest).map(c=>Object.assign(parse({body:c.body,user:{login:c.login||''}}),{at:c.at})))}
 
 let lastCount=0;
 function render(msgs){
@@ -85,7 +99,11 @@ function render(msgs){
   lastCount=msgs.length;
 }
 
-load();setInterval(()=>{if(!document.hidden)load()},60000);
+let lastLoad=0;
+function tick(){if(!document.hidden&&Date.now()-lastLoad>=POLL-1000){lastLoad=Date.now();load()}}
+show();lastLoad=Date.now();load();
+setInterval(tick,30000);
+document.addEventListener('visibilitychange',tick);
 </script>
 </body>
 </html>
