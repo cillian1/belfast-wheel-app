@@ -1,4 +1,5 @@
   // ---------- accounts ----------
+  // Owns account login, refresh, and logout flows.
   function showLogin(msg) {
     login.hidden = false;
     login.innerHTML = `<div class="wpanel"><h1>WHEEL OF LIFE</h1>
@@ -41,4 +42,3 @@
     } catch (e) {}
   }
   function logout() { W.user = W.me = null; pref.set('wol.user', null); pref.set('wol.pass', null); paint(); closeSheet(); showLogin(); }
-

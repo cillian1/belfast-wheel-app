@@ -1,4 +1,5 @@
   // ---------- boot ----------
+  // Owns wallet startup and initial state restoration.
   const savedStake = +pref.get('wol.stake'); if (okStake(savedStake)) W.stake = savedStake;
   W.user = pref.get('wol.user');
   W.jackpot = JACKPOT_START;

@@ -1,4 +1,5 @@
 // ---------- faces ----------
+// Owns cached wheel, pointer, ball, and board face construction.
 function buildBase() {
   const k = mk(), g = k.getContext('2d');
   g.save(); g.shadowColor = 'rgba(0,0,0,.75)'; g.shadowBlur = R * .09; g.shadowOffsetY = R * .045;
@@ -213,27 +214,6 @@ function buildPointer() {
   g.beginPath(); g.arc(c - jr * .3, jy - jr * .35, jr * .28, 0, TAU); g.fillStyle = 'rgba(255,255,255,.75)'; g.fill();
   return k;
 }
-function buildFinal() {
-  const k = mk(), g = k.getContext('2d'), n = FINAL.length, seg = TAU / n, r0 = R * .16, r1 = R * .93;
-  g.save(); g.shadowColor = 'rgba(0,0,0,.75)'; g.shadowBlur = R * .08; g.shadowOffsetY = R * .04;
-  g.beginPath(); g.arc(c, c, R, 0, TAU); g.fillStyle = '#0c0e11'; g.fill(); g.restore();
-  chromeRim(g, r1, R);
-  FINAL.forEach((s, i) => {
-    const a0 = BASE + i * seg, a1 = a0 + seg;
-    wedgePath(g, a0, a1, r0, r1); g.fillStyle = wedgeFill(g, a0, a1, r0, r1, tintStops(s.tint)); g.fill();
-  });
-  const sh = g.createRadialGradient(c, c, r0, c, c, r1);
-  sh.addColorStop(0, 'rgba(0,0,0,.5)'); sh.addColorStop(.3, 'rgba(0,0,0,0)'); sh.addColorStop(.62, 'rgba(0,0,0,.05)'); sh.addColorStop(.7, 'rgba(0,0,0,.45)'); sh.addColorStop(.88, 'rgba(0,0,0,.35)'); sh.addColorStop(1, 'rgba(0,0,0,.55)');
-  wedgePath(g, 0, TAU - 1e-4, r0, r1); g.fillStyle = sh; g.fill();
-  hairlines(g, [.64, .9]);
-  ridges(g, n, r0, r1);
-  weather(g, r0, r1, .7);
-  FINAL.forEach((s, i) => wedgeText(g, BASE + (i + .5) * seg, R * .43, s.lbl, R * .06, R * .3, 'dark'));
-  const dome = g.createRadialGradient(c - R * .04, c - R * .05, 0, c, c, R * .16);
-  dome.addColorStop(0, '#ffffff'); dome.addColorStop(.3, '#d9dfe4'); dome.addColorStop(.7, '#6b737c'); dome.addColorStop(1, '#262a30');
-  g.beginPath(); g.arc(c, c, R * .16, 0, TAU); g.fillStyle = dome; g.fill();
-  return k;
-}
 function ballImg(b) { return b.kind === 'W' ? faces.wildBall : b.kind === 'B' ? faces.bonusBall : b.gold ? faces.gold : faces.ball; }
 function buildBall(gold) {
   const s = Math.max(16, Math.ceil(R * .08)), k = mk(s, s), g = k.getContext('2d'), r = s / 2;
@@ -345,4 +325,3 @@ function build() {
   buildBoard();
   if (photoImg) faces.photo = buildPhoto();
 }
-

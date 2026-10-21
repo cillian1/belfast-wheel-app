@@ -1,4 +1,5 @@
   // ---------- top up (player pays Cillian on Revolut and confirms; the host page can reverse) ----------
+  // Owns the top-up confirmation sheets.
   function topupSheet(msg) {
     if (!W.me) return showLogin();
     if (isTest()) {
@@ -49,4 +50,3 @@
       } catch (e) { $w('wErr').textContent = 'No connection. Try again.'; }
     };
   }
-

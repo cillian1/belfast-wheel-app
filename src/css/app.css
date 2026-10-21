@@ -1,4 +1,5 @@
 /* Layout: one-screen instrument. Chrome wheel centred (it zooms through nested wheels and ends on a ball-drop board), a brushed-steel verdict plate under it. Accent: anodized titanium heat-tint, kept for "Show me" and the controls. */
+/* Owns shared game, room, and wallet layout and presentation. */
 :root{
   --ink:#0a0c0f;
   --plate:#1f242b;

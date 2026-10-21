@@ -1,4 +1,5 @@
 // ---------- read the moves out loud ----------
+// Owns spoken move summaries and speech controls.
 function logMove() {}
 function spokenMoves(steps) { return steps.filter(s => !s.dest && !/^(Wild|Bonus|More|The God|Go back up)/.test(s.text)).map((s, i) => (i === 0 ? 'First, ' : 'Then, ') + s.text.toLowerCase()); }
 // phones only allow speech once a tap has started it, so the first tap anywhere unlocks it with a silent line
@@ -63,4 +64,3 @@ function speak(lines) {
   } catch (e) {}
 }
 sayBtn.addEventListener('click', () => { if (!sayLast) return; sayBtn.classList.remove('pulse'); sayBtn.textContent = 'Read it out'; try { sayNow(sayLast); } catch (e) {} });
-

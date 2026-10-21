@@ -1,4 +1,5 @@
 // ---------- the God room: Phelan's electronic waste shop ----------
+// Owns God room visuals and shop interactions.
 // Ghost Phelan shows you round his e-waste shop, picks a bit of scrap that bursts into a deck, five cards of higher or lower,
 // and four right in a row gets you onto his God wheel, which he spins himself
 const SCRAP = [

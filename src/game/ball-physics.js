@@ -1,4 +1,5 @@
 // ---------- ball physics ----------
+// Owns ball-drop simulation and final-slot counting.
 let lastPeg = 0;
 function physicsStep(dt) {
   const g = N * 1.7, r = ballR, free = balls.filter(b => b.free);
@@ -79,4 +80,3 @@ function countSlots() {
   balls.forEach(b => { const j = Math.max(0, Math.min(FINAL.length - 1, Math.floor((b.x - B.m) / B.w))); cs[j]++; });
   return cs;
 }
-

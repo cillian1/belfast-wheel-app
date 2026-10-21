@@ -1,4 +1,5 @@
 // ---------- music: a driving Egyptian groove (Hijaz on D) that builds with every wild ----------
+// Owns synthesized background music and its playback controls.
 const Music = (() => {
   let on = true, level = 0, duckV = 1, master = null, noise = null, timer = null, nextT = 0, step = 0, drone = null;
   try { on = localStorage.getItem('wol-music') !== 'off'; } catch (e) {}
@@ -101,4 +102,3 @@ document.addEventListener('visibilitychange', () => Music.vis());
 function buzz(p) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} }
 let lastPegBuzz = 0; // a tiny tap per peg, never faster than the motor can feel
 function pegBuzz() { const t = performance.now(); if (t - lastPegBuzz > 45) { lastPegBuzz = t; buzz(7); } }
-

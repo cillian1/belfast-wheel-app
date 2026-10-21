@@ -1,4 +1,5 @@
 // ---------- the room: dim, a fire going ----------
+// Owns the ambient room background and its animation.
 const room = $('#room'), rctx = room.getContext('2d');
 let RW = 0, RH = 0, RDp = 1, roomBg = null, fireBox = null, lastRoom = 0;
 const EMBERS = Array.from({ length: 26 }, () => ({ x: Math.random(), y: Math.random(), v: .15 + Math.random() * .35, s: 1 + Math.random() * 1.5 }));
@@ -72,4 +73,3 @@ function drawRoom(now) {
   rctx.restore();
 }
 roomResize(); window.addEventListener('resize', roomResize); requestAnimationFrame(drawRoom);
-

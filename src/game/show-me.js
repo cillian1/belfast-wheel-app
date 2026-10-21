@@ -1,4 +1,5 @@
 // ---------- Show me ----------
+// Owns spin controls, photo flow, tiles, and auto-spin.
 function enterPhoto(img) {
   photoImg = img; scene = 'photo'; rotP = 0; hi = null; hiA = 0; photoZoom = 0; photoDone = false;
   faces.photo = buildPhoto(); draw();
@@ -166,4 +167,3 @@ function setExtras(el, kind, n) {
   if (n > 4) { if (!em) { em = document.createElement('em'); el.appendChild(em); } em.textContent = '+' + (n - 4); } else if (em) em.remove();
 }
 function setWilds(n) { setTiles(n, 0); if (!n) $('#wilds').classList.remove('over', 'overB', 'overW'); }
-

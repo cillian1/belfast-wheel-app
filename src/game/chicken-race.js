@@ -1,4 +1,5 @@
 // ---------- Chicken Race: 1 in 4 farm runs, the survivors dance, then race for the prizes on their tags ----------
+// Owns Chicken Race drawing, timing, and winner selection.
 const RACE_CHANCE = .25, RACE_MAX = 8, RACE_T = 6;
 const RACE_NAMES = ['Clucky', 'Nugget', 'Henrietta', 'Peggy', 'Drumstick', 'Eggbert', 'Feathers', 'Big Bertha', 'Colonel', 'Scrambles', 'Goldie', 'Penny'];
 const racePay = v => typeof $m === 'function' ? $m(v) : v;
@@ -115,4 +116,3 @@ async function chickenRace(steps, alive) {
     prize: v, race: true, name: win.name,
   };
 }
-

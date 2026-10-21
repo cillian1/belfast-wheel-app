@@ -1,4 +1,5 @@
 // ---------- motion ----------
+// Owns wheel spins, transitions, and animated game effects.
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const easeOut = t => 1 - Math.pow(1 - t, 4);
 const easeIn = t => t * t * t;
@@ -188,7 +189,6 @@ async function goldenRun() {
 }
 async function boostRun(kind, fromK) {
   const img = mk(96, 96); paintTile(img, kind);
-  const targets = [];
   for (let j = fromK + 1; j <= DEPTH; j++) { boostNew[j] = boostedOrder(runOrders[j - 1], kind, 4, j); faces['boost' + j] = ringFor(j, boostNew[j]); }
   Music.sting(3); buzz([40, 30, 40, 30, 120]); whoosh(true);
   setVerdict({ eyebrow: 'Going deeper', title: kind === 'W' ? 'More Wilds' : 'More Bonus', body: 'The wheels below are changing.', flash: true });
@@ -358,4 +358,3 @@ async function burstDiceRun() {
   await wait(1300);
   running = false;
 }
-

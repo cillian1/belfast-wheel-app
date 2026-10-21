@@ -1,4 +1,5 @@
 // ---------- Phelan's revenge: not one ball in the green ----------
+// Owns Phelan's revenge wheel and ending.
 // Ghost Phelan laughs, takes you to his sister Zena's house and spins his own wheel of Phelan orders
 const PHELAN_OPTS = [
   { lbl: ['RING', 'ZENA'], t: 'Ring Zena', b: "Ring Zena and tell her the lads say hello from Belfast. On speaker, so everyone hears." },
