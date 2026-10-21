@@ -167,10 +167,10 @@ Merged into Task 4 below. Don't open a separate PR for it.
 
 Cillian wants **every** ghost in the game replaced by his new stink ghost: Ghost Phelan on the inner wheels, the God room / Zena ghost, the watch-message ghost and the Chicken Race trip. The source image will be at `assets/ghost-source.jpg`. It's a JPG with a **fake checkerboard painted into the background**, so cut it out properly: remove the checkerboard and keep the glow, the stink trails and the flies with soft alpha edges. Make a trimmed PNG/WebP sprite of ≤ 512 px (≤ 150 KB) and embed it in `game/index.html` as a data URI via the bundler, because phones load one file. Replace `drawGhost()` and `ghostImg()` so they draw the sprite at the same position, size and alpha, with a slow bob and a little wobble on the trails. Speech bubbles stay. Same timings and the same `Math.random()` calls. Check every ghost scene at 360 and 412px and put screenshots in the PR.
 
-**Status:** Replaced the shared game and Watch-message ghost renderers with the embedded WebP sprite. The latest PR instruction keeps the combined update on version 23; no release bump is included. `node tools/bundle.mjs`, `node tools/check.mjs`, and the random-callsite comparison pass. Headless Edge screenshots cover the inner wheel, God room, Zena room, Chicken Race, and Watch-message at 360px and 412px:
+**Status:** Replaced the shared game and Watch-message ghost renderers with a trimmed 512×505 WebP (135,962 bytes). Per the latest PR comment, version 23/build 60 remain unchanged for the combined update 24. `node tools/bundle.mjs`, `node tools/check.mjs`, and the random-callsite comparison pass. Headless Edge captures cover the inner wheel, God shop and wheel, Zena house and wheel, Pyramid desert and tomb, Phelan's Revenge, Chicken Race, and Watch-message at 360px and 412px:
 
-![Ghost scenes at 360px](screenshots/task-6/ghost-scenes-360.jpg)
-![Ghost scenes at 412px](screenshots/task-6/ghost-scenes-412.jpg)
+![Ghost scenes at 360px](screenshots/task-6/ghost-scenes-360.png)
+![Ghost scenes at 412px](screenshots/task-6/ghost-scenes-412.png)
 
 ## Task 7: room glow-ups (parallel, part of update 24)
 

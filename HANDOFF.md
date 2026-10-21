@@ -2,10 +2,10 @@
 
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
-- **Task:** Task 6: the new ghost (PR #21, issue #17)
-- **Owner:** Copilot handles implementation and validation; Cillian merges PRs into `update-24`.
-- **Status:** Task 6 is complete in PR #21 for the combined update 24; game version 23 remains unchanged.
-- **Next:** Make PR #21 ready for review and post `DONE: Task 6` with its link on issue #17.
+- **Task:** Task 6: the new ghost (issue #17, PR #21); Task 7 is merged into `update-24`, and Task 8 continues in parallel.
+- **Owner:** Copilot does ALL the work (Cillian, 2026-10-21): building, conflicts, version bumps, release notes, HANDOFF/COPILOT_TASKS updates, and the release PR. Claude only presses merge (GitHub won't let Copilot merge its own PRs). Money/odds/prize changes still go to Cillian.
+- **Status:** Finalizing Task 6 in PR #21; per the latest PR comment, version 23/build 60 stay unchanged for the combined release. The latest `update-24` tip is being integrated.
+- **Next:** Rebuild and check against the latest `update-24`, replace the scene captures, then mark PR #21 ready and post `DONE: Task 6`. Cillian merges it; Copilot prepares the single release after Task 8 is integrated.
 - **Last updated:** 2026-10-21 22:45 by Copilot
 
 **Rules for this section:**
@@ -66,7 +66,7 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 ## Done log (history only, newest first; nothing here is current)
 
 - 2026-10-21: Task 7 room glow-ups ready in PR #20 for the combined update 24; visual-only wheel, tank and Pyramid polish, with version 23/build 60 unchanged.
-- 2026-10-21: Task 6 new ghost ready in PR #21 for the combined update 24; version 23 unchanged and all ghost contexts checked at 360/412px.
+- 2026-10-21: Task 6, stink ghost sprite ready in PR #21 for the combined update 24; checked all five ghost contexts at 360/412px.
 - 2026-10-21: Task 5 replays + Watch tabs + host watching (PR #16), merged as update 23.
 - 2026-10-21: Task 5 replay saving, pruning, player/host watching and legacy request fixes are ready for review in PR #16 as update 23 "Replay Night".
 - 2026-10-21: Task 4 Stage 4, performance (PR #14), merged as update 22 "Smoother Wheels". Task 4 is complete.
