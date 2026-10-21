@@ -120,7 +120,7 @@ async function godRoom(steps) {
   setVerdict({ eyebrow: 'The God slice', title: 'Phelan’s shop', body: '', steps: steps.slice() });
   await crossTo(() => { scene = 'god'; ghost = { x: -N * .2, y: N * .42, a: .95, side: 1 }; }, 900);
   await ghostTo(N * .3, N * .42, 1400);
-  god.say = 'Welcome to the shop, lads.'; draw(); await wait(1800);
+  god.say = 'Welcome to the shop, lads.'; phelanSay(god.say); draw(); await wait(1800);
   god.say = "Let's see what's in the pile."; draw(); await wait(1400); god.say = '';
   // he picks a bit of scrap and it bursts into cards
   const f = pick(floor), deck = SCRAP[f.it];
@@ -184,7 +184,7 @@ async function godRoom(steps) {
   if (lost) {
     const cons = 0;
     await ghostTo(N * .62, N * .4, 700);
-    god.say = pick(MOCK); draw(); await wait(2600); god.say = `Here. €${$m(cons)} for your trouble.`; draw(); await wait(1800);
+    god.say = pick(MOCK); phelanSay(god.say); draw(); await wait(2600); god.say = `Here. €${$m(cons)} for your trouble.`; draw(); await wait(1800);
     setVerdict({ eyebrow: 'Final answer · €' + $m(cons), title: 'Phelan keeps the rest', body: '', steps: steps.slice(), q: quote() });
     speak(['Final answer', ...spokenMoves(steps), `Phelan gives you ${$m(cons)} euro for your trouble`, roomAct('god')]);
     return;
@@ -211,7 +211,7 @@ async function godRoom(steps) {
   god.rot = mod(god.rot, TAU); god.spinning = false; god.winner = tg.i; god.winAt = performance.now();
   const prize = GOD_PRIZES[tg.i];
   ting(); Music.sting(4); buzz(prize >= 100 ? [100, 50, 100, 50, 400] : [40, 40, 80]);
-  god.say = prize >= 100 ? `€${$m(prize)}. Don't tell Mark.` : `€${$m(prize)}. Better than a toaster.`; draw();
+  god.say = prize >= 100 ? `€${$m(prize)}. Don't tell Mark.` : `€${$m(prize)}. Better than a toaster.`; phelanSay(god.say); draw();
   setVerdict({ eyebrow: 'Final answer · €' + $m(prize), title: 'The God wheel pays €' + $m(prize), body: '', steps: steps.slice(), q: quote() });
   await wait(1600);
   speak(['Final answer', ...spokenMoves(steps), `The God wheel pays ${$m(prize)} euro`, roomAct('god')]);

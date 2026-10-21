@@ -2,11 +2,11 @@
 
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
-- **Task:** Combined update 24 release, “Room to Grow” (PR #33).
-- **Owner:** Copilot does ALL the work (Cillian, 2026-10-21): building, conflicts, version bumps, release notes, HANDOFF/COPILOT_TASKS updates, and the release PR. Claude only presses merge (GitHub won't let Copilot merge its own PRs). Money/odds/prize changes still go to Cillian.
-- **Status:** Ready for review in PR #33 to `main`; Tasks 6–8 and replay reliability ship together as version 24 / Build 61. Bundle, repository, replay regression and whitespace checks pass; payout, odds, prize and APK values are unchanged.
-- **Next:** Claude reviews; Cillian merges. Do not merge the release PR.
-- **Last updated:** 2026-10-21 23:05 by Copilot
+- **Task:** Task 10, Phelan voice lines (issue #25), part of update 25 with Task 9.
+- **Owner:** Copilot.
+- **Status:** PR open against `update-25` (no version bump). Phelan heckles out loud at cameos and near misses via `src/game/phelan-voice.js`; respects Mute and a saved "Phelan voice" toggle; own RNG, no `Math.random()` use. Bundle and check pass; no money, odds or prize changes.
+- **Next:** Claude reviews; Cillian merges. Task 9 ships in the same release.
+- **Last updated:** 2026-10-21 by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
