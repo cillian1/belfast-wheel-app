@@ -152,6 +152,9 @@ body{box-sizing:border-box;margin:0}
 .wbanner .wrow{gap:10px}
 .wbanner .wrow .wbtn:not(.wbig){font-size:17px;flex:1}
 .wbanner[hidden]{display:none}
+.wnote{position:fixed;left:16px;right:16px;top:calc(70px + env(safe-area-inset-top,0px));z-index:45;max-width:420px;margin:0 auto;padding:18px;border-radius:18px;background:#2a2312;border:2px solid #f5d27a;color:#f8e4a6;text-align:center;display:flex;flex-direction:column;gap:8px;box-shadow:0 10px 40px rgba(0,0,0,.7),0 0 30px rgba(245,210,122,.35);animation:wnIn .4s ease-out}
+.wnote small{letter-spacing:.18em;text-transform:uppercase;font-size:11px;color:#c9a85a}.wnote b{font-size:32px;color:#fff1b8}.wnote p{margin:0;font-size:18px;line-height:1.35}
+@keyframes wnIn{from{transform:translateY(-20px);opacity:0}}
 .wlogin{position:fixed;inset:0;z-index:60;background:radial-gradient(circle at 50% 30%,#1e2228,#0a0c0f 70%);display:flex;align-items:center;justify-content:center;padding:20px}
 .wlogin[hidden]{display:none}
 .wlogin .wpanel{border-radius:20px;border-bottom:1px solid var(--line);max-width:420px}
@@ -888,6 +891,23 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { refresh(); refreshJackpot(); } });
   setInterval(() => { if (!busy && !document.hidden) refresh(); }, 30000);
   heartbeat(); setTimeout(heartbeat, 2500); setInterval(() => { if (!streaming) heartbeat(); }, 15000); // the second one runs once the account has loaded
+  // ---------- notes from the host (gifts and messages): a card that stays on screen until it's tapped away ----------
+  let noteShowing = false;
+  async function checkNotes() {
+    if (!W.user || noteShowing || document.hidden) return;
+    try {
+      const all = await db.get('notes/' + W.user); if (!all) return;
+      const [id, n] = Object.entries(all).sort((x, y) => x[0] < y[0] ? -1 : 1)[0];
+      noteShowing = true;
+      const box = el('div', 'wnote');
+      box.innerHTML = `<small>${n.amt > 0 ? 'A gift from the host' : 'From the host'}</small>${n.amt > 0 ? `<b>${eur(n.amt)}</b>` : ''}${n.text ? `<p>${esc(n.text)}</p>` : ''}<button class="wbtn gold" type="button">Nice one</button>`;
+      document.body.appendChild(box);
+      try { navigator.vibrate && navigator.vibrate([40, 60, 40]); } catch (e) {}
+      if (n.amt > 0) try { W.me = await db.get('users/' + W.user) || W.me; paint(); } catch (e) {}
+      box.querySelector('button').onclick = async () => { box.remove(); try { await db.put('notes/' + W.user + '/' + id, null); } catch (e) {} noteShowing = false; checkNotes(); };
+    } catch (e) { noteShowing = false; }
+  }
+  setInterval(checkNotes, 8000); setTimeout(checkNotes, 3000);
   // a quick look every 3s for someone who just started watching, so their picture starts fast
   setInterval(async () => {
     if (W.user && !streaming && !document.hidden) checkMsgs();

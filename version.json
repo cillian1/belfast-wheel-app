@@ -1,9 +1,9 @@
 {
-  "game": 16,
+  "game": 17,
   "apk": 2,
-  "gameBuild": 57,
-  "notes": "Update 16, The Austin Clause: Show me is now clearly marked as just for fun",
+  "gameBuild": 58,
+  "notes": "Gifts from the host come with a message, plus Auto spin",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk",
-  "name": "The Austin Clause"
+  "name": "The Host With the Most"
 }

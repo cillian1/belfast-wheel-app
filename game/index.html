@@ -173,8 +173,10 @@ button:focus-visible,.btn:focus-within,.btn:focus-visible{outline:2px solid var(
 }
 .spin:active{transform:translateY(1px) scale(.99)}
 .spin:disabled{filter:grayscale(.6) brightness(.7);cursor:default}
-.reset{min-height:26px;margin-top:-6px;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--mute);visibility:hidden}
-.locked .reset{visibility:visible}.locked .reset.gone{visibility:hidden}
+.reset{min-height:26px;margin-top:-6px;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--mute)}
+.reset #resetBtn,.reset #resetAsk{visibility:hidden}.locked .reset #resetBtn,.locked .reset #resetAsk{visibility:visible}.locked .reset.gone #resetBtn,.locked .reset.gone #resetAsk{visibility:hidden}
+.reset #resetBtn{display:none}.locked .reset:not(.gone) #resetBtn{display:inline-flex}
+.reset #autoBtn{margin:0 8px 0 0}.reset #autoBtn.on{color:#f5d27a;border-color:#f5d27a;animation:sayP 1.6s ease-in-out infinite}
 .reset button{background:none;border:1px solid rgba(255,255,255,.2);color:inherit;border-radius:999px;padding:4px 14px;margin-left:8px;font:inherit;letter-spacing:.06em;cursor:pointer}
 .reset #resetBtn{margin:0}.reset #resetYes{color:#ff9b8a;border-color:#ff9b8a}
 .plate{
@@ -258,7 +260,7 @@ footer{position:fixed;top:8px;left:10px;z-index:5;color:rgba(220,225,230,.55);fo
   <p class="caption" id="caption">Land on Go deeper and you fall through the wheels.</p>
 
   <button class="spin" id="spinBtn" type="button">Spin</button>
-  <div class="reset" id="resetRow"><button type="button" id="resetBtn">Reset spin</button><span id="resetAsk" hidden>Are you sure? <button type="button" id="resetYes">Yes</button><button type="button" id="resetNo">No</button></span></div>
+  <div class="reset" id="resetRow"><button type="button" id="autoBtn">Auto spin</button><button type="button" id="resetBtn">Reset spin</button><span id="resetAsk" hidden>Are you sure? <button type="button" id="resetYes">Yes</button><button type="button" id="resetNo">No</button></span></div>
 
   <section class="plate" id="verdict" aria-live="polite">
     <span class="eyebrow" id="vEyebrow">The wheel says</span>
@@ -282,11 +284,11 @@ footer{position:fixed;top:8px;left:10px;z-index:5;color:rgba(220,225,230,.55);fo
   <input class="vh" type="file" id="lib" accept="image/*">
 
 
-  <footer>Build 57 · app 16<br><small style="font-size:8.5px;letter-spacing:.04em">The Austin Clause</small></footer>
+  <footer>Build 58 · app 17<br><small style="font-size:8.5px;letter-spacing:.04em">The Host With the Most</small></footer>
 </div>
 
 <script>
-const BUILD = 57;
+const BUILD = 58;
 const $ = s => document.querySelector(s);
 const TAU = Math.PI * 2, BASE = -Math.PI / 2;
 const LABEL_FONT = '"IBM Plex Sans Condensed","Arial Narrow",sans-serif';
@@ -4345,7 +4347,7 @@ async function spinPhoto() {
 function lock(on) {
   busy = on; spinBtn.disabled = on;
   document.body.classList.toggle('locked', on);
-  if (!on) resetAsking(false);
+  if (on) runsStarted++; else { resetAsking(false); autoNext(); }
   spinBtn.setAttribute('aria-busy', on ? 'true' : 'false');
   if (on) lastDraw = performance.now();
 }
@@ -4411,6 +4413,25 @@ $('#resetYes').addEventListener('click', () => {
   location.reload(); // every wheel, ball and room is mid-animation; a fresh page is the clean way back to the top
 });
 setInterval(() => { const off = busy && !resetOk(); $('#resetRow').classList.toggle('gone', off); if (off) resetAsking(false); }, 400);
+// Auto spin: when a run ends it spins again on the same bet until it's tapped off. Tapping it off mid-run lets that run finish.
+let autoOn = false, autoT = 0, runsStarted = 0;
+function setAuto(on) {
+  autoOn = on; clearTimeout(autoT);
+  const b = $('#autoBtn'); b.classList.toggle('on', on); b.textContent = on ? 'Auto spin on · tap to stop' : 'Auto spin';
+  if (on && !busy) autoNext();
+}
+function autoNext() {
+  clearTimeout(autoT);
+  if (!autoOn) return;
+  autoT = setTimeout(() => {
+    if (!autoOn) return;
+    const banner = document.querySelector('.wbanner');
+    if (busy || tapPick || doorPick || document.hidden || (banner && !banner.hidden)) return autoNext(); // wait for a quiet moment
+    const n = runsStarted;
+    Promise.resolve(spin()).finally(() => { if (autoOn && runsStarted === n) setAuto(false); }); // no run started (no credit, logged out): stop
+  }, 3500);
+}
+$('#autoBtn').addEventListener('click', () => setAuto(!autoOn));
 
 function onFile(e) {
   if (busy) { e.target.value = ''; return; }
@@ -4525,7 +4546,7 @@ if (document.fonts && document.fonts.load) {
 }
 </script>
 
-<script>window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":16,"ev":15.1078,"edge":0.995,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};</script>
+<script>window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":17,"ev":15.1078,"edge":0.995,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};</script>
 <script>
 // ---------- wallet layer for the Android app ----------
 // Injected after the game's own script by tools/build.mjs. It wraps spin() and setVerdict(),
@@ -4675,6 +4696,9 @@ body{box-sizing:border-box;margin:0}
 .wbanner .wrow{gap:10px}
 .wbanner .wrow .wbtn:not(.wbig){font-size:17px;flex:1}
 .wbanner[hidden]{display:none}
+.wnote{position:fixed;left:16px;right:16px;top:calc(70px + env(safe-area-inset-top,0px));z-index:45;max-width:420px;margin:0 auto;padding:18px;border-radius:18px;background:#2a2312;border:2px solid #f5d27a;color:#f8e4a6;text-align:center;display:flex;flex-direction:column;gap:8px;box-shadow:0 10px 40px rgba(0,0,0,.7),0 0 30px rgba(245,210,122,.35);animation:wnIn .4s ease-out}
+.wnote small{letter-spacing:.18em;text-transform:uppercase;font-size:11px;color:#c9a85a}.wnote b{font-size:32px;color:#fff1b8}.wnote p{margin:0;font-size:18px;line-height:1.35}
+@keyframes wnIn{from{transform:translateY(-20px);opacity:0}}
 .wlogin{position:fixed;inset:0;z-index:60;background:radial-gradient(circle at 50% 30%,#1e2228,#0a0c0f 70%);display:flex;align-items:center;justify-content:center;padding:20px}
 .wlogin[hidden]{display:none}
 .wlogin .wpanel{border-radius:20px;border-bottom:1px solid var(--line);max-width:420px}
@@ -5376,6 +5400,23 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { refresh(); } });
   setInterval(() => { if (!busy && !document.hidden) refresh(); }, 30000);
   heartbeat(); setTimeout(heartbeat, 2500); setInterval(() => { if (!streaming) heartbeat(); }, 15000); // the second one runs once the account has loaded
+  // ---------- notes from the host (gifts and messages): a card that stays on screen until it's tapped away ----------
+  let noteShowing = false;
+  async function checkNotes() {
+    if (!W.user || noteShowing || document.hidden) return;
+    try {
+      const all = await db.get('notes/' + W.user); if (!all) return;
+      const [id, n] = Object.entries(all).sort((x, y) => x[0] < y[0] ? -1 : 1)[0];
+      noteShowing = true;
+      const box = el('div', 'wnote');
+      box.innerHTML = `<small>${n.amt > 0 ? 'A gift from the host' : 'From the host'}</small>${n.amt > 0 ? `<b>${eur(n.amt)}</b>` : ''}${n.text ? `<p>${esc(n.text)}</p>` : ''}<button class="wbtn gold" type="button">Nice one</button>`;
+      document.body.appendChild(box);
+      try { navigator.vibrate && navigator.vibrate([40, 60, 40]); } catch (e) {}
+      if (n.amt > 0) try { W.me = await db.get('users/' + W.user) || W.me; paint(); } catch (e) {}
+      box.querySelector('button').onclick = async () => { box.remove(); try { await db.put('notes/' + W.user + '/' + id, null); } catch (e) {} noteShowing = false; checkNotes(); };
+    } catch (e) { noteShowing = false; }
+  }
+  setInterval(checkNotes, 8000); setTimeout(checkNotes, 3000);
   // a quick look every 3s for someone who just started watching, so their picture starts fast
   setInterval(async () => {
     if (W.user && !streaming && !document.hidden) checkMsgs();

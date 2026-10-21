@@ -225,14 +225,21 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
   }
   function adjust(k, u) {
     const body = document.getElementById('body');
-    body.innerHTML = `<h2>Adjust ${esc(u.name)}</h2><p>Balance ${eur(u.balance || 0)}. Add or take away, e.g. 5 or -2.50 (cash top-ups go here).</p>
-      <div class="row"><input id="amt" inputmode="decimal" placeholder="Amount"><button class="gold" id="go" type="button">Apply</button><button id="back" type="button">Back</button></div>`;
+    body.innerHTML = `<h2>Gift or adjust ${esc(u.name)}</h2><p>Balance ${eur(u.balance || 0)}. Add or take away, e.g. 5 or -2.50 (cash top-ups go here). Add a message and it pops up on their phone; a message on its own works too.</p>
+      <div class="row"><input id="amt" inputmode="decimal" placeholder="Amount"></div>
+      <div class="row"><input id="msg" maxlength="140" placeholder="Message (optional)"></div>
+      <div class="row"><button class="gold" id="go" type="button">Send</button><button id="back" type="button">Back</button></div>`;
     document.getElementById('back').onclick = render;
     document.getElementById('go').onclick = async () => {
-      const a = Math.round(parseFloat(document.getElementById('amt').value.replace(',', '.')) * 100); if (!a) return;
-      await db.txn('users/' + k, u => { u.balance = (u.balance || 0) + a; if (a > 0) u.topped = (u.topped || 0) + a; return u; });
-      await log(k, a > 0 ? 'topup' : 'adjust', a, { what: 'by host' });
-      toast('Done'); render();
+      const a = Math.round((parseFloat(document.getElementById('amt').value.replace(',', '.')) || 0) * 100), msg = document.getElementById('msg').value.trim().slice(0, 140);
+      if (!a && !msg) return;
+      if (a) {
+        await db.txn('users/' + k, u => { u.balance = (u.balance || 0) + a; if (a > 0) u.topped = (u.topped || 0) + a; return u; });
+        await log(k, a > 0 ? 'topup' : 'adjust', a, { what: 'by host' });
+      }
+      // what pops up on their phone: a gift and/or the message
+      if (msg || a > 0) await db.push('notes/' + k, { amt: a > 0 ? a : 0, text: msg, at: now() }).catch(() => {});
+      toast(msg ? 'Sent' : 'Done'); render();
     };
   }
   gate();
