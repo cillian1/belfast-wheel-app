@@ -52,14 +52,19 @@ function drawDice(sc) {
     const s = s0 * (1 + (d.z || 0) * .9 + (d.swell || 0) * .35) * (d.born ?? 1);
     if (s <= 0) continue;
     if (!d.M) { d.M = snapRot(randRot()); d.v = topValue(d.M); }
-    if (d.glow > 0) { const gr = ctx.createRadialGradient(d.x * R, d.y * R, 0, d.x * R, d.y * R, s * 1.2); gr.addColorStop(0, d.sp === 'W' ? `rgba(255,215,90,${.8 * d.glow})` : `rgba(180,110,255,${.8 * d.glow})`); gr.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(d.x * R, d.y * R, s * 1.2, 0, TAU); ctx.fill(); }
+    if (d.glow > 0 && !Perf.low) { const gr = ctx.createRadialGradient(d.x * R, d.y * R, 0, d.x * R, d.y * R, s * 1.2); gr.addColorStop(0, d.sp === 'W' ? `rgba(255,215,90,${.8 * d.glow})` : `rgba(180,110,255,${.8 * d.glow})`); gr.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(d.x * R, d.y * R, s * 1.2, 0, TAU); ctx.fill(); }
     drawDie3D(ctx, d.x * R, d.y * R, s * .82, d.M, d.sp);
   }
   // the clear pop-up dome over the dice
   const dr = R * .5 * (1 + domeBulge * .05);
-  const dg = ctx.createRadialGradient(-dr * .35, -dr * .45, 0, 0, 0, dr);
-  dg.addColorStop(0, 'rgba(255,255,255,.22)'); dg.addColorStop(.35, 'rgba(255,255,255,.05)'); dg.addColorStop(.85, 'rgba(255,255,255,.03)'); dg.addColorStop(1, 'rgba(255,255,255,.14)');
-  ctx.beginPath(); ctx.arc(0, 0, dr, 0, TAU); ctx.fillStyle = dg; ctx.fill();
+  ctx.beginPath(); ctx.arc(0, 0, dr, 0, TAU);
+  if (Perf.low) ctx.fillStyle = 'rgba(255,255,255,.06)';
+  else {
+    const dg = ctx.createRadialGradient(-dr * .35, -dr * .45, 0, 0, 0, dr);
+    dg.addColorStop(0, 'rgba(255,255,255,.22)'); dg.addColorStop(.35, 'rgba(255,255,255,.05)'); dg.addColorStop(.85, 'rgba(255,255,255,.03)'); dg.addColorStop(1, 'rgba(255,255,255,.14)');
+    ctx.fillStyle = dg;
+  }
+  ctx.fill();
   ctx.strokeStyle = 'rgba(255,255,255,.28)'; ctx.lineWidth = 1.5 * D / sc; ctx.stroke();
   ctx.beginPath(); ctx.arc(0, 0, dr * .86, Math.PI * 1.1, Math.PI * 1.45); ctx.strokeStyle = 'rgba(255,255,255,.45)'; ctx.lineWidth = R * .02; ctx.lineCap = 'round'; ctx.stroke();
   ctx.restore();
@@ -274,31 +279,45 @@ function drawPointer(img, sc) {
 }
 let lastDraw = performance.now();
 function draw() {
-  lastDraw = performance.now();
-  if (!N) return;
-  updatePointer(performance.now());
-  ctx.clearRect(0, 0, N, N);
-  const now = performance.now();
-  if (scene === 'final') drawFinal(); else if (scene === 'photo') drawPhoto();
-  else if (scene === 'intro') drawIntro(now); else if (scene === 'building') drawBuilding(now);
-  else if (scene === 'hall') drawHall(); else if (scene === 'stank') drawStank(now);
-  else if (scene === 'pipes') drawPipes(); else if (scene === 'farm') drawFarm(now);
-  else if (scene === 'coaster') drawCoaster(now); else if (scene === 'planet') drawPlanetScene(now); else if (scene === 'monster') drawMonster(now);
-  else if (scene === 'pyramid' && pyr) drawPyramid(now); else if (scene === 'god' && god) drawGodRoom(now); else if (scene === 'zena' && zena) drawZena(now);
-  else if (scene === 'roul' && roul) drawRoul(now); else if (scene === 'vault' && vault) drawVault(now);
-  else if (['pyramid', 'god', 'zena', 'roul', 'vault'].includes(scene)) {}
-  else drawNested();
-  if (snapA > 0 && snap) { ctx.globalAlpha = snapA; ctx.drawImage(snap, 0, 0); ctx.globalAlpha = 1; }
-  if (scene === 'pipes' && pipes) pipes.balls.forEach(b => { if (b.state === 'pre') ctx.drawImage(ballImg(b), b.x - b.pr, b.y - b.pr, b.pr * 2, b.pr * 2); });
-  if (ghost && scene !== 'pyramid' && scene !== 'god' && scene !== 'zena') { drawGhost(); if (ghostSay) bubble(ctx, ghostSay, ghost.x, ghost.y - R * .22); }
-  if (godParts.length) godParts.forEach(p => { const sz = p.s; ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, p.life)); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.drawImage(p.img, -sz / 2, -sz / 2, sz, sz); ctx.restore(); });
-  dots.forEach(p => { // die pips on their way to becoming chickens
-    if (p.hide) return; const r = p.r * (1 + p.glow * .6);
-    const gr = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 3.2); gr.addColorStop(0, `rgba(255,240,190,${.7 * p.glow})`); gr.addColorStop(1, 'rgba(255,200,90,0)');
-    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(p.x, p.y, r * 3.2, 0, TAU); ctx.fill();
-    ctx.fillStyle = p.red ? '#d0202f' : (p.glow > .5 ? '#fff6dc' : '#1b1a19'); ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, TAU); ctx.fill();
-  });
-  if (fade > 0) { ctx.fillStyle = `rgba(10,12,15,${fade})`; ctx.fillRect(0, 0, N, N); }
+  const perfScene = scene, perfStart = Perf.begin(perfScene);
+  try {
+    lastDraw = performance.now();
+    if (!N) return;
+    updatePointer(performance.now());
+    ctx.clearRect(0, 0, N, N);
+    const now = performance.now();
+    if (scene === 'final') drawFinal(); else if (scene === 'photo') drawPhoto();
+    else if (scene === 'intro') drawIntro(now); else if (scene === 'building') drawBuilding(now);
+    else if (scene === 'hall') drawHall(); else if (scene === 'stank') drawStank(now);
+    else if (scene === 'pipes') drawPipes(); else if (scene === 'farm') drawFarm(now);
+    else if (scene === 'coaster') drawCoaster(now); else if (scene === 'planet') drawPlanetScene(now); else if (scene === 'monster') drawMonster(now);
+    else if (scene === 'pyramid' && pyr) drawPyramid(now); else if (scene === 'god' && god) drawGodRoom(now); else if (scene === 'zena' && zena) drawZena(now);
+    else if (scene === 'roul' && roul) drawRoul(now); else if (scene === 'vault' && vault) drawVault(now);
+    else if (scene === 'pyramid' || scene === 'god' || scene === 'zena' || scene === 'roul' || scene === 'vault') {}
+    else drawNested();
+    if (snapA > 0 && snap) { ctx.globalAlpha = snapA; ctx.drawImage(snap, 0, 0); ctx.globalAlpha = 1; }
+    if (scene === 'pipes' && pipes) pipes.balls.forEach(b => { if (b.state === 'pre') ctx.drawImage(ballImg(b), b.x - b.pr, b.y - b.pr, b.pr * 2, b.pr * 2); });
+    if (ghost && scene !== 'pyramid' && scene !== 'god' && scene !== 'zena') { drawGhost(); if (ghostSay) bubble(ctx, ghostSay, ghost.x, ghost.y - R * .22); }
+    for (let i = 0; i < godParts.length; i++) {
+      if (Perf.low && i % 2) continue;
+      const p = godParts[i], sz = p.s;
+      ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, p.life)); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.drawImage(p.img, -sz / 2, -sz / 2, sz, sz); ctx.restore();
+    }
+    for (let i = 0; i < dots.length; i++) {
+      if (Perf.low && i % 2) continue;
+      const p = dots[i]; // die pips on their way to becoming chickens
+      if (p.hide) continue;
+      const r = p.r * (1 + p.glow * .6);
+      if (!Perf.low) {
+        const gr = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 3.2); gr.addColorStop(0, `rgba(255,240,190,${.7 * p.glow})`); gr.addColorStop(1, 'rgba(255,200,90,0)');
+        ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(p.x, p.y, r * 3.2, 0, TAU); ctx.fill();
+      }
+      ctx.fillStyle = p.red ? '#d0202f' : (p.glow > .5 ? '#fff6dc' : '#1b1a19'); ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, TAU); ctx.fill();
+    }
+    if (fade > 0) { ctx.fillStyle = `rgba(10,12,15,${fade})`; ctx.fillRect(0, 0, N, N); }
+  } finally {
+    Perf.end(perfScene, perfStart);
+  }
 }
 // everything fits on one screen: the wheel takes whatever height the rest of the page leaves
 function fitStage() {
@@ -311,11 +330,31 @@ function fitStage() {
   const sw = Math.max(220, Math.min(innerWidth - 4, 600, h - (window.visualViewport ? visualViewport.height : innerHeight) * .1)); st.style.width = sw + 'px'; st.style.marginLeft = st.style.marginRight = sw > app.clientWidth ? (app.clientWidth - sw) / 2 + 'px' : 'auto';
 }
 addEventListener('resize', fitStage); if (window.visualViewport) visualViewport.addEventListener('resize', fitStage);
+function syncCanvasQuality(preserve = true) {
+  if (!N) return;
+  const scale = Perf.dpr(D) / D, size = Math.max(1, Math.round(N * scale));
+  if (cv.width !== size || cv.height !== size) {
+    let previous = null;
+    if (preserve && cv.width && cv.height) {
+      previous = document.createElement('canvas');
+      previous.width = cv.width; previous.height = cv.height;
+      previous.getContext('2d').drawImage(cv, 0, 0);
+    }
+    cv.width = cv.height = size;
+    if (previous) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.drawImage(previous, 0, 0, size, size);
+    }
+  }
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+}
+Perf.onCanvasQualityChange(syncCanvasQuality);
 function resize() {
   const w = cv.clientWidth; if (!w) return;
-  D = Perf.dpr(2);
-  const n = Math.round(w * D); if (n === N) return;
+  D = Math.min(2, window.devicePixelRatio || 1);
+  const n = Math.round(w * D); if (n === N) { syncCanvasQuality(false); return; }
   const old = B ? { N } : null;
-  N = cv.width = cv.height = n; c = N / 2; R = N / 2 * .935 * .82;
+  N = n; c = N / 2; R = N / 2 * .935 * .82;
+  syncCanvasQuality(false);
   build(); if (old) rescaleBalls(old); draw();
 }

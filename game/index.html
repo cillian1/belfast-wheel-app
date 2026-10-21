@@ -178,7 +178,7 @@ button:focus-visible,.btn:focus-within,.btn:focus-visible{outline:2px solid var(
 button:active,.btn:active{filter:brightness(1.25);transform:scale(.97)}
 button,.btn,label,a{touch-action:manipulation}
 .lowq .spin{transition:none}
-.spin:active{transform:translateY(1px) scale(.99)}
+.spin:active{transform:translateY(1px) scale(.97)}
 .spin:disabled{filter:grayscale(.6) brightness(.7);cursor:default}
 .reset{min-height:26px;margin-top:-6px;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--mute)}
 .reset #resetBtn,.reset #resetAsk{visibility:hidden}.locked .reset #resetBtn,.locked .reset #resetAsk{visibility:visible}.locked .reset.gone #resetBtn,.locked .reset.gone #resetAsk{visibility:hidden}
@@ -214,6 +214,7 @@ button,.btn,label,a{touch-action:manipulation}
 }
 [hidden]{display:none!important}
 .wilds{display:flex;justify-content:center;gap:8px;margin-top:-6px}
+#wilds canvas.wt{min-width:0;height:auto;aspect-ratio:1}
 .wilds .wgap{width:10px}
 .wlab{display:flex;justify-content:center;gap:26px;margin-top:-9px;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--mute);font-weight:600}
 .wlab span{width:136px;height:18px;display:flex;align-items:center;justify-content:center;gap:5px}
@@ -310,50 +311,134 @@ const lerp = (a, b, t) => a + (b - a) * t;
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 const metres = () => pick([5, 10, 15, 20, 25, 30, 40, 50, 75, 100]);
 // ---------- perf ----------
-// Owns the quality setting (Auto / High / Low), low-end detection, the frame meter and the ?perf=1 overlay.
+// Owns the quality setting, low-end detection, frame meter and the ?perf=1 overlay.
 const Perf = (() => {
-  const KEY = 'wol-quality', MODES = ['auto', 'high', 'low'], BUDGET_MS = 28, WINDOW_MS = 2000;
-  const store = (() => { try { return window.wolPref || null; } catch (e) { return null; } });
-  const read = () => { let v = null; try { const s = store(); v = s ? s.get(KEY) : localStorage.getItem(KEY); } catch (e) {} return MODES.includes(v) ? v : 'auto'; };
-  let setting = read(), slow = false, low = false, frames = 0, sum = 0, worst = 0, last = 0, winStart = 0, hud = null, hudT = 0;
-  const weak = () => { const n = navigator; return (n.hardwareConcurrency || 8) <= 4 || (n.deviceMemory || 8) <= 3; };
+  const KEY = 'wol-quality', MODES = ['auto', 'high', 'low'], BUDGET_MS = 8, WINDOW_MS = 2000;
+  const store = () => window.wolPref || null;
+  const read = () => {
+    let value = null;
+    try { const pref = store(); value = pref ? pref.get(KEY) : localStorage.getItem(KEY); } catch (e) {}
+    return MODES.includes(value) ? value : 'auto';
+  };
+  let setting = read(), slow = false, low = false, last = 0, winStart = 0, rafCount = 0, rafSum = 0, rafWorst = 0;
+  let workCount = 0, workSum = 0, workWorst = 0, hud = null, canvasQualityChanged = null;
+  let longTasks = 0, longTaskMs = 0, gcCount = 0, gcMs = 0;
+  const observed = { longtask: false, gc: false, paint: false };
+  const paintTimes = Object.create(null);
+  const scenes = Object.create(null);
+  const weak = () => (navigator.hardwareConcurrency != null && navigator.hardwareConcurrency <= 4) ||
+    (navigator.deviceMemory != null && navigator.deviceMemory <= 3);
   const compute = () => setting === 'low' || (setting === 'auto' && (slow || weak()));
   const apply = () => {
-    const was = low; low = compute();
+    const changed = low !== compute();
+    low = compute();
     document.documentElement.classList.toggle('lowq', low);
-    if (btn) btn.textContent = 'Quality: ' + cap(setting);
-    if (was !== low) { try { resize(); roomResize(); } catch (e) {} }
+    if (btn) {
+      btn.textContent = 'Quality: ' + cap(setting);
+      btn.setAttribute('aria-label', 'Graphics quality: ' + cap(setting));
+    }
+    if (changed && canvasQualityChanged) canvasQualityChanged();
   };
-  // low-end mode drops canvas shadow/glow passes by turning every shadow colour transparent
-  try {
-    const proto = CanvasRenderingContext2D.prototype, d = Object.getOwnPropertyDescriptor(proto, 'shadowColor');
-    if (d && d.set) Object.defineProperty(proto, 'shadowColor', { configurable: true, enumerable: d.enumerable, get: d.get, set(v) { d.set.call(this, low ? 'rgba(0,0,0,0)' : v); } });
-  } catch (e) {}
+  let shadowSuppression = false;
+  const proto = window.CanvasRenderingContext2D && CanvasRenderingContext2D.prototype;
+  const shadow = proto && Object.getOwnPropertyDescriptor(proto, 'shadowColor');
+  if (shadow && shadow.set && shadow.get && shadow.configurable) {
+    Object.defineProperty(proto, 'shadowColor', {
+      configurable: true,
+      enumerable: shadow.enumerable,
+      get() { return shadow.get.call(this); },
+      set(value) { shadow.set.call(this, low ? 'rgba(0,0,0,0)' : value); },
+    });
+    shadowSuppression = true;
+  }
   const btn = $('#qualityBtn');
-  if (btn) btn.addEventListener('click', () => { setting = MODES[(MODES.indexOf(setting) + 1) % MODES.length]; slow = false; try { const s = store(); s ? s.set(KEY, setting) : localStorage.setItem(KEY, setting); } catch (e) {} apply(); });
+  if (btn) btn.addEventListener('click', () => {
+    setting = MODES[(MODES.indexOf(setting) + 1) % MODES.length];
+    slow = false;
+    try { const pref = store(); pref ? pref.set(KEY, setting) : localStorage.setItem(KEY, setting); } catch (e) {}
+    apply();
+  });
   window.addEventListener('wol-audio-preference-ready', () => { setting = read(); apply(); });
   if (/[?&]perf=1\b/.test(location.search)) {
     hud = document.createElement('div');
-    hud.style.cssText = 'position:fixed;left:4px;top:4px;z-index:99999;font:11px/1.3 monospace;color:#9f9;background:rgba(0,0,0,.7);padding:3px 5px;border-radius:4px;pointer-events:none;white-space:pre';
+    hud.style.cssText = 'position:fixed;left:4px;top:4px;z-index:99999;font:11px/1.3 monospace;color:#9f9;background:rgba(0,0,0,.78);padding:4px 6px;border-radius:4px;pointer-events:none;white-space:pre;max-height:45vh;overflow:hidden';
     document.body.appendChild(hud);
+  }
+  const observer = window.PerformanceObserver;
+  if (observer) {
+    for (const type of ['longtask', 'gc', 'paint']) {
+      try {
+        const po = new observer(list => list.getEntries().forEach(entry => {
+          if (type === 'longtask') { longTasks++; longTaskMs += entry.duration; }
+          else if (type === 'gc') { gcCount++; gcMs += entry.duration; }
+          else paintTimes[entry.name] = entry.startTime;
+        }));
+        po.observe({ type, buffered: true });
+        observed[type] = true;
+      } catch (e) { observed[type] = false; }
+    }
+  }
+  function begin(name) {
+    return performance.now();
+  }
+  function end(name, start) {
+    const elapsed = performance.now() - start;
+    let total = scenes[name];
+    if (!total) total = scenes[name] = { count: 0, sum: 0, worst: 0 };
+    total.count++; total.sum += elapsed;
+    if (elapsed > total.worst) total.worst = elapsed;
+    workCount++; workSum += elapsed;
+    if (elapsed > workWorst) workWorst = elapsed;
+  }
+  function snapshot() {
+    const result = {};
+    Object.keys(scenes).forEach(name => {
+      const data = scenes[name];
+      result[name] = { count: data.count, averageMs: data.sum / data.count, worstMs: data.worst };
+    });
+    return { mode: setting, low, scenes: result, longTasks, longTaskMs, gcCount, gcMs, paint: { ...paintTimes }, observed: { ...observed }, shadowSuppression };
   }
   function tick(now) {
     requestAnimationFrame(tick);
-    if (document.hidden) { last = 0; return; }
-    const dt = last ? now - last : 0; last = now;
-    if (!dt || dt > 250) { winStart = now; frames = 0; sum = 0; return; } // a stall (tab switch, photo picker) isn't a slow device
-    if (!winStart) winStart = now;
-    frames++; sum += dt; if (dt > worst) worst = dt;
-    if (now - winStart >= WINDOW_MS) {
-      const avg = sum / frames;
-      if (hud) hud.textContent = `${Math.round(1000 / avg)} fps  avg ${avg.toFixed(1)} ms  worst ${worst.toFixed(0)} ms\nquality ${setting}${low ? ' (low)' : ''}`;
-      if (setting === 'auto' && !slow && avg > BUDGET_MS) { slow = true; apply(); }
-      winStart = now; frames = 0; sum = 0; worst = 0;
+    if (document.hidden) { last = 0; winStart = 0; return; }
+    const dt = last ? now - last : 0;
+    last = now;
+    if (dt && dt <= 250) {
+      rafCount++; rafSum += dt;
+      if (dt > rafWorst) rafWorst = dt;
     }
+    if (!winStart) winStart = now;
+    if (now - winStart < WINDOW_MS) return;
+    if (hud) {
+      const rows = Object.keys(scenes).map(name => {
+        const data = scenes[name];
+        return `${name} ${ (data.sum / data.count).toFixed(1)}/${data.worst.toFixed(1)} ms`;
+      });
+      const fps = rafCount ? Math.round(1000 / (rafSum / rafCount)) : 0;
+      const work = workCount ? (workSum / workCount).toFixed(1) : '0.0';
+      const paints = Object.keys(paintTimes).map(name => `${name} ${paintTimes[name].toFixed(0)} ms`).join(' ') || 'paint unavailable';
+      const tasks = observed.longtask ? `${longTasks} / ${longTaskMs.toFixed(0)} ms` : 'unavailable';
+      const garbage = observed.gc ? `${gcCount} / ${gcMs.toFixed(0)} ms` : 'unavailable';
+      hud.textContent = `${fps} fps · RAF ${rafWorst.toFixed(0)} ms max\nJS ${work} ms avg · ${workWorst.toFixed(1)} ms max\nquality ${setting}${low ? ' (low)' : ''} · long tasks ${tasks} · GC ${garbage}\n${paints}\n${rows.join('\n')}${shadowSuppression ? '' : '\nshadow suppression unavailable'}`;
+    }
+    if (setting === 'auto' && !slow && workCount && workSum / workCount > BUDGET_MS) {
+      slow = true;
+      apply();
+    }
+    winStart = now;
+    rafCount = 0; rafSum = 0; rafWorst = 0;
+    workCount = 0; workSum = 0; workWorst = 0;
   }
   requestAnimationFrame(tick);
   apply();
-  return { get low() { return low; }, dpr: cap => Math.min(cap, low ? 1.5 : cap, window.devicePixelRatio || 1) };
+  return {
+    get low() { return low; },
+    dpr: cap => Math.min(cap, low ? 1.5 : cap, window.devicePixelRatio || 1),
+    begin,
+    end,
+    snapshot,
+    onCanvasQualityChange(fn) { canvasQualityChanged = fn; },
+  };
 })();
 // ---------- content ----------
 // Owns wheel content, run text, and move selection data.
@@ -776,11 +861,7 @@ function roomResize() {
   room.width = Math.round(RW * RDp); room.height = Math.round(RH * RDp); roomBg = buildRoom();
   rctx.setTransform(1, 0, 0, 1, 0, 0); rctx.drawImage(roomBg, 0, 0);
 }
-function drawRoom(now) {
-  roomRaf = 0;
-  if (document.hidden) return;
-  roomRaf = requestAnimationFrame(drawRoom);
-  if (now - lastRoom < 66 || !roomBg) return; lastRoom = now;
+function drawRoomFrame(now) {
   const t = now / 1000, F = fireBox;
   // repaint just the fireplace opening from the baked room, then the flames and embers over it
   const rx = F.x, ry = F.y - F.w * .2, rw = F.w, rh = F.base - F.y + F.w * .2 + 6;
@@ -791,17 +872,31 @@ function drawRoom(now) {
   rctx.globalCompositeOperation = 'lighter';
   for (let i = 0; i < 9; i++) {
     const x = RW / 2 + (i - 4) * F.w * .085, w = F.w * .075, h = F.w * (.2 + .14 * Math.sin(t * (3.5 + i * .7) + i * 2) + .05 * Math.random()), b = F.base - 12;
-    const fg = rctx.createLinearGradient(0, b, 0, b - h);
-    fg.addColorStop(0, 'rgba(255,236,170,.9)'); fg.addColorStop(.35, 'rgba(255,150,50,.7)'); fg.addColorStop(1, 'rgba(200,50,10,0)');
-    rctx.fillStyle = fg; rctx.beginPath(); rctx.moveTo(x - w, b);
+    if (Perf.low) rctx.fillStyle = 'rgba(255,145,45,.72)';
+    else {
+      const fg = rctx.createLinearGradient(0, b, 0, b - h);
+      fg.addColorStop(0, 'rgba(255,236,170,.9)'); fg.addColorStop(.35, 'rgba(255,150,50,.7)'); fg.addColorStop(1, 'rgba(200,50,10,0)');
+      rctx.fillStyle = fg;
+    }
+    rctx.beginPath(); rctx.moveTo(x - w, b);
     rctx.quadraticCurveTo(x - w * .9, b - h * .55, x + Math.sin(t * 6 + i) * w * .5, b - h);
     rctx.quadraticCurveTo(x + w * .9, b - h * .55, x + w, b); rctx.fill();
   }
-  EMBERS.forEach(e => {
-    const y = F.base - mod(e.y * F.w + t * e.v * 60, F.w * .9), x = RW / 2 + (e.x - .5) * F.w * .7 + Math.sin(t * 2 + e.x * 9) * 6;
+  const emberCount = Perf.low ? 8 : EMBERS.length;
+  for (let i = 0; i < emberCount; i++) {
+    const e = EMBERS[i], y = F.base - mod(e.y * F.w + t * e.v * 60, F.w * .9), x = RW / 2 + (e.x - .5) * F.w * .7 + Math.sin(t * 2 + e.x * 9) * 6;
     rctx.beginPath(); rctx.arc(x, y, e.s, 0, TAU); rctx.fillStyle = 'rgba(255,170,80,.7)'; rctx.fill();
-  });
+  }
   rctx.restore();
+}
+function drawRoom(now) {
+  roomRaf = 0;
+  if (document.hidden) return;
+  roomRaf = requestAnimationFrame(drawRoom);
+  if (now - lastRoom < 66 || !roomBg) return; lastRoom = now;
+  const perfStart = Perf.begin('room');
+  try { drawRoomFrame(now); }
+  finally { Perf.end('room', perfStart); }
 }
 function scheduleRoom() {
   if (document.hidden) { if (roomRaf) { cancelAnimationFrame(roomRaf); roomRaf = 0; } return; }
@@ -1215,14 +1310,19 @@ function drawDice(sc) {
     const s = s0 * (1 + (d.z || 0) * .9 + (d.swell || 0) * .35) * (d.born ?? 1);
     if (s <= 0) continue;
     if (!d.M) { d.M = snapRot(randRot()); d.v = topValue(d.M); }
-    if (d.glow > 0) { const gr = ctx.createRadialGradient(d.x * R, d.y * R, 0, d.x * R, d.y * R, s * 1.2); gr.addColorStop(0, d.sp === 'W' ? `rgba(255,215,90,${.8 * d.glow})` : `rgba(180,110,255,${.8 * d.glow})`); gr.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(d.x * R, d.y * R, s * 1.2, 0, TAU); ctx.fill(); }
+    if (d.glow > 0 && !Perf.low) { const gr = ctx.createRadialGradient(d.x * R, d.y * R, 0, d.x * R, d.y * R, s * 1.2); gr.addColorStop(0, d.sp === 'W' ? `rgba(255,215,90,${.8 * d.glow})` : `rgba(180,110,255,${.8 * d.glow})`); gr.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(d.x * R, d.y * R, s * 1.2, 0, TAU); ctx.fill(); }
     drawDie3D(ctx, d.x * R, d.y * R, s * .82, d.M, d.sp);
   }
   // the clear pop-up dome over the dice
   const dr = R * .5 * (1 + domeBulge * .05);
-  const dg = ctx.createRadialGradient(-dr * .35, -dr * .45, 0, 0, 0, dr);
-  dg.addColorStop(0, 'rgba(255,255,255,.22)'); dg.addColorStop(.35, 'rgba(255,255,255,.05)'); dg.addColorStop(.85, 'rgba(255,255,255,.03)'); dg.addColorStop(1, 'rgba(255,255,255,.14)');
-  ctx.beginPath(); ctx.arc(0, 0, dr, 0, TAU); ctx.fillStyle = dg; ctx.fill();
+  ctx.beginPath(); ctx.arc(0, 0, dr, 0, TAU);
+  if (Perf.low) ctx.fillStyle = 'rgba(255,255,255,.06)';
+  else {
+    const dg = ctx.createRadialGradient(-dr * .35, -dr * .45, 0, 0, 0, dr);
+    dg.addColorStop(0, 'rgba(255,255,255,.22)'); dg.addColorStop(.35, 'rgba(255,255,255,.05)'); dg.addColorStop(.85, 'rgba(255,255,255,.03)'); dg.addColorStop(1, 'rgba(255,255,255,.14)');
+    ctx.fillStyle = dg;
+  }
+  ctx.fill();
   ctx.strokeStyle = 'rgba(255,255,255,.28)'; ctx.lineWidth = 1.5 * D / sc; ctx.stroke();
   ctx.beginPath(); ctx.arc(0, 0, dr * .86, Math.PI * 1.1, Math.PI * 1.45); ctx.strokeStyle = 'rgba(255,255,255,.45)'; ctx.lineWidth = R * .02; ctx.lineCap = 'round'; ctx.stroke();
   ctx.restore();
@@ -1437,31 +1537,45 @@ function drawPointer(img, sc) {
 }
 let lastDraw = performance.now();
 function draw() {
-  lastDraw = performance.now();
-  if (!N) return;
-  updatePointer(performance.now());
-  ctx.clearRect(0, 0, N, N);
-  const now = performance.now();
-  if (scene === 'final') drawFinal(); else if (scene === 'photo') drawPhoto();
-  else if (scene === 'intro') drawIntro(now); else if (scene === 'building') drawBuilding(now);
-  else if (scene === 'hall') drawHall(); else if (scene === 'stank') drawStank(now);
-  else if (scene === 'pipes') drawPipes(); else if (scene === 'farm') drawFarm(now);
-  else if (scene === 'coaster') drawCoaster(now); else if (scene === 'planet') drawPlanetScene(now); else if (scene === 'monster') drawMonster(now);
-  else if (scene === 'pyramid' && pyr) drawPyramid(now); else if (scene === 'god' && god) drawGodRoom(now); else if (scene === 'zena' && zena) drawZena(now);
-  else if (scene === 'roul' && roul) drawRoul(now); else if (scene === 'vault' && vault) drawVault(now);
-  else if (['pyramid', 'god', 'zena', 'roul', 'vault'].includes(scene)) {}
-  else drawNested();
-  if (snapA > 0 && snap) { ctx.globalAlpha = snapA; ctx.drawImage(snap, 0, 0); ctx.globalAlpha = 1; }
-  if (scene === 'pipes' && pipes) pipes.balls.forEach(b => { if (b.state === 'pre') ctx.drawImage(ballImg(b), b.x - b.pr, b.y - b.pr, b.pr * 2, b.pr * 2); });
-  if (ghost && scene !== 'pyramid' && scene !== 'god' && scene !== 'zena') { drawGhost(); if (ghostSay) bubble(ctx, ghostSay, ghost.x, ghost.y - R * .22); }
-  if (godParts.length) godParts.forEach(p => { const sz = p.s; ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, p.life)); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.drawImage(p.img, -sz / 2, -sz / 2, sz, sz); ctx.restore(); });
-  dots.forEach(p => { // die pips on their way to becoming chickens
-    if (p.hide) return; const r = p.r * (1 + p.glow * .6);
-    const gr = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 3.2); gr.addColorStop(0, `rgba(255,240,190,${.7 * p.glow})`); gr.addColorStop(1, 'rgba(255,200,90,0)');
-    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(p.x, p.y, r * 3.2, 0, TAU); ctx.fill();
-    ctx.fillStyle = p.red ? '#d0202f' : (p.glow > .5 ? '#fff6dc' : '#1b1a19'); ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, TAU); ctx.fill();
-  });
-  if (fade > 0) { ctx.fillStyle = `rgba(10,12,15,${fade})`; ctx.fillRect(0, 0, N, N); }
+  const perfScene = scene, perfStart = Perf.begin(perfScene);
+  try {
+    lastDraw = performance.now();
+    if (!N) return;
+    updatePointer(performance.now());
+    ctx.clearRect(0, 0, N, N);
+    const now = performance.now();
+    if (scene === 'final') drawFinal(); else if (scene === 'photo') drawPhoto();
+    else if (scene === 'intro') drawIntro(now); else if (scene === 'building') drawBuilding(now);
+    else if (scene === 'hall') drawHall(); else if (scene === 'stank') drawStank(now);
+    else if (scene === 'pipes') drawPipes(); else if (scene === 'farm') drawFarm(now);
+    else if (scene === 'coaster') drawCoaster(now); else if (scene === 'planet') drawPlanetScene(now); else if (scene === 'monster') drawMonster(now);
+    else if (scene === 'pyramid' && pyr) drawPyramid(now); else if (scene === 'god' && god) drawGodRoom(now); else if (scene === 'zena' && zena) drawZena(now);
+    else if (scene === 'roul' && roul) drawRoul(now); else if (scene === 'vault' && vault) drawVault(now);
+    else if (scene === 'pyramid' || scene === 'god' || scene === 'zena' || scene === 'roul' || scene === 'vault') {}
+    else drawNested();
+    if (snapA > 0 && snap) { ctx.globalAlpha = snapA; ctx.drawImage(snap, 0, 0); ctx.globalAlpha = 1; }
+    if (scene === 'pipes' && pipes) pipes.balls.forEach(b => { if (b.state === 'pre') ctx.drawImage(ballImg(b), b.x - b.pr, b.y - b.pr, b.pr * 2, b.pr * 2); });
+    if (ghost && scene !== 'pyramid' && scene !== 'god' && scene !== 'zena') { drawGhost(); if (ghostSay) bubble(ctx, ghostSay, ghost.x, ghost.y - R * .22); }
+    for (let i = 0; i < godParts.length; i++) {
+      if (Perf.low && i % 2) continue;
+      const p = godParts[i], sz = p.s;
+      ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, p.life)); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.drawImage(p.img, -sz / 2, -sz / 2, sz, sz); ctx.restore();
+    }
+    for (let i = 0; i < dots.length; i++) {
+      if (Perf.low && i % 2) continue;
+      const p = dots[i]; // die pips on their way to becoming chickens
+      if (p.hide) continue;
+      const r = p.r * (1 + p.glow * .6);
+      if (!Perf.low) {
+        const gr = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 3.2); gr.addColorStop(0, `rgba(255,240,190,${.7 * p.glow})`); gr.addColorStop(1, 'rgba(255,200,90,0)');
+        ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(p.x, p.y, r * 3.2, 0, TAU); ctx.fill();
+      }
+      ctx.fillStyle = p.red ? '#d0202f' : (p.glow > .5 ? '#fff6dc' : '#1b1a19'); ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, TAU); ctx.fill();
+    }
+    if (fade > 0) { ctx.fillStyle = `rgba(10,12,15,${fade})`; ctx.fillRect(0, 0, N, N); }
+  } finally {
+    Perf.end(perfScene, perfStart);
+  }
 }
 // everything fits on one screen: the wheel takes whatever height the rest of the page leaves
 function fitStage() {
@@ -1474,12 +1588,32 @@ function fitStage() {
   const sw = Math.max(220, Math.min(innerWidth - 4, 600, h - (window.visualViewport ? visualViewport.height : innerHeight) * .1)); st.style.width = sw + 'px'; st.style.marginLeft = st.style.marginRight = sw > app.clientWidth ? (app.clientWidth - sw) / 2 + 'px' : 'auto';
 }
 addEventListener('resize', fitStage); if (window.visualViewport) visualViewport.addEventListener('resize', fitStage);
+function syncCanvasQuality(preserve = true) {
+  if (!N) return;
+  const scale = Perf.dpr(D) / D, size = Math.max(1, Math.round(N * scale));
+  if (cv.width !== size || cv.height !== size) {
+    let previous = null;
+    if (preserve && cv.width && cv.height) {
+      previous = document.createElement('canvas');
+      previous.width = cv.width; previous.height = cv.height;
+      previous.getContext('2d').drawImage(cv, 0, 0);
+    }
+    cv.width = cv.height = size;
+    if (previous) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.drawImage(previous, 0, 0, size, size);
+    }
+  }
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+}
+Perf.onCanvasQualityChange(syncCanvasQuality);
 function resize() {
   const w = cv.clientWidth; if (!w) return;
-  D = Perf.dpr(2);
-  const n = Math.round(w * D); if (n === N) return;
+  D = Math.min(2, window.devicePixelRatio || 1);
+  const n = Math.round(w * D); if (n === N) { syncCanvasQuality(false); return; }
   const old = B ? { N } : null;
-  N = cv.width = cv.height = n; c = N / 2; R = N / 2 * .935 * .82;
+  N = n; c = N / 2; R = N / 2 * .935 * .82;
+  syncCanvasQuality(false);
   build(); if (old) rescaleBalls(old); draw();
 }
 // ---------- sound ----------
@@ -1671,28 +1805,39 @@ const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const easeOut = t => 1 - Math.pow(1 - t, 4);
 const easeIn = t => t * t * t;
 const easeInOut = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-function animate(dur, step) {
+const tapSkips = new Set();
+function animate(dur, step, tapSkippable = false) {
   if (reduce) dur = Math.min(dur, 1200);
   return new Promise(res => {
     const t0 = performance.now();
+    let raf = 0, done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      if (raf) cancelAnimationFrame(raf);
+      tapSkips.delete(finish);
+      try { step(1); } catch (e) { console.error(String(e && e.stack || e)); }
+      res();
+    };
     // the first frame's timestamp can be a hair before t0, so clamp at 0; and a frame that throws must never stall the run
     function f(now) {
       const t = Math.max(0, Math.min(1, (now - t0) / dur));
       try { step(t); } catch (e) { console.error(String(e && e.stack || e)); }
-      if (t < 1) requestAnimationFrame(f); else res();
+      if (t < 1) raf = requestAnimationFrame(f);
+      else { done = true; tapSkips.delete(finish); res(); }
     }
-    requestAnimationFrame(f);
+    if (tapSkippable) tapSkips.add(finish);
+    raf = requestAnimationFrame(f);
   });
 }
-// idle pauses are trimmed, and a tap skips whatever pause is running so the next step starts at once
-const pendingWaits = new Set();
-const wait = ms => new Promise(r => {
-  if (reduce) ms = Math.min(ms, 300); else if (ms >= 600) ms = Math.round(ms * .75);
-  const done = () => { clearTimeout(t); pendingWaits.delete(done); r(); };
+// Only marked result and transition pauses are shortened or skipped; gameplay beats stay timed as written.
+const wait = (ms, tapSkippable = false) => new Promise(r => {
+  if (reduce) ms = Math.min(ms, 300); else if (tapSkippable) ms = Math.round(ms * .75);
+  const done = () => { clearTimeout(t); tapSkips.delete(done); r(); };
   const t = setTimeout(done, ms);
-  if (ms >= 400) pendingWaits.add(done);
+  if (tapSkippable) tapSkips.add(done);
 });
-document.addEventListener('pointerdown', () => { [...pendingWaits].forEach(f => f()); }, true);
+document.addEventListener('pointerdown', () => tapSkips.forEach(skip => skip()), true);
 const sliceAt = (r, n) => Math.floor(mod(-r, TAU) / (TAU / n)) % n;
 function target(n) { const i = Math.floor(Math.random() * n); return { i, a: (i + .15 + Math.random() * .7) * TAU / n }; }
 
@@ -1727,7 +1872,7 @@ function drawWheelSliceGlow(rotation, n, i, t0, sc = 1, inner = .55, outer = .93
 }
 // the slice a wheel stopped on glows and pulses, then settles to a soft gold edge
 function drawWinGlow() {
-  if (!winGlow || scene !== 'nested' || !LAYERS[winGlow.k]) return;
+  if (Perf.low || !winGlow || scene !== 'nested' || !LAYERS[winGlow.k]) return;
   const { k, i, t0 } = winGlow, sc = layerVisible(k); if (sc <= 0) return;
   drawWheelSliceGlow(rot[k], LAYERS[k].length, i, t0, sc);
 }
@@ -1829,9 +1974,9 @@ async function dive(z) {
   });
   zoom = z; streak = 0; draw(); ting(); buzz(30);
 }
-async function zoomTo(z, dur) {
+async function zoomTo(z, dur, tapSkippable = false) {
   const from = zoom; whoosh(z > from);
-  await animate(dur, t => { zoom = from * Math.pow(z / from, easeInOut(t)); draw(); });
+  await animate(dur, t => { zoom = from * Math.pow(z / from, easeInOut(t)); draw(); }, tapSkippable);
   zoom = z; draw();
 }
 // smooth scene change: the last frame melts away over the new scene, never through black
@@ -1929,7 +2074,7 @@ async function crossTo(setup, dur = 800) {
   await animate(dur, t => { snapA = 1 - easeInOut(t); draw(); });
   snapA = 0; draw();
 }
-async function fadeTo(v, dur) { const f0 = fade; await animate(dur, t => { fade = lerp(f0, v, t); draw(); }); fade = v; draw(); }
+async function fadeTo(v, dur, tapSkippable = false) { const f0 = fade; await animate(dur, t => { fade = lerp(f0, v, t); draw(); }, tapSkippable); fade = v; draw(); }
 
 function popSound() {
   if (!AC) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
@@ -2161,13 +2306,13 @@ async function backToMain() {
   hideFinal(); sayLast = null; try { speechSynthesis.cancel(); } catch (e) {}
   if (scene !== 'nested' && scene !== 'photo') {
     // the room keeps drawing while it fades out, so its state is only cleared once the main wheel is back
-    try { await fadeTo(1, 400); } catch (e) { fade = 1; }
+    try { await fadeTo(1, 400, true); } catch (e) { fade = 1; }
     pyr = null; god = null; zena = null; roul = null; vault = null; clearSpecialDice();
     Music.setLevel(0); Music.setMode('egypt'); Music.duck(1);
     scene = 'nested'; pickIdx = -1; prize = null; bingo = []; zoom = 1 / Math.pow(S, DEPTH); balls = []; counts = null; winner = -1; flatT = 0; banner = '';
-    await fadeTo(0, 350);
+    await fadeTo(0, 350, true);
   }
-  if (zoom !== 1) await zoomTo(1, 1500);
+  if (zoom !== 1) await zoomTo(1, 1500, true);
   if (DEPTH !== MAXD - 1) { DEPTH = MAXD - 1; navCache = null; draw(); }
 }
 
@@ -2195,9 +2340,9 @@ async function runMain() {
   setVerdict({ eyebrow: 'The wheel says', title: 'Go deeper', body: 'Hold on.' });
   let wMiss = 0, bMiss = 0, ups = 0, godHit = false;
   if (Math.random() < GOLDEN_CHANCE) await goldenRun();
-  else if (store.get('hope', false)) { store.set('hope', false); await wait(400); await boostRun('W', 0); }
+  else if (store.get('hope', false)) { store.set('hope', false); await wait(400, true); await boostRun('W', 0); }
   for (let k = 1; k <= DEPTH; k++) {
-    await wait(450);
+    await wait(450, true);
     $('#caption').textContent = '';
     await dive(1 / Math.pow(S, k));
     const idx = await spinLayer(k, 4300, k % 2 ? -1 : 1);
@@ -2212,7 +2357,7 @@ async function runMain() {
       if (ups++ < 3) {
         setVerdict({ eyebrow: 'Going deeper', title: it.wild ? 'Wild, go back up' : it.bonus ? 'Bonus, go back up' : 'Go back up', body: '', steps: steps.slice(), flash: true });
         playSfx('back');
-        Music.sting(1); buzz([30, 30, 30]); await wait(500);
+        Music.sting(1); buzz([30, 30, 30]); await wait(500, true);
         await dive(1 / Math.pow(S, k - 1));
         k -= 2; continue;
       }
@@ -2265,14 +2410,14 @@ async function runMain() {
     await godRoom(steps);
     // a full set you were holding still gets its room once Phelan's shop is done
     if (wilds >= 3 || bonus >= 3) {
-      await wait(5000);
+      await wait(5000, true);
       try { speechSynthesis.cancel(); } catch (e) {}
       hideFinal(); ghost = null; ghostSay = '';
       if (window.wolNextRoom) wolNextRoom(); // the next room's prize is paid on top of the God room's
       setVerdict({ eyebrow: 'Not finished', title: wilds >= 3 ? 'Your Wilds are still lit' : 'Your ankhs are still lit', body: '', steps: steps.slice(), flash: true });
       $('#caption').textContent = wilds >= 3 ? 'The Wild room is still open' : 'The Bonus room is still open';
       Music.sting(3); buzz([60, 40, 60, 40, 200]);
-      await wait(1800);
+      await wait(1800, true);
       god = null;
       if (wilds >= 3) await bonusRun(steps, wilds, bonus); else await monsterRun(steps, wilds, bonus);
     }
@@ -2280,7 +2425,7 @@ async function runMain() {
   }
   if (wilds >= 3) { await bonusRun(steps, wilds, bonus); return; }
   if (bonus >= 3) { await monsterRun(steps, wilds, bonus); return; }
-  await wait(500);
+  await wait(500, true);
   $('#caption').textContent = '';
   dice.forEach(d => { d.glow = 0; d.toBall = false; });
   // the special dice drop into the well now: one per Wild and ankh you're holding
@@ -2289,7 +2434,7 @@ async function runMain() {
     $('#caption').textContent = [wilds && `${wilds} gold ${wilds > 1 ? 'dice' : 'die'}`, bonus && `${bonus} purple ${bonus > 1 ? 'dice' : 'die'}`].filter(Boolean).join(' and ');
     setTiles(wilds, bonus); liveK = DEPTH;
     try { for (const d of spec) { Music.sting(1); tick(1.2, 1800); buzz(20); await animate(450, t => { d.born = easeOut(t); d.glow = Math.sin(t * Math.PI) * .9; draw(); }); d.born = 1; d.glow = 0; } } finally { liveK = -1; }
-    await wait(350);
+    await wait(350, true);
   }
   const total = await rollDice();
   // the gold and purple dice: their coloured face adds a Wild or an ankh, which can still open a room (or the Pyramid)
@@ -2302,7 +2447,7 @@ async function runMain() {
     await animate(900, t => { d.glow = Math.sin(t * Math.PI) * .6 + .4; draw(); });
   }
   if (hits.length) {
-    await wait(500);
+    await wait(500, true);
     if (wilds >= 3 && bonus >= 3) { await pyramidRun(steps); return; }
     if (wilds >= 3) { await bonusRun(steps, wilds, bonus); return; }
     if (bonus >= 3) { await monsterRun(steps, wilds, bonus); return; }
@@ -2352,7 +2497,7 @@ async function runMain() {
     tries++;
     banner = 'THE GOLD BALL DECIDES'; draw();
     setVerdict({ eyebrow: 'Going deeper', title: 'Tie', body: `${tied.map(j => FINAL[j].t).join(' and ')} can’t be separated. Something gold is coming.`, steps: steps.slice(), flash: false });
-    await wait(1100);
+    await wait(1100, true);
     balls.push({ gold: true, free: true, x: lerp(B.m + B.w, N - B.m - B.w, Math.random()), y: N * .27, vx: 0, vy: 0 });
     banner = '';
     await runDrop(9000);
@@ -2363,7 +2508,7 @@ async function runMain() {
   const dest = FINAL[winner];
   steps.push({ text: cap(dest.b), dest: true });
   setVerdict({ eyebrow: 'The wheels say', title: dest.t, body: 'Some of them go on. The rest are forgotten.', steps: steps.slice() });
-  await wait(2000);
+  await wait(2000, true);
   let m = await markChain(steps, dest, { W: wilds, B: bonus });
   if (m.revenge) m = await phelanRevenge();
   const moves = steps.filter(s => !s.dest && !/^(Wild|Bonus|More)/.test(s.text));
@@ -4746,12 +4891,12 @@ async function spinPhoto() {
   ting(); buzz([30, 40, 60]);
   hi = p.i;
   await animate(450, t => { hiA = t; draw(); });
-  await wait(500);
+  await wait(500, true);
   const from = rotP, to = Math.round(rotP / TAU) * TAU;
-  await animate(1700, t => { rotP = from + (to - from) * easeInOut(t); draw(); });
+  await animate(1700, t => { rotP = from + (to - from) * easeInOut(t); draw(); }, true);
   rotP = 0; draw();
-  await wait(300); whoosh(true);
-  await animate(1800, t => { photoZoom = easeInOut(t); draw(); });
+  await wait(300, true); whoosh(true);
+  await animate(1800, t => { photoZoom = easeInOut(t); draw(); }, true);
   const clock = Math.round(((p.i + .5) * 360 / PHOTO_N) / 30) % 12 || 12;
   const title = `Head toward ${clock} o'clock`;
   setVerdict({ eyebrow: 'Final answer', title, body: 'Whatever is in that slice of the picture, that is where you are going. Walk toward it until you reach it or something stops you. That is your turn done.', q: quote() });
@@ -4779,7 +4924,7 @@ setInterval(() => {
 }, 3000);
 async function spin() {
   if (busy) return; lock(true); audio(); Music.start();
-  if ($('.stage').classList.contains('done')) { hideFinal(); sayLast = null; try { speechSynthesis.cancel(); } catch (e) {} await wait(700); }
+  if ($('.stage').classList.contains('done')) { hideFinal(); sayLast = null; try { speechSynthesis.cancel(); } catch (e) {} await wait(700, true); }
   try {
     if (scene === 'photo' && !photoDone) { await spinPhoto(); setBtn('Spin', false); }
     else {

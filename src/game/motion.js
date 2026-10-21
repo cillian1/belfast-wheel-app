@@ -4,28 +4,39 @@ const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const easeOut = t => 1 - Math.pow(1 - t, 4);
 const easeIn = t => t * t * t;
 const easeInOut = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-function animate(dur, step) {
+const tapSkips = new Set();
+function animate(dur, step, tapSkippable = false) {
   if (reduce) dur = Math.min(dur, 1200);
   return new Promise(res => {
     const t0 = performance.now();
+    let raf = 0, done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      if (raf) cancelAnimationFrame(raf);
+      tapSkips.delete(finish);
+      try { step(1); } catch (e) { console.error(String(e && e.stack || e)); }
+      res();
+    };
     // the first frame's timestamp can be a hair before t0, so clamp at 0; and a frame that throws must never stall the run
     function f(now) {
       const t = Math.max(0, Math.min(1, (now - t0) / dur));
       try { step(t); } catch (e) { console.error(String(e && e.stack || e)); }
-      if (t < 1) requestAnimationFrame(f); else res();
+      if (t < 1) raf = requestAnimationFrame(f);
+      else { done = true; tapSkips.delete(finish); res(); }
     }
-    requestAnimationFrame(f);
+    if (tapSkippable) tapSkips.add(finish);
+    raf = requestAnimationFrame(f);
   });
 }
-// idle pauses are trimmed, and a tap skips whatever pause is running so the next step starts at once
-const pendingWaits = new Set();
-const wait = ms => new Promise(r => {
-  if (reduce) ms = Math.min(ms, 300); else if (ms >= 600) ms = Math.round(ms * .75);
-  const done = () => { clearTimeout(t); pendingWaits.delete(done); r(); };
+// Only marked result and transition pauses are shortened or skipped; gameplay beats stay timed as written.
+const wait = (ms, tapSkippable = false) => new Promise(r => {
+  if (reduce) ms = Math.min(ms, 300); else if (tapSkippable) ms = Math.round(ms * .75);
+  const done = () => { clearTimeout(t); tapSkips.delete(done); r(); };
   const t = setTimeout(done, ms);
-  if (ms >= 400) pendingWaits.add(done);
+  if (tapSkippable) tapSkips.add(done);
 });
-document.addEventListener('pointerdown', () => { [...pendingWaits].forEach(f => f()); }, true);
+document.addEventListener('pointerdown', () => tapSkips.forEach(skip => skip()), true);
 const sliceAt = (r, n) => Math.floor(mod(-r, TAU) / (TAU / n)) % n;
 function target(n) { const i = Math.floor(Math.random() * n); return { i, a: (i + .15 + Math.random() * .7) * TAU / n }; }
 
@@ -60,7 +71,7 @@ function drawWheelSliceGlow(rotation, n, i, t0, sc = 1, inner = .55, outer = .93
 }
 // the slice a wheel stopped on glows and pulses, then settles to a soft gold edge
 function drawWinGlow() {
-  if (!winGlow || scene !== 'nested' || !LAYERS[winGlow.k]) return;
+  if (Perf.low || !winGlow || scene !== 'nested' || !LAYERS[winGlow.k]) return;
   const { k, i, t0 } = winGlow, sc = layerVisible(k); if (sc <= 0) return;
   drawWheelSliceGlow(rot[k], LAYERS[k].length, i, t0, sc);
 }
@@ -162,9 +173,9 @@ async function dive(z) {
   });
   zoom = z; streak = 0; draw(); ting(); buzz(30);
 }
-async function zoomTo(z, dur) {
+async function zoomTo(z, dur, tapSkippable = false) {
   const from = zoom; whoosh(z > from);
-  await animate(dur, t => { zoom = from * Math.pow(z / from, easeInOut(t)); draw(); });
+  await animate(dur, t => { zoom = from * Math.pow(z / from, easeInOut(t)); draw(); }, tapSkippable);
   zoom = z; draw();
 }
 // smooth scene change: the last frame melts away over the new scene, never through black
@@ -262,7 +273,7 @@ async function crossTo(setup, dur = 800) {
   await animate(dur, t => { snapA = 1 - easeInOut(t); draw(); });
   snapA = 0; draw();
 }
-async function fadeTo(v, dur) { const f0 = fade; await animate(dur, t => { fade = lerp(f0, v, t); draw(); }); fade = v; draw(); }
+async function fadeTo(v, dur, tapSkippable = false) { const f0 = fade; await animate(dur, t => { fade = lerp(f0, v, t); draw(); }, tapSkippable); fade = v; draw(); }
 
 function popSound() {
   if (!AC) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();

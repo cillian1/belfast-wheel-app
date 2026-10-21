@@ -30,13 +30,13 @@ async function backToMain() {
   hideFinal(); sayLast = null; try { speechSynthesis.cancel(); } catch (e) {}
   if (scene !== 'nested' && scene !== 'photo') {
     // the room keeps drawing while it fades out, so its state is only cleared once the main wheel is back
-    try { await fadeTo(1, 400); } catch (e) { fade = 1; }
+    try { await fadeTo(1, 400, true); } catch (e) { fade = 1; }
     pyr = null; god = null; zena = null; roul = null; vault = null; clearSpecialDice();
     Music.setLevel(0); Music.setMode('egypt'); Music.duck(1);
     scene = 'nested'; pickIdx = -1; prize = null; bingo = []; zoom = 1 / Math.pow(S, DEPTH); balls = []; counts = null; winner = -1; flatT = 0; banner = '';
-    await fadeTo(0, 350);
+    await fadeTo(0, 350, true);
   }
-  if (zoom !== 1) await zoomTo(1, 1500);
+  if (zoom !== 1) await zoomTo(1, 1500, true);
   if (DEPTH !== MAXD - 1) { DEPTH = MAXD - 1; navCache = null; draw(); }
 }
 
@@ -64,9 +64,9 @@ async function runMain() {
   setVerdict({ eyebrow: 'The wheel says', title: 'Go deeper', body: 'Hold on.' });
   let wMiss = 0, bMiss = 0, ups = 0, godHit = false;
   if (Math.random() < GOLDEN_CHANCE) await goldenRun();
-  else if (store.get('hope', false)) { store.set('hope', false); await wait(400); await boostRun('W', 0); }
+  else if (store.get('hope', false)) { store.set('hope', false); await wait(400, true); await boostRun('W', 0); }
   for (let k = 1; k <= DEPTH; k++) {
-    await wait(450);
+    await wait(450, true);
     $('#caption').textContent = '';
     await dive(1 / Math.pow(S, k));
     const idx = await spinLayer(k, 4300, k % 2 ? -1 : 1);
@@ -81,7 +81,7 @@ async function runMain() {
       if (ups++ < 3) {
         setVerdict({ eyebrow: 'Going deeper', title: it.wild ? 'Wild, go back up' : it.bonus ? 'Bonus, go back up' : 'Go back up', body: '', steps: steps.slice(), flash: true });
         playSfx('back');
-        Music.sting(1); buzz([30, 30, 30]); await wait(500);
+        Music.sting(1); buzz([30, 30, 30]); await wait(500, true);
         await dive(1 / Math.pow(S, k - 1));
         k -= 2; continue;
       }
@@ -134,14 +134,14 @@ async function runMain() {
     await godRoom(steps);
     // a full set you were holding still gets its room once Phelan's shop is done
     if (wilds >= 3 || bonus >= 3) {
-      await wait(5000);
+      await wait(5000, true);
       try { speechSynthesis.cancel(); } catch (e) {}
       hideFinal(); ghost = null; ghostSay = '';
       if (window.wolNextRoom) wolNextRoom(); // the next room's prize is paid on top of the God room's
       setVerdict({ eyebrow: 'Not finished', title: wilds >= 3 ? 'Your Wilds are still lit' : 'Your ankhs are still lit', body: '', steps: steps.slice(), flash: true });
       $('#caption').textContent = wilds >= 3 ? 'The Wild room is still open' : 'The Bonus room is still open';
       Music.sting(3); buzz([60, 40, 60, 40, 200]);
-      await wait(1800);
+      await wait(1800, true);
       god = null;
       if (wilds >= 3) await bonusRun(steps, wilds, bonus); else await monsterRun(steps, wilds, bonus);
     }
@@ -149,7 +149,7 @@ async function runMain() {
   }
   if (wilds >= 3) { await bonusRun(steps, wilds, bonus); return; }
   if (bonus >= 3) { await monsterRun(steps, wilds, bonus); return; }
-  await wait(500);
+  await wait(500, true);
   $('#caption').textContent = '';
   dice.forEach(d => { d.glow = 0; d.toBall = false; });
   // the special dice drop into the well now: one per Wild and ankh you're holding
@@ -158,7 +158,7 @@ async function runMain() {
     $('#caption').textContent = [wilds && `${wilds} gold ${wilds > 1 ? 'dice' : 'die'}`, bonus && `${bonus} purple ${bonus > 1 ? 'dice' : 'die'}`].filter(Boolean).join(' and ');
     setTiles(wilds, bonus); liveK = DEPTH;
     try { for (const d of spec) { Music.sting(1); tick(1.2, 1800); buzz(20); await animate(450, t => { d.born = easeOut(t); d.glow = Math.sin(t * Math.PI) * .9; draw(); }); d.born = 1; d.glow = 0; } } finally { liveK = -1; }
-    await wait(350);
+    await wait(350, true);
   }
   const total = await rollDice();
   // the gold and purple dice: their coloured face adds a Wild or an ankh, which can still open a room (or the Pyramid)
@@ -171,7 +171,7 @@ async function runMain() {
     await animate(900, t => { d.glow = Math.sin(t * Math.PI) * .6 + .4; draw(); });
   }
   if (hits.length) {
-    await wait(500);
+    await wait(500, true);
     if (wilds >= 3 && bonus >= 3) { await pyramidRun(steps); return; }
     if (wilds >= 3) { await bonusRun(steps, wilds, bonus); return; }
     if (bonus >= 3) { await monsterRun(steps, wilds, bonus); return; }
@@ -221,7 +221,7 @@ async function runMain() {
     tries++;
     banner = 'THE GOLD BALL DECIDES'; draw();
     setVerdict({ eyebrow: 'Going deeper', title: 'Tie', body: `${tied.map(j => FINAL[j].t).join(' and ')} can’t be separated. Something gold is coming.`, steps: steps.slice(), flash: false });
-    await wait(1100);
+    await wait(1100, true);
     balls.push({ gold: true, free: true, x: lerp(B.m + B.w, N - B.m - B.w, Math.random()), y: N * .27, vx: 0, vy: 0 });
     banner = '';
     await runDrop(9000);
@@ -232,7 +232,7 @@ async function runMain() {
   const dest = FINAL[winner];
   steps.push({ text: cap(dest.b), dest: true });
   setVerdict({ eyebrow: 'The wheels say', title: dest.t, body: 'Some of them go on. The rest are forgotten.', steps: steps.slice() });
-  await wait(2000);
+  await wait(2000, true);
   let m = await markChain(steps, dest, { W: wilds, B: bonus });
   if (m.revenge) m = await phelanRevenge();
   const moves = steps.filter(s => !s.dest && !/^(Wild|Bonus|More)/.test(s.text));

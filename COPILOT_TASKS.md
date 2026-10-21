@@ -187,7 +187,7 @@ Keep it light on CPU (no new per-frame audio work). No gameplay changes.
 
 **Status:** Added synthesized themes for the main wheel, Stank Chamber, God room, Monster tank, Pyramid, Mark's farm, Chicken Race, and Phelan's revenge, plus room/major-event effects and a persisted global mute separate from the music toggle. Merged in PR #22 into `update-24` and included in the combined update 24 release. `node tools/bundle.mjs`, `node tools/check.mjs`, `git diff --check`, and mocked WebAudio preference/mute checks passed.
 
-## Task 9: smoothness update (ON HOLD until update 24 is on main; Claude posts "/go")
+## Task 9: smoothness update (#23; update 25)
 
 Cillian: the game isn't laggy but it feels **sluggish**, and it must run well on **low-end phones**. Ship as one update with its own name. Plan:
 1. **Measure first.** Add a hidden FPS/frame-time overlay (toggle with `?perf=1`). Profile every room in Chrome DevTools with 4x CPU throttle at 360px, and note the worst frames (paint, GC, long tasks) in the PR.
@@ -196,7 +196,9 @@ Cillian: the game isn't laggy but it feels **sluggish**, and it must run well on
 4. **Frame budget.** Keep each frame under ~8 ms of script on a mid phone: cache static layers (wheel faces, rims, backgrounds) on offscreen canvases, avoid per-frame allocations, gradients and `shadowBlur`, and cap the devicePixelRatio at 2.
 5. **Low-end mode.** Auto-detect slow devices (`hardwareConcurrency <= 4`, `deviceMemory <= 3`, or measured frame time over budget for 2 s). It uses fewer particles, no blur/glow passes, a lower DPR (1.5) and 30 fps idle animations. Add a "Quality: Auto / High / Low" setting saved with `pref`.
 6. **Prove it.** Put before/after frame-time numbers for each room in the PR (throttled), check layouts at 320/360/412px, and make sure Watch mirroring and replays still play back.
-Bump the version once at the end (next free number) with a name.
+The version/name bump belongs in the later `update-25` → `main` release PR; this feature PR has no version bump.
+
+**Status:** Implementation and Edge/Chromium 4×-CPU forced-scene profiling are recorded in draft PR #34; bundle/check and replay playback/pruning tests pass, with 320/360/412px layouts checked. High-mode Stank worst was 11.8ms (above 8ms); its Low sample was 7.9ms. Other rooms were not measured in Low mode, so no whole-suite Low pass is claimed. No live second-player Watch or physical low-end phone was available. The existing ambient fireplace consumes global `Math.random()` per rendered frame: shorter/skipped waits can change how many of those calls happen before later gameplay draws. Static call-site order is unchanged, but full-run outcome invariance is not established, so PR #34 remains draft pending resolution of the exact RNG/outcome requirement.
 
 ## Task 10: Phelan voice lines (ON HOLD, ships in update 25 with Task 9)
 

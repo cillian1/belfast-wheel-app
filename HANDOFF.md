@@ -4,9 +4,9 @@
 
 - **Task:** Task 9 smoothness update (#23), part of update 25 with Task 10 (#25). PR targets `update-25`, no version bump.
 - **Owner:** Copilot.
-- **Status:** Built: `src/game/perf.js` (Quality Auto/High/Low saved with `pref`, low-end auto-detect, `?perf=1` overlay, DPR caps, shadow/glow passes off in low), press feedback and `touch-action: manipulation`, idle pauses trimmed 25% and a tap skips the running pause. No odds, prize or `Math.random()` order changes. Not yet measured on a throttled phone.
-- **Next:** Claude reviews; Cillian merges into `update-25`. Release PR `update-25` → `main` carries the bump.
-- **Last updated:** 2026-10-21 by Copilot
+- **Status:** Implementation and profiling are in draft PR #34. Bundle/check and replay tests pass; 4× Chromium profiles and 320/360/412px layouts are recorded. High-mode Stank worst was 11.8ms (over 8ms); its Low-mode sample was 7.9ms. Other rooms were not measured in Low mode, so no broader Low-mode pass is claimed. Live two-player Watch and physical low-end-phone checks are unavailable. The existing room flame uses global `Math.random()` per rendered frame, so shortened/skipped waits can change how many ambient draws precede later gameplay draws; full-run outcome invariance is not established.
+- **Next:** Resolve whether to keep strict outcome/RNG-order requirements (which conflict with timing changes while room animation shares global `Math.random()`) or accept the documented timing-dependent RNG tradeoff. Keep PR #34 draft; do not post DONE until resolved and verified.
+- **Last updated:** 2026-10-22 by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
