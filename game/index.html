@@ -284,7 +284,7 @@ footer{position:fixed;top:8px;left:10px;z-index:5;color:rgba(220,225,230,.55);fo
   <input class="vh" type="file" id="lib" accept="image/*">
 
 
-  <footer>Build 59 · app 20<br><small style="font-size:8.5px;letter-spacing:.04em">Fowl Play</small></footer>
+  <footer>Build 59 · app 21<br><small style="font-size:8.5px;letter-spacing:.04em">Trophy Hunt</small></footer>
 </div>
 
 <script>
@@ -4727,7 +4727,7 @@ if (document.fonts && document.fonts.load) {
 }
 </script>
 
-<script>window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":20,"ev":16.24,"edge":0.995,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};</script>
+<script>window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":21,"ev":16.24,"edge":0.995,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};</script>
 <script>
 // ---------- wallet layer for the Android app ----------
 // Injected after the game's own script by tools/build.mjs. It wraps spin() and setVerdict(),
@@ -4754,6 +4754,20 @@ if (document.fonts && document.fonts.load) {
     set(k, v) { try { if (app && app.setPref) app.setPref(k, v == null ? '' : v); } catch (e) {} try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} },
   };
   const TEST_KEY = 'test', isTest = () => !!(W.me && W.me.test);
+  const TROPHIES = [
+    { id: 'first', name: 'First spin', icon: '🎡', how: 'Complete your first paid spin.' },
+    { id: 'spins100', name: 'Regular', icon: '🔁', how: 'Complete 100 paid spins.' },
+    { id: 'spins1000', name: 'Lifer', icon: '♾️', how: 'Complete 1,000 paid spins.' },
+    { id: 'stank', name: 'Stank Chamber', icon: '🧪', how: 'Reach the Stank Chamber.' },
+    { id: 'monster', name: 'Monster tank', icon: '🥫', how: 'Reach the Monster tank.' },
+    { id: 'god', name: 'God room', icon: '⚡', how: 'Reach the God room.' },
+    { id: 'pyramid', name: 'Pyramid', icon: '🔺', how: 'Light all six Wild and ankh tiles at once.' },
+    { id: 'tomb', name: "Phelan's Tomb", icon: '🏺', how: "Win the Phelan's Tomb plaque." },
+    { id: 'deep5', name: 'Even deeper', icon: '🌀', how: 'Reach the hidden fifth inner wheel.' },
+    { id: 'golden', name: 'Golden run', icon: '✨', how: 'Trigger a Golden run.' },
+    { id: 'big', name: 'Big winner', icon: '🏆', how: 'Win at least 50× your bet in a single payout.' },
+    { id: 'race', name: 'Chicken Race', icon: '🐔', how: 'Win the Chicken Race.' },
+  ];
   const keyOf = name => name.trim().toLowerCase().replace(/[.#$\[\]\/\s]+/g, '_');
   function sha256(str) { // small pure-JS SHA-256 (crypto.subtle is not always there on file:// pages)
     const K = [], H = [], isP = n => { for (let f = 2; f * f <= n; f++) if (n % f === 0) return false; return true; };
@@ -4894,6 +4908,13 @@ if (document.fonts && document.fonts.load) {
 .wtabs{display:flex;gap:6px}
 .wtabs button{flex:1;border:1px solid var(--line);background:none;color:var(--mute);padding:8px;font-size:13px}
 .wtabs button.on{color:#f5d27a;border-color:#f5d27a}
+.wtrophy-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.wtrophy{min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 4px;border:1px solid var(--line);border-radius:10px;background:#15181c;color:var(--chrome);text-align:center}
+.wtrophy.locked{filter:grayscale(1);opacity:.5}
+.wtrophy-icon{font-size:22px;line-height:1.1}
+.wtrophy-name{font-size:11px;overflow-wrap:anywhere}
+.wtrophy-state{font-size:9px;color:var(--mute)}
+.wtrophy-detail{font-size:12px!important;min-height:30px}
 .app>.stage{max-width:none}
 html,body{overflow-x:hidden}
 body{box-sizing:border-box;margin:0}
@@ -4996,6 +5017,37 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     let t = document.querySelector('.wtoast'); if (!t) { t = el('div', 'wtoast'); document.body.appendChild(t); }
     t.textContent = msg; t.className = 'wtoast' + (gold ? ' gold' : ''); t.style.opacity = 1;
     clearTimeout(toastT); toastT = setTimeout(() => { t.style.opacity = 0; }, 2600);
+  }
+  let trophyToasts = [], trophyToastTimer = 0;
+  const pendingTrophies = new Set();
+  function showTrophyToast() {
+    if (!trophyToasts.length) { trophyToastTimer = 0; return; }
+    const t = trophyToasts.shift();
+    toast(`${t.icon} ${t.name} trophy earned!`, true);
+    trophyToastTimer = setTimeout(showTrophyToast, 2700);
+  }
+  function awardTrophy(id) {
+    const trophy = TROPHIES.find(t => t.id === id), me = W.me, user = W.user;
+    if (!trophy || !me || !user || (me.trophies && me.trophies[id])) return;
+    const pendingId = user + '/' + id;
+    if (pendingTrophies.has(pendingId)) return;
+    const earnedAt = now();
+    me.trophies = Object.assign({}, me.trophies || {}, { [id]: earnedAt });
+    pendingTrophies.add(pendingId);
+    db.put('users/' + user + '/trophies/' + id, earnedAt).then(() => {
+      if (W.user === user && W.me && W.me !== me) W.me.trophies = Object.assign({}, W.me.trophies || {}, { [id]: earnedAt });
+      trophyToasts.push(trophy);
+      if (!trophyToastTimer) showTrophyToast();
+    }).catch(() => {
+      const rollback = account => {
+        if (!account.trophies || account.trophies[id] !== earnedAt) return;
+        delete account.trophies[id];
+        if (!Object.keys(account.trophies).length) delete account.trophies;
+      };
+      rollback(me);
+      if (W.user === user && W.me && W.me !== me) rollback(W.me);
+      toast(`Could not save ${trophy.name}. Try again when online.`);
+    }).finally(() => pendingTrophies.delete(pendingId));
   }
 
   async function refreshJackpot() {
@@ -5101,6 +5153,9 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
       const u = await db.txn('users/' + W.user, u => { if (!u || (u.balance || 0) < s) { short = true; return undefined; } u.balance -= s; u.spins = (u.spins || 0) + 1; u.staked = (u.staked || 0) + s; u.last = now(); return u; });
       if (short) { if (u) W.me = u; paint(); setBtn('Spin', false); charging = false; return topupSheet('Not enough credit for that stake.'); }
       W.me = u; paint();
+      awardTrophy('first');
+      if ((u.spins || 0) >= 100) awardTrophy('spins100');
+      if ((u.spins || 0) >= 1000) awardTrophy('spins1000');
       log(W.user, 'spin', -s);
       if (!isTest()) {
         db.txn('stats', st => { st = st || {}; st.spins = (st.spins || 0) + 1; st.staked = (st.staked || 0) + s; return st; }).catch(() => {});
@@ -5121,6 +5176,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     lastVerdict = { e: String(o.eyebrow || ''), t: String(o.title || ''), b: String(o.body || '').slice(0, 240) };
     try {
       const run = W.run;
+      if (run && run.live && o.title === 'Golden run') awardTrophy('golden');
       if (run && !run.paid) {
         let m = /^Final answer · €([\d.]+)/.exec(o.eyebrow || '');
         if (!m && o.eyebrow === 'Final answer' && /^€[\d.]+$/.test(o.title || '')) m = [0, o.title.slice(1)];
@@ -5153,6 +5209,9 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     try {
       const u = await db.txn('users/' + W.user, u => { u.balance = (u.balance || 0) + c; u.won = (u.won || 0) + c; if (c > (u.biggest || 0)) u.biggest = c; return u; });
       W.me = u; paint();
+      if (/, Phelan['’]s Tomb$/.test(String(what || ''))) awardTrophy('tomb');
+      if (String(what || '').indexOf('Chicken Race') === 0) awardTrophy('race');
+      if (stake > 0 && c >= stake * 50) awardTrophy('big');
       log(W.user, 'win', c, { stake, what: String(what || '').slice(0, 60) });
       if (!isTest()) db.txn('stats', st => { st = st || {}; st.won = (st.won || 0) + c; if (c > (st.biggest || 0)) { st.biggest = c; st.biggestBy = W.me.name; } return st; }).catch(() => {});
     } catch (e) { pendingWins.push([c, stake, what]); savePending(); toast('Win saved on this phone. It adds when you are back online.'); }
@@ -5221,7 +5280,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   async function accountSheet(tab = 'me', selectedBoard) {
     await refresh();
     const me = W.me; if (!me) return;
-    const board = ['won', 'biggest', 'spins', 'net'].includes(selectedBoard) ? selectedBoard : (pref.get('wol.lbBoard') || 'won');
+    const board = ['won', 'biggest', 'spins', 'net', 'trophies'].includes(selectedBoard) ? selectedBoard : (pref.get('wol.lbBoard') || 'won');
     const p = openSheet(`<h3>${esc(me.name)}</h3>
       <div class="wtabs"><button data-t="me" type="button">Me</button><button data-t="lb" type="button">Leaderboards</button></div>
       <div id="wBody"><p>Loading…</p></div>
@@ -5277,10 +5336,22 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
         ${reqs.length ? `<div class="wpending">Pending withdrawals (${reqs.length}) · ${eur(pending)}</div>` : ''}
         <h4>History</h4><ul class="wlist" id="wHistory"></ul>
         <button class="wlink" type="button" id="wMoreHistory">Show more</button>
+        <h4>Trophies</h4>
+        <div class="wtrophy-grid">${TROPHIES.map(t => {
+          const earned = !!(me.trophies && me.trophies[t.id]);
+          return `<button class="wtrophy${earned ? '' : ' locked'}" type="button" data-trophy="${t.id}" aria-label="${esc(t.name)}: ${earned ? 'earned' : 'locked'}"><span class="wtrophy-icon">${t.icon}</span><span class="wtrophy-name">${esc(t.name)}</span><span class="wtrophy-state">${earned ? 'Earned' : 'Locked'}</span></button>`;
+        }).join('')}</div>
+        <p class="wtrophy-detail" id="wTrophyDetail" aria-live="polite">Tap a trophy to see how to earn it.</p>
         <button class="wlink" type="button" id="wOut">Log out</button>
       </div>`;
     renderHistory();
     $w('wMoreHistory').onclick = () => { historyLimit += 15; renderHistory(); };
+    body.querySelectorAll('.wtrophy').forEach(button => {
+      button.onclick = () => {
+        const trophy = TROPHIES.find(t => t.id === button.dataset.trophy);
+        if (trophy) $w('wTrophyDetail').textContent = `${trophy.name}: ${trophy.how}`;
+      };
+    });
     $w('wT').onclick = () => topupSheet(); $w('wW').onclick = withdrawSheet; $w('wOut').onclick = logout;
   }
   async function lbTab(body, selectedBoard) {
@@ -5291,6 +5362,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
       biggest: { title: 'Biggest win', value: u => u.biggest || 0, format: eur },
       spins: { title: 'Most spins', value: u => u.spins || 0, format: n => n },
       net: { title: 'Best up/down', value: u => (u.won || 0) - (u.staked || 0), format: eur },
+      trophies: { title: 'Most trophies', value: u => Object.keys(u.trophies || {}).length, format: n => n },
     };
     let boardKey = boards[selectedBoard] ? selectedBoard : 'won';
     body.innerHTML = `<div class="wboard-stats">Everyone: <b>${s.spins || 0} spins</b> · Biggest ever win: <b>${eur(s.biggest || 0)}${s.biggestBy ? ` by ${esc(s.biggestBy)}` : ''}</b></div>
@@ -5442,6 +5514,11 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     try {
       const st = capture(), sc = JSON.parse(st.scene || '""');
       if (ROOMS[sc] && !rec.room) { rec.room = ROOMS[sc]; if (feedRoom !== rec.room) { feedRoom = rec.room; feed(`${W.me ? W.me.name : 'Someone'} just hit ${rec.room} 🔥`); } }
+      if (sc === 'stank' || sc === 'roul') awardTrophy('stank');
+      if (sc === 'monster') awardTrophy('monster');
+      if (sc === 'god' || sc === 'zena') awardTrophy('god');
+      if ([...document.querySelectorAll('.wilds .wt')].filter(t => t.classList.contains('lit')).length === 6) awardTrophy('pyramid');
+      try { if (typeof DEPTH !== 'undefined' && DEPTH >= 5) awardTrophy('deep5'); } catch (e) {}
       if (rec.frames.length < 1200) { const ks = changed(st, rec.last); if (ks.length) rec.frames.push([now() - rec.t0, join(st, ks)]); rec.last = st; }
       const m = lastVerdict && /^Final answer · (€[\d.]+)/.exec(lastVerdict.e);
       if (m && !rec.win) rec.win = { amt: m[1], title: lastVerdict.t };
