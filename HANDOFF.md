@@ -2,10 +2,10 @@
 
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
-- **Task:** Task 5 replay reliability follow-up (Issue #12): playback failure handling and persistent prune cadence, alongside Tasks 6–8 (issues #17, #18, #19).
-- **Owner:** Copilot builds; Cillian verifies and merges. Claude is unavailable.
-- **Status:** Task 5 shipped as update 23 in PR #16. Playback now validates frames, rebases elapsed millisecond timestamps, bounds loading, and surfaces load/render failures; cadence persistence and regression tests are implemented. Final integration checks and current-main merge remain.
-- **Next:** Merge latest main, finish validation, open a ready-for-review follow-up PR, and post its link on Issue #12. Cillian verifies and merges; do not enable auto-merge.
+- **Task:** Task 5 replay reliability follow-up (Issue #12), alongside Tasks 6–8 in parallel (issues #17, #18, #19; PRs #21, #20, #22).
+- **Owner:** Copilot builds; Cillian verifies and merges this follow-up. Claude is unavailable for this task.
+- **Status:** Task 5 shipped as update 23 in PR #16. Playback now validates frames, rebases elapsed millisecond timestamps, bounds loading, and surfaces load/render failures; cadence persistence and regression tests are implemented. Latest main is merged; final checks are passing. Tasks 6–8 remain parallel on `update-24`; do not bump version 23 for this follow-up.
+- **Next:** Open a ready-for-review follow-up PR against current main and post its link on Issue #12. Cillian verifies and merges; do not enable auto-merge.
 - **Last updated:** 2026-10-21 22:30 by Copilot
 
 **Rules for this section:**
