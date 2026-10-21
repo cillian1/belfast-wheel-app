@@ -4,9 +4,9 @@
 
 - **Task:** Task 6: the new ghost (issue #17, PR #21); Tasks 7 and 8 are merged into `update-24`.
 - **Owner:** Copilot does ALL the work (Cillian, 2026-10-21): building, conflicts, version bumps, release notes, HANDOFF/COPILOT_TASKS updates, and the release PR. Claude only presses merge (GitHub won't let Copilot merge its own PRs). Money/odds/prize changes still go to Cillian.
-- **Status:** Finalizing Task 6 in PR #21 after integrating the latest `update-24` tip; version 23/build 60 stay unchanged for the combined release.
-- **Next:** Rebuild and check, replace the scene captures, then mark PR #21 ready and post `DONE: Task 6`. Cillian merges it into `update-24`; Copilot prepares the single release PR after all three tasks are integrated.
-- **Last updated:** 2026-10-21 22:45 by Copilot
+- **Status:** Finalizing Task 6 in PR #21; PRs #22 and #24 are staged in `update-24` at `84797ba`. Version 23/build 60 remain unchanged for the combined release.
+- **Next:** Rebuild and check against the latest `update-24`, replace the scene captures, then mark PR #21 ready and post `DONE: Task 6`. Cillian merges it into `update-24`; Copilot prepares the single release PR after staging is complete.
+- **Last updated:** 2026-10-21 22:49 by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
@@ -65,9 +65,14 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 
 ## Done log (history only, newest first; nothing here is current)
 
+- 2026-10-21: Task 5 replay playback reliability and restart-safe pruning follow-up ready for review in PR #24.
+- 2026-10-21: Task 7 room glow-ups (PR #20) merged into `update-24`; visual-only wheel, tank and Pyramid polish, with version 23/build 60 unchanged.
 - 2026-10-21: Task 8 added synthesized room themes, milestone effects and a saved master mute (PR #22) for the combined update 24.
+<<<<<<< HEAD
 - 2026-10-21: Task 7 room glow-ups ready in PR #20 for the combined update 24; visual-only wheel, tank and Pyramid polish, with version 23/build 60 unchanged.
 - 2026-10-21: Task 6, stink ghost sprite ready in PR #21 for the combined update 24; checked all five ghost contexts at 360/412px.
+=======
+>>>>>>> origin/update-24
 - 2026-10-21: Task 5 replays + Watch tabs + host watching (PR #16), merged as update 23.
 - 2026-10-21: Task 5 replay saving, pruning, player/host watching and legacy request fixes are ready for review in PR #16 as update 23 "Replay Night".
 - 2026-10-21: Task 4 Stage 4, performance (PR #14), merged as update 22 "Smoother Wheels". Task 4 is complete.
