@@ -130,6 +130,8 @@ Merged into Task 4 below. Don't open a separate PR for it.
 - Don't change timings players can feel (spin durations, waits, animation lengths).
 - **Acceptance:** before and after frame times on a long deep run (412px, DPR 2) if you can measure them. If your container can't run a browser, say so, and Claude will measure. Give a list of every cache you added and what invalidates it.
 
+**Status (Task 4, Stage 1):** Split the live page mechanically into `src/` modules and added the dependency-free Node bundler and checker. `node tools/bundle.mjs` rebuilt `game/index.html` byte-for-byte identical to pre-change `main` (`git diff --exit-code -- game/index.html` is clean); `node tools/check.mjs` parsed all 3 inline scripts and confirmed `version.json` `game` matches `gameVersion` 21. No behavior, version, payout, `Math.random()` call order/count, or watched globals changed. No open questions; Stage 2 has not started.
+
 ### What Claude checks before merging each stage
 
 - Screenshots of the main wheel, inner wheels, each room, the farm and Chicken Race, and the account sheet, before and after, at 360 and 412px.

@@ -36,12 +36,13 @@ Every phone with the app loads these files straight from `main`. A push to `main
 | File | What it is | Live? |
 |---|---|---|
 | `version.json` | What phones check every minute: `game`, `apk`, `gameBuild`, `name`, `notes`, download URLs | Yes |
-| `game/index.html` | The whole game plus the wallet (the last `<script>` blocks), in one file | Yes |
+| `src/` | Source of truth for the game and wallet modules | Build source |
+| `game/index.html` | The bundled game and wallet page generated from `src/` | Yes |
 | `app/WheelOfLife.apk` | The Android app, downloaded when `apk` goes up | Yes |
 | `host.html` | Cillian's host page on GitHub Pages (balances, payouts, gifts) | Yes |
 | `source/` | Android source and the old build tools, a reference copy | No |
 
-`game/index.html` is **edited in place**. Never regenerate it with `source/tools/build.mjs`: that would wipe the prize edits Cillian made by hand and every feature added since. `source/wallet.js` is a reference copy of the wallet, so edit the wallet inside `game/index.html`.
+`src/` is the source of truth for the game and wallet. Edit its modules, then run `node tools/bundle.mjs` and commit the generated `game/index.html`. Never regenerate it with `source/tools/build.mjs`: that would wipe the prize edits Cillian made by hand and every feature added since. `source/wallet.js` is an old reference copy, not the wallet source.
 
 There is also a web copy of the game outside this repo (a Claude artifact). Claude keeps it in step with game changes, and Copilot can't reach it.
 
@@ -49,8 +50,8 @@ There is also a web copy of the game outside this repo (a Claude artifact). Clau
 
 Do all of these in one commit:
 1. `version.json`: add 1 to `game`, set `name` (every update gets a name) and a short `notes`.
-2. `game/index.html`: set `"gameVersion":N` in `window.WALLET_CFG` to the same number. If they differ, phones show the update banner forever.
-3. `game/index.html`: update the footer, `<footer>Build B · app N<br><small …>Update name</small></footer>`, and `const BUILD` / `gameBuild` if the game build changed.
+2. `src/config.json`: set `"gameVersion":N` in `window.WALLET_CFG` to the same number. If they differ, phones show the update banner forever.
+3. `src/index.html`: update the footer, `<footer>Build B · app N<br><small …>Update name</small></footer>`, and `src/game/core.js` `const BUILD` / `version.json` `gameBuild` if the game build changed. Then run `node tools/bundle.mjs` and commit the generated `game/index.html`.
 
 Phones only take an update between runs. GitHub's raw files can take about 5 minutes to refresh.
 

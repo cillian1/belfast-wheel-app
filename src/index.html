@@ -1,0 +1,48 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wheel of Life</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<!-- @style-fonts -->
+<!-- @style-app -->
+
+<canvas id="room" aria-hidden="true"></canvas>
+<div class="app">
+  <header><h1>WHEEL OF LIFE</h1><span><button class="link" id="sayBtn" type="button" hidden>Read it out</button> <button class="link" id="musicBtn" type="button">Music on</button></span></header>
+
+  <div class="stage"><canvas id="wheel" aria-label="The Wheel of Life. Tap to spin."></canvas><div class="final" id="finalCard" aria-live="polite"><span class="eyebrow">Final answer</span><ol id="finalList"></ol><p class="fquote" id="finalQuote"></p></div></div>
+  <div class="wilds" id="wilds" aria-label="Wilds and Bonuses collected"><canvas class="wt" width="96" height="96"></canvas><canvas class="wt" width="96" height="96"></canvas><canvas class="wt" width="96" height="96"></canvas><span class="wgap"></span><canvas class="wt" width="96" height="96"></canvas><canvas class="wt" width="96" height="96"></canvas><canvas class="wt" width="96" height="96"></canvas></div>
+  <div class="wlab" aria-hidden="true"><span>Wilds<i class="wx" id="wxW"></i></span><span>Bonus<i class="wx b" id="wxB"></i></span></div>
+  <p class="caption" id="caption">Land on Go deeper and you fall through the wheels.</p>
+
+  <button class="spin" id="spinBtn" type="button">Spin</button>
+  <div class="reset" id="resetRow"><button type="button" id="autoBtn">Auto spin</button><button type="button" id="resetBtn">Reset spin</button><span id="resetAsk" hidden>Are you sure? <button type="button" id="resetYes">Yes</button><button type="button" id="resetNo">No</button></span></div>
+
+  <section class="plate" id="verdict" aria-live="polite">
+    <span class="eyebrow" id="vEyebrow">The wheel says</span>
+    <h2 id="vTitle">Go on, spin it</h2>
+    <p id="vBody">Most slices tell you where to go. Land on Go deeper and see how far down it goes.</p>
+    <ol class="steps" id="vSteps" hidden></ol>
+    <div class="obj" id="vObj" hidden>
+      <span class="eyebrow">From Austin's head</span>
+      <blockquote id="oQuote"></blockquote>
+    </div>
+    <div class="actions" id="showActions" hidden>
+      <label class="btn ti" for="cam">Take the picture</label>
+      <label class="btn" for="lib">Use a photo you already have</label>
+    </div>
+    <div class="actions" id="photoActions" hidden>
+      <label class="btn" for="cam">Retake</label>
+      <button class="btn" id="backBtn" type="button">Back to the Wheel of Life</button>
+    </div>
+  </section>
+  <input class="vh" type="file" id="cam" accept="image/*" capture="environment">
+  <input class="vh" type="file" id="lib" accept="image/*">
+
+
+  <footer>Build 59 · app 21<br><small style="font-size:8.5px;letter-spacing:.04em">Trophy Hunt</small></footer>
+</div>
+
+<!-- @game-script -->
+
+<!-- @wallet-config -->
+<!-- @wallet-script -->
