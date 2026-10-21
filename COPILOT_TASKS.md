@@ -159,7 +159,7 @@ Merged into Task 4 below. Don't open a separate PR for it.
 
 **Done when:** runs save and play back, the tabs work at 320–412px, the host iframe works for live and replays, and pruning is shown in the PR to delete exactly the oldest entries. Bump to the next version with an update name.
 
-**Status (Task 5):** Implemented every non-test replay, 3,000-card oldest-first pruning, app Watch tabs, host Live/Replays viewers, and dismiss-only legacy top-ups; Me counts pending withdrawals only. Version 23 is “Replay Night”. `node tools/bundle.mjs`, `node tools/check.mjs`, host script parsing, and `git diff --check` pass. Edge mock-database tests cover save/playback, pruning, Mine/Everyone, test exclusion, and dismiss-without-credit; wallet, Watch sheet, and host layouts passed at 320, 360, and 412px. A sampled 10-second replay was 41 frames / 2,530 packed bytes. Live Firebase gameplay remains untested.
+**Status (Task 5):** Shipped every non-test replay, 3,000-card oldest-first pruning, app Watch tabs, host Live/Replays viewers, pending-withdrawal filtering, and dismiss-only legacy top-ups in version 23, “Replay Night” (PR #16). Follow-up fixes persist prune cadence across restarts and harden playback; PRs #24 and #26 are merged into `update-24` and included in update 24. `node tools/test-replay-playback.mjs` covers immediate first-frame playback, timestamp units, malformed frames, playback errors and stalled reads/unpack; `node tools/test-replay-pruning.mjs` simulates restarts, shallow listings at saves 50/100, and exact-oldest deletion to 3,000. Bundle/check/whitespace checks pass; headless Edge mock-database checks confirm frame advancement, canvas rendering, RAF continuity, malformed-data feedback, and visible render errors. Live Firebase gameplay remains untested.
 
 ---
 
@@ -167,9 +167,16 @@ Merged into Task 4 below. Don't open a separate PR for it.
 
 Cillian wants **every** ghost in the game replaced by his new stink ghost: Ghost Phelan on the inner wheels, the God room / Zena ghost, the watch-message ghost and the Chicken Race trip. The source image will be at `assets/ghost-source.jpg`. It's a JPG with a **fake checkerboard painted into the background**, so cut it out properly: remove the checkerboard and keep the glow, the stink trails and the flies with soft alpha edges. Make a trimmed PNG/WebP sprite of ≤ 512 px (≤ 150 KB) and embed it in `game/index.html` as a data URI via the bundler, because phones load one file. Replace `drawGhost()` and `ghostImg()` so they draw the sprite at the same position, size and alpha, with a slow bob and a little wobble on the trails. Speech bubbles stay. Same timings and the same `Math.random()` calls. Check every ghost scene at 360 and 412px and put screenshots in the PR.
 
-## Task 7: room glow-ups (after Task 6 merges)
+**Status:** Replaced the shared game and Watch-message ghost renderers with a trimmed 512x505 WebP (135,962 bytes). PR #21 is merged into `update-24` and included in the combined update 24 release. `node tools/bundle.mjs`, `node tools/check.mjs`, both replay regression tests, `git diff --check`, and the `Math.random()` callsite comparison pass. Headless Edge renders all 10 scenes at 360x800 and 412x915:
+
+![Ghost scenes at 360px](screenshots/task-6/ghost-scenes-360.png)
+![Ghost scenes at 412px](screenshots/task-6/ghost-scenes-412.png)
+
+## Task 7: room glow-ups (parallel, part of update 24)
 
 Give every other room the same treatment the main wheels got in update 20: a light sweep while a wheel spins, a glow on the winning slice, a shaded 3D rim and a bevelled pointer. The wheels in the Stank Chamber (Stankman's wheel, the roulette), the God wheel, Phelan's wheel, Mark's wheel, the Monster tank and planet wheels, and the Pyramid. See `buildSweep`, `drawWinGlow`, `buildPointer` and `buildBase` in `src/game` for how the main wheels do it, and reuse those helpers. Visual only: no change to slices, odds, timings, prizes or `Math.random()` order. Before and after screenshots of each room in the PR.
+
+**Status (Task 7):** Merged in PR #20 into `update-24` and included in the combined update 24 release. Shared rim, sweep, winning-slice glow and bevelled pointers polish the room wheels; the Monster tank and Pyramid doors receive matching scene polish without adding wheel mechanics. Bundle/check and forced-state headless Chromium renders at 412px pass, with all eight before/after pairs attached to the PR; `Math.random()` callsites are unchanged.
 
 ## Task 8: sound pack and mute (after Task 7 merges)
 
@@ -177,6 +184,8 @@ Give every other room the same treatment the main wheels got in update 20: a lig
 2. **Sound effects** for the big moments that are silent today: room entry stings, the Chicken Race countdown, finish and ghost trip, the jackpot, trophy unlocks, and Go back up.
 3. **A mute button** in the header next to Music: one tap mutes all music and effects, remembered with `pref`. The current "Music on/off" stays for music only.
 Keep it light on CPU (no new per-frame audio work). No gameplay changes.
+
+**Status:** Added synthesized themes for the main wheel, Stank Chamber, God room, Monster tank, Pyramid, Mark's farm, Chicken Race, and Phelan's revenge, plus room/major-event effects and a persisted global mute separate from the music toggle. Merged in PR #22 into `update-24` and included in the combined update 24 release. `node tools/bundle.mjs`, `node tools/check.mjs`, `git diff --check`, and mocked WebAudio preference/mute checks passed.
 
 ## Task 9: smoothness update (ON HOLD until update 24 is on main; Claude posts "/go")
 

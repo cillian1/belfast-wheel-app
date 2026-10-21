@@ -64,6 +64,8 @@ function drawRoul(now) {
   drawScaled(faces.roulBowl, 0, ROUL_SC);
   drawScaled(faces.roulHead, roul.rot, ROUL_SC);
   ctx.globalCompositeOperation = 'overlay'; drawScaled(faces.sheen, 0, ROUL_SC); ctx.globalCompositeOperation = 'source-over';
+  drawWheelRim(ROUL_SC); drawWheelSweep(roul.spinning, ROUL_SC);
+  roul.balls.forEach(b => { if (b.landed) drawWheelSliceGlow(roul.rot, ROUL_N, b.pocket, b.winAt, ROUL_SC, R_POCKET, R_TRACK); });
   const br = R * .048 * ROUL_SC;
   roul.balls.forEach(b => {
     const p = roulBallXY(b);
@@ -81,6 +83,7 @@ function drawRoul(now) {
     ctx.font = `700 ${N * .055}px ${LABEL_FONT}`; ctx.fillStyle = 'rgba(0,0,0,.75)'; ctx.fillText(big, c, N * .9 + 2 * D); ctx.fillStyle = roul.labelGold ? '#ffe9a8' : '#f4eee0'; ctx.fillText(big, c, N * .9);
     if (small) { ctx.font = `600 ${N * .028}px ${LABEL_FONT}`; ctx.fillStyle = 'rgba(0,0,0,.75)'; ctx.fillText(small, c, N * .955 + D); ctx.fillStyle = '#e8dcc0'; ctx.fillText(small, c, N * .955); }
   }
+  drawPointer(faces.pointer, ROUL_SC);
 }
 // the elite Wild room: down into a golden locksafe, three gold doors, gold tablets behind them
 function drawVault(now) {
@@ -158,13 +161,14 @@ async function vaultRun(steps, cash, acts) {
 }
 async function bonusRun(steps, w = 3, b = 0) {
   roomHit = true; buzz([80, 60, 80, 60, 250]);
+  Music.setMode('stank');
   ensureStank();
   setVerdict({ eyebrow: 'Ultra bonus', title: 'Three wilds', body: 'Something is waiting at 77 Bridgefield.', steps: steps.slice() });
   $('#caption').textContent = 'Ultra bonus';
   await wait(900);
   whoosh(true);
   await fadeTo(1, 800);
-  scene = 'intro'; introT = 0; fade = 0; Music.duck(.3);
+  scene = 'intro'; introT = 0; fade = 0; Music.setMode('stank'); playSfx('stank'); Music.duck(.3);
   await animate(7000, t => { introT = Math.min(1, t / .62); draw(); });
   await fadeTo(1, 700);
   scene = 'building'; camT = 0;
@@ -183,8 +187,8 @@ async function bonusRun(steps, w = 3, b = 0) {
   // the Stankman's roulette: every Wild and ankh you carried in lifts off the tiles and becomes a ball
   if (!faces.roulBowl || faces.roulBowl.width !== N) faces.roulBowl = buildRoulBowl();
   const pk = rollPockets(); faces.roulHead = buildRoulHead(pk);
-  roul = { rot: 0, t: 0, pk, balls: [], label: null, tally: '' };
-  scene = 'roul';
+  roul = { rot: 0, t: 0, pk, balls: [], label: null, tally: '', spinning: false };
+  scene = 'roul'; Music.setMode('stank');
   $('#caption').textContent = "The Stankman's Roulette"; Music.setLevel(4); Music.duck(1); Music.sting(4);
   setVerdict({ eyebrow: 'Ultra bonus', title: "The Stankman's Roulette", body: 'Every Wild and ankh you brought in becomes a ball. Land three on gold and the locksafe opens.', steps: steps.slice() });
   await animate(600, t => { draw(); ctx.fillStyle = `rgba(255,236,180,${1 - t})`; ctx.fillRect(0, 0, N, N); });
@@ -214,18 +218,19 @@ async function bonusRun(steps, w = 3, b = 0) {
     bl.rel0 = -Math.PI / 2 - rotAt(bl.s); bl.T = bl.rel0 - mod(bl.rel0 - pa, TAU) - TAU * 4;
   });
   whoosh(true); tick(1.4, 900); buzz(25);
-  let lastTick = 0;
+  let lastTick = 0; roul.spinning = true;
   await animate(Dsec * 1000, t => {
     roul.t = t * Dsec; roul.rot = rotAt(roul.t);
     roul.balls.forEach(bl => {
       if (roul.t < bl.s) return;
       const u = Math.min(1, (roul.t - bl.s) / (bl.land - bl.s));
       if (u > .7 && u < 1) { const k = Math.floor((u - .7) / .3 * 3); if (k !== bl.bn) { bl.bn = k; tick(.7, 2600 + Math.random() * 400); } }
-      if (u >= 1 && !bl.landed) { bl.landed = true; tick(1.3, 1500); buzz(15); }
+      if (u >= 1 && !bl.landed) { bl.landed = true; bl.winAt = performance.now(); tick(1.3, 1500); buzz(15); }
     });
     if (roul.t - lastTick > .09 * (1 + t * 3)) { lastTick = roul.t; tick(.25, 3200); }
     draw();
   });
+  roul.spinning = false;
   // read them out, one ball at a time
   let cash = 0, gold = 0; const acts = [];
   for (const bl of roul.balls) {

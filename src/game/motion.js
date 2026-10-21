@@ -26,18 +26,35 @@ async function spinLayer(k, dur, dir) {
   liveK = k; sweepOn = true; winGlow = null;
   try { const i = await spinLayerRun(k, dur, dir); winGlow = { k, i, t0: performance.now() }; return i; } finally { liveK = -1; sweepOn = false; }
 }
-// the slice a wheel stopped on glows and pulses, then settles to a soft gold edge
-function drawWinGlow() {
-  if (!winGlow || scene !== 'nested' || !LAYERS[winGlow.k]) return;
-  const { k, i, t0 } = winGlow, sc = layerVisible(k); if (sc <= 0) return;
-  const n = LAYERS[k].length, seg = TAU / n, a0 = BASE + i * seg + rot[k], t = (performance.now() - t0) / 1000;
+function drawWheelRim(sc = 1) {
+  if (!faces.base) return;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(c, c, R * sc, 0, TAU); ctx.arc(c, c, R * .93 * sc, 0, TAU, true); ctx.clip();
+  drawScaled(faces.base, 0, sc);
+  ctx.restore();
+}
+function drawWheelSweep(spinning, sc = 1) {
+  if (!spinning || !faces.sweep) return;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .65;
+  drawScaled(faces.sweep, performance.now() / 420, sc);
+  ctx.restore();
+}
+function drawWheelSliceGlow(rotation, n, i, t0, sc = 1, inner = .55, outer = .93) {
+  if (i == null) return;
+  const seg = TAU / n, a0 = BASE + i * seg, t = Math.max(0, (performance.now() - t0) / 1000);
   const a = Math.min(1, t * 3) * (t < 2.4 ? .55 + .3 * Math.sin(t * 7) : .35);
-  ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  ctx.beginPath(); ctx.arc(c, c, R * .93 * sc, a0, a0 + seg); ctx.arc(c, c, R * .55 * sc, a0 + seg, a0, true); ctx.closePath();
+  ctx.save(); ctx.translate(c, c); ctx.rotate(rotation); ctx.globalCompositeOperation = 'lighter';
+  ctx.beginPath(); ctx.arc(0, 0, R * outer * sc, a0, a0 + seg); ctx.arc(0, 0, R * inner * sc, a0 + seg, a0, true); ctx.closePath();
   ctx.fillStyle = `rgba(255,214,120,${.32 * a})`; ctx.fill();
   ctx.shadowColor = 'rgba(255,210,110,.9)'; ctx.shadowBlur = R * .04 * sc;
   ctx.strokeStyle = `rgba(255,232,170,${.9 * a})`; ctx.lineWidth = 2.2 * D; ctx.stroke();
   ctx.restore();
+}
+// the slice a wheel stopped on glows and pulses, then settles to a soft gold edge
+function drawWinGlow() {
+  if (!winGlow || scene !== 'nested' || !LAYERS[winGlow.k]) return;
+  const { k, i, t0 } = winGlow, sc = layerVisible(k); if (sc <= 0) return;
+  drawWheelSliceGlow(rot[k], LAYERS[k].length, i, t0, sc);
 }
 // a Wild, ankh or God slice: the ones worth teasing and the ones Ghost Phelan pushes you onto
 const hotSlice = it => !!(it && (it.wild || it.bonus || it.god));
@@ -112,17 +129,14 @@ async function ghostPhelan(k, i, near) {
   return dest;
 }
 function drawGhost() {
-  const g = ctx, s = R * .26;
-  g.save(); g.globalAlpha = ghost.a * .85; g.translate(ghost.x, ghost.y);
-  g.shadowColor = 'rgba(160,255,200,.8)'; g.shadowBlur = s * .5;
-  g.beginPath(); g.moveTo(-s * .5, s * .6); g.lineTo(-s * .5, -s * .1); g.arc(0, -s * .1, s * .5, Math.PI, 0); g.lineTo(s * .5, s * .6);
-  for (let j = 0; j < 4; j++) g.quadraticCurveTo(s * (.5 - j * .25 - .125), s * (j % 2 ? .45 : .8), s * (.5 - (j + 1) * .25), s * .6);
-  g.fillStyle = 'rgba(235,250,245,.92)'; g.fill(); g.shadowBlur = 0;
-  g.fillStyle = '#1b2a26'; g.beginPath(); g.ellipse(-s * .17, -s * .12, s * .07, s * .1, 0, 0, TAU); g.ellipse(s * .17, -s * .12, s * .07, s * .1, 0, 0, TAU); g.fill();
-  g.beginPath(); g.ellipse(0, s * .12, s * .09, s * .06, 0, 0, TAU); g.fill();
-  g.fillStyle = '#3d4a2e'; g.beginPath(); g.ellipse(0, -s * .55, s * .42, s * .1, 0, Math.PI, 0); g.fill(); // his cap
-  g.strokeStyle = 'rgba(150,200,90,.7)'; g.lineWidth = s * .04; // the stink follows him even now
-  [-.4, 0, .4].forEach((o, j) => { g.beginPath(); g.moveTo(s * (o + .7), s * .2); g.bezierCurveTo(s * (o + .85), 0, s * (o + .6), -s * .2, s * (o + .8), -s * .4 - j * s * .05); g.stroke(); });
+  const g = ctx, s = R * .26, t = performance.now() / 1000, w = s * 1.8;
+  if (!GHOST_IMAGE.complete || !GHOST_IMAGE.naturalWidth) return;
+  const h = w * GHOST_IMAGE.naturalHeight / GHOST_IMAGE.naturalWidth;
+  g.save(); g.globalAlpha = ghost.a * .85;
+  g.translate(ghost.x + Math.sin(t * 1.8) * s * .015, ghost.y + Math.sin(t * 1.4) * s * .035);
+  g.rotate(Math.sin(t * 2) * .012);
+  g.transform(1, 0, Math.sin(t * 2.4) * .018, 1, 0, 0);
+  g.drawImage(GHOST_IMAGE, -w / 2, -h / 2, w, h);
   g.restore();
 }
 // the dive between wheels: a wind-up, a drum roll that speeds up, speed lines, a little overshoot and a crash
@@ -246,7 +260,7 @@ function popSound() {
   if (!AC) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
   o.frequency.setValueAtTime(260, t); o.frequency.exponentialRampToValueAtTime(70, t + .12);
   g.gain.setValueAtTime(.35, t); g.gain.exponentialRampToValueAtTime(.0001, t + .2);
-  o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + .22); tick(1.6, 1200);
+  o.connect(g); g.connect(effectsOutput()); o.start(t); o.stop(t + .22); tick(1.6, 1200);
 }
 // pop-up dome: press, the dice fly up, tumble, bounce off the glass and each other, and settle
 async function rollDice() {

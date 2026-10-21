@@ -73,7 +73,9 @@ function drawGodRoom(now) {
   if (G.ph === 'wheel') {
     g.fillStyle = grad(g, 0, 0, 0, N, [[0, '#120c04'], [1, '#2b1d0a']]); g.fillRect(0, 0, N, N);
     const rg = g.createRadialGradient(c, c, R * .5, c, c, N * .75); rg.addColorStop(0, 'rgba(255,220,120,.25)'); rg.addColorStop(1, 'rgba(255,220,120,0)'); g.fillStyle = rg; g.fillRect(0, 0, N, N);
-    drawScaled(faces.godWheel, G.rot, 1); drawPointer(faces.pointer, 1);
+    drawScaled(faces.godWheel, G.rot, 1); drawWheelRim(1); drawWheelSweep(G.spinning, 1);
+    if (G.winner != null) drawWheelSliceGlow(G.rot, GOD_PRIZES.length, G.winner, G.winAt);
+    drawPointer(faces.pointer, 1);
   } else {
     // the shop: a back wall of dead tellies, a sign, scrap all over the floor
     g.fillStyle = grad(g, 0, 0, 0, N, [[0, '#1d2224'], [.55, '#2c3436'], [.56, '#3b3328'], [1, '#221c14']]); g.fillRect(0, 0, N, N);
@@ -109,7 +111,7 @@ function drawGodRoom(now) {
 async function ghostTo(x, y, dur) { const x0 = ghost.x, y0 = ghost.y; await animate(dur, t => { const e = easeInOut(t); ghost.x = lerp(x0, x, e); ghost.y = lerp(y0, y, e) + Math.sin(t * Math.PI * 2) * N * .01; draw(); }); }
 function waitTap(test) { const st = $('.stage'); st.classList.add('pick'); return new Promise(res => { tapPick = (x, y) => { const v = test(x, y); if (v != null) { tapPick = null; st.classList.remove('pick'); res(v); } }; }); }
 async function godRoom(steps) {
-  roomHit = true; buzz([100, 50, 100, 50, 300]); Music.sting(4);
+  roomHit = true; Music.setMode('god'); playSfx('god'); buzz([100, 50, 100, 50, 300]); Music.sting(4);
   const floor = [];
   for (let j = 0; j < 14; j++) floor.push({ it: j % 5, x: N * (.08 + Math.random() * .84), y: N * (.6 + Math.random() * .33), s: N * (.1 + Math.random() * .05), r: (Math.random() - .5) * 1.2 });
   floor.sort((a, b) => a.y - b.y);
@@ -198,6 +200,7 @@ async function godRoom(steps) {
   whoosh(true); buzz([60]);
   const s0 = god.rot, e0 = s0 + 7 * TAU + mod(-tg.a - s0, TAU);
   let lastS = sliceAt(s0, n), g0 = { x: ghost.x, y: ghost.y };
+  god.spinning = true;
   await animate(8000, t => {
     god.rot = s0 + (e0 - s0) * easeOut(t);
     if (t < .12) { const a = god.rot + .5; ghost.x = c + Math.cos(a) * R; ghost.y = c + Math.sin(a) * R; g0 = { x: ghost.x, y: ghost.y }; }
@@ -205,7 +208,7 @@ async function godRoom(steps) {
     const sl = sliceAt(god.rot, n); if (sl !== lastS) { lastS = sl; tick(1, 1700); pegBuzz(); }
     draw();
   });
-  god.rot = mod(god.rot, TAU);
+  god.rot = mod(god.rot, TAU); god.spinning = false; god.winner = tg.i; god.winAt = performance.now();
   const prize = GOD_PRIZES[tg.i];
   ting(); Music.sting(4); buzz(prize >= 100 ? [100, 50, 100, 50, 400] : [40, 40, 80]);
   god.say = prize >= 100 ? `€${$m(prize)}. Don't tell Mark.` : `€${$m(prize)}. Better than a toaster.`; draw();

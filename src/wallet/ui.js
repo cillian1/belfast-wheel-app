@@ -109,7 +109,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
 .wwatch[hidden]{display:none}
 .wghost{position:absolute;right:4%;top:18%;z-index:6;display:flex;flex-direction:column;align-items:center;max-width:62%;opacity:0;transform:translateX(60%);transition:opacity .9s ease,transform 1.1s ease;pointer-events:none}
 .wghost.in{opacity:.55;transform:none}.wghost.out{opacity:0;transform:translate(-40%,-30%)}
-.wghost canvas{width:70px;height:auto}
+.wghost img{width:70px;height:auto}
 .wghost p{margin:-6px 0 0;background:rgba(235,250,245,.85);color:#1b2a26;border-radius:14px;padding:6px 10px;font-size:14px;line-height:1.25;text-align:center}
 .wghost p b{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#3d4a2e}
 .wfeed{position:fixed;left:8px;right:8px;top:calc(6px + env(safe-area-inset-top,0px));z-index:45;display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:999px;background:rgba(40,10,10,.9);border:1px solid #ff4d4d;color:#fff;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.5);overflow:hidden;white-space:nowrap}
@@ -183,6 +183,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   function showTrophyToast() {
     if (!trophyToasts.length) { trophyToastTimer = 0; return; }
     const t = trophyToasts.shift();
+    playSfx('trophy');
     toast(`${t.icon} ${t.name} trophy earned!`, true);
     trophyToastTimer = setTimeout(showTrophyToast, 2700);
   }

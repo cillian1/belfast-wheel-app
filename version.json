@@ -1,9 +1,9 @@
 {
-  "game": 23,
+  "game": 24,
   "apk": 3,
-  "gameBuild": 60,
-  "notes": "Save every run and watch games live",
+  "gameBuild": 61,
+  "notes": "New ghost, room visuals, music and replay fixes",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk",
-  "name": "Replay Night"
+  "name": "Room to Grow"
 }
