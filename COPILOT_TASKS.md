@@ -206,6 +206,13 @@ Cillian wants Phelan to talk. Phelan heckles **out loud** at his existing cameos
 - Respect the Task 8 **mute button** (and add a "Phelan voice on/off" toggle saved with `pref`).
 - Pick lines with a separate non-game RNG, **not** `Math.random()`, so the game's random order is unchanged. No gameplay, odds or payout changes.
 
+## Task 11: update 26, housekeeping (ON HOLD until update 25 is on main)
+
+Simple, low-risk changes only. Ship as one update.
+1. **Fewer live notifications.** Stop the routine ones like "cillian landed on Mark's farm" (plain room entries / ordinary landings). Keep notifying for notable events only: a Chicken Race triggering, a jackpot, a big win (use the same threshold as the Big wins tab), and trophies. Find every place the live feed/toasts are posted (`feed`, watch messages) and filter at the source. The Watch mirror and replays are unchanged.
+2. More items will be added here once Cillian picks them.
+No money, odds or prize changes; keep the `Math.random()` order.
+
 ---
 
 ## When you finish a task
