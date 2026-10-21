@@ -4,8 +4,8 @@
 
 - **Task:** Task 9 smoothness update (#23), part of update 25 with Task 10 (#25). PR targets `update-25`, no version bump.
 - **Owner:** Copilot.
-- **Status:** Implementation and profiling are in draft PR #34. Bundle/check and replay tests pass; 4× Chromium profiles and 320/360/412px layouts are recorded. High-mode Stank worst was 11.8ms (over 8ms); its Low-mode sample was 7.9ms. Other rooms were not measured in Low mode, so no broader Low-mode pass is claimed. Live two-player Watch and physical low-end-phone checks are unavailable. The existing room flame uses global `Math.random()` per rendered frame, so shortened/skipped waits can change how many ambient draws precede later gameplay draws; full-run outcome invariance is not established.
-- **Next:** Resolve whether to keep strict outcome/RNG-order requirements (which conflict with timing changes while room animation shares global `Math.random()`) or accept the documented timing-dependent RNG tradeoff. Keep PR #34 draft; do not post DONE until resolved and verified.
+- **Status:** Implementation and profiling are in draft PR #34. Bundle/check and replay tests pass; 4× Chromium profiles and 320/360/412px layouts are recorded. High-mode Stank worst was 11.8ms (over 8ms); its Low-mode sample was 7.9ms. Other rooms were not measured in Low mode, so no broader Low-mode pass is claimed. Live two-player Watch and physical low-end-phone checks are unavailable. Shortened/skipped waits alter how many existing fireplace `Math.random()` calls happen before later gameplay draws; exact full-run RNG consumption and outcomes are not preserved or verified.
+- **Next:** Keep the strict gameplay RNG/outcome requirement. This wait-skip implementation is blocked because variable RAF cadence prevents reliably reproducing the omitted ambient calls; re-scope or obtain an approved design that preserves gameplay RNG. Keep PR #34 draft; do not post DONE.
 - **Last updated:** 2026-10-22 by Copilot
 
 **Rules for this section:**
