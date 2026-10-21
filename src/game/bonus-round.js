@@ -150,7 +150,12 @@ function drawPlanetScene(now) {
   const r = lerp(N * .2, R * .95, P.grow), x = lerp(N * .74, c, P.grow), y = lerp(N * .24, c, P.grow);
   if (P.morph < 1) { ctx.globalAlpha = 1 - P.morph; drawPlanet(x, y, r, now); ctx.globalAlpha = 1; }
   if (P.melt <= 0) {
-    if (P.morph > 0) { ctx.globalAlpha = P.morph; drawScaled(faces.cosmic, rotC, 1); ctx.globalAlpha = 1; drawPointer(faces.pointer, 1); }
+    if (P.morph > 0) {
+      ctx.globalAlpha = P.morph; drawScaled(faces.cosmic, rotC, 1); drawWheelRim(1);
+      drawWheelSweep(P.spinning, 1);
+      if (P.winner != null) drawWheelSliceGlow(rotC, COSMIC.length, P.winner, P.winAt);
+      ctx.globalAlpha = 1; drawPointer(faces.pointer, 1);
+    }
   } else {
     // the wheel melts: strips sag and stretch, it goes molten, lava rises underneath
     const m = P.melt, tmp = P.tmp, g = tmp.getContext('2d'), hs = tmp.width / N; g.setTransform(hs, 0, 0, hs, 0, 0); g.clearRect(0, 0, N, N);
@@ -197,15 +202,30 @@ function drawMonster(now) {
   const lg = ctx.createLinearGradient(0, fy, 0, y1); lg.addColorStop(0, '#c8ff6a'); lg.addColorStop(.1, '#7cff3a'); lg.addColorStop(1, '#1f7a10');
   ctx.beginPath(); ctx.moveTo(x0, y1); for (let sx = x0; sx <= x1; sx += N / 60) ctx.lineTo(sx, fy + Math.sin(sx / N * 30 + now * .006) * N * .004 * (M.pouring ? 2 : 1)); ctx.lineTo(x1, y1); ctx.fillStyle = lg; ctx.fill();
   for (let i = 0; i < 18; i++) { const bx = x0 + ((i * 0.618) % 1) * (x1 - x0), by = y1 - ((now * .0002 * (1 + i % 3) + i * .13) % 1) * (y1 - fy); if (by > fy) { ctx.beginPath(); ctx.arc(bx, by, N * .004, 0, TAU); ctx.fillStyle = 'rgba(230,255,200,.5)'; ctx.fill(); } }
+  if (M.pouring) {
+    const sx = lerp(x0, x1, mod(now * .00035, 1)), shine = ctx.createLinearGradient(sx - N * .045, 0, sx + N * .045, 0);
+    shine.addColorStop(0, 'rgba(255,255,255,0)'); shine.addColorStop(.5, 'rgba(235,255,220,.22)'); shine.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = shine; ctx.fillRect(x0, y0, x1 - x0, H);
+  }
   ctx.restore();
   const cur = TANK_LEVELS.reduce((a, l) => M.fill >= l.at ? l : a, TANK_LEVELS[0]);
   TANK_LEVELS.forEach((l, i) => {
     const ya = lvlY(l.at), yb = lvlY(i < TANK_LEVELS.length - 1 ? TANK_LEVELS[i + 1].at : TANK_CAP), on = l === cur && M.fill > 0;
     if (i) { ctx.beginPath(); ctx.moveTo(x0, ya); ctx.lineTo(x1, ya); ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1.5 * D; ctx.setLineDash([6 * D, 5 * D]); ctx.stroke(); ctx.setLineDash([]); }
+    if (on) {
+      ctx.save(); ctx.shadowColor = 'rgba(200,255,106,.9)'; ctx.shadowBlur = N * .025;
+      ctx.beginPath(); ctx.moveTo(x0, ya); ctx.lineTo(x1, ya); ctx.strokeStyle = '#c8ff6a'; ctx.lineWidth = 2.5 * D; ctx.stroke(); ctx.restore();
+    }
     ctx.font = `700 ${N * (on ? .04 : .032)}px ${LABEL_FONT}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     ctx.fillStyle = on ? '#c8ff6a' : 'rgba(220,235,210,.6)'; ctx.fillText('€' + $m(l.v), x1 + N * .025, (ya + yb) / 2);
   });
-  rrect(ctx, x0, y0, x1 - x0, H, N * .02); ctx.strokeStyle = 'rgba(220,235,225,.8)'; ctx.lineWidth = 3 * D; ctx.stroke();
+  ctx.save(); ctx.shadowColor = M.pouring ? 'rgba(170,255,130,.7)' : 'rgba(220,235,225,.3)'; ctx.shadowBlur = M.pouring ? N * .025 : N * .01;
+  rrect(ctx, x0, y0, x1 - x0, H, N * .02);
+  const frame = ctx.createLinearGradient(x0, y0, x1, y1);
+  frame.addColorStop(0, '#f2fff0'); frame.addColorStop(.3, '#91a18e'); frame.addColorStop(.55, '#e2f0de'); frame.addColorStop(1, '#43513f');
+  ctx.strokeStyle = frame; ctx.lineWidth = 4 * D; ctx.stroke(); ctx.restore();
+  ctx.beginPath(); ctx.moveTo(x0 + N * .015, y0 + N * .01); ctx.lineTo(x1 - N * .015, y0 + N * .01);
+  ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = D; ctx.stroke();
   // pour streams, then the dice, the dots and the cans on top
   M.cans.forEach(k => { if (k.state === 'pour') { ctx.beginPath(); ctx.moveTo(k.x, k.y + N * .02); ctx.lineTo(k.x + Math.sin(now * .03) * N * .003, fy); ctx.strokeStyle = k.sp === 'W' ? 'rgba(255,214,90,.9)' : k.sp === 'B' ? 'rgba(190,130,255,.9)' : 'rgba(140,255,70,.85)'; ctx.lineWidth = N * (k.sp ? .014 : .008); ctx.stroke(); } });
   M.dice.forEach(d => {

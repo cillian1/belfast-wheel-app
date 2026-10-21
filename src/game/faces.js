@@ -305,7 +305,7 @@ function setLayerOrder(k, order) {
   navCache = null;
 }
 function deadFace(v, k) { return ringFor(k, deadOrderOf(runOrders[k - 1], k, v)); }
-function ensureStank() { if (!faces.stank) { faces.stank = buildStank(); faces.goldPointer = buildGoldPointer(); faces.stankBg = buildStankBg(); faces.bingo = buildBingoSprites(); } }
+function ensureStank() { if (!faces.stank) { faces.stank = buildStank(); faces.stankBg = buildStankBg(); faces.bingo = buildBingoSprites(); } }
 let warmTimer = 0;
 function warmUp() {
   clearTimeout(warmTimer);
