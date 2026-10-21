@@ -28,6 +28,11 @@ Cillian wants speed over thoroughness. For every task:
 - Keep the PR description to a few lines, then post DONE. If something is unclear, make the obvious choice, say so in the PR, and keep going.
 - Hard rules still apply: no money/odds/prize changes, and keep the `Math.random()` order.
 
-## Releases
+## Process after the update 25 retro (2026-10-21)
 
-Every release PR (`update-N` → `main`) must also rewrite HANDOFF NOW (what shipped, what's next) and add a Done-log line. Any decision you make goes into NOW in the same commit.
+- **Don't edit HANDOFF.md.** Claude owns it. Put your progress, questions and results on the task's issue.
+- **Stuck? Post `BLOCKED: <reason>` on the issue immediately.** Don't wait or retry silently.
+- **About 20 minutes per issue.** If it's growing, cut scope (say what you cut in the PR) rather than skipping bundle/check or the odds pre-check.
+- **Timing, animation or RNG changes:** run the fast-sim odds check before DONE. Any odds change stops for Cillian.
+- **Feel bugs:** work to the issue's repro, and done = the problem is gone on that repro.
+- **Release PRs:** bump, name, notes and footer; list `Closes #…` for every sub-task; confirm every sub-task commit is in `update-N` by ancestry, not just PR state. Don't touch HANDOFF.md.

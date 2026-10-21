@@ -10,13 +10,13 @@
   2. **Wave 2** (Claude starts it when step 1 is merged): #42 (history + buttons), #43 (ghost reactions + country song).
   3. **Wave 3, alone:** #45 (frame-rate-independent results + shorter waits; fast-sim odds check, and any odds change waits for Cillian).
   4. **Release:** a PR `update-26` → `main` bumping to 26 with a name, notes and `Closes #…` for every sub-task, then post DONE.
-- **If stuck:** if a step fails twice, post one note on that issue saying what's blocked and move on to the next independent step. Don't retry forever. Cillian checks in the morning.
-- **Last updated:** 2026-10-21 23:32 by Claude
+- **If stuck:** post `BLOCKED: <reason>` on that issue straight away and move on to the next independent step. Don't retry forever. Cillian checks in the morning.
+- **Last updated:** 2026-10-21 23:45 by Claude. After 26: #45 first, then a "repro + one goal" pilot on one main-wheel feel issue.
 
 **Rules for this section:**
-0. **Any decision (closing or dropping a PR, moving work between updates, reprioritising, shipping) goes into NOW in the same step it's made**, so nobody has to ask. Every release PR rewrites NOW as part of the release.
+0. **Any decision (closing or dropping a PR, moving work between updates, reprioritising, shipping) goes into NOW in the same step it's made** (Claude does this), so nobody has to ask.
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
-2. Whoever starts, finishes or merges a task rewrites NOW in the same commit or PR (Claude does it on every merge), and moves a one-line summary of the finished task to the Done log.
+2. Only Claude rewrites NOW (on every start, merge, decision and release) and adds the Done-log line.
 3. If NOW and the latest comment on the task's issue disagree, **the latest issue comment wins**.
 4. When Copilot finishes, it opens the PR (ready for review) and posts `DONE: <task>` with the PR link on the task's issue. Claude watches for it.
 5. Don't add task notes, questions or statuses anywhere else in this file. Questions go on the issue or the PR.
@@ -25,15 +25,17 @@
 
 Claude gives Copilot its work directly. Cillian isn't in the loop for routine work. Copilot's poll picks up **every open issue labelled `copilot-task`**, plus issues assigned to it and comments that mention @copilot, even when the issue isn't assigned to it (Claude can't assign through the API). Each issue links its section in `COPILOT_TASKS.md`. Do the oldest open one first.
 
-## How an update is planned (Claude, 2026-10-21)
+## How an update runs (agreed by Claude and Copilot after the update 25 retro, 2026-10-21)
 
-1. **Plan:** Cillian picks the items. Claude writes them as one numbered task in `COPILOT_TASKS.md` with an on-hold issue (no `copilot-task` label yet).
-2. **Split:** Claude splits the update into sub-task issues (Goal, Files likely touched, Done when, Don't touch), grouped so **no two parallel sub-tasks edit the same files**. Repo/CI work goes in wave 1. Anything touching shared game files (`motion.js`, `ui.js`, ghost code) is spread across waves.
-3. **Branch:** Claude creates the holding branch `update-N` from main when the previous update ships, then labels the wave-1 issues `copilot-task` and posts `@copilot /go`.
-4. **Build:** each sub-task gets its own PR into `update-N`, with no version bump. Before DONE, merge latest `update-N`, rebuild, run the checks, and post `DONE: Task …`.
-5. **Merge:** each PR is merged into `update-N` after a quick check. When a wave is all in, the next wave starts.
-6. **Release:** Copilot opens one PR `update-N` → `main` with the version bump, name, notes and footer, and posts DONE. It's merged and phones get it.
-7. **Talk:** progress notes and questions go on the sub-task issue. Chat goes on #30.
+1. **One update at a time.** Finish the current one before planning the next. New ideas go on a one-line list on #38-style umbrella issues and nothing more.
+2. **Repro first for feel bugs.** The issue states a fixed repro (device or viewport, steps, what you see), and done means "Cillian can't see it any more" on that repro.
+3. **One goal per issue,** about 20 minutes of Copilot work. Phone or device checks are a separate final step that never blocks the PR.
+4. **Timebox about 45 minutes per update, with the planned cut written into the issues up front.** Hitting a limit means cutting scope, never skipping the checks.
+5. **Odds pre-check** for anything touching timing, animation or random draws: fast sim only, plus the seeded-spin CI (#39). Any odds change stops and waits for Cillian.
+6. **Blocked = say so now.** Copilot posts `BLOCKED: <reason>` on the issue the moment it's stuck. Claude's watcher also nudges once if an active PR gets no push or comment for 15 minutes.
+7. **Holding branch `update-N`.** Sub-task PRs target it, with no version bump. Parallel tasks never edit the same files.
+8. **Release only through the release PR** `update-N` → `main`. Checklist: version bump + name + notes + footer; every sub-task PR merged, verified by commit ancestry (not just "closed"); `Closes #…` for every sub-task; Copilot told on #30.
+9. **HANDOFF NOW is tiny and only Claude edits it,** on main, straight after each merge or decision. Copilot and release PRs don't touch HANDOFF. Progress lives on the issues.
 
 ## What's live
 
