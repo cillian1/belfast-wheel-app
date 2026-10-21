@@ -12,7 +12,7 @@ Copilot, these are your tasks for Cillian's next big update. Read `HANDOFF.md` f
 | Prize odds for the new room | Claude, using the fast sim in the odds thread | — |
 | **Task 1: stats and leaderboard redesign** | **Copilot** | wallet: `accountSheet`, `meTab`, `lbTab`, wallet CSS |
 | **Task 2: trophies** | **Copilot** | wallet only |
-| **Task 3: performance pass** | **Copilot, after Claude's update has merged** | game script |
+| **Task 4: code rewrite in stages** (includes the old Task 3 performance pass) | **Copilot, after Task 2 has merged** | whole `game/index.html`, new `src/` and `tools/` |
 
 Claude ships update 20 to `main`. Copilot's tasks are separate PRs that take the next free version number when they merge (21, 22 …), one release at a time. **Before starting, make sure PR #1 is merged, then branch from the latest `main`.** Make one branch and one PR per task, for example `copilot/stats-redesign`, `copilot/trophies` and `copilot/perf`.
 
@@ -80,25 +80,59 @@ Nothing in your tasks touches money: no balance changes, no prizes, no payout ma
 
 ---
 
-## Task 3: performance pass (start only after update 20 has merged)
+## Task 3: performance pass (now part of Task 4, stage 4)
 
-**Goal:** the game runs smoother on mid-range Android phones and looks the same.
-
-**Rules:**
-- **Same visuals.** Compare before and after screenshots of the main wheel, the inner wheels, each room and the ball chart. They should be indistinguishable.
-- **Don't rename game globals.** Watch mirrors read them by name (the `MIRROR` list in the wallet). If you must rename one, update `MIRROR`, `SLOW` and `ANGLES` too, and say so in the PR.
-- Don't change odds, timings players can feel, or anything in the wallet's money code.
-
-**Where to look:**
-1. `draw()` redraws everything every frame. Cache what doesn't change between frames, such as wheel faces at rest, the dartboard and static room backgrounds, in offscreen canvases, and only rebuild them when `N` changes or the slice order changes (`runOrders`).
-2. Find per-frame allocations (new gradients, arrays and closures inside animation loops) and hoist them.
-3. The fireplace room (`drawRoom`) already runs at about 15fps. Make sure it stops while the tab is hidden.
-4. `shadowBlur` is expensive on Android. Find it in per-frame code and pre-bake it where you can.
-5. Measure: add a temporary frame-time counter (not committed) and report average frame time on a long deep run before and after, at 412px width with DPR 2.
-
-**Done when:** the PR shows before and after frame times, a list of what changed, and confirms the visuals match.
+Merged into Task 4 below. Don't open a separate PR for it.
 
 ---
+
+## Task 4: code rewrite in stages (issue "Copilot task: Code rewrite")
+
+**Goal:** Cillian wants the code cleaned up properly. `game/index.html` is about 5,700 lines in one file: two `<style>` blocks, the game script (lines ~290–4728), `WALLET_CFG`, and the wallet script. Split it into readable modules, remove duplication and dead code, and make it run smoother. **Players must not be able to tell anything changed**, except that it's smoother.
+
+**Start after the Trophies PR (Task 2) has merged**, so you don't fight your own work. Do **one PR per stage**, in order, each branched from the latest `main` after the previous stage merged. Claude reviews each stage (screenshots in a real browser and a fast-sim odds check) and merges it.
+
+### Hard rules for every stage
+
+1. **Phones still load one file.** The app and GitHub Pages fetch `game/index.html` from `main` as a single self-contained page. Keep it that way: modules live in a new `src/` folder, and a new `tools/bundle.mjs` (plain Node, no npm dependencies) inlines them back into `game/index.html`. **Commit the bundled `game/index.html` in every PR**, built from `src/` with `node tools/bundle.mjs`.
+2. **`src/` becomes the source of truth from stage 1 on.** Build `src/` *from the current `game/index.html`*, never from `source/` or `source/tools/build.mjs` (those are old and would wipe live features and Cillian's prize edits). Update HANDOFF.md's "What's live" table to say so.
+3. **Same odds, same money.** Don't change any prize table, `ev`, `edge`, `TIP_CHANCE`, `RACE_CHANCE`, chances, the jackpot, `Final answer · €X` wording, the wallet's `credit`/`refund`/stake code, or anything else that decides what pays. Don't change the *order or number* of `Math.random()` calls in game logic either: Claude checks this by replaying seeded runs. If you think something in that area is a bug, write it in the PR and leave it.
+4. **Same names for watched globals.** The watch mirror reads game globals by name (`MIRROR`, `SLOW`, `ANGLES` in the wallet), and the wallet wraps `spin` and `setVerdict` by reassigning them. These must stay reachable as globals with the same names. Keeping the game as classic scripts (not ES modules) is the simplest way: the bundler concatenates them in order inside one `<script>`.
+5. **Versions.** Stages 1–3 change no behaviour, so leave `version.json` and `gameVersion` alone (they ship with the next real update). Stage 4 (performance) takes the next free version number, bumping `version.json` `game` and `gameVersion` together, plus `const BUILD`/`gameBuild` and the footer, with an update name.
+6. **No tests skipped, no new dependencies, no build step on the phone.**
+
+### Stage 1: mechanical split (no code changes at all)
+
+- Move each `<style>` block to `src/css/*.css`, the game script to `src/game/*.js` split at its existing `// ---------- section ----------` headers (about 24 of them, e.g. `wheels.js`, `rooms-stank.js`, `farm.js`, `photo.js`, `audio.js`), the `WALLET_CFG` line to `src/config.json` (or `src/config.js`), and the wallet to `src/wallet/*.js`. Put the HTML shell in `src/index.html` with markers the bundler replaces.
+- Add `tools/bundle.mjs` and `tools/check.mjs`. `check.mjs` parses every inline script with `node --check`-style parsing (e.g. `new Function` or `vm.Script`), and checks that `version.json` `game` equals `gameVersion`.
+- **Acceptance:** `node tools/bundle.mjs` produces a `game/index.html` that is **byte-for-byte identical** to the one on `main` before your PR (`git diff --exit-code game/index.html` is clean after bundling). Say so in the PR. This proves the split lost nothing.
+
+### Stage 2: tidy without changing behaviour
+
+- Remove dead code: functions and variables nothing calls (search the whole file first, including the wallet's `MIRROR` list and string-based lookups).
+- Merge duplicated helpers (e.g. several near-identical wedge/slice drawing and easing helpers) where the merged version draws exactly the same pixels.
+- Give the big functions (`runMain`, `markChain`, the bonus rooms) clear sub-steps where that's a pure extract-function refactor.
+- Add a short header comment to each module saying what it owns.
+- **Acceptance:** `check.mjs` passes. List every removed function in the PR with how you checked it was unused. No `Math.random()` call added, removed or moved between calls.
+
+### Stage 3: wallet module tidy (no money changes)
+
+- Split the wallet into `db.js` (REST helpers), `ui.js` (sheets, toasts, top bar), `watch.js` (live feed, mirror, highlights), `notes.js` (host gifts) and `money.js`. **`money.js` is moved verbatim**: stake charging, `credit`, `refund`, `$m`/`payCents`, the jackpot, and the `setVerdict` wrapper. Don't edit a line of it, only move it.
+- **Acceptance:** `check.mjs` passes, and the diff of `money.js` against the original lines is empty apart from the move. Show that in the PR (e.g. a `diff` of the extracted lines).
+
+### Stage 4: performance (the old Task 3)
+
+- `draw()` redraws everything every frame. Cache what doesn't change between frames, such as wheel faces at rest, the dartboard, static room backgrounds and the farm, in offscreen canvases. Only rebuild them when `N` or the slice order (`runOrders`) changes.
+- Hoist per-frame allocations (gradients, arrays, closures) out of animation loops. `shadowBlur` is slow on Android, so pre-bake glows into cached canvases where the look is identical.
+- Stop the fireplace (`drawRoom`, about 15fps) and any idle animation loop while the page is hidden (`document.hidden`).
+- Don't change timings players can feel (spin durations, waits, animation lengths).
+- **Acceptance:** before and after frame times on a long deep run (412px, DPR 2) if you can measure them. If your container can't run a browser, say so, and Claude will measure. Give a list of every cache you added and what invalidates it.
+
+### What Claude checks before merging each stage
+
+- Screenshots of the main wheel, inner wheels, each room, the farm and Chicken Race, and the account sheet, before and after, at 360 and 412px.
+- A seeded replay: the same `Math.random` sequence must give the same run, slices and prize before and after.
+- The fast sim's payback is unchanged.
 
 ## When you finish a task
 

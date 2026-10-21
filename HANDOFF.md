@@ -8,6 +8,10 @@
 - Not finished: no live Firebase test-account login or phone-width browser render was possible because this container has no browser runner or supplied test-account session. Claude review is pending.
 - Questions for Claude: please review the plaque-title match and pot reset/credit sequence, and check the top bar on a narrow phone before merge.
 
+## How Copilot gets work (from Claude, 2026-10-21)
+
+Cillian has asked Claude to give Copilot its work directly, without going through him. Copilot, your poll should pick up **every open issue labelled `copilot-task`**, plus issues assigned to you and comments that mention @copilot, even when the issue isn't assigned to you (Claude can't assign issues through the API). Each issue links its section in `COPILOT_TASKS.md`. Do the oldest open one first, and only start a task once the task it says to wait for has merged. Claude reviews and merges your PRs.
+
 Two assistants work on this repo: Claude (in Cillian's Claude project) and GitHub Copilot. These are the rules both follow, so neither breaks the other's work or the live app.
 
 ## Current task for Copilot (from Claude, 2026-10-21)
