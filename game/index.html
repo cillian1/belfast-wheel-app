@@ -255,7 +255,7 @@ footer{position:fixed;top:8px;left:10px;z-index:5;color:rgba(220,225,230,.55);fo
 
 <canvas id="room" aria-hidden="true"></canvas>
 <div class="app">
-  <header><h1>WHEEL OF LIFE</h1><span><button class="link" id="sayBtn" type="button" hidden>Read it out</button> <button class="link" id="musicBtn" type="button">Music on</button></span></header>
+  <header><h1>WHEEL OF LIFE</h1><span><button class="link" id="sayBtn" type="button" hidden>Read it out</button> <button class="link" id="musicBtn" type="button">Music on</button> <button class="link" id="muteBtn" type="button" aria-pressed="false">Mute sound</button></span></header>
 
   <div class="stage"><canvas id="wheel" aria-label="The Wheel of Life. Tap to spin."></canvas><div class="final" id="finalCard" aria-live="polite"><span class="eyebrow">Final answer</span><ol id="finalList"></ol><p class="fquote" id="finalQuote"></p></div></div>
   <div class="wilds" id="wilds" aria-label="Wilds and Bonuses collected"><canvas class="wt" width="96" height="96"></canvas><canvas class="wt" width="96" height="96"></canvas><canvas class="wt" width="96" height="96"></canvas><span class="wgap"></span><canvas class="wt" width="96" height="96"></canvas><canvas class="wt" width="96" height="96"></canvas><canvas class="wt" width="96" height="96"></canvas></div>
@@ -287,12 +287,12 @@ footer{position:fixed;top:8px;left:10px;z-index:5;color:rgba(220,225,230,.55);fo
   <input class="vh" type="file" id="lib" accept="image/*">
 
 
-  <footer>Build 60 · app 22<br><small style="font-size:8.5px;letter-spacing:.04em">Smoother Wheels</small></footer>
+  <footer>Build 61 · app 23<br><small style="font-size:8.5px;letter-spacing:.04em">Soundtrack and Sound Pack</small></footer>
 </div>
 
 <script>
 // Owns shared game constants, geometry, and utility functions.
-const BUILD = 60;
+const BUILD = 61;
 const $ = s => document.querySelector(s);
 const TAU = Math.PI * 2, BASE = -Math.PI / 2;
 const LABEL_FONT = '"IBM Plex Sans Condensed","Arial Narrow",sans-serif';
@@ -1431,35 +1431,79 @@ function resize() {
 // ---------- sound ----------
 // Owns short sound effects and vibration feedback.
 let AC = null;
+let sfxMaster = null;
 function audio() { try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume(); } catch (e) { AC = null; } }
+function effectsOutput() {
+  if (!AC) return null;
+  if (!sfxMaster) {
+    sfxMaster = AC.createGain(); sfxMaster.connect(AC.destination);
+    try { if (typeof Music !== 'undefined' && Music.muted) sfxMaster.gain.value = 0; } catch (e) {}
+  }
+  return sfxMaster;
+}
+function setEffectsMuted(muted) {
+  if (!AC) return;
+  effectsOutput();
+  sfxMaster.gain.setTargetAtTime(muted ? 0 : 1, AC.currentTime, .02);
+}
+const SFX_NOTES = {
+  stank: [[196, .16], [147, .3]], god: [[392, .12], [523, .18], [784, .42]],
+  monster: [[110, .12], [165, .13], [220, .3]], pyramid: [[440, .16], [587, .16], [740, .4]],
+  revenge: [[311, .2], [233, .25], [185, .45]], farm: [[294, .1], [370, .15], [440, .35]],
+  countdown: [[523, .12]], go: [[659, .08], [880, .2]], finish: [[784, .12], [988, .18], [1318, .45]],
+  trip: [[392, .16], [196, .32]], jackpot: [[523, .1], [659, .12], [784, .16], [1047, .5]],
+  trophy: [[880, .12], [1175, .22]], back: [[587, .12], [440, .16], [330, .3]],
+};
+function playSfx(name) {
+  if (!AC) audio();
+  if (!AC) return;
+  effectsOutput();
+  const notes = SFX_NOTES[name];
+  if (!notes) return;
+  const t = AC.currentTime;
+  notes.forEach(([f, d], i) => {
+    const at = t + i * .09, o = AC.createOscillator(), g = AC.createGain();
+    o.type = name === 'trip' ? 'triangle' : 'sine'; o.frequency.setValueAtTime(f, at);
+    g.gain.setValueAtTime(.0001, at); g.gain.exponentialRampToValueAtTime(name === 'jackpot' ? .18 : .12, at + .012);
+    g.gain.exponentialRampToValueAtTime(.0001, at + d);
+    o.connect(g); g.connect(sfxMaster); o.start(at); o.stop(at + d + .02);
+  });
+}
 function tick(v, f = 2500) {
-  if (!AC) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+  if (!AC) return; effectsOutput(); const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
   o.type = 'sine'; o.frequency.setValueAtTime((f + Math.random() * 120) * .6, t); o.frequency.exponentialRampToValueAtTime((f + 60) * .35, t + .05);
   g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.075 * v, t + .004); g.gain.exponentialRampToValueAtTime(.0001, t + .07);
-  o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + .07);
+  o.connect(g); g.connect(sfxMaster); o.start(t); o.stop(t + .07);
 }
 function ting() {
-  if (!AC) return; const t = AC.currentTime;
+  if (!AC) return; effectsOutput(); const t = AC.currentTime;
   [[880, .16, 1.8], [1320, .09, 1.3], [2217, .05, .9], [3290, .025, .6]].forEach(([f, v, d]) => {
     const o = AC.createOscillator(), g = AC.createGain(); o.type = 'sine'; o.frequency.value = f;
     g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
-    o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + d + .05);
+    o.connect(g); g.connect(sfxMaster); o.start(t); o.stop(t + d + .05);
   });
 }
 function whoosh(up) {
-  if (!AC) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+  if (!AC) return; effectsOutput(); const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
   o.type = 'sine'; o.frequency.setValueAtTime(up ? 120 : 420, t); o.frequency.exponentialRampToValueAtTime(up ? 520 : 110, t + 1.1);
   g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.08, t + .3); g.gain.exponentialRampToValueAtTime(.0001, t + 1.2);
-  o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + 1.25);
+  o.connect(g); g.connect(sfxMaster); o.start(t); o.stop(t + 1.25);
 }
 // ---------- music: a driving Egyptian groove (Hijaz on D) that builds with every wild ----------
 // Owns synthesized background music and its playback controls.
 const Music = (() => {
-  let on = true, level = 0, duckV = 1, master = null, noise = null, timer = null, nextT = 0, step = 0, drone = null;
+  let on = true, muted = false, muteLoaded = false, level = 0, duckV = 1, master = null, noise = null, timer = null, nextT = 0, step = 0, drone = null;
   try { on = localStorage.getItem('wol-music') !== 'off'; } catch (e) {}
   const hz = m => 440 * Math.pow(2, (m - 69) / 12);
   const OUD = [62, 0, 63, 66, 67, 66, 63, 0];
   const NEY = [[74, 0, 72, 70, 69, 0, 70, 72], [75, 74, 72, 70, 69, 70, 69, 66], [67, 0, 69, 70, 72, 70, 69, 67], [66, 63, 66, 67, 69, 0, 0, 0]];
+  const THEMES = {
+    stank: [[58, 0, 61, 65, 63, 0, 61, 58], [65, 63, 61, 58, 56, 58, 61, 63], [58, 0, 61, 63, 65, 63, 61, 58], [56, 0, 58, 61, 63, 0, 0, 0]],
+    god: [[62, 0, 66, 69, 74, 0, 71, 69], [67, 69, 74, 78, 76, 74, 71, 69], [66, 0, 69, 73, 78, 76, 73, 69], [62, 66, 69, 74, 76, 0, 0, 0]],
+    monster: [[50, 57, 62, 65, 69, 65, 62, 57], [53, 60, 65, 69, 72, 69, 65, 60], [55, 62, 67, 71, 74, 71, 67, 62], [50, 57, 62, 69, 74, 0, 0, 0]],
+    pyramid: [[62, 0, 69, 74, 77, 74, 69, 0], [60, 0, 67, 72, 76, 72, 67, 0], [58, 0, 65, 70, 74, 70, 65, 0], [62, 0, 69, 74, 77, 0, 0, 0]],
+    revenge: [[50, 0, 53, 58, 57, 0, 53, 50], [46, 0, 50, 53, 58, 53, 50, 46], [48, 0, 55, 58, 60, 58, 55, 48], [50, 53, 57, 62, 58, 0, 0, 0]],
+  };
   const VOL = .22;
   // the farm: same darbuka underneath, but a banjo roll and a fiddle hoedown in D major on top
   let mode = 'egypt', droneV = .06;
@@ -1510,7 +1554,7 @@ const Music = (() => {
   function doum(t, v = .7) { const o = AC.createOscillator(), g = AC.createGain(); o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(62, t + .18); env(g, t, v, .003, .4); o.connect(g); g.connect(master); o.start(t); o.stop(t + .42); }
   function tek(t, v = .22) { nz(t, .06, v, 'highpass', 3500, .7); }
   function zill(t, v = .05) { [2650, 3970].forEach(f => { const o = AC.createOscillator(), g = AC.createGain(); o.type = 'sine'; o.frequency.value = f; env(g, t, v, .002, .6); o.connect(g); g.connect(master); o.start(t); o.stop(t + .65); }); }
-  const bpm = () => 112 + Math.min(level, 4) * 10;
+  const bpm = () => (mode === 'race' ? 150 : 112) + Math.min(level, 4) * 10;
   function play(s, t) {
     const e = s % 8, bar = Math.floor(s / 8), beat = 60 / bpm(), lv = level;
     // maqsum: DUM tek . tek DUM . tek .
@@ -1520,14 +1564,20 @@ const Music = (() => {
     if (lv >= 2) nz(t, .04, .05, 'highpass', 9000);
     if (lv >= 3) nz(t + beat * .25, .04, .04, 'highpass', 9000);
     if (lv >= 1 && (e === 0 || e === 4)) zill(t, .03 + lv * .01);
-    if (mode === 'farm') {
+    if (mode === 'farm' || mode === 'race') {
       banjo(hz(CHORDS[bar][ROLL[e]]), t, .07);
       if (e === 0 || e === 4) oud(hz(CHORDS[bar][0] - 24), t, .12); // the bass on the beat
-      const m = FIDDLE[bar][e]; if (m) fiddle(hz(m), t, beat * .45, .06);
+      const m = FIDDLE[bar][e]; if (m) fiddle(hz(m + (mode === 'race' ? 7 : 0)), t, beat * .45, mode === 'race' ? .075 : .06);
       return;
     }
-    if (OUD[e]) oud(hz(OUD[e] - (lv >= 2 ? 0 : 12)), t, .1);
-    if (lv >= 1) { const m = NEY[bar][e]; if (m) ney(hz(m + (lv >= 3 ? 12 : 0)), t, beat * .46, lv >= 2 ? .1 : .08); }
+    const melody = THEMES[mode];
+    if (melody) {
+      const m = melody[bar][e];
+      if (m) { oud(hz(m - (lv >= 2 ? 0 : 12)), t, .1); if (lv >= 1) ney(hz(m + (lv >= 3 ? 12 : 0)), t, beat * .46, lv >= 2 ? .1 : .08); }
+    } else {
+      if (OUD[e]) oud(hz(OUD[e] - (lv >= 2 ? 0 : 12)), t, .1);
+      if (lv >= 1) { const m = NEY[bar][e]; if (m) ney(hz(m + (lv >= 3 ? 12 : 0)), t, beat * .46, lv >= 2 ? .1 : .08); }
+    }
     if (lv >= 4 && e % 2 === 1) oud(hz(74 + [0, 1, 4, 5][e >> 1]), t, .07);
   }
   function sched() {
@@ -1535,11 +1585,19 @@ const Music = (() => {
     const eighth = 60 / bpm() / 2;
     while (nextT < AC.currentTime + .12) { play(step, nextT); nextT += eighth; step = (step + 1) % 32; }
   }
-  function applyGain() { if (master) master.gain.setTargetAtTime(on && !document.hidden ? VOL * duckV : 0, AC.currentTime, .25); }
+  function loadMute() {
+    if (muteLoaded || !window.wolPref) return;
+    muteLoaded = true;
+    try { muted = !!(window.wolPref && window.wolPref.get('wol-audio-muted') === 'on'); } catch (e) {}
+  }
+  function applyGain() { if (master) master.gain.setTargetAtTime(on && !muted && !document.hidden ? VOL * duckV : 0, AC.currentTime, .25); }
   return {
     get on() { return on; },
-    start() { if (!AC) return; init(); if (!master) return; if (!timer) { nextT = AC.currentTime + .05; timer = setInterval(sched, 25); } applyGain(); },
+    get muted() { loadMute(); return muted; },
+    syncMute() { loadMute(); setEffectsMuted(muted); applyGain(); },
+    start() { loadMute(); if (!AC) return; init(); if (!master) return; setEffectsMuted(muted); if (!timer) { nextT = AC.currentTime + .05; timer = setInterval(sched, 25); } applyGain(); },
     toggle() { on = !on; try { localStorage.setItem('wol-music', on ? 'on' : 'off'); } catch (e) {} if (on) this.start(); else applyGain(); return on; },
+    toggleMute() { loadMute(); muted = !muted; try { window.wolPref && window.wolPref.set('wol-audio-muted', muted ? 'on' : 'off'); } catch (e) {} setEffectsMuted(muted); applyGain(); return muted; },
     setLevel(n) { level = n; },
     setMode(m) { mode = m; if (drone) drone.gain.setTargetAtTime(m === 'farm' ? .015 : droneV, AC.currentTime, .4); },
     duck(v) { duckV = v; applyGain(); },
@@ -1804,7 +1862,7 @@ function popSound() {
   if (!AC) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
   o.frequency.setValueAtTime(260, t); o.frequency.exponentialRampToValueAtTime(70, t + .12);
   g.gain.setValueAtTime(.35, t); g.gain.exponentialRampToValueAtTime(.0001, t + .2);
-  o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + .22); tick(1.6, 1200);
+  o.connect(g); g.connect(effectsOutput()); o.start(t); o.stop(t + .22); tick(1.6, 1200);
 }
 // pop-up dome: press, the dice fly up, tumble, bounce off the glass and each other, and settle
 async function rollDice() {
@@ -2080,6 +2138,7 @@ async function runMain() {
       }
       if (ups++ < 3) {
         setVerdict({ eyebrow: 'Going deeper', title: it.wild ? 'Wild, go back up' : it.bonus ? 'Bonus, go back up' : 'Go back up', body: '', steps: steps.slice(), flash: true });
+        playSfx('back');
         Music.sting(1); buzz([30, 30, 30]); await wait(500);
         await dive(1 / Math.pow(S, k - 1));
         k -= 2; continue;
@@ -2691,7 +2750,7 @@ async function bonusRun(steps, w = 3, b = 0) {
   await wait(900);
   whoosh(true);
   await fadeTo(1, 800);
-  scene = 'intro'; introT = 0; fade = 0; Music.duck(.3);
+  scene = 'intro'; introT = 0; fade = 0; Music.setMode('stank'); playSfx('stank'); Music.duck(.3);
   await animate(7000, t => { introT = Math.min(1, t / .62); draw(); });
   await fadeTo(1, 700);
   scene = 'building'; camT = 0;
@@ -2711,7 +2770,7 @@ async function bonusRun(steps, w = 3, b = 0) {
   if (!faces.roulBowl || faces.roulBowl.width !== N) faces.roulBowl = buildRoulBowl();
   const pk = rollPockets(); faces.roulHead = buildRoulHead(pk);
   roul = { rot: 0, t: 0, pk, balls: [], label: null, tally: '' };
-  scene = 'roul';
+  scene = 'roul'; Music.setMode('stank');
   $('#caption').textContent = "The Stankman's Roulette"; Music.setLevel(4); Music.duck(1); Music.sting(4);
   setVerdict({ eyebrow: 'Ultra bonus', title: "The Stankman's Roulette", body: 'Every Wild and ankh you brought in becomes a ball. Land three on gold and the locksafe opens.', steps: steps.slice() });
   await animate(600, t => { draw(); ctx.fillStyle = `rgba(255,236,180,${1 - t})`; ctx.fillRect(0, 0, N, N); });
@@ -3157,6 +3216,7 @@ function drawZena(now) {
 }
 async function phelanRevenge() {
   // he turns up in the pinball pit, laughing at the empty green chute
+  Music.setMode('revenge'); playSfx('revenge');
   ghost = { x: N * 1.2, y: N * .4, a: .95, side: 1 }; Music.sting(2); buzz([30, 60, 30, 60, 30]);
   await animate(900, t => { ghost.x = lerp(N * 1.2, N * .62, easeOut(t)); draw(); });
   ghostSay = 'Not one in the green. My turn.';
@@ -3302,7 +3362,7 @@ function drawGodRoom(now) {
 async function ghostTo(x, y, dur) { const x0 = ghost.x, y0 = ghost.y; await animate(dur, t => { const e = easeInOut(t); ghost.x = lerp(x0, x, e); ghost.y = lerp(y0, y, e) + Math.sin(t * Math.PI * 2) * N * .01; draw(); }); }
 function waitTap(test) { const st = $('.stage'); st.classList.add('pick'); return new Promise(res => { tapPick = (x, y) => { const v = test(x, y); if (v != null) { tapPick = null; st.classList.remove('pick'); res(v); } }; }); }
 async function godRoom(steps) {
-  roomHit = true; buzz([100, 50, 100, 50, 300]); Music.sting(4);
+  roomHit = true; Music.setMode('god'); playSfx('god'); buzz([100, 50, 100, 50, 300]); Music.sting(4);
   const floor = [];
   for (let j = 0; j < 14; j++) floor.push({ it: j % 5, x: N * (.08 + Math.random() * .84), y: N * (.6 + Math.random() * .33), s: N * (.1 + Math.random() * .05), r: (Math.random() - .5) * 1.2 });
   floor.sort((a, b) => a.y - b.y);
@@ -3580,7 +3640,7 @@ async function pyramidRun(steps) {
   await animate(1500, t => { draw(); ctx.save(); ctx.globalAlpha = Math.min(1, t * 2); eyeOfHorus(ctx, c, c, -Math.PI / 2, N * .5 * easeOut(t)); ctx.restore(); ctx.fillStyle = `rgba(255,252,240,${Math.max(0, (t - .6) / .4)})`; ctx.fillRect(0, 0, N, N); });
   buzz([200]);
   // 2. the desert
-  scene = 'pyramid'; pyr.ph = 'desert'; pyr.white = 1;
+  scene = 'pyramid'; pyr.ph = 'desert'; pyr.white = 1; Music.setMode('pyramid'); playSfx('pyramid');
   $('#caption').textContent = 'Somewhere south of Belfast';
   let last = performance.now();
   await animate(5200, t => {
@@ -3654,7 +3714,7 @@ async function pyramidRun(steps) {
   speak(['Final answer', ...spokenMoves(steps), prize === 2500 ? ("Phelan's Tomb. The pyramid pays " + $m(2500) + ' euro' + "") : `The pyramid pays ${$m(prize)} euro`, roomAct('pyramid')]);
 }
 async function monsterRun(steps, w = 0, b = 3) {
-  roomHit = true; buzz([80, 60, 80, 60, 250]);
+  roomHit = true; Music.setMode('monster'); playSfx('monster'); buzz([80, 60, 80, 60, 250]);
   setVerdict({ eyebrow: 'Bonus', title: 'Three ankhs', body: 'Get in. Hold on.', steps: steps.slice() });
   $('#caption').textContent = '';
   Music.setLevel(3); Music.sting(3);
@@ -3913,7 +3973,7 @@ function flipSound() {
   if (!AC) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
   o.type = 'triangle'; o.frequency.setValueAtTime(180, t); o.frequency.exponentialRampToValueAtTime(70, t + .08);
   g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.12, t + .005); g.gain.exponentialRampToValueAtTime(.0001, t + .1);
-  o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + .11);
+  o.connect(g); g.connect(effectsOutput()); o.start(t); o.stop(t + .11);
 }
 function pinStep(P, h) {
   const rb = P.rb, G = N * 1.5, play = P.balls.filter(b => b.state === 'play');
@@ -4268,7 +4328,7 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
   if (!faces.farm) faces.farm = buildFarm();
   if (!snap || snap.width !== N) snap = mk();
   { const g = snap.getContext('2d'); g.clearRect(0, 0, N, N); dots.forEach(p => p.hide = true); draw(); g.drawImage(cv, 0, 0); dots.forEach(p => p.hide = false); }
-  d6 = []; scene = 'farm'; Music.setMode('farm'); camX = 0; chickens = []; arrows = []; fires = []; feathers = []; markItems = []; formT = []; showMark = 0; chainNote = ''; raceLine = 0; snapA = 1;
+  d6 = []; scene = 'farm'; Music.setMode('farm'); playSfx('farm'); camX = 0; chickens = []; arrows = []; fires = []; feathers = []; markItems = []; formT = []; showMark = 0; chainNote = ''; raceLine = 0; snapA = 1;
   dots.forEach((p, i) => {
     p.sx = p.x; p.sy = p.y; p.delay = .1 + (i / Math.max(1, dots.length)) * .5;
     chickens.push({ x: N * (.08 + Math.random() * .84), y: N * (.64 + Math.random() * .28), dir: Math.random() < .5 ? -1 : 1, ph: 0, peck: 0, alive: true, pop: 0 });
@@ -4457,6 +4517,7 @@ function drawRaceTag(ch) {
   ctx.restore();
 }
 async function chickenRace(steps, alive) {
+  Music.setMode('race');
   const racers = [...alive.filter(ch => ch.special), ...alive.filter(ch => !ch.special)].slice(0, RACE_MAX), rest = alive.filter(ch => !racers.includes(ch));
   const names = [...RACE_NAMES].sort(() => Math.random() - .5);
   const vals = [5, 8, 10, 12, 15, 20, 25, 30].sort(() => Math.random() - .5), bigAt = Math.floor(Math.random() * racers.length);
@@ -4467,7 +4528,7 @@ async function chickenRace(steps, alive) {
   });
   setVerdict({ eyebrow: 'Something’s up', title: 'Chicken Race', body: 'The chickens won’t sit still.', steps: steps.slice(), flash: true });
   $('#caption').textContent = 'Chicken Race';
-  Music.sting(2); buzz([30, 40, 30, 40, 60]);
+  playSfx('farm'); Music.sting(2); buzz([30, 40, 30, 40, 60]);
   // 1. they dance; the ones who don't make the line-up wander off
   rest.forEach(ch => { ch.tx = N * 2.3; ch.ty = ch.y; });
   racers.forEach(ch => { ch.by = ch.y; });
@@ -4492,8 +4553,8 @@ async function chickenRace(steps, alive) {
   });
   racers.forEach(ch => { ch.dir = 1; ch.peck = 0; });
   await farmLoop(1.2, (dt, el) => { racers.forEach((ch, i) => { const u = Math.max(0, Math.min(1, (el - i * .1) * 3)); if (ch.tag.a < 1 && u >= 1) tick(.6, 1600 + i * 80); ch.tag.a = u; }); });
-  for (const n of ['3', '2', '1']) { chainNote = n; tick(1, 900); buzz(20); await farmLoop(.7, () => {}); }
-  chainNote = 'Go!'; ting(); buzz(50);
+  for (const n of ['3', '2', '1']) { chainNote = n; playSfx('countdown'); tick(1, 900); buzz(20); await farmLoop(.7, () => {}); }
+  chainNote = 'Go!'; playSfx('go'); ting(); buzz(50);
   // 3. the race: the winner's finish time is fixed; Ghost Phelan sometimes trips a faster chicken near the line
   const w = Math.floor(Math.random() * racers.length), win = racers[w];
   const others = racers.filter(ch => ch !== win), decoy = others.length && Math.random() < .35 ? pick(others) : null;
@@ -4507,7 +4568,7 @@ async function chickenRace(steps, alive) {
       if (ch === decoy && el >= tripAt) {
         p = el < tripAt + STUN ? tripP : Math.min(1, tripP + (el - tripAt - STUN) / ch.T);
         if (!ch.tripped) {
-          ch.tripped = true; ch.flash = .8; ghostSay = 'Whoops'; whoosh(); buzz([40, 30, 80]);
+          ch.tripped = true; ch.flash = .8; ghostSay = 'Whoops'; playSfx('trip'); whoosh(); buzz([40, 30, 80]);
           for (let k = 0; k < 14; k++) feathers.push({ x: ch.x, y: ch.y - N * .02, vx: (Math.random() - .5) * N * .5, vy: -Math.random() * N * .4, r: Math.random() * 3, life: 1, col: ch.special === 'W' ? '#f3c94a' : ch.special === 'B' ? '#9b5de5' : '#fbf7ee' });
         }
         if (el < tripAt + STUN) { ch.peck = .9; ch.dir = Math.sin(el * 14) > 0 ? 1 : -1; ch.flash = Math.max(0, (ch.flash || 0) - dt); }
@@ -4520,7 +4581,7 @@ async function chickenRace(steps, alive) {
       if (!(ch === decoy && el >= tripAt && el < tripAt + STUN)) ch.ph += dt * (p < 1 ? 22 : 4);
       ch.p = p; ch.x = lerp(startX, raceLine, p);
       if (ch.done) { ch.post = (ch.post || 0) + dt; ch.x = raceLine + N * .07 * (1 - Math.exp(-ch.post * 2.5)); } // they run on past the line and slow down
-      if (p >= 1 && !ch.done) { ch.done = true; if (ch === win) { ting(); buzz([40, 50, 80]); chainNote = `${ch.name} wins!`; ch.glow = 1; ch.won = 1; } else tick(.8, 1400); }
+      if (p >= 1 && !ch.done) { ch.done = true; if (ch === win) { playSfx('finish'); ting(); buzz([40, 50, 80]); chainNote = `${ch.name} wins!`; ch.glow = 1; ch.won = 1; } else tick(.8, 1400); }
     });
     // the ghost drifts in over the chicken he's about to trip, then floats off
     if (decoy) {
@@ -4692,6 +4753,11 @@ $('#lib').addEventListener('change', onFile);
 const musicBtn = $('#musicBtn');
 musicBtn.textContent = Music.on ? 'Music on' : 'Music off';
 musicBtn.addEventListener('click', () => { audio(); musicBtn.textContent = Music.toggle() ? 'Music on' : 'Music off'; });
+const muteBtn = $('#muteBtn');
+function paintMuteButton() { muteBtn.textContent = Music.muted ? 'Sound muted' : 'Mute sound'; muteBtn.setAttribute('aria-pressed', Music.muted ? 'true' : 'false'); }
+paintMuteButton();
+window.addEventListener('wol-audio-preference-ready', paintMuteButton);
+muteBtn.addEventListener('click', () => { audio(); Music.toggleMute(); paintMuteButton(); });
 
 const wildTiles = [...document.querySelectorAll('.wt')];
 function paintTile(k, kind) {
@@ -4792,7 +4858,7 @@ if (document.fonts && document.fonts.load) {
 
 </script>
 
-<script>window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":22,"ev":16.24,"edge":0.995,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};</script>
+<script>window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":23,"ev":16.24,"edge":0.995,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};</script>
 <script>
 // ---------- wallet layer for the Android app ----------
 // Owns wallet configuration, shared state, and app bindings.
@@ -4820,6 +4886,8 @@ if (document.fonts && document.fonts.load) {
     get(k) { try { if (app && app.getPref) return app.getPref(k) || null; } catch (e) {} try { return localStorage.getItem(k); } catch (e) { return null; } },
     set(k, v) { try { if (app && app.setPref) app.setPref(k, v == null ? '' : v); } catch (e) {} try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} },
   };
+  window.wolPref = pref;
+  window.dispatchEvent(new Event('wol-audio-preference-ready'));
   const TEST_KEY = 'test', isTest = () => !!(W.me && W.me.test);
   const TROPHIES = [
     { id: 'first', name: 'First spin', icon: '🎡', how: 'Complete your first paid spin.' },
@@ -5095,6 +5163,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     db.put('users/' + user + '/trophies/' + id, earnedAt).then(() => {
       if (W.user === user && W.me && W.me !== me) W.me.trophies = Object.assign({}, W.me.trophies || {}, { [id]: earnedAt });
       trophyToasts.push(trophy);
+      playSfx('trophy');
       if (!trophyToastTimer) showTrophyToast();
     }).catch(() => {
       const rollback = account => {
@@ -5460,6 +5529,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
         if (!m && o.eyebrow === 'Final answer' && /^€[\d.]+$/.test(o.title || '')) m = [0, o.title.slice(1)];
         const isPhelanTomb = /, Phelan['’]s Tomb$/.test(String(o.title || ''));
         if (m && isPhelanTomb && !isTest()) {
+          playSfx('jackpot');
           run.paid = true;
           const prizeCents = W.payCents(m[1]);
           (async () => {

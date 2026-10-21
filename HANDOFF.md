@@ -2,11 +2,11 @@
 
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
-- **Task:** Task 5 (replays, PR #16, issue #12), then Tasks 6 → 7 → 8 (issues #17, #18, #19)
-- **Owner:** Copilot runs the whole queue from here (Cillian, 2026-10-21). Claude has stepped back.
-- **Status:** Tasks 5–8 run IN PARALLEL (Cillian, 2026-10-21): each issue has its own Copilot PR. Before DONE, merge main in, fix conflicts yourself, take the next free version number.
-- **Next:** Copilot self-reviews each PR and posts `DONE: Task N` on its issue; Claude does a quick check and merges.
-- **Last updated:** 2026-10-21 22:12 by Claude
+- **Task:** Task 8 (sound pack and mute, issue #19)
+- **Owner:** Copilot, on its own branch and PR (Cillian, 2026-10-21).
+- **Status:** In progress; Task 8 is running in parallel with Tasks 5–7 as requested in the latest issue comment.
+- **Next:** Complete the room music and sound effects, verify the mute preference and release build, merge latest `main`, then post `DONE: Task 8` with the PR link.
+- **Last updated:** 2026-10-21 21:12 UTC by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.

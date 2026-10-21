@@ -195,6 +195,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     db.put('users/' + user + '/trophies/' + id, earnedAt).then(() => {
       if (W.user === user && W.me && W.me !== me) W.me.trophies = Object.assign({}, W.me.trophies || {}, { [id]: earnedAt });
       trophyToasts.push(trophy);
+      playSfx('trophy');
       if (!trophyToastTimer) showTrophyToast();
     }).catch(() => {
       const rollback = account => {

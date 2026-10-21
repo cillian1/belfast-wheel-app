@@ -1,11 +1,18 @@
 // ---------- music: a driving Egyptian groove (Hijaz on D) that builds with every wild ----------
 // Owns synthesized background music and its playback controls.
 const Music = (() => {
-  let on = true, level = 0, duckV = 1, master = null, noise = null, timer = null, nextT = 0, step = 0, drone = null;
+  let on = true, muted = false, muteLoaded = false, level = 0, duckV = 1, master = null, noise = null, timer = null, nextT = 0, step = 0, drone = null;
   try { on = localStorage.getItem('wol-music') !== 'off'; } catch (e) {}
   const hz = m => 440 * Math.pow(2, (m - 69) / 12);
   const OUD = [62, 0, 63, 66, 67, 66, 63, 0];
   const NEY = [[74, 0, 72, 70, 69, 0, 70, 72], [75, 74, 72, 70, 69, 70, 69, 66], [67, 0, 69, 70, 72, 70, 69, 67], [66, 63, 66, 67, 69, 0, 0, 0]];
+  const THEMES = {
+    stank: [[58, 0, 61, 65, 63, 0, 61, 58], [65, 63, 61, 58, 56, 58, 61, 63], [58, 0, 61, 63, 65, 63, 61, 58], [56, 0, 58, 61, 63, 0, 0, 0]],
+    god: [[62, 0, 66, 69, 74, 0, 71, 69], [67, 69, 74, 78, 76, 74, 71, 69], [66, 0, 69, 73, 78, 76, 73, 69], [62, 66, 69, 74, 76, 0, 0, 0]],
+    monster: [[50, 57, 62, 65, 69, 65, 62, 57], [53, 60, 65, 69, 72, 69, 65, 60], [55, 62, 67, 71, 74, 71, 67, 62], [50, 57, 62, 69, 74, 0, 0, 0]],
+    pyramid: [[62, 0, 69, 74, 77, 74, 69, 0], [60, 0, 67, 72, 76, 72, 67, 0], [58, 0, 65, 70, 74, 70, 65, 0], [62, 0, 69, 74, 77, 0, 0, 0]],
+    revenge: [[50, 0, 53, 58, 57, 0, 53, 50], [46, 0, 50, 53, 58, 53, 50, 46], [48, 0, 55, 58, 60, 58, 55, 48], [50, 53, 57, 62, 58, 0, 0, 0]],
+  };
   const VOL = .22;
   // the farm: same darbuka underneath, but a banjo roll and a fiddle hoedown in D major on top
   let mode = 'egypt', droneV = .06;
@@ -56,7 +63,7 @@ const Music = (() => {
   function doum(t, v = .7) { const o = AC.createOscillator(), g = AC.createGain(); o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(62, t + .18); env(g, t, v, .003, .4); o.connect(g); g.connect(master); o.start(t); o.stop(t + .42); }
   function tek(t, v = .22) { nz(t, .06, v, 'highpass', 3500, .7); }
   function zill(t, v = .05) { [2650, 3970].forEach(f => { const o = AC.createOscillator(), g = AC.createGain(); o.type = 'sine'; o.frequency.value = f; env(g, t, v, .002, .6); o.connect(g); g.connect(master); o.start(t); o.stop(t + .65); }); }
-  const bpm = () => 112 + Math.min(level, 4) * 10;
+  const bpm = () => (mode === 'race' ? 150 : 112) + Math.min(level, 4) * 10;
   function play(s, t) {
     const e = s % 8, bar = Math.floor(s / 8), beat = 60 / bpm(), lv = level;
     // maqsum: DUM tek . tek DUM . tek .
@@ -66,14 +73,20 @@ const Music = (() => {
     if (lv >= 2) nz(t, .04, .05, 'highpass', 9000);
     if (lv >= 3) nz(t + beat * .25, .04, .04, 'highpass', 9000);
     if (lv >= 1 && (e === 0 || e === 4)) zill(t, .03 + lv * .01);
-    if (mode === 'farm') {
+    if (mode === 'farm' || mode === 'race') {
       banjo(hz(CHORDS[bar][ROLL[e]]), t, .07);
       if (e === 0 || e === 4) oud(hz(CHORDS[bar][0] - 24), t, .12); // the bass on the beat
-      const m = FIDDLE[bar][e]; if (m) fiddle(hz(m), t, beat * .45, .06);
+      const m = FIDDLE[bar][e]; if (m) fiddle(hz(m + (mode === 'race' ? 7 : 0)), t, beat * .45, mode === 'race' ? .075 : .06);
       return;
     }
-    if (OUD[e]) oud(hz(OUD[e] - (lv >= 2 ? 0 : 12)), t, .1);
-    if (lv >= 1) { const m = NEY[bar][e]; if (m) ney(hz(m + (lv >= 3 ? 12 : 0)), t, beat * .46, lv >= 2 ? .1 : .08); }
+    const melody = THEMES[mode];
+    if (melody) {
+      const m = melody[bar][e];
+      if (m) { oud(hz(m - (lv >= 2 ? 0 : 12)), t, .1); if (lv >= 1) ney(hz(m + (lv >= 3 ? 12 : 0)), t, beat * .46, lv >= 2 ? .1 : .08); }
+    } else {
+      if (OUD[e]) oud(hz(OUD[e] - (lv >= 2 ? 0 : 12)), t, .1);
+      if (lv >= 1) { const m = NEY[bar][e]; if (m) ney(hz(m + (lv >= 3 ? 12 : 0)), t, beat * .46, lv >= 2 ? .1 : .08); }
+    }
     if (lv >= 4 && e % 2 === 1) oud(hz(74 + [0, 1, 4, 5][e >> 1]), t, .07);
   }
   function sched() {
@@ -81,11 +94,19 @@ const Music = (() => {
     const eighth = 60 / bpm() / 2;
     while (nextT < AC.currentTime + .12) { play(step, nextT); nextT += eighth; step = (step + 1) % 32; }
   }
-  function applyGain() { if (master) master.gain.setTargetAtTime(on && !document.hidden ? VOL * duckV : 0, AC.currentTime, .25); }
+  function loadMute() {
+    if (muteLoaded || !window.wolPref) return;
+    muteLoaded = true;
+    try { muted = !!(window.wolPref && window.wolPref.get('wol-audio-muted') === 'on'); } catch (e) {}
+  }
+  function applyGain() { if (master) master.gain.setTargetAtTime(on && !muted && !document.hidden ? VOL * duckV : 0, AC.currentTime, .25); }
   return {
     get on() { return on; },
-    start() { if (!AC) return; init(); if (!master) return; if (!timer) { nextT = AC.currentTime + .05; timer = setInterval(sched, 25); } applyGain(); },
+    get muted() { loadMute(); return muted; },
+    syncMute() { loadMute(); setEffectsMuted(muted); applyGain(); },
+    start() { loadMute(); if (!AC) return; init(); if (!master) return; setEffectsMuted(muted); if (!timer) { nextT = AC.currentTime + .05; timer = setInterval(sched, 25); } applyGain(); },
     toggle() { on = !on; try { localStorage.setItem('wol-music', on ? 'on' : 'off'); } catch (e) {} if (on) this.start(); else applyGain(); return on; },
+    toggleMute() { loadMute(); muted = !muted; try { window.wolPref && window.wolPref.set('wol-audio-muted', muted ? 'on' : 'off'); } catch (e) {} setEffectsMuted(muted); applyGain(); return muted; },
     setLevel(n) { level = n; },
     setMode(m) { mode = m; if (drone) drone.gain.setTargetAtTime(m === 'farm' ? .015 : droneV, AC.currentTime, .4); },
     duck(v) { duckV = v; applyGain(); },

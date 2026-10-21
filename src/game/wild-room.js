@@ -164,7 +164,7 @@ async function bonusRun(steps, w = 3, b = 0) {
   await wait(900);
   whoosh(true);
   await fadeTo(1, 800);
-  scene = 'intro'; introT = 0; fade = 0; Music.duck(.3);
+  scene = 'intro'; introT = 0; fade = 0; Music.setMode('stank'); playSfx('stank'); Music.duck(.3);
   await animate(7000, t => { introT = Math.min(1, t / .62); draw(); });
   await fadeTo(1, 700);
   scene = 'building'; camT = 0;
@@ -184,7 +184,7 @@ async function bonusRun(steps, w = 3, b = 0) {
   if (!faces.roulBowl || faces.roulBowl.width !== N) faces.roulBowl = buildRoulBowl();
   const pk = rollPockets(); faces.roulHead = buildRoulHead(pk);
   roul = { rot: 0, t: 0, pk, balls: [], label: null, tally: '' };
-  scene = 'roul';
+  scene = 'roul'; Music.setMode('stank');
   $('#caption').textContent = "The Stankman's Roulette"; Music.setLevel(4); Music.duck(1); Music.sting(4);
   setVerdict({ eyebrow: 'Ultra bonus', title: "The Stankman's Roulette", body: 'Every Wild and ankh you brought in becomes a ball. Land three on gold and the locksafe opens.', steps: steps.slice() });
   await animate(600, t => { draw(); ctx.fillStyle = `rgba(255,236,180,${1 - t})`; ctx.fillRect(0, 0, N, N); });

@@ -172,7 +172,7 @@ async function pyramidRun(steps) {
   await animate(1500, t => { draw(); ctx.save(); ctx.globalAlpha = Math.min(1, t * 2); eyeOfHorus(ctx, c, c, -Math.PI / 2, N * .5 * easeOut(t)); ctx.restore(); ctx.fillStyle = `rgba(255,252,240,${Math.max(0, (t - .6) / .4)})`; ctx.fillRect(0, 0, N, N); });
   buzz([200]);
   // 2. the desert
-  scene = 'pyramid'; pyr.ph = 'desert'; pyr.white = 1;
+  scene = 'pyramid'; pyr.ph = 'desert'; pyr.white = 1; Music.setMode('pyramid'); playSfx('pyramid');
   $('#caption').textContent = 'Somewhere south of Belfast';
   let last = performance.now();
   await animate(5200, t => {
@@ -246,7 +246,7 @@ async function pyramidRun(steps) {
   speak(['Final answer', ...spokenMoves(steps), prize === 2500 ? ("Phelan's Tomb. The pyramid pays " + $m(2500) + ' euro' + "") : `The pyramid pays ${$m(prize)} euro`, roomAct('pyramid')]);
 }
 async function monsterRun(steps, w = 0, b = 3) {
-  roomHit = true; buzz([80, 60, 80, 60, 250]);
+  roomHit = true; Music.setMode('monster'); playSfx('monster'); buzz([80, 60, 80, 60, 250]);
   setVerdict({ eyebrow: 'Bonus', title: 'Three ankhs', body: 'Get in. Hold on.', steps: steps.slice() });
   $('#caption').textContent = '';
   Music.setLevel(3); Music.sting(3);

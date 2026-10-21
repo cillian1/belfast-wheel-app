@@ -145,6 +145,11 @@ $('#lib').addEventListener('change', onFile);
 const musicBtn = $('#musicBtn');
 musicBtn.textContent = Music.on ? 'Music on' : 'Music off';
 musicBtn.addEventListener('click', () => { audio(); musicBtn.textContent = Music.toggle() ? 'Music on' : 'Music off'; });
+const muteBtn = $('#muteBtn');
+function paintMuteButton() { muteBtn.textContent = Music.muted ? 'Sound muted' : 'Mute sound'; muteBtn.setAttribute('aria-pressed', Music.muted ? 'true' : 'false'); }
+paintMuteButton();
+window.addEventListener('wol-audio-preference-ready', paintMuteButton);
+muteBtn.addEventListener('click', () => { audio(); Music.toggleMute(); paintMuteButton(); });
 
 const wildTiles = [...document.querySelectorAll('.wt')];
 function paintTile(k, kind) {
