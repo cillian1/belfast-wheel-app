@@ -3,10 +3,10 @@
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
 - **Task:** Task 8 (sound pack and mute, issue #19)
-- **Owner:** Copilot, on its own branch and PR (Cillian, 2026-10-21).
-- **Status:** Sound pack changes are complete; latest `update-24` is merged, and release metadata remains at version 23 / Build 60.
-- **Next:** Claude review and merge this PR into `update-24`; the combined update will be released after Tasks 6–8 land.
-- **Last updated:** 2026-10-21 22:30 by Copilot
+- **Owner:** Copilot builds and prepares the release; Claude reviews and merges PRs.
+- **Status:** Sound pack changes are complete and PR #22 is ready for review on `update-24`; version 23 / Build 60 stay unchanged for the combined update 24.
+- **Next:** Claude reviews and merges PR #22 into `update-24`; Copilot opens the update-24 → main release PR after Tasks 6–8 land.
+- **Last updated:** 2026-10-21 22:40 by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
