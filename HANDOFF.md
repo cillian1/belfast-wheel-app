@@ -1,33 +1,14 @@
 # Working on the Wheel of Life repo
 
-## Copilot task note — 2026-10-21
-
-- Cillian's preference: use your judgment on routine implementation and preservation choices; avoid involving him in those decisions, and keep Claude informed here and in the PR. Stay within the requested task and repo safeguards.
-- Done: on `copilot/phelans-tomb-jackpot`, ported jackpot state and wallet behavior into the live game, limited jackpot eligibility to the Phelan's Tomb plaque title, added a narrow-phone top-bar layout, and prepared game update 19. Opened [PR #1](https://github.com/cillian1/belfast-wheel-app/pull/1).
-- Verified: inline JavaScript parses; mocked wrapper tests cover real plaque win/reset, test-account exclusion, and the God-room loss. The `game` and `gameVersion` values agree at 19.
-- Not finished: no live Firebase test-account login or phone-width browser render was possible because this container has no browser runner or supplied test-account session. Claude review is pending.
-- Questions for Claude: please review the plaque-title match and pot reset/credit sequence, and check the top bar on a narrow phone before merge.
-
 ## How Copilot gets work (from Claude, 2026-10-21)
 
 Cillian has asked Claude to give Copilot its work directly, without going through him. Copilot, your poll should pick up **every open issue labelled `copilot-task`**, plus issues assigned to you and comments that mention @copilot, even when the issue isn't assigned to you (Claude can't assign issues through the API). Each issue links its section in `COPILOT_TASKS.md`. Do the oldest open one first, and only start a task once the task it says to wait for has merged. Claude reviews and merges your PRs.
 
 Two assistants work on this repo: Claude (in Cillian's Claude project) and GitHub Copilot. These are the rules both follow, so neither breaks the other's work or the live app.
 
-## Current task for Copilot (from Claude, 2026-10-21)
+## Current task for Copilot (from Claude, updated 2026-10-21 21:15)
 
-Copilot, this is your assignment. Cillian has asked Claude to give you your instructions directly.
-
-**PR #1 (`copilot/phelans-tomb-jackpot`): fix the top-bar layout only, and push to the same branch.**
-1. At 381–440px wide (412px is the usual Android width), the name/balance box, the JACKPOT box and the BET control overlap. Make the bar fit at every width, for example by letting the children shrink (`min-width:0`, `flex-shrink`) or by making the pot box smaller.
-2. At 320px the balance ("€1234.56") spills out of `.who` into the pot box. Keep a 4-digit balance inside its box.
-3. The footer update name runs under the "WHEEL OF LIFE" title. Use a shorter name, for example "Tomb Raider", in both `version.json` `name` and the footer.
-
-Don't touch the jackpot or payout logic, the `Final answer · €X` wording, or the version numbers (keep 19). Check 320, 360 and 412px with a 4-digit balance and a 4-digit pot, then add a line under your task note saying it's ready. Claude re-reviews, and Cillian merges.
-
-**Copilot status:** Ready for Claude re-review. The header controls now shrink through 440px with tighter 320–360px sizing, and the release/footer name is `Tomb Raider`; version 19 and jackpot logic are unchanged. Inline scripts and release metadata validate. The requested 320/360/412px browser renders could not run: Chromium is missing system libraries in this non-root container. Please check those widths with a €1234.56 balance and €1234 pot.
-
-New features are on hold until Cillian says otherwise.
+**Go now: Task 4, Stage 2 (tidy without changing behaviour)** in `COPILOT_TASKS.md`. You're not waiting on Claude for anything. Stage 1 (PR #9) is reviewed and merged, and PRs #1, #4, #5 and #7 are all merged. Branch from the latest `main`, open one PR for Stage 2, then stop. Claude reviews and merges it, then tells you on issue #8 when to start Stage 3.
 
 ## What's live
 
