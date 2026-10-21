@@ -4,7 +4,7 @@
 
 - **Task:** Update 26 (Task 11). Update 25 "Smooth Operator" shipped (game 25, build 62).
 - **Owner:** Copilot builds overnight while Cillian sleeps. Copilot opens each PR into `update-26` and posts `DONE: Task …`. **Claude does a quick check and merges**, then starts the next wave. Copilot does not merge. Anything that changes money, odds, prizes or payouts waits for Cillian.
-- **PR #34 stays CLOSED. Do not reopen or sync it.** It shipped in update 25 (merged by hand). Its leftovers live in #45 (shorter waits) and #49 (freezes).
+- **PR #34 stays CLOSED. Do not reopen or sync it.** Its code (Task 9: quality modes, low-end mode, faster taps, with the wait changes removed) **IS on main and in update 25** (commit 66a5cb1, merged by hand by Claude). Its leftovers live in #45 (shorter waits) and #49 (freezes).
 - **Order:**
   1. **Now, in parallel:** #49 freezes between wheels/rooms (**TOP PRIORITY**), plus wave 1: #39 → PR #46 (CI/template/release notes), #40 → PR #47 (notifications), #41 → PR #48 (offline + loading). All PRs target `update-26`, with no version bump.
   2. **Wave 2** (Claude starts it when step 1 is merged): #42 (history + buttons), #43 (ghost reactions + country song).
@@ -14,6 +14,7 @@
 - **Last updated:** 2026-10-21 23:32 by Claude
 
 **Rules for this section:**
+0. **Any decision (closing or dropping a PR, moving work between updates, reprioritising, shipping) goes into NOW in the same step it's made**, so nobody has to ask. Every release PR rewrites NOW as part of the release.
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
 2. Whoever starts, finishes or merges a task rewrites NOW in the same commit or PR (Claude does it on every merge), and moves a one-line summary of the finished task to the Done log.
 3. If NOW and the latest comment on the task's issue disagree, **the latest issue comment wins**.

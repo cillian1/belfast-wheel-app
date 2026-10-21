@@ -27,3 +27,7 @@ Cillian wants speed over thoroughness. For every task:
 - Run one quick self-check: `node tools/bundle.mjs`, `node tools/check.mjs`, and a single look at 360px if it's visual. Skip before/after profiling, multi-width screenshot sets and long evidence write-ups unless the issue asks for them.
 - Keep the PR description to a few lines, then post DONE. If something is unclear, make the obvious choice, say so in the PR, and keep going.
 - Hard rules still apply: no money/odds/prize changes, and keep the `Math.random()` order.
+
+## Releases
+
+Every release PR (`update-N` → `main`) must also rewrite HANDOFF NOW (what shipped, what's next) and add a Done-log line. Any decision you make goes into NOW in the same commit.
