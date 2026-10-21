@@ -2,11 +2,11 @@
 
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
-- **Task:** Task 5 follow-up: persist replay-pruning cadence across restarts (Issue #12), alongside Tasks 6–8 in parallel (issues #17, #18, #19).
-- **Owner:** Copilot builds; Cillian verifies and merges. Claude has stepped back.
-- **Status:** Task 5 shipped as update 23 in PR #16. The persistence fix and restart/pruning regression test are in progress; Tasks 6–8 remain parallel work.
-- **Next:** Validate and open a ready-for-review follow-up PR; Cillian verifies and merges it, with auto-merge off until then.
-- **Last updated:** 2026-10-21 22:08 by Copilot
+- **Task:** Task 5 replay reliability follow-up (Issue #12): playback failure handling and persistent prune cadence, alongside Tasks 6–8 (issues #17, #18, #19).
+- **Owner:** Copilot builds; Cillian verifies and merges. Claude is unavailable.
+- **Status:** Task 5 shipped as update 23 in PR #16. Playback now validates frames, rebases elapsed millisecond timestamps, bounds loading, and surfaces load/render failures; cadence persistence and regression tests are implemented. Final integration checks and current-main merge remain.
+- **Next:** Merge latest main, finish validation, open a ready-for-review follow-up PR, and post its link on Issue #12. Cillian verifies and merges; do not enable auto-merge.
+- **Last updated:** 2026-10-21 22:30 by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
