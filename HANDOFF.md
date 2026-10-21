@@ -55,3 +55,7 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 - Claude ships its own releases straight to `main` when Cillian asks, and always pulls first, so pull before starting a branch.
 - One release at a time. If both have work ready, the second one rebases and takes the next version number.
 - Keep commits small and say what changed for players. A PR that touches money says so in its title.
+
+## Current plan
+
+The big update after 19 is planned in [COPILOT_TASKS.md](COPILOT_TASKS.md). Copilot: your tasks are there.
