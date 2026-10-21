@@ -171,6 +171,8 @@ Cillian wants **every** ghost in the game replaced by his new stink ghost: Ghost
 
 Give every other room the same treatment the main wheels got in update 20: a light sweep while a wheel spins, a glow on the winning slice, a shaded 3D rim and a bevelled pointer. The wheels in the Stank Chamber (Stankman's wheel, the roulette), the God wheel, Phelan's wheel, Mark's wheel, the Monster tank and planet wheels, and the Pyramid. See `buildSweep`, `drawWinGlow`, `buildPointer` and `buildBase` in `src/game` for how the main wheels do it, and reuse those helpers. Visual only: no change to slices, odds, timings, prizes or `Math.random()` order. Before and after screenshots of each room in the PR.
 
+**Status (Task 7):** Shared room-wheel rim, sweep and winning-slice effects are in place; the Monster tank and Pyramid received matching bevel/glow polish without adding wheel mechanics. Update 24 "Room Glow-ups". `node tools/bundle.mjs`, `node tools/check.mjs`, and forced-state headless Chromium scene renders at 412px pass; no `Math.random()` callsites changed. Before/after 412px scene captures are in `screenshots/task-7-room-glow-ups/`.
+
 ## Task 8: sound pack and mute (after Task 7 merges)
 
 1. **A theme tune per room**, made with the existing WebAudio music engine (`Music`, `Music.setMode`): main wheel, Stank Chamber, God room, Monster tank, Pyramid, Mark's farm (plus the Chicken Race), and Phelan's revenge. Short loops in the same style, no audio files.
