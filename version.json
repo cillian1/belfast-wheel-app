@@ -1,8 +1,8 @@
 {
-  "game": 13,
+  "game": 14,
   "apk": 2,
-  "gameBuild": 54,
-  "notes": "Watch players live as a full replay, send Ghost Phelan messages, live feed and big-win replays",
+  "gameBuild": 55,
+  "notes": "Reset spin button under Spin",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk"
 }

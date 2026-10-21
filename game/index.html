@@ -173,6 +173,10 @@ button:focus-visible,.btn:focus-within,.btn:focus-visible{outline:2px solid var(
 }
 .spin:active{transform:translateY(1px) scale(.99)}
 .spin:disabled{filter:grayscale(.6) brightness(.7);cursor:default}
+.reset{min-height:26px;margin-top:-6px;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--mute);visibility:hidden}
+.locked .reset{visibility:visible}.locked .reset.gone{visibility:hidden}
+.reset button{background:none;border:1px solid rgba(255,255,255,.2);color:inherit;border-radius:999px;padding:4px 14px;margin-left:8px;font:inherit;letter-spacing:.06em;cursor:pointer}
+.reset #resetBtn{margin:0}.reset #resetYes{color:#ff9b8a;border-color:#ff9b8a}
 .plate{
   border-radius:16px;padding:18px 18px 20px;border:1px solid var(--line);
   background:
@@ -254,6 +258,7 @@ footer{position:fixed;top:8px;left:10px;z-index:5;color:rgba(220,225,230,.55);fo
   <p class="caption" id="caption">Land on Go deeper and you fall through the wheels.</p>
 
   <button class="spin" id="spinBtn" type="button">Spin</button>
+  <div class="reset" id="resetRow"><button type="button" id="resetBtn">Reset spin</button><span id="resetAsk" hidden>Are you sure? <button type="button" id="resetYes">Yes</button><button type="button" id="resetNo">No</button></span></div>
 
   <section class="plate" id="verdict" aria-live="polite">
     <span class="eyebrow" id="vEyebrow">The wheel says</span>
@@ -277,11 +282,11 @@ footer{position:fixed;top:8px;left:10px;z-index:5;color:rgba(220,225,230,.55);fo
   <input class="vh" type="file" id="lib" accept="image/*">
 
 
-  <footer>Build 54 · app 13</footer>
+  <footer>Build 55 · app 14</footer>
 </div>
 
 <script>
-const BUILD = 54;
+const BUILD = 55;
 const $ = s => document.querySelector(s);
 const TAU = Math.PI * 2, BASE = -Math.PI / 2;
 const LABEL_FONT = '"IBM Plex Sans Condensed","Arial Narrow",sans-serif';
@@ -4324,6 +4329,7 @@ async function spinPhoto() {
 function lock(on) {
   busy = on; spinBtn.disabled = on;
   document.body.classList.toggle('locked', on);
+  if (!on) resetAsking(false);
   spinBtn.setAttribute('aria-busy', on ? 'true' : 'false');
   if (on) lastDraw = performance.now();
 }
@@ -4376,6 +4382,19 @@ cv.addEventListener('click', ev => {
   if (!busy && (scene === 'nested' || scene === 'photo')) spin();
 });
 $('#backBtn').addEventListener('click', () => { if (!busy) leavePhoto(); });
+// Reset spin: gives up on the run in progress and starts again at the top wheel. It asks first, in place, no pop-up.
+// The run is thrown away, so nothing it would have paid counts; once a prize is in, it's too late to reset.
+function resetAsking(on) { $('#resetBtn').hidden = on; $('#resetAsk').hidden = !on; }
+const resetOk = () => busy && !$('.stage').classList.contains('done') && !(window.wolResetOk && !wolResetOk());
+$('#resetBtn').addEventListener('click', () => { if (resetOk()) resetAsking(true); });
+$('#resetNo').addEventListener('click', () => resetAsking(false));
+$('#resetYes').addEventListener('click', () => {
+  if (!resetOk()) return resetAsking(false);
+  $('#resetAsk').textContent = 'Resetting…';
+  try { speechSynthesis.cancel(); } catch (e) {}
+  location.reload(); // every wheel, ball and room is mid-animation; a fresh page is the clean way back to the top
+});
+setInterval(() => { const off = busy && !resetOk(); $('#resetRow').classList.toggle('gone', off); if (off) resetAsking(false); }, 400);
 
 function onFile(e) {
   if (busy) { e.target.value = ''; return; }
@@ -4490,7 +4509,7 @@ if (document.fonts && document.fonts.load) {
 }
 </script>
 
-<script>window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":13,"ev":15.1078,"edge":0.995,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};</script>
+<script>window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":14,"ev":15.1078,"edge":0.995,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};</script>
 <script>
 // ---------- wallet layer for the Android app ----------
 // Injected after the game's own script by tools/build.mjs. It wraps spin() and setVerdict(),
@@ -4802,6 +4821,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     try { await gameSpin(); } finally { if (W.run) W.run.live = false; }
   };
 
+  window.wolResetOk = () => !(W.run && W.run.paid); // no resetting once the prize is being paid
   const gameVerdict = setVerdict;
   let lastVerdict = null; // what the player's screen says, for anyone watching
   setVerdict = function (o) {

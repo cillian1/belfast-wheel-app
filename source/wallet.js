@@ -330,6 +330,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     try { await gameSpin(); } finally { if (W.run) W.run.live = false; }
   };
 
+  window.wolResetOk = () => !(W.run && W.run.paid); // no resetting once the prize is being paid
   const gameVerdict = setVerdict;
   let lastVerdict = null; // what the player's screen says, for anyone watching
   setVerdict = function (o) {
