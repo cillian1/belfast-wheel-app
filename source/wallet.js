@@ -289,11 +289,11 @@
     let amt = 500;
     const p = openSheet(`<h3>Top up</h3>
       ${msg ? `<p class="err">${esc(msg)}</p>` : ''}
-      <p>Pick an amount (€1 minimum), send it on Revolut to <b>@${esc(CFG.revolut)}</b>, then tap <b>I've sent it</b>. It lands on your balance as soon as Cillian confirms.</p>
+      <p>Pick an amount (€1 minimum), send it on Revolut to <b>@${esc(CFG.revolut)}</b>, then tap <b>Done</b>. It goes on your balance straight away. Cillian checks every top-up, and any that never arrived get taken back off.</p>
       <div class="wrow" id="wAmts">${[100, 200, 500, 1000, 2000].map(a => `<button class="wbtn" type="button" data-a="${a}">${eur(a)}</button>`).join('')}</div>
       <input id="wAmt" inputmode="decimal" placeholder="Other amount, e.g. 7.50">
       <button class="wbtn gold" id="wRev" type="button">Pay €5 with Revolut</button>
-      <button class="wbtn" id="wSent" type="button">I've sent it</button>
+      <button class="wbtn" id="wSent" type="button">Done, I've paid</button>
       <p class="err" id="wErr"></p>
       <button class="wlink" type="button" id="wClose">Close</button>`);
     const sel = a => { amt = a; p.querySelectorAll('#wAmts button').forEach(b => b.classList.toggle('sel', +b.dataset.a === a)); $w('wRev').textContent = 'Pay ' + eur(a) + ' with Revolut'; };
@@ -308,9 +308,13 @@
     };
     $w('wSent').onclick = async () => {
       if (amt < MIN_TOPUP) return ($w('wErr').textContent = 'The minimum top-up is €1.');
+      // trust mode: credit now, the host can reverse it from the Host screen
       try {
-        await db.push('reqs', { user: W.user, name: W.me.name, kind: 'topup', a: amt, at: now(), status: 'pending' });
-        closeSheet(); toast('Sent to Cillian. Your ' + eur(amt) + ' lands once he confirms.', true);
+        const u = await db.txn('users/' + W.user, u => { u.balance = (u.balance || 0) + amt; u.topped = (u.topped || 0) + amt; return u; });
+        W.me = u; paint();
+        await db.push('reqs', { user: W.user, name: u.name, kind: 'topup', a: amt, at: now(), status: 'credited' });
+        log(W.user, 'topup', amt, { what: 'Revolut' });
+        closeSheet(); toast(eur(amt) + ' added. Good luck!', true);
       } catch (e) { $w('wErr').textContent = 'No connection. Try again.'; }
     };
     $w('wClose').onclick = closeSheet;
@@ -415,13 +419,17 @@
     };
   }
   async function hostTab(body) {
-    const reqs = Object.entries(await db.get('reqs') || {}).filter(([, r]) => r.status === 'pending').sort((a, b) => a[1].at - b[1].at);
+    const all = Object.entries(await db.get('reqs') || {});
+    const reqs = all.filter(([, r]) => r.status === 'pending').sort((a, b) => a[1].at - b[1].at);
+    const tops = all.filter(([, r]) => r.kind === 'topup' && (r.status === 'credited' || r.status === 'reversed')).sort((a, b) => b[1].at - a[1].at).slice(0, 25);
     const users = await db.get('users') || {};
     const owed = Object.values(users).reduce((a, u) => a + (u.balance || 0), 0);
-    body.innerHTML = `<div class="wgrid"><div><small>Pending</small><b>${reqs.length}</b></div><div><small>Owed on balances</small><b>${eur(owed)}</b></div></div>
-      <h4>Requests</h4>
+    body.innerHTML = `<div class="wgrid"><div><small>Withdrawals waiting</small><b>${reqs.length}</b></div><div><small>Owed on balances</small><b>${eur(owed)}</b></div></div>
+      <h4>Withdrawals</h4>
       <ul class="wlist">${reqs.map(([id, r]) => `<li><div><b>${esc(r.name)}</b> ${r.kind === 'topup' ? 'says they sent' : 'wants'} <b>${eur(r.a)}</b>${r.kind === 'withdraw' ? ` <span>to @${esc(r.tag)}</span>` : ''}<br><span>${when(r.at)}</span></div>
         <div class="wrow" style="flex:none">${r.kind === 'withdraw' ? `<button class="wbtn small" data-rev="${esc(r.tag)}" type="button">Revolut</button>` : ''}<button class="wbtn small gold" data-ok="${id}" type="button">${r.kind === 'topup' ? 'Got it' : 'Paid'}</button><button class="wbtn small red" data-no="${id}" type="button">✕</button></div></li>`).join('') || '<li>Nothing waiting</li>'}</ul>
+      <h4>Top-ups (check these arrived in Revolut)</h4>
+      <ul class="wlist">${tops.map(([id, r]) => `<li><div><b>${esc(r.name)}</b> ${eur(r.a)}<br><span>${when(r.at)}${r.status === 'reversed' ? ' · reversed' : ''}</span></div>${r.status === 'credited' ? `<button class="wbtn small red" data-undo="${id}" type="button">Reverse</button>` : ''}</li>`).join('') || '<li>No top-ups yet</li>'}</ul>
       <h4>Balances</h4>
       <ul class="wlist">${Object.entries(users).map(([k, u]) => `<li><div>${esc(u.name)}<br><span>won ${eur(u.won || 0)} · topped ${eur(u.topped || 0)} · out ${eur(u.withdrawn || 0)}</span></div><div class="wrow" style="flex:none"><b>${eur(u.balance || 0)}</b><button class="wbtn small" data-adj="${k}" type="button">±</button></div></li>`).join('')}</ul>
       <h4>Payout</h4>
@@ -430,12 +438,25 @@
     body.querySelectorAll('[data-rev]').forEach(b => b.onclick = () => { const u = 'https://revolut.me/' + b.dataset.rev; if (app && app.openRevolut) app.openRevolut(u); else window.open(u, '_blank'); });
     body.querySelectorAll('[data-ok]').forEach(b => b.onclick = () => settle(b.dataset.ok, true, body));
     body.querySelectorAll('[data-no]').forEach(b => b.onclick = () => { if (b.dataset.armed) settle(b.dataset.no, false, body); else { b.dataset.armed = 1; b.textContent = 'Sure?'; } });
+    body.querySelectorAll('[data-undo]').forEach(b => b.onclick = () => { if (b.dataset.armed) reverse(b.dataset.undo, body); else { b.dataset.armed = 1; b.textContent = 'Sure?'; } });
     body.querySelectorAll('[data-adj]').forEach(b => b.onclick = () => adjust(b.dataset.adj, users[b.dataset.adj], body));
     $w('wEdgeGo').onclick = async () => {
       const v = parseFloat($w('wEdge').value); if (!(v >= 50 && v <= 120)) return toast('Pick 50 to 120');
       await db.patch('config', { edge: v / 100 }); W.cfg.edge = v / 100; try { faces.godWheel = null; faces.cosmic = null; } catch (e) {} hostTab(body);
     };
     if (!hostPoll) hostPoll = setInterval(() => { if (!sheet.hidden && document.contains(body)) hostTab(body); else stopHostPoll(); }, 20000);
+  }
+  // a top-up that never showed up in Revolut: take it back off (balance can go below zero if it was already spent)
+  async function reverse(id, body) {
+    try {
+      const r = await db.get('reqs/' + id); if (!r || r.status !== 'credited') return hostTab(body);
+      await db.patch('reqs/' + id, { status: 'reversed', done: now() });
+      await db.txn('users/' + r.user, u => { u.balance = (u.balance || 0) - r.a; u.topped = (u.topped || 0) - r.a; return u; });
+      await log(r.user, 'adjust', -r.a, { what: 'top-up reversed' });
+      toast(eur(r.a) + ' taken back from ' + r.name);
+      if (r.user === W.user) refresh();
+      hostTab(body);
+    } catch (e) { toast('No connection'); }
   }
   async function settle(id, ok, body) {
     try {

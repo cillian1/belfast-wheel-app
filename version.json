@@ -1,8 +1,8 @@
 {
-  "game": 3,
+  "game": 4,
   "apk": 2,
   "gameBuild": 52,
-  "notes": "Fixes the layout",
+  "notes": "Top-ups go on straight away",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk"
 }
