@@ -15,6 +15,10 @@ function drawPyramidShape(g, rise, tipOff) {
   // left face lit by the sun, right face in shade
   g.beginPath(); g.moveTo(tx - tw, ty); g.lineTo(ax - w, base + dy); g.lineTo(ax, base + dy); g.lineTo(ax, ty); g.closePath(); g.fillStyle = grad(g, ax - w, 0, ax, 0, [[0, '#e8b46a'], [1, '#c48b47']]); g.fill();
   g.beginPath(); g.moveTo(ax, ty); g.lineTo(ax, base + dy); g.lineTo(ax + w, base + dy); g.lineTo(tx + tw, ty); g.closePath(); g.fillStyle = grad(g, ax, 0, ax + w, 0, [[0, '#8f5f2e'], [1, '#6e4520']]); g.fill();
+  g.beginPath(); g.moveTo(ax - w, base + dy); g.lineTo(ax, ay); g.lineTo(ax + w, base + dy);
+  g.strokeStyle = 'rgba(255,232,190,.48)'; g.lineWidth = 2 * D; g.stroke();
+  g.beginPath(); g.moveTo(ax, ay); g.lineTo(ax, base + dy);
+  g.strokeStyle = 'rgba(55,30,12,.55)'; g.lineWidth = 2 * D; g.stroke();
   g.strokeStyle = 'rgba(70,40,15,.35)'; g.lineWidth = D;
   for (let j = 1; j < 14; j++) { const f = cut + (1 - cut) * j / 14, y = ay + H * f, hw = w * f; g.beginPath(); g.moveTo(ax - hw, y); g.lineTo(ax + hw, y); g.stroke(); }
   // the door
@@ -142,7 +146,6 @@ function sandStep(dt, rate) {
 }
 async function pyramidRun(steps) {
   roomHit = true; buzz([100, 50, 100, 50, 100, 50, 400]);
-  Music.setLevel(3); Music.sting(4);
   setTiles(3, 3); const bar = $('#wilds'); bar.classList.add('over', 'overW', 'overB');
   $('#caption').textContent = 'All six';
   await wait(1600);
@@ -172,7 +175,7 @@ async function pyramidRun(steps) {
   await animate(1500, t => { draw(); ctx.save(); ctx.globalAlpha = Math.min(1, t * 2); eyeOfHorus(ctx, c, c, -Math.PI / 2, N * .5 * easeOut(t)); ctx.restore(); ctx.fillStyle = `rgba(255,252,240,${Math.max(0, (t - .6) / .4)})`; ctx.fillRect(0, 0, N, N); });
   buzz([200]);
   // 2. the desert
-  scene = 'pyramid'; pyr.ph = 'desert'; pyr.white = 1;
+  scene = 'pyramid'; pyr.ph = 'desert'; pyr.white = 1; Music.setMode('pyramid'); Music.setLevel(3); playSfx('pyramid');
   $('#caption').textContent = 'Somewhere south of Belfast';
   let last = performance.now();
   await animate(5200, t => {
@@ -246,7 +249,7 @@ async function pyramidRun(steps) {
   speak(['Final answer', ...spokenMoves(steps), prize === 2500 ? ("Phelan's Tomb. The pyramid pays " + $m(2500) + ' euro' + "") : `The pyramid pays ${$m(prize)} euro`, roomAct('pyramid')]);
 }
 async function monsterRun(steps, w = 0, b = 3) {
-  roomHit = true; buzz([80, 60, 80, 60, 250]);
+  roomHit = true; Music.setMode('monster'); playSfx('monster'); buzz([80, 60, 80, 60, 250]);
   setVerdict({ eyebrow: 'Bonus', title: 'Three ankhs', body: 'Get in. Hold on.', steps: steps.slice() });
   $('#caption').textContent = '';
   Music.setLevel(3); Music.sting(3);
@@ -272,8 +275,9 @@ async function monsterRun(steps, w = 0, b = 3) {
   setVerdict({ eyebrow: 'Bonus', title: 'The planet wheel', body: 'Big money. Spin it.', steps: steps.slice(), flash: false });
   const n = COSMIC.length, tg = target(n), s0 = rotC, e0 = rotC + 7 * TAU + mod(-tg.a - rotC, TAU);
   let last = sliceAt(s0, n);
+  planet.spinning = true;
   await animate(7500, t => { rotC = s0 + (e0 - s0) * easeOut(t); const sl = sliceAt(rotC, n); if (sl !== last) { last = sl; tick(1.1, 1600); flap(1); } draw(); });
-  rotC = mod(rotC, TAU); ting(); buzz([60, 40, 120]);
+  rotC = mod(rotC, TAU); planet.spinning = false; planet.winner = tg.i; planet.winAt = performance.now(); ting(); buzz([60, 40, 120]);
   const won = COSMIC[tg.i];
   setVerdict({ eyebrow: 'Bonus', title: fakeEur(won), body: 'Yours. Nearly.', steps: steps.slice() });
   await wait(1800);

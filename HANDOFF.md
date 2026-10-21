@@ -2,11 +2,11 @@
 
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
-- **Task:** Tasks 6, 7, 8 in parallel (issues #17, #18, #19; PRs #21, #20, #22). Task 5 merged as update 23.
+- **Task:** Tasks 6–8 (issues #17, #18, #19; PRs #21, #20, #22) and the Task 5 replay playback reliability follow-up (PR #24).
 - **Owner:** Copilot does ALL the work (Cillian, 2026-10-21): building, conflicts, version bumps, release notes, HANDOFF/COPILOT_TASKS updates, and the release PR. Claude only presses merge (GitHub won't let Copilot merge its own PRs). Money/odds/prize changes still go to Cillian.
-- **Status:** Tasks 6–8 run IN PARALLEL and ship together as ONE update (Cillian, 2026-10-21). Their PRs target branch `update-24`, not main. Do NOT bump the version in them (stay on 23). Before DONE, merge latest `update-24` in, fix conflicts yourself, rebuild and check.
-- **Next:** Copilot posts `DONE: Task N`; Claude merges it into `update-24`. When Tasks 6, 7 and 8 are all in `update-24`, **Copilot** opens one release PR `update-24` → `main` that bumps to update 24 (name it, notes, gameVersion, footer, rebuild, check) and posts `DONE: update 24`. Claude merges it, then starts Task 9 (#23).
-- **Last updated:** 2026-10-21 22:35 by Claude
+- **Status:** Task 7 (PR #20) and Task 8 (PR #22) are merged into `update-24`. PR #21 and replay follow-up PR #24 remain open against `update-24`; PR #24 includes the latest target tip `ed18b54` and stays at version 23 / Build 60.
+- **Next:** Claude reviews and merges PRs #21 and #24 into `update-24`. When Tasks 6–8 are all in `update-24`, **Copilot** opens one release PR `update-24` → `main` that bumps to update 24 (name it, notes, gameVersion, footer, rebuild, check) and posts `DONE: update 24`. Claude merges it, then starts Task 9 (#23).
+- **Last updated:** 2026-10-21 22:46 by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
@@ -66,6 +66,8 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 ## Done log (history only, newest first; nothing here is current)
 
 - 2026-10-21: Task 5 replay playback reliability and restart-safe pruning follow-up ready for review in PR #24.
+- 2026-10-21: Task 8 added synthesized room themes, milestone effects and a saved master mute (PR #22) for the combined update 24.
+- 2026-10-21: Task 7 room glow-ups ready in PR #20 for the combined update 24; visual-only wheel, tank and Pyramid polish, with version 23/build 60 unchanged.
 - 2026-10-21: Task 5 replays + Watch tabs + host watching (PR #16), merged as update 23.
 - 2026-10-21: Task 5 replay saving, pruning, player/host watching and legacy request fixes are ready for review in PR #16 as update 23 "Replay Night".
 - 2026-10-21: Task 4 Stage 4, performance (PR #14), merged as update 22 "Smoother Wheels". Task 4 is complete.

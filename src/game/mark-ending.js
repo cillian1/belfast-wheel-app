@@ -60,7 +60,7 @@ Object.keys(MARK_BY_DEST).forEach(k => MARK_BY_DEST[k].forEach((it, i) => it.t =
 const LEAVE = { lbl: ['LEAVE MARK', 'ALONE'], t: 'Leave Mark alone', b: 'No question for Mark this time. He gets away with it.', special: 'leave' };
 const OWNWAY = { lbl: ['GO YOUR', 'OWN WAY'], t: 'Reject all commands, go your own way', b: 'Forget everything the wheels said. Go wherever you like.', special: 'own' };
 
-let pipes = null, carried = [], d6 = [], d6Sum = 0, chickens = [], arrows = [], fires = [], feathers = [], camX = 0, markItems = [], rotM = 0, formT = [], showMark = 0, chainNote = '', raceLine = 0;
+let pipes = null, carried = [], d6 = [], d6Sum = 0, chickens = [], arrows = [], fires = [], feathers = [], camX = 0, markItems = [], rotM = 0, formT = [], showMark = 0, chainNote = '', raceLine = 0, markSpinning = false, markWin = null;
 
 // the pipes: one tube drops the balls into a pinball pit (bumpers and flippers, all physics),
 // then three chutes catch them. Only the green chute counts.
@@ -151,7 +151,7 @@ function flipSound() {
   if (!AC) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
   o.type = 'triangle'; o.frequency.setValueAtTime(180, t); o.frequency.exponentialRampToValueAtTime(70, t + .08);
   g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.12, t + .005); g.gain.exponentialRampToValueAtTime(.0001, t + .1);
-  o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + .11);
+  o.connect(g); g.connect(effectsOutput()); o.start(t); o.stop(t + .11);
 }
 function pinStep(P, h) {
   const rb = P.rb, G = N * 1.5, play = P.balls.filter(b => b.state === 'play');
@@ -433,7 +433,12 @@ function drawFarm(now) {
       if (ft.t <= 0) return; const e = easeInOut(Math.min(1, ft.t));
       drawMarkWedge(ft.idx ?? i, markItems.length, lerp(ft.x - camX, c, e), lerp(ft.y, c, e), lerp(.1, 1, e));
     });
-    if (showMark > 0) { ctx.globalAlpha = showMark; drawScaled(faces.mark, rotM, 1); drawMarkGlow(now); ctx.globalAlpha = 1; drawPointer(faces.wheat, 1); }
+    if (showMark > 0) {
+      ctx.globalAlpha = showMark; drawScaled(faces.mark, rotM, 1); drawWheelRim(1); drawMarkGlow(now);
+      drawWheelSweep(markSpinning, 1);
+      if (markWin) drawWheelSliceGlow(rotM, markItems.length, markWin.i, markWin.t0);
+      ctx.globalAlpha = 1; drawPointer(faces.pointer, 1);
+    }
   }
   ctx.restore();
   if (chainNote) {
@@ -506,7 +511,7 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
   if (!faces.farm) faces.farm = buildFarm();
   if (!snap || snap.width !== N) snap = mk();
   { const g = snap.getContext('2d'); g.clearRect(0, 0, N, N); dots.forEach(p => p.hide = true); draw(); g.drawImage(cv, 0, 0); dots.forEach(p => p.hide = false); }
-  d6 = []; scene = 'farm'; Music.setMode('farm'); camX = 0; chickens = []; arrows = []; fires = []; feathers = []; markItems = []; formT = []; showMark = 0; chainNote = ''; raceLine = 0; snapA = 1;
+  d6 = []; scene = 'farm'; Music.setMode('farm'); playSfx('farm'); camX = 0; chickens = []; arrows = []; fires = []; feathers = []; markItems = []; formT = []; showMark = 0; chainNote = ''; raceLine = 0; snapA = 1; markSpinning = false; markWin = null;
   dots.forEach((p, i) => {
     p.sx = p.x; p.sy = p.y; p.delay = .1 + (i / Math.max(1, dots.length)) * .5;
     chickens.push({ x: N * (.08 + Math.random() * .84), y: N * (.64 + Math.random() * .28), dir: Math.random() < .5 ? -1 : 1, ph: 0, peck: 0, alive: true, pop: 0 });
@@ -657,11 +662,12 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
   // 6. spin it
   const tg = target(markItems.length), s0 = rotM, e0 = rotM + 6 * TAU + mod(-tg.a - rotM, TAU);
   let lastS = sliceAt(s0, markItems.length);
+  markSpinning = true;
   await farmLoop(8, (dt, el) => {
     const p = Math.min(1, el / 7.5); rotM = s0 + (e0 - s0) * easeOut(p);
     const sl = sliceAt(rotM, markItems.length); if (sl !== lastS) { lastS = sl; tick(1, 1500); flap(1); }
     return p >= 1;
   });
-  rotM = mod(rotM, TAU); ting(); buzz([40, 50, 80]);
+  rotM = mod(rotM, TAU); markSpinning = false; markWin = { i: tg.i, t0: performance.now() }; ting(); buzz([40, 50, 80]);
   return markItems[tg.i];
 }
