@@ -1,9 +1,9 @@
 {
-  "game": 20,
+  "game": 21,
   "apk": 3,
   "gameBuild": 59,
-  "notes": "Chicken Race bonus room on Mark’s farm, and a shinier wheel",
+  "notes": "Earn trophies for spins, rooms, and big wins",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk",
-  "name": "Fowl Play"
+  "name": "Trophy Hunt"
 }
