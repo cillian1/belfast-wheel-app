@@ -1489,7 +1489,7 @@ async function spinLayer(k, dur, dir) {
 const hotSlice = it => !!(it && (it.wild || it.bonus || it.god));
 let GHOST_CHANCE = 1 / 20; // per inner-wheel spin, so roughly one deep run in five sees him
 // user chose 25% (Oct 21): about 37% of deep runs end in a room, Pyramid about 1 in 72
-let TIP_CHANCE = .25;
+let TIP_CHANCE = .10;
 let ghost = null;
 async function spinLayerRun(k, dur, dir) {
   const n = LAYERS[k].length, t = target(n), turns = (k ? 3 : 5) + Math.floor(Math.random() * 2), s = rot[k], seg = TAU / n;
@@ -2402,7 +2402,7 @@ const ROUL_N = 20, ROUL_SC = .95, ROUL_GOLD = [0, 5, 10, 15]; // four gold Wild 
 const R_TRACK = .885, R_POCKET = .64;
 let roul = null, vault = null;
 function rollPockets() {
-  const acts = WILD_ACTS.slice().sort(() => Math.random() - .5), amts = [1, 2, 3, 5, 5, 8, 10, 10, 12, 15, 15, 20, 25, 30, 40, 50].sort(() => Math.random() - .5);
+  const acts = WILD_ACTS.slice().sort(() => Math.random() - .5), amts = [10, 10, 12, 12, 15, 15, 15, 20, 20, 25, 25, 30, 40, 50, 60, 75].sort(() => Math.random() - .5);
   let j = 0; return Array.from({ length: ROUL_N }, (_, i) => ROUL_GOLD.includes(i) ? { gold: true } : { act: acts[j], amt: amts[j++] });
 }
 function buildRoulBowl() { // the part that stays still: walnut rim, the ball track, gold deflectors
@@ -2521,7 +2521,7 @@ function drawVault(now) {
 async function vaultRun(steps, cash, acts) {
   Music.sting(4); buzz([100, 60, 100, 60, 300]);
   setVerdict({ eyebrow: 'Elite Wild', title: 'Three gold Wilds', body: 'The floor opens. Down into the golden locksafe.', steps: steps.slice(), flash: true });
-  vault = { ph: 'safe', spin: 0, open: 0, drop: 0, pickable: false, doors: [0, 1, 2].map(() => ({ open: 0, amt: 20 + 10 * Math.floor(Math.random() * 19) })) };
+  vault = { ph: 'safe', spin: 0, open: 0, drop: 0, pickable: false, doors: [0, 1, 2].map(() => ({ open: 0, amt: 100 + 20 * Math.floor(Math.random() * 20) })) };
   whoosh(true);
   await crossTo(() => { scene = 'vault'; }, 900);
   $('#caption').textContent = 'The golden locksafe';
@@ -2714,7 +2714,7 @@ function drawDie3D(g, x, y, s, M, sp) {
 }
 
 // ---------- the bonus round: rollercoaster, the planet wheel, twelve-sided dice, the Monster tank ----------
-const TANK_LEVELS = [{ at: 0, v: 1 }, { at: 45, v: 2 }, { at: 58, v: 5 }, { at: 68, v: 10 }, { at: 78, v: 20 }, { at: 90, v: 50 }];
+const TANK_LEVELS = [{ at: 0, v: 30 }, { at: 68, v: 50 }, { at: 78, v: 80 }, { at: 90, v: 150 }];
 const TANK_CAP = 120;
 const COSMIC = [1000, 5000, 10000, 1000, 5000, 1000, 10000, 5000, 1000, 5000, 10000, 5000];
 // the planet wheel is a trick, so its prizes are plain text: never real money
@@ -2810,7 +2810,7 @@ function buildCosmic() {
   COSMIC.forEach((v, i) => {
     const a0 = BASE + i * seg, a1 = a0 + seg;
     wedgePath(g, a0, a1, r0, r1);
-    g.fillStyle = wedgeFill(g, a0, a1, r0, r1, v === 10000 ? GOLD_A : v === 5000 ? PURPLE_A : [[0, '#0b3b3a'], [.3, '#4fd1c5'], [.55, '#0f4f4c'], [.8, '#8ef0e6'], [1, '#0b3b3a']]);
+    g.fillStyle = wedgeFill(g, a0, a1, r0, r1, v === 25000 ? GOLD_A : v === 5000 ? PURPLE_A : [[0, '#0b3b3a'], [.3, '#4fd1c5'], [.55, '#0f4f4c'], [.8, '#8ef0e6'], [1, '#0b3b3a']]);
     g.fill();
     wedgeText(g, a0 + seg / 2, R * .6, [fakeEur(v)], R * .1, R * .5, v === 5000 ? 'dark' : 'light');
   });
@@ -3066,7 +3066,7 @@ const SCRAP = [
   { name: 'game pad', back: '#4a2a6b', glyph: '♦' },
   { name: 'toaster', back: '#5a4a1d', glyph: '♠' },
 ];
-const GOD_PRIZES = [1, 5, 2, 10, 3, 20, 5, 1000, 2, 15, 5, 50, 1, 10, 3, 100, 5, 25, 2, 500, 10, 5, 200, 3];
+const GOD_PRIZES = [30, 50, 30, 100, 30, 75, 30, 1500, 30, 50, 30, 150, 30, 40, 30, 300, 30, 60, 30, 500, 40, 30, 200, 30];
 const RANKS = ['', '', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
 const MOCK = [
   "Ha. Knew you'd bottle it.",
@@ -3236,7 +3236,7 @@ async function godRoom(steps) {
   god.banner = ''; god.label = false;
   alive = false;
   if (lost) {
-    const cons = 5;
+    const cons = 0;
     await ghostTo(N * .62, N * .4, 700);
     god.say = pick(MOCK); draw(); await wait(2600); god.say = `Here. €${$m(cons)} for your trouble.`; draw(); await wait(1800);
     setVerdict({ eyebrow: 'Final answer · €' + $m(cons), title: 'Phelan keeps the rest', body: '', steps: steps.slice(), q: quote() });
@@ -3272,7 +3272,7 @@ async function godRoom(steps) {
 // ---------- the Pyramid: all six tiles lit ----------
 // the six tiles spiral into an eye of Horus, a pyramid rises out of the desert, a walk through the tomb, three doors,
 // and behind the Wild door the tip opens, coins pour, Cleopatra rises with the prizes and Ghost Phelan snatches one
-const PYR_PRIZES = [50, 100, 200, 500, 1000];
+const PYR_PRIZES = [150, 300, 500, 1000, 2500];
 let pyr = null, doorPick = null;
 function pyrBase() { return N * .66; }
 function drawPyramidShape(g, rise, tipOff) {
@@ -3384,9 +3384,9 @@ function drawPyramid(now) {
       pyr.plaques.forEach((p, j) => {
         if (p.gone) return;
         g.save(); g.globalAlpha = pyr.cleo; g.translate(p.x, p.y);
-        g.shadowColor = 'rgba(255,215,120,.9)'; g.shadowBlur = N * .03; rrect(g, -N * .075, -N * .03, N * .15, N * .06, N * .015); g.fillStyle = p.v === 1000 ? '#2a1640' : '#3a2208'; g.fill(); g.shadowBlur = 0;
+        g.shadowColor = 'rgba(255,215,120,.9)'; g.shadowBlur = N * .03; rrect(g, -N * .075, -N * .03, N * .15, N * .06, N * .015); g.fillStyle = p.v === 2500 ? '#2a1640' : '#3a2208'; g.fill(); g.shadowBlur = 0;
         g.strokeStyle = '#f3c34e'; g.lineWidth = 1.5 * D; g.stroke();
-        g.font = `700 ${N * (p.v === 1000 ? .026 : .032)}px ${LABEL_FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#ffe9a8'; g.fillText(p.v === 1000 ? ("" + '€' + $m(1000) + " PHELAN'S TOMB") : '€' + $m(p.v), 0, 0);
+        g.font = `700 ${N * (p.v === 2500 ? .026 : .032)}px ${LABEL_FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#ffe9a8'; g.fillText(p.v === 2500 ? ("" + '€' + $m(2500) + " PHELAN'S TOMB") : '€' + $m(p.v), 0, 0);
         g.restore();
       });
     }
@@ -3395,7 +3395,7 @@ function drawPyramid(now) {
   if (ghost) {
     drawGhost();
     if (pyr.wave) { const s = R * .26, a = Math.sin(now / 120) * .6; g.save(); g.globalAlpha = ghost.a * .85; g.translate(ghost.x + s * .45, ghost.y - s * .05); g.rotate(-.8 + a); g.strokeStyle = 'rgba(235,250,245,.95)'; g.lineWidth = s * .12; g.lineCap = 'round'; g.beginPath(); g.moveTo(0, 0); g.lineTo(s * .35, 0); g.stroke(); g.restore(); }
-    if (pyr.held) { g.save(); g.translate(ghost.x, ghost.y + R * .36); g.scale(pyr.heldS, pyr.heldS); rrect(g, -N * .075, -N * .03, N * .15, N * .06, N * .015); g.fillStyle = pyr.held === 1000 ? '#2a1640' : '#3a2208'; g.fill(); g.strokeStyle = '#f3c34e'; g.lineWidth = 1.5 * D; g.stroke(); g.font = `700 ${N * (pyr.held === 1000 ? .026 : .032)}px ${LABEL_FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#ffe9a8'; g.fillText(pyr.held === 1000 ? ("" + '€' + $m(1000) + " PHELAN'S TOMB") : '€' + $m(pyr.held), 0, 0); g.restore(); }
+    if (pyr.held) { g.save(); g.translate(ghost.x, ghost.y + R * .36); g.scale(pyr.heldS, pyr.heldS); rrect(g, -N * .075, -N * .03, N * .15, N * .06, N * .015); g.fillStyle = pyr.held === 2500 ? '#2a1640' : '#3a2208'; g.fill(); g.strokeStyle = '#f3c34e'; g.lineWidth = 1.5 * D; g.stroke(); g.font = `700 ${N * (pyr.held === 2500 ? .026 : .032)}px ${LABEL_FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#ffe9a8'; g.fillText(pyr.held === 2500 ? ("" + '€' + $m(2500) + " PHELAN'S TOMB") : '€' + $m(pyr.held), 0, 0); g.restore(); }
   }
   if (pyr.eye > 0) { g.save(); g.globalAlpha = Math.min(1, pyr.eye); eyeOfHorus(g, c, c, -Math.PI / 2, N * .45 * pyr.eye); g.restore(); }
   if (pyr.white > 0) { g.fillStyle = `rgba(255,252,240,${pyr.white})`; g.fillRect(0, 0, N, N); }
@@ -3455,7 +3455,7 @@ async function pyramidRun(steps) {
   await animate(6500, t => { pyr.scroll = easeInOut(t) * N * 2.6; if (Math.random() < .05) tick(.3, 300); draw(); });
   // 4. three doors: tap one
   const wildDoor = Math.floor(Math.random() * 3);
-  pyr.doors = [0, 1, 2].map(j => ({ open: 0, wild: j === wildDoor, amt: 20 + 5 * Math.floor(Math.random() * 17) }));
+  pyr.doors = [0, 1, 2].map(j => ({ open: 0, wild: j === wildDoor, amt: 60 + 10 * Math.floor(Math.random() * 15) }));
   await crossTo(() => { pyr.ph = 'doors'; pyr.pickable = true; }, 900);
   $('#caption').textContent = 'Pick a door';
   setBtn('Pick a door', true);
@@ -3505,10 +3505,10 @@ async function pyramidRun(steps) {
   p.gone = true; pyr.held = p.v; pyr.heldS = 1; ting(); buzz(60);
   await animate(1600, t => { const e = easeInOut(t); ghost.x = lerp(p.x, c, e); ghost.y = lerp(p.y - R * .2, N * .3, e); pyr.heldS = 1 + e * 1.4; draw(); });
   ting(); Music.sting(4); buzz([80, 50, 80, 50, 250]);
-  const prize = p.v, label = prize === 1000 ? ("" + '€' + $m(1000) + ", Phelan's Tomb") : '€' + $m(prize);
+  const prize = p.v, label = prize === 2500 ? ("" + '€' + $m(2500) + ", Phelan's Tomb") : '€' + $m(prize);
   setVerdict({ eyebrow: 'Final answer · €' + $m(prize), title: label, body: '', steps: steps.slice(), q: quote() });
   await wait(1200);
-  speak(['Final answer', ...spokenMoves(steps), prize === 1000 ? ("Phelan's Tomb. The pyramid pays " + $m(1000) + ' euro' + "") : `The pyramid pays ${$m(prize)} euro`, roomAct('pyramid')]);
+  speak(['Final answer', ...spokenMoves(steps), prize === 2500 ? ("Phelan's Tomb. The pyramid pays " + $m(2500) + ' euro' + "") : `The pyramid pays ${$m(prize)} euro`, roomAct('pyramid')]);
 }
 async function monsterRun(steps, w = 0, b = 3) {
   roomHit = true; buzz([80, 60, 80, 60, 250]);
@@ -4490,7 +4490,7 @@ if (document.fonts && document.fonts.load) {
 }
 </script>
 
-<script>window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":10,"ev":10,"edge":0.99,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};</script>
+<script>window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":10,"ev":15.1078,"edge":0.995,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};</script>
 <script>
 // ---------- wallet layer for the Android app ----------
 // Injected after the game's own script by tools/build.mjs. It wraps spin() and setVerdict(),
