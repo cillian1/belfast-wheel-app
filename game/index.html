@@ -5713,7 +5713,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   // ---------- big wins are saved as their state frames, so anyone can rewatch them later ----------
   // Owns highlight recording, compression, and live-feed publishing.
   // hlm/{id} is the small card for the list, hld/{id} the frames (gzipped where the phone can)
-  let rec = null, wasBusy = false, feedRoom = '', pruneUser = '', savesSincePrune = 49;
+  let rec = null, wasBusy = false, feedRoom = '';
   async function pack(text) {
     try {
       if (typeof CompressionStream === 'undefined') return { z: 0, s: text };
@@ -5754,9 +5754,12 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     }
   }, 250);
   async function pruneReplays(user) {
-    if (pruneUser !== user) { pruneUser = user; savesSincePrune = 49; }
-    if (++savesSincePrune < 50) return;
-    savesSincePrune = 0;
+    // Persist the per-user cadence so relaunching the app does not repeat shallow listings.
+    const cadenceKey = 'wol.replayPrune.' + user;
+    const savedCount = Number(pref.get(cadenceKey));
+    const saves = Number.isSafeInteger(savedCount) && savedCount >= 0 ? savedCount : 0;
+    if (saves < 49) { pref.set(cadenceKey, String(saves + 1)); return; }
+    pref.set(cadenceKey, '0');
     const keys = Object.keys(await db.get('rpm/' + user, '?shallow=true') || {}).sort();
     if (keys.length <= 3000) return;
     const oldest = keys.slice(0, keys.length - 3000);
@@ -5937,9 +5940,9 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
       <button class="wbtn" type="button" id="wwX" style="width:100%;max-width:560px">${live ? 'Stop watching' : 'Close'}</button>`;
     $w('wwX').onclick = stopWatch;
     const vc = $w('wwCv'), vg = vc.getContext('2d');
-    const S = { cur: null, prev: null, tCur: 0, span: 120, fresh: false, alive: true };
+    const S = { cur: null, prev: null, tCur: 0, span: 120, fresh: false, alive: true, failed: false };
     const frame = () => {
-      if (!S.alive || view.hidden) return;
+      if (!S.alive || S.failed || view.hidden) return;
       requestAnimationFrame(frame);
       if (!S.cur) return;
       const p = Math.min(1, (performance.now() - S.tCur) / S.span);
@@ -5950,7 +5953,11 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
         draw();
         const w = Math.round(vc.clientWidth * Math.min(2, devicePixelRatio || 1)); if (w && vc.width !== w) vc.width = vc.height = w;
         vg.clearRect(0, 0, vc.width, vc.height); vg.drawImage(cv, 0, 0, vc.width, vc.height);
-      } catch (e) {}
+      } catch (e) {
+        S.failed = true;
+        console.error('Watch viewer render failed', e);
+        S.say(live ? 'This live view could not be drawn. Close and retry.' : 'This replay could not be drawn. Close it and try another replay.');
+      }
     };
     requestAnimationFrame(frame);
     S.push = (st, info) => {
@@ -5963,10 +5970,30 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
       const tw = +st.tw || 0, tb = +st.tb || 0;
       $w('wwTiles').innerHTML = `<span class="g">${'●'.repeat(Math.min(tw, 9))}${'○'.repeat(Math.max(0, 3 - tw))} WILDS</span><span class="p">${'●'.repeat(Math.min(tb, 9))}${'○'.repeat(Math.max(0, 3 - tb))} BONUS</span>`;
     };
-    S.say = text => { const m = $w('wwMsg'); if (m) { m.hidden = false; m.textContent = text; } };
+    S.say = text => { const m = $w('wwMsg'); if (m) { m.hidden = !text; m.textContent = text || ''; } };
     return S;
   }
   const parse = s => { try { return JSON.parse(s); } catch (e) { return {}; } };
+  function decodeReplayFrames(text) {
+    const frames = JSON.parse(text);
+    if (!Array.isArray(frames)) throw new Error('Replay frames are not a list.');
+    if (!frames.length) return [];
+    if (!Array.isArray(frames[0]) || frames[0].length !== 2) throw new Error('The first replay frame is malformed.');
+    const firstAt = frames[0][0];
+    if (!Number.isFinite(firstAt) || firstAt < 0) throw new Error('The first replay timestamp is invalid.');
+    let previousAt = firstAt;
+    return frames.map((frame, i) => {
+      if (!Array.isArray(frame) || frame.length !== 2) throw new Error(`Replay frame ${i + 1} is malformed.`);
+      const [at, deltaText] = frame;
+      if (!Number.isFinite(at) || at < previousAt) throw new Error(`Replay frame ${i + 1} has an invalid timestamp.`);
+      previousAt = at;
+      let delta;
+      try { delta = JSON.parse(deltaText); } catch (e) { throw new Error(`Replay frame ${i + 1} has invalid state data.`); }
+      if (!delta || typeof delta !== 'object' || Array.isArray(delta)) throw new Error(`Replay frame ${i + 1} has invalid state data.`);
+      if (i === 0 && (!(Number.isFinite(delta.N) && delta.N > 0) || typeof delta.scene !== 'string' || !delta.scene)) throw new Error('The first replay frame is missing its game state.');
+      return [at - firstAt, delta];
+    });
+  }
   async function watch(key, name) {
     if (typeof busy !== 'undefined' && busy) return toast('Finish your spin first');
     closeSheet();
@@ -6006,16 +6033,43 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     card = card || {};
     const S = mirrorScreen(`${card.name || 'Replay'}${card.amt ? ': ' + card.amt : ''}`, `${card.room || 'Replay'}${card.at ? ' · ' + when(card.at) : ''}`, false);
     let frames;
-    try { frames = JSON.parse(await unpack(await db.get(path + '/' + id))); } catch (e) { return S.say('That replay would not load.'); }
-    if (!frames || !frames.length) return S.say('That replay is empty.');
-    let st = {}; const t0 = performance.now();
-    for (const [t, d] of frames) {
-      if (viewing !== mine) return;
-      const wait = t - (performance.now() - t0); if (wait > 0) await pause(wait);
-      st = Object.assign({}, st, parse(d));
-      S.push(st, null);
+    let loadTimer;
+    try {
+      const loading = (async () => {
+        const packed = await db.get(path + '/' + id);
+        const text = await unpack(packed);
+        if (typeof text !== 'string') throw new Error('Replay frame data is missing.');
+        return decodeReplayFrames(text);
+      })();
+      const timeout = new Promise((_, reject) => {
+        loadTimer = setTimeout(() => {
+          const error = new Error('Replay loading timed out.');
+          error.name = 'TimeoutError';
+          reject(error);
+        }, 15000);
+      });
+      frames = await Promise.race([loading, timeout]);
+    } catch (e) {
+      console.error('Replay load failed', e);
+      if (e && e.name === 'TimeoutError') return S.say('This replay is taking too long to load. Check your connection and try again.');
+      return S.say('This replay could not be loaded. It may be incomplete.');
+    } finally {
+      clearTimeout(loadTimer);
     }
-    if (viewing === mine) S.say('');
+    if (!frames || !frames.length) return S.say('That replay is empty.');
+    try {
+      let st = {}; const t0 = performance.now();
+      for (const [t, d] of frames) {
+        if (viewing !== mine) return;
+        const wait = t - (performance.now() - t0); if (wait > 0) await pause(wait);
+        st = Object.assign({}, st, d);
+        S.push(st, null);
+      }
+      if (viewing === mine) S.say('');
+    } catch (e) {
+      console.error('Replay playback failed', e);
+      if (viewing === mine) S.say('This replay stopped unexpectedly. Close it and try another replay.');
+    }
   }
   function stopWatch() {
     const key = viewing; viewing = null; view.hidden = true; view.innerHTML = '';
