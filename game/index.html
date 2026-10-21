@@ -4306,7 +4306,7 @@ function drawFarm(now) {
       ctx.globalAlpha = showMark; drawScaled(faces.mark, rotM, 1); drawWheelRim(1); drawMarkGlow(now);
       drawWheelSweep(markSpinning, 1);
       if (markWin) drawWheelSliceGlow(rotM, markItems.length, markWin.i, markWin.t0);
-      ctx.globalAlpha = 1; drawPointer(faces.pointer, 1);
+      ctx.globalAlpha = 1; drawPointer(faces.wheat, 1);
     }
   }
   ctx.restore();
