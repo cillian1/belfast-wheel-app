@@ -4,8 +4,8 @@
 
 - **Task:** Update 25 (Task 9 smoothness PR #34 + Task 10 Phelan voice PR #35, into `update-25`), then update 26 (Task 11, sub-tasks #39–#43).
 - **Owner:** Copilot builds overnight while Cillian sleeps. Copilot opens each PR and posts `DONE: Task …`, and **Claude does a quick check and merges**, then starts the next wave. Copilot does not merge. Anything that changes money, odds, prizes or payouts waits for Cillian.
-- **Status / order (do these in sequence, nothing needs Claude):**
-  1. Finish #34, merge #34 and #35 into `update-25`, then open the release PR `update-25` → `main` (bump to 25, name it) and post DONE.
+- **Status / order (in sequence):**
+  1. Finish #34 and post DONE (Claude merges #34 and #35 into `update-25`). Then open the release PR `update-25` → `main` (bump to 25, name it) and post DONE.
   2. Create branch `update-26` from main. **Wave 1 in parallel:** #39 (CI, goes first), #40, #41. Claude labels and starts them. Each gets a PR into `update-26`, no version bump.
   3. When #39, #40 and #41 are all merged into `update-26`, Claude starts **wave 2:** #42 and #43.
   4. When wave 2 is merged, open the release PR `update-26` → `main` (bump to 26, name it) and post DONE.
