@@ -2,8 +2,8 @@
   "db": "https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app",
   "revolut": "cillian9bw",
   "repo": "cillian1/belfast-wheel-app",
-  "release": 1,
-  "apk": 1,
+  "release": 2,
+  "apk": 2,
   "ev": 8.8,
   "edge": 0.99,
   "stakes": [
@@ -17,5 +17,5 @@
     90,
     100
   ],
-  "notes": ""
+  "notes": "Works on new Android"
 }

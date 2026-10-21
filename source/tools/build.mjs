@@ -17,9 +17,11 @@ fs.rmSync(work, { recursive: true, force: true });
 for (const d of ['assets/fonts', 'classes', 'stubs', 'icons', 'tools']) fs.mkdirSync(path.join(work, d), { recursive: true });
 fs.mkdirSync(path.join(out, 'publish/game'), { recursive: true }); fs.mkdirSync(path.join(out, 'publish/app'), { recursive: true });
 
-// 1. tools: android stub jar + dx from Maven Central (dl.google.com is not needed)
+// 1. tools: android stub jar, dx and apksig from Maven Central (dl.google.com is not needed)
 const jar = path.join(tools, 'android-4.1.1.4.jar'), dx = path.join(tools, 'dalvik-dx-16.0.1.jar');
 if (!fs.existsSync(jar)) run('curl', ['-sfo', jar, 'https://repo1.maven.org/maven2/com/google/android/android/4.1.1.4/android-4.1.1.4.jar']);
+const sig = path.join(tools, 'apksig-2.3.0.jar');
+if (!fs.existsSync(sig)) run('curl', ['-sfo', sig, 'https://repo1.maven.org/maven2/com/android/tools/build/apksig/2.3.0/apksig-2.3.0.jar']);
 if (!fs.existsSync(dx)) run('curl', ['-sfo', dx, 'https://repo1.maven.org/maven2/com/jakewharton/android/repackaged/dalvik-dx/16.0.1/dalvik-dx-16.0.1.jar']);
 
 // 2. the page: local fonts, prizes through $m(), wallet layer on top
@@ -46,7 +48,7 @@ const javac = (cp, dst, files) => run('javac', ['-nowarn', '--release', '8', '-c
 const ls = d => fs.readdirSync(d).map(f => path.join(d, f));
 javac(jar, path.join(work, 'stubs'), ls(path.join(A, 'stubs/android/webkit')));
 javac(path.join(work, 'stubs') + ':' + jar, path.join(work, 'classes'), ls(path.join(A, 'src/ie/belfast/wheel')));
-run('java', ['-cp', dx, 'com.android.dx.command.Main', '--dex', '--min-sdk-version=21', '--output=' + path.join(work, 'classes.dex'), path.join(work, 'classes')], { stdio: ['ignore', 'ignore', 'inherit'] });
+run('java', ['-cp', dx, 'com.android.dx.command.Main', '--dex', '--min-sdk-version=24', '--output=' + path.join(work, 'classes.dex'), path.join(work, 'classes')], { stdio: ['ignore', 'ignore', 'inherit'] });
 
 // 4. icons, zip, sign
 for (const f of ['icon.png', 'icon_fg.png', 'icon_bg.png']) fs.copyFileSync(path.join(A, 'icons', f), path.join(work, 'icons', f));
@@ -54,8 +56,7 @@ const unsigned = path.join(work, 'unsigned.apk'), apk = path.join(out, 'WheelOfL
 run('python3', [path.join(A, 'tools/mkapk.py'), unsigned, path.join(work, 'classes.dex'), path.join(work, 'assets'), path.join(work, 'icons'), String(cfg.apk), `1.${cfg.apk}.${cfg.release}`]);
 const ks = path.join(A, 'keystore.p12');
 if (!fs.existsSync(ks)) run('keytool', ['-genkeypair', '-keystore', ks, '-storetype', 'PKCS12', '-storepass', 'wheeloflife', '-alias', 'wheel', '-keyalg', 'RSA', '-keysize', '2048', '-validity', '10000', '-dname', 'CN=Wheel of Life'], { stdio: 'ignore' });
-fs.copyFileSync(unsigned, apk);
-run('jarsigner', ['-keystore', ks, '-storepass', 'wheeloflife', '-sigalg', 'SHA256withRSA', '-digestalg', 'SHA-256', apk, 'wheel'], { stdio: 'ignore' });
+console.log(run('java', ['--add-exports', 'java.base/sun.security.x509=ALL-UNNAMED', '--add-exports', 'java.base/sun.security.pkcs=ALL-UNNAMED', '--add-exports', 'java.base/sun.security.util=ALL-UNNAMED', '-cp', sig, path.join(A, 'tools/Sign.java'), unsigned, apk, ks, 'wheeloflife', 'wheel'], { stdio: ['ignore', 'pipe', 'inherit'] }).toString().trim());
 
 // 5. files for the updates repo
 fs.writeFileSync(path.join(out, 'publish/game/index.html'), html);

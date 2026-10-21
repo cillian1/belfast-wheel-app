@@ -118,7 +118,7 @@ def manifest(vcode, vname):
             (A, 'name', PKG + '.CamProvider'), (A, 'authorities', PKG + '.cam'),
             (A, 'exported', False), (A, 'grantUriPermissions', True)], [])])
     root = ('manifest', [(None, 'package', PKG), (A, 'versionCode', vcode), (A, 'versionName', vname)], [
-        ('uses-sdk', [(A, 'minSdkVersion', 21), (A, 'targetSdkVersion', 29)], []),
+        ('uses-sdk', [(A, 'minSdkVersion', 24), (A, 'targetSdkVersion', 35)], []),
         ('uses-permission', [(A, 'name', 'android.permission.INTERNET')], []),
         ('uses-permission', [(A, 'name', 'android.permission.REQUEST_INSTALL_PACKAGES')], []),
         ('uses-permission', [(A, 'name', 'android.permission.VIBRATE')], []),
@@ -173,21 +173,33 @@ def res_table(paths_default, path_v26_icon):
     return struct.pack('<HHII', 0x0002, 12, 12 + len(body), 1) + body
 
 
+def add(z, name, data, stored):
+    """Write one entry; stored entries get their data 4-byte aligned (Android needs this for resources.arsc)."""
+    zi = zipfile.ZipInfo(name, date_time=(2026, 1, 1, 0, 0, 0))
+    zi.compress_type = zipfile.ZIP_STORED if stored else zipfile.ZIP_DEFLATED
+    if stored:
+        start = z.fp.tell() + 30 + len(name.encode())
+        pad = (-(start + 6)) % 4
+        zi.extra = struct.pack('<HHH', 0xd935, 2 + pad, 4) + b'\0' * pad  # same extra field zipalign uses
+    z.writestr(zi, data)
+
+
 def main():
     out, dex, assets, icons, vcode, vname = sys.argv[1:7]
     files = {'res/drawable/icon.png': 'icon.png', 'res/drawable/icon_fg.png': 'icon_fg.png', 'res/drawable/icon_bg.png': 'icon_bg.png'}
     v26 = 'res/drawable-anydpi-v26/icon.xml'
+    rd = lambda p: open(p, 'rb').read()
     with zipfile.ZipFile(out, 'w') as z:
-        z.writestr(zipfile.ZipInfo('AndroidManifest.xml'), manifest(int(vcode), vname), zipfile.ZIP_DEFLATED)
-        z.writestr(zipfile.ZipInfo('resources.arsc'), res_table(list(files), v26), zipfile.ZIP_STORED)
-        z.write(dex, 'classes.dex', zipfile.ZIP_DEFLATED)
+        add(z, 'AndroidManifest.xml', manifest(int(vcode), vname), False)
+        add(z, 'resources.arsc', res_table(list(files), v26), True)
+        add(z, 'classes.dex', rd(dex), False)
         for dst, src in files.items():
-            z.write(os.path.join(icons, src), dst, zipfile.ZIP_STORED)
-        z.writestr(zipfile.ZipInfo(v26), adaptive_icon(), zipfile.ZIP_DEFLATED)
-        for root, _, names in os.walk(assets):
+            add(z, dst, rd(os.path.join(icons, src)), True)
+        add(z, v26, adaptive_icon(), False)
+        for root, _, names in sorted(os.walk(assets)):
             for f in sorted(names):
                 p = os.path.join(root, f)
-                z.write(p, 'assets/' + os.path.relpath(p, assets).replace(os.sep, '/'), zipfile.ZIP_DEFLATED)
+                add(z, 'assets/' + os.path.relpath(p, assets).replace(os.sep, '/'), rd(p), False)
 
 
 if __name__ == '__main__':

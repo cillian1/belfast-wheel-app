@@ -1,8 +1,8 @@
 {
-  "game": 1,
-  "apk": 1,
+  "game": 2,
+  "apk": 2,
   "gameBuild": 52,
-  "notes": "",
+  "notes": "Works on new Android",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk"
 }

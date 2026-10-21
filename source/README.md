@@ -2,7 +2,7 @@
 
 The APK wraps `../wheel-of-life.html` in a full-screen WebView and adds the wallet in `wallet.js`.
 There is no Android SDK in the build environment, so the APK is put together by hand:
-`tools/mkapk.py` writes the binary manifest and resources, `dx` (Maven Central) makes the dex, `jarsigner` signs it.
+`tools/mkapk.py` writes the binary manifest and resources, `dx` (Maven Central) makes the dex, `tools/Sign.java` signs it (v2) with apksig.
 
 ## Rebuild after the game changes
 
