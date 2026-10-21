@@ -52,7 +52,7 @@ function drawWheelSliceGlow(rotation, n, i, t0, sc = 1, inner = .55, outer = .93
 }
 // the slice a wheel stopped on glows and pulses, then settles to a soft gold edge
 function drawWinGlow() {
-  if (!winGlow || scene !== 'nested' || !LAYERS[winGlow.k]) return;
+  if (Perf.low || !winGlow || scene !== 'nested' || !LAYERS[winGlow.k]) return;
   const { k, i, t0 } = winGlow, sc = layerVisible(k); if (sc <= 0) return;
   drawWheelSliceGlow(rot[k], LAYERS[k].length, i, t0, sc);
 }

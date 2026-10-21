@@ -54,7 +54,10 @@ button:focus-visible,.btn:focus-within,.btn:focus-visible{outline:2px solid var(
   text-shadow:0 1px 0 rgba(255,255,255,.7);
   transition:transform .12s ease,filter .2s ease;
 }
-.spin:active{transform:translateY(1px) scale(.99)}
+button:active,.btn:active{filter:brightness(1.25);transform:scale(.97)}
+button,.btn,label,a{touch-action:manipulation}
+.lowq .spin{transition:none}
+.spin:active{transform:translateY(1px) scale(.97)}
 .spin:disabled{filter:grayscale(.6) brightness(.7);cursor:default}
 .reset{min-height:26px;margin-top:-6px;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--mute)}
 .reset #resetBtn,.reset #resetAsk{visibility:hidden}.locked .reset #resetBtn,.locked .reset #resetAsk{visibility:visible}.locked .reset.gone #resetBtn,.locked .reset.gone #resetAsk{visibility:hidden}
@@ -90,6 +93,7 @@ button:focus-visible,.btn:focus-within,.btn:focus-visible{outline:2px solid var(
 }
 [hidden]{display:none!important}
 .wilds{display:flex;justify-content:center;gap:8px;margin-top:-6px}
+#wilds canvas.wt{min-width:0;height:auto;aspect-ratio:1}
 .wilds .wgap{width:10px}
 .wlab{display:flex;justify-content:center;gap:26px;margin-top:-9px;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--mute);font-weight:600}
 .wlab span{width:136px;height:18px;display:flex;align-items:center;justify-content:center;gap:5px}

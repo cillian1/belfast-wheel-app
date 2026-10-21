@@ -43,15 +43,11 @@ function buildRoom() {
   return k;
 }
 function roomResize() {
-  RDp = Math.min(1.5, window.devicePixelRatio || 1); RW = window.innerWidth; RH = window.innerHeight;
+  RDp = Perf.dpr(1.5); RW = window.innerWidth; RH = window.innerHeight;
   room.width = Math.round(RW * RDp); room.height = Math.round(RH * RDp); roomBg = buildRoom();
   rctx.setTransform(1, 0, 0, 1, 0, 0); rctx.drawImage(roomBg, 0, 0);
 }
-function drawRoom(now) {
-  roomRaf = 0;
-  if (document.hidden) return;
-  roomRaf = requestAnimationFrame(drawRoom);
-  if (now - lastRoom < 66 || !roomBg) return; lastRoom = now;
+function drawRoomFrame(now) {
   const t = now / 1000, F = fireBox;
   // repaint just the fireplace opening from the baked room, then the flames and embers over it
   const rx = F.x, ry = F.y - F.w * .2, rw = F.w, rh = F.base - F.y + F.w * .2 + 6;
@@ -62,17 +58,31 @@ function drawRoom(now) {
   rctx.globalCompositeOperation = 'lighter';
   for (let i = 0; i < 9; i++) {
     const x = RW / 2 + (i - 4) * F.w * .085, w = F.w * .075, h = F.w * (.2 + .14 * Math.sin(t * (3.5 + i * .7) + i * 2) + .05 * Math.random()), b = F.base - 12;
-    const fg = rctx.createLinearGradient(0, b, 0, b - h);
-    fg.addColorStop(0, 'rgba(255,236,170,.9)'); fg.addColorStop(.35, 'rgba(255,150,50,.7)'); fg.addColorStop(1, 'rgba(200,50,10,0)');
-    rctx.fillStyle = fg; rctx.beginPath(); rctx.moveTo(x - w, b);
+    if (Perf.low) rctx.fillStyle = 'rgba(255,145,45,.72)';
+    else {
+      const fg = rctx.createLinearGradient(0, b, 0, b - h);
+      fg.addColorStop(0, 'rgba(255,236,170,.9)'); fg.addColorStop(.35, 'rgba(255,150,50,.7)'); fg.addColorStop(1, 'rgba(200,50,10,0)');
+      rctx.fillStyle = fg;
+    }
+    rctx.beginPath(); rctx.moveTo(x - w, b);
     rctx.quadraticCurveTo(x - w * .9, b - h * .55, x + Math.sin(t * 6 + i) * w * .5, b - h);
     rctx.quadraticCurveTo(x + w * .9, b - h * .55, x + w, b); rctx.fill();
   }
-  EMBERS.forEach(e => {
-    const y = F.base - mod(e.y * F.w + t * e.v * 60, F.w * .9), x = RW / 2 + (e.x - .5) * F.w * .7 + Math.sin(t * 2 + e.x * 9) * 6;
+  const emberCount = Perf.low ? 8 : EMBERS.length;
+  for (let i = 0; i < emberCount; i++) {
+    const e = EMBERS[i], y = F.base - mod(e.y * F.w + t * e.v * 60, F.w * .9), x = RW / 2 + (e.x - .5) * F.w * .7 + Math.sin(t * 2 + e.x * 9) * 6;
     rctx.beginPath(); rctx.arc(x, y, e.s, 0, TAU); rctx.fillStyle = 'rgba(255,170,80,.7)'; rctx.fill();
-  });
+  }
   rctx.restore();
+}
+function drawRoom(now) {
+  roomRaf = 0;
+  if (document.hidden) return;
+  roomRaf = requestAnimationFrame(drawRoom);
+  if (now - lastRoom < 66 || !roomBg) return; lastRoom = now;
+  const perfStart = Perf.begin('room');
+  try { drawRoomFrame(now); }
+  finally { Perf.end('room', perfStart); }
 }
 function scheduleRoom() {
   if (document.hidden) { if (roomRaf) { cancelAnimationFrame(roomRaf); roomRaf = 0; } return; }

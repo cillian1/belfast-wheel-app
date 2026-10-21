@@ -7,6 +7,7 @@ const read = path => readFileSync(resolve(root, path), 'utf8');
 const readBuffer = path => readFileSync(resolve(root, path));
 const gameModules = [
   'src/game/core.js',
+  'src/game/perf.js',
   'src/game/content.js',
   'src/game/canvas-helpers.js',
   'src/game/room.js',
