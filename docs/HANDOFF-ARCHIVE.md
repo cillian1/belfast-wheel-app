@@ -2,6 +2,8 @@
 
 Done log moved from `HANDOFF.md`; history only, never current status.
 
+- 2026-10-21: Task 11B (#40, PR #47) removed routine room-landing live-feed posts; big-win and other notable-event notifications remain unchanged.
+- 2026-10-21: Task 11A (#39, PR #46) added CI, task templates, and release-note generation; remote CI authorization and stale-branch deletion remain pending.
 - 2026-10-21: Combined Tasks 6–8 and replay reliability as update 24 “Room to Grow” (Build 61); ready for review in PR #33 to `main`.
 - 2026-10-21: Task 6 new ghost merged into `update-24` in PR #21; checked all 10 scenes at 360/412px.
 - 2026-10-21: Task 5 replay playback reliability and restart-safe pruning follow-up (PR #24) merged into `update-24`; version 23 / Build 60 unchanged.
