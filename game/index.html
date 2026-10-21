@@ -1432,68 +1432,68 @@ function resize() {
 // ---------- sound ----------
 // Owns short sound effects and vibration feedback.
 let AC = null;
-let soundMuted = false, fxMaster = null;
-try { soundMuted = localStorage.getItem('wol.soundMuted') === 'on'; } catch (e) {}
-function audio() {
-  try {
-    if (!AC) {
-      AC = new (window.AudioContext || window.webkitAudioContext)();
-      fxMaster = AC.createGain(); fxMaster.gain.value = soundMuted ? 0 : 1; fxMaster.connect(AC.destination);
-    }
-    if (AC.state === 'suspended') AC.resume();
-  } catch (e) { AC = null; fxMaster = null; }
+let sfxMaster = null;
+function audio() { try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume(); } catch (e) { AC = null; } }
+function effectsOutput() {
+  if (!AC) return null;
+  if (!sfxMaster) {
+    sfxMaster = AC.createGain(); sfxMaster.connect(AC.destination);
+    try { if (typeof Music !== 'undefined' && Music.muted) sfxMaster.gain.value = 0; } catch (e) {}
+  }
+  return sfxMaster;
 }
-function setSoundMuted(muted) {
-  soundMuted = !!muted;
-  if (fxMaster && AC) fxMaster.gain.setTargetAtTime(soundMuted ? 0 : 1, AC.currentTime, .025);
-  if (typeof Music !== 'undefined') Music.vis();
-  return soundMuted;
+function setEffectsMuted(muted) {
+  if (!AC) return;
+  effectsOutput();
+  sfxMaster.gain.setTargetAtTime(muted ? 0 : 1, AC.currentTime, .02);
 }
-function soundEffect(kind) {
-  if (!AC || !fxMaster || soundMuted) return;
-  const patterns = {
-    room: [[392, 0, .2], [587, .12, .24], [784, .25, .38]],
-    countdown: [[880, 0, .13]],
-    finish: [[523, 0, .16], [784, .1, .2], [1047, .22, .42]],
-    trip: [[360, 0, .18], [220, .1, .32]],
-    jackpot: [[523, 0, .2], [659, .12, .22], [784, .24, .24], [1047, .36, .55], [1319, .48, .7]],
-    trophy: [[784, 0, .16], [1047, .12, .36]],
-    up: [[587, 0, .14], [784, .1, .18], [1175, .22, .3]],
-  };
-  const pattern = patterns[kind];
-  if (!pattern) return;
-  const start = AC.currentTime + .01;
-  pattern.forEach(([freq, offset, dur]) => {
-    const t = start + offset, o = AC.createOscillator(), g = AC.createGain();
-    o.type = 'sine'; o.frequency.setValueAtTime(freq, t);
-    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.12, t + .012); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
-    o.connect(g); g.connect(fxMaster); o.start(t); o.stop(t + dur + .02);
+const SFX_NOTES = {
+  stank: [[196, .16], [147, .3]], god: [[392, .12], [523, .18], [784, .42]],
+  monster: [[110, .12], [165, .13], [220, .3]], pyramid: [[440, .16], [587, .16], [740, .4]],
+  revenge: [[311, .2], [233, .25], [185, .45]], farm: [[294, .1], [370, .15], [440, .35]],
+  countdown: [[523, .12]], go: [[659, .08], [880, .2]], finish: [[784, .12], [988, .18], [1318, .45]],
+  trip: [[392, .16], [196, .32]], jackpot: [[523, .1], [659, .12], [784, .16], [1047, .5]],
+  trophy: [[880, .12], [1175, .22]], back: [[587, .12], [440, .16], [330, .3]],
+};
+function playSfx(name) {
+  if (!AC) audio();
+  if (!AC) return;
+  effectsOutput();
+  const notes = SFX_NOTES[name];
+  if (!notes) return;
+  const t = AC.currentTime;
+  notes.forEach(([f, d], i) => {
+    const at = t + i * .09, o = AC.createOscillator(), g = AC.createGain();
+    o.type = name === 'trip' ? 'triangle' : 'sine'; o.frequency.setValueAtTime(f, at);
+    g.gain.setValueAtTime(.0001, at); g.gain.exponentialRampToValueAtTime(name === 'jackpot' ? .18 : .12, at + .012);
+    g.gain.exponentialRampToValueAtTime(.0001, at + d);
+    o.connect(g); g.connect(sfxMaster); o.start(at); o.stop(at + d + .02);
   });
 }
 function tick(v, f = 2500) {
-  if (!AC) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+  if (!AC) return; effectsOutput(); const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
   o.type = 'sine'; o.frequency.setValueAtTime((f + Math.random() * 120) * .6, t); o.frequency.exponentialRampToValueAtTime((f + 60) * .35, t + .05);
   g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.075 * v, t + .004); g.gain.exponentialRampToValueAtTime(.0001, t + .07);
-  o.connect(g); g.connect(fxMaster); o.start(t); o.stop(t + .07);
+  o.connect(g); g.connect(sfxMaster); o.start(t); o.stop(t + .07);
 }
 function ting() {
-  if (!AC) return; const t = AC.currentTime;
+  if (!AC) return; effectsOutput(); const t = AC.currentTime;
   [[880, .16, 1.8], [1320, .09, 1.3], [2217, .05, .9], [3290, .025, .6]].forEach(([f, v, d]) => {
     const o = AC.createOscillator(), g = AC.createGain(); o.type = 'sine'; o.frequency.value = f;
     g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
-    o.connect(g); g.connect(fxMaster); o.start(t); o.stop(t + d + .05);
+    o.connect(g); g.connect(sfxMaster); o.start(t); o.stop(t + d + .05);
   });
 }
 function whoosh(up) {
-  if (!AC) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+  if (!AC) return; effectsOutput(); const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
   o.type = 'sine'; o.frequency.setValueAtTime(up ? 120 : 420, t); o.frequency.exponentialRampToValueAtTime(up ? 520 : 110, t + 1.1);
   g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.08, t + .3); g.gain.exponentialRampToValueAtTime(.0001, t + 1.2);
-  o.connect(g); g.connect(fxMaster); o.start(t); o.stop(t + 1.25);
+  o.connect(g); g.connect(sfxMaster); o.start(t); o.stop(t + 1.25);
 }
 // ---------- music: a driving Egyptian groove (Hijaz on D) that builds with every wild ----------
 // Owns synthesized background music and its playback controls.
 const Music = (() => {
-  let on = true, level = 0, duckV = 1, master = null, noise = null, timer = null, nextT = 0, step = 0, drone = null;
+  let on = true, muted = false, muteLoaded = false, level = 0, duckV = 1, master = null, noise = null, timer = null, nextT = 0, step = 0, drone = null;
   try { on = localStorage.getItem('wol-music') !== 'off'; } catch (e) {}
   const hz = m => 440 * Math.pow(2, (m - 69) / 12);
   const OUD = [62, 0, 63, 66, 67, 66, 63, 0];
@@ -1583,16 +1583,24 @@ const Music = (() => {
     const eighth = 60 / bpm() / 2;
     while (nextT < AC.currentTime + .12) { play(step, nextT); nextT += eighth; step = (step + 1) % 32; }
   }
-  function applyGain() { if (master) master.gain.setTargetAtTime(on && !soundMuted && !document.hidden ? VOL * duckV : 0, AC.currentTime, .25); }
+  function loadMute() {
+    if (muteLoaded || !window.wolPref) return;
+    muteLoaded = true;
+    try { muted = !!(window.wolPref && window.wolPref.get('wol-audio-muted') === 'on'); } catch (e) {}
+  }
+  function applyGain() { if (master) master.gain.setTargetAtTime(on && !muted && !document.hidden ? VOL * duckV : 0, AC.currentTime, .25); }
   return {
     get on() { return on; },
-    start() { if (!AC) return; init(); if (!master) return; if (!timer) { nextT = AC.currentTime + .05; timer = setInterval(sched, 25); } applyGain(); },
+    get muted() { loadMute(); return muted; },
+    syncMute() { loadMute(); setEffectsMuted(muted); applyGain(); },
+    start() { loadMute(); if (!AC) return; init(); if (!master) return; setEffectsMuted(muted); if (!timer) { nextT = AC.currentTime + .05; timer = setInterval(sched, 25); } applyGain(); },
     toggle() { on = !on; try { localStorage.setItem('wol-music', on ? 'on' : 'off'); } catch (e) {} if (on) this.start(); else applyGain(); return on; },
+    toggleMute() { loadMute(); muted = !muted; try { window.wolPref && window.wolPref.set('wol-audio-muted', muted ? 'on' : 'off'); } catch (e) {} setEffectsMuted(muted); applyGain(); return muted; },
     setLevel(n) { level = n; },
     setMode(m) { mode = m; if (drone) drone.gain.setTargetAtTime(m === 'farm' || m === 'race' ? .015 : droneV, AC.currentTime, .4); },
     duck(v) { duckV = v; applyGain(); },
     sting(n) { // a fast Hijaz run up the scale, longer with each wild, and the cymbals
-      if (!AC || !master || soundMuted) return; const t = AC.currentTime + .02, run = [62, 63, 66, 67, 69, 70, 72, 74, 75, 78, 79, 81].slice(0, 5 + n * 2);
+      if (!AC || !master || muted) return; const t = AC.currentTime + .02, run = [62, 63, 66, 67, 69, 70, 72, 74, 75, 78, 79, 81].slice(0, 5 + n * 2);
       run.forEach((m, i) => ney(hz(m + 12), t + i * .06, i === run.length - 1 ? .9 : .1, .1));
       zill(t + run.length * .06, .09); doum(t + run.length * .06, .9);
     },
@@ -1852,7 +1860,7 @@ function popSound() {
   if (!AC) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
   o.frequency.setValueAtTime(260, t); o.frequency.exponentialRampToValueAtTime(70, t + .12);
   g.gain.setValueAtTime(.35, t); g.gain.exponentialRampToValueAtTime(.0001, t + .2);
-  o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + .22); tick(1.6, 1200);
+  o.connect(g); g.connect(effectsOutput()); o.start(t); o.stop(t + .22); tick(1.6, 1200);
 }
 // pop-up dome: press, the dice fly up, tumble, bounce off the glass and each other, and settle
 async function rollDice() {
@@ -2127,8 +2135,8 @@ async function runMain() {
         steps.push({ text: cap(it.go()) }); setTiles(wilds, bonus);
       }
       if (ups++ < 3) {
-        soundEffect('up');
         setVerdict({ eyebrow: 'Going deeper', title: it.wild ? 'Wild, go back up' : it.bonus ? 'Bonus, go back up' : 'Go back up', body: '', steps: steps.slice(), flash: true });
+        playSfx('back');
         Music.sting(1); buzz([30, 30, 30]); await wait(500);
         await dive(1 / Math.pow(S, k - 1));
         k -= 2; continue;
@@ -2734,14 +2742,14 @@ async function vaultRun(steps, cash, acts) {
 }
 async function bonusRun(steps, w = 3, b = 0) {
   roomHit = true; buzz([80, 60, 80, 60, 250]);
-  Music.setMode('stank'); soundEffect('room');
+  Music.setMode('stank');
   ensureStank();
   setVerdict({ eyebrow: 'Ultra bonus', title: 'Three wilds', body: 'Something is waiting at 77 Bridgefield.', steps: steps.slice() });
   $('#caption').textContent = 'Ultra bonus';
   await wait(900);
   whoosh(true);
   await fadeTo(1, 800);
-  scene = 'intro'; introT = 0; fade = 0; Music.duck(.3);
+  scene = 'intro'; introT = 0; fade = 0; Music.setMode('stank'); playSfx('stank'); Music.duck(.3);
   await animate(7000, t => { introT = Math.min(1, t / .62); draw(); });
   await fadeTo(1, 700);
   scene = 'building'; camT = 0;
@@ -2761,7 +2769,7 @@ async function bonusRun(steps, w = 3, b = 0) {
   if (!faces.roulBowl || faces.roulBowl.width !== N) faces.roulBowl = buildRoulBowl();
   const pk = rollPockets(); faces.roulHead = buildRoulHead(pk);
   roul = { rot: 0, t: 0, pk, balls: [], label: null, tally: '' };
-  scene = 'roul';
+  scene = 'roul'; Music.setMode('stank');
   $('#caption').textContent = "The Stankman's Roulette"; Music.setLevel(4); Music.duck(1); Music.sting(4);
   setVerdict({ eyebrow: 'Ultra bonus', title: "The Stankman's Roulette", body: 'Every Wild and ankh you brought in becomes a ball. Land three on gold and the locksafe opens.', steps: steps.slice() });
   await animate(600, t => { draw(); ctx.fillStyle = `rgba(255,236,180,${1 - t})`; ctx.fillRect(0, 0, N, N); });
@@ -3207,7 +3215,7 @@ function drawZena(now) {
 }
 async function phelanRevenge() {
   // he turns up in the pinball pit, laughing at the empty green chute
-  Music.setMode('revenge'); soundEffect('room');
+  Music.setMode('revenge'); playSfx('revenge');
   ghost = { x: N * 1.2, y: N * .4, a: .95, side: 1 }; Music.sting(2); buzz([30, 60, 30, 60, 30]);
   await animate(900, t => { ghost.x = lerp(N * 1.2, N * .62, easeOut(t)); draw(); });
   ghostSay = 'Not one in the green. My turn.';
@@ -3353,8 +3361,7 @@ function drawGodRoom(now) {
 async function ghostTo(x, y, dur) { const x0 = ghost.x, y0 = ghost.y; await animate(dur, t => { const e = easeInOut(t); ghost.x = lerp(x0, x, e); ghost.y = lerp(y0, y, e) + Math.sin(t * Math.PI * 2) * N * .01; draw(); }); }
 function waitTap(test) { const st = $('.stage'); st.classList.add('pick'); return new Promise(res => { tapPick = (x, y) => { const v = test(x, y); if (v != null) { tapPick = null; st.classList.remove('pick'); res(v); } }; }); }
 async function godRoom(steps) {
-  roomHit = true; buzz([100, 50, 100, 50, 300]); Music.sting(4);
-  Music.setMode('god'); soundEffect('room');
+  roomHit = true; Music.setMode('god'); playSfx('god'); buzz([100, 50, 100, 50, 300]); Music.sting(4);
   const floor = [];
   for (let j = 0; j < 14; j++) floor.push({ it: j % 5, x: N * (.08 + Math.random() * .84), y: N * (.6 + Math.random() * .33), s: N * (.1 + Math.random() * .05), r: (Math.random() - .5) * 1.2 });
   floor.sort((a, b) => a.y - b.y);
@@ -3602,7 +3609,6 @@ function sandStep(dt, rate) {
 }
 async function pyramidRun(steps) {
   roomHit = true; buzz([100, 50, 100, 50, 100, 50, 400]);
-  Music.setMode('pyramid'); Music.setLevel(3); Music.sting(4); soundEffect('room');
   setTiles(3, 3); const bar = $('#wilds'); bar.classList.add('over', 'overW', 'overB');
   $('#caption').textContent = 'All six';
   await wait(1600);
@@ -3632,7 +3638,7 @@ async function pyramidRun(steps) {
   await animate(1500, t => { draw(); ctx.save(); ctx.globalAlpha = Math.min(1, t * 2); eyeOfHorus(ctx, c, c, -Math.PI / 2, N * .5 * easeOut(t)); ctx.restore(); ctx.fillStyle = `rgba(255,252,240,${Math.max(0, (t - .6) / .4)})`; ctx.fillRect(0, 0, N, N); });
   buzz([200]);
   // 2. the desert
-  scene = 'pyramid'; pyr.ph = 'desert'; pyr.white = 1;
+  scene = 'pyramid'; pyr.ph = 'desert'; pyr.white = 1; Music.setMode('pyramid'); Music.setLevel(3); playSfx('pyramid');
   $('#caption').textContent = 'Somewhere south of Belfast';
   let last = performance.now();
   await animate(5200, t => {
@@ -3706,8 +3712,7 @@ async function pyramidRun(steps) {
   speak(['Final answer', ...spokenMoves(steps), prize === 2500 ? ("Phelan's Tomb. The pyramid pays " + $m(2500) + ' euro' + "") : `The pyramid pays ${$m(prize)} euro`, roomAct('pyramid')]);
 }
 async function monsterRun(steps, w = 0, b = 3) {
-  roomHit = true; buzz([80, 60, 80, 60, 250]);
-  Music.setMode('monster'); soundEffect('room');
+  roomHit = true; Music.setMode('monster'); playSfx('monster'); buzz([80, 60, 80, 60, 250]);
   setVerdict({ eyebrow: 'Bonus', title: 'Three ankhs', body: 'Get in. Hold on.', steps: steps.slice() });
   $('#caption').textContent = '';
   Music.setLevel(3); Music.sting(3);
@@ -3966,7 +3971,7 @@ function flipSound() {
   if (!AC) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
   o.type = 'triangle'; o.frequency.setValueAtTime(180, t); o.frequency.exponentialRampToValueAtTime(70, t + .08);
   g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.12, t + .005); g.gain.exponentialRampToValueAtTime(.0001, t + .1);
-  o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + .11);
+  o.connect(g); g.connect(effectsOutput()); o.start(t); o.stop(t + .11);
 }
 function pinStep(P, h) {
   const rb = P.rb, G = N * 1.5, play = P.balls.filter(b => b.state === 'play');
@@ -4321,7 +4326,7 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
   if (!faces.farm) faces.farm = buildFarm();
   if (!snap || snap.width !== N) snap = mk();
   { const g = snap.getContext('2d'); g.clearRect(0, 0, N, N); dots.forEach(p => p.hide = true); draw(); g.drawImage(cv, 0, 0); dots.forEach(p => p.hide = false); }
-  d6 = []; scene = 'farm'; Music.setMode('farm'); soundEffect('room'); camX = 0; chickens = []; arrows = []; fires = []; feathers = []; markItems = []; formT = []; showMark = 0; chainNote = ''; raceLine = 0; snapA = 1;
+  d6 = []; scene = 'farm'; Music.setMode('farm'); playSfx('farm'); camX = 0; chickens = []; arrows = []; fires = []; feathers = []; markItems = []; formT = []; showMark = 0; chainNote = ''; raceLine = 0; snapA = 1;
   dots.forEach((p, i) => {
     p.sx = p.x; p.sy = p.y; p.delay = .1 + (i / Math.max(1, dots.length)) * .5;
     chickens.push({ x: N * (.08 + Math.random() * .84), y: N * (.64 + Math.random() * .28), dir: Math.random() < .5 ? -1 : 1, ph: 0, peck: 0, alive: true, pop: 0 });
@@ -4510,7 +4515,7 @@ function drawRaceTag(ch) {
   ctx.restore();
 }
 async function chickenRace(steps, alive) {
-  Music.setMode('race'); soundEffect('room');
+  Music.setMode('race');
   const racers = [...alive.filter(ch => ch.special), ...alive.filter(ch => !ch.special)].slice(0, RACE_MAX), rest = alive.filter(ch => !racers.includes(ch));
   const names = [...RACE_NAMES].sort(() => Math.random() - .5);
   const vals = [5, 8, 10, 12, 15, 20, 25, 30].sort(() => Math.random() - .5), bigAt = Math.floor(Math.random() * racers.length);
@@ -4521,7 +4526,7 @@ async function chickenRace(steps, alive) {
   });
   setVerdict({ eyebrow: 'Something’s up', title: 'Chicken Race', body: 'The chickens won’t sit still.', steps: steps.slice(), flash: true });
   $('#caption').textContent = 'Chicken Race';
-  Music.sting(2); buzz([30, 40, 30, 40, 60]);
+  playSfx('farm'); Music.sting(2); buzz([30, 40, 30, 40, 60]);
   // 1. they dance; the ones who don't make the line-up wander off
   rest.forEach(ch => { ch.tx = N * 2.3; ch.ty = ch.y; });
   racers.forEach(ch => { ch.by = ch.y; });
@@ -4546,8 +4551,8 @@ async function chickenRace(steps, alive) {
   });
   racers.forEach(ch => { ch.dir = 1; ch.peck = 0; });
   await farmLoop(1.2, (dt, el) => { racers.forEach((ch, i) => { const u = Math.max(0, Math.min(1, (el - i * .1) * 3)); if (ch.tag.a < 1 && u >= 1) tick(.6, 1600 + i * 80); ch.tag.a = u; }); });
-  for (const n of ['3', '2', '1']) { chainNote = n; soundEffect('countdown'); tick(1, 900); buzz(20); await farmLoop(.7, () => {}); }
-  chainNote = 'Go!'; ting(); buzz(50);
+  for (const n of ['3', '2', '1']) { chainNote = n; playSfx('countdown'); tick(1, 900); buzz(20); await farmLoop(.7, () => {}); }
+  chainNote = 'Go!'; playSfx('go'); ting(); buzz(50);
   // 3. the race: the winner's finish time is fixed; Ghost Phelan sometimes trips a faster chicken near the line
   const w = Math.floor(Math.random() * racers.length), win = racers[w];
   const others = racers.filter(ch => ch !== win), decoy = others.length && Math.random() < .35 ? pick(others) : null;
@@ -4561,7 +4566,7 @@ async function chickenRace(steps, alive) {
       if (ch === decoy && el >= tripAt) {
         p = el < tripAt + STUN ? tripP : Math.min(1, tripP + (el - tripAt - STUN) / ch.T);
         if (!ch.tripped) {
-          ch.tripped = true; ch.flash = .8; ghostSay = 'Whoops'; soundEffect('trip'); whoosh(); buzz([40, 30, 80]);
+          ch.tripped = true; ch.flash = .8; ghostSay = 'Whoops'; playSfx('trip'); whoosh(); buzz([40, 30, 80]);
           for (let k = 0; k < 14; k++) feathers.push({ x: ch.x, y: ch.y - N * .02, vx: (Math.random() - .5) * N * .5, vy: -Math.random() * N * .4, r: Math.random() * 3, life: 1, col: ch.special === 'W' ? '#f3c94a' : ch.special === 'B' ? '#9b5de5' : '#fbf7ee' });
         }
         if (el < tripAt + STUN) { ch.peck = .9; ch.dir = Math.sin(el * 14) > 0 ? 1 : -1; ch.flash = Math.max(0, (ch.flash || 0) - dt); }
@@ -4574,7 +4579,7 @@ async function chickenRace(steps, alive) {
       if (!(ch === decoy && el >= tripAt && el < tripAt + STUN)) ch.ph += dt * (p < 1 ? 22 : 4);
       ch.p = p; ch.x = lerp(startX, raceLine, p);
       if (ch.done) { ch.post = (ch.post || 0) + dt; ch.x = raceLine + N * .07 * (1 - Math.exp(-ch.post * 2.5)); } // they run on past the line and slow down
-      if (p >= 1 && !ch.done) { ch.done = true; if (ch === win) { soundEffect('finish'); ting(); buzz([40, 50, 80]); chainNote = `${ch.name} wins!`; ch.glow = 1; ch.won = 1; } else tick(.8, 1400); }
+      if (p >= 1 && !ch.done) { ch.done = true; if (ch === win) { playSfx('finish'); ting(); buzz([40, 50, 80]); chainNote = `${ch.name} wins!`; ch.glow = 1; ch.won = 1; } else tick(.8, 1400); }
     });
     // the ghost drifts in over the chicken he's about to trip, then floats off
     if (decoy) {
@@ -4747,18 +4752,15 @@ const musicBtn = $('#musicBtn');
 musicBtn.textContent = Music.on ? 'Music on' : 'Music off';
 musicBtn.addEventListener('click', () => { audio(); musicBtn.textContent = Music.toggle() ? 'Music on' : 'Music off'; });
 const muteBtn = $('#muteBtn');
-function updateMuteButton() {
-  const muted = soundMuted;
+function paintMuteButton() {
+  const muted = Music.muted;
   muteBtn.textContent = muted ? 'Unmute' : 'Mute';
   muteBtn.setAttribute('aria-label', muted ? 'Unmute music and sound effects' : 'Mute music and sound effects');
   muteBtn.setAttribute('aria-pressed', muted ? 'true' : 'false');
 }
-updateMuteButton();
-muteBtn.addEventListener('click', () => {
-  audio();
-  const setMute = window.wolSetSoundMuted || setSoundMuted;
-  setMute(!soundMuted); updateMuteButton();
-});
+paintMuteButton();
+window.addEventListener('wol-audio-preference-ready', paintMuteButton);
+muteBtn.addEventListener('click', () => { audio(); Music.toggleMute(); paintMuteButton(); });
 
 const wildTiles = [...document.querySelectorAll('.wt')];
 function paintTile(k, kind) {
@@ -4887,6 +4889,8 @@ if (document.fonts && document.fonts.load) {
     get(k) { try { if (app && app.getPref) return app.getPref(k) || null; } catch (e) {} try { return localStorage.getItem(k); } catch (e) { return null; } },
     set(k, v) { try { if (app && app.setPref) app.setPref(k, v == null ? '' : v); } catch (e) {} try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} },
   };
+  window.wolPref = pref;
+  window.dispatchEvent(new Event('wol-audio-preference-ready'));
   const TEST_KEY = 'test', isTest = () => !!(W.me && W.me.test);
   const TROPHIES = [
     { id: 'first', name: 'First spin', icon: '🎡', how: 'Complete your first paid spin.' },
@@ -5150,7 +5154,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   function showTrophyToast() {
     if (!trophyToasts.length) { trophyToastTimer = 0; return; }
     const t = trophyToasts.shift();
-    soundEffect('trophy');
+    playSfx('trophy');
     toast(`${t.icon} ${t.name} trophy earned!`, true);
     trophyToastTimer = setTimeout(showTrophyToast, 2700);
   }
@@ -5461,13 +5465,6 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     $w('wUp').onclick = go; $w('wLater').onclick = () => { banner.hidden = true; snooze = now() + 10 * 60000; };
   }
   window.wolUpdateFailed = msg => { banner.hidden = false; banner.innerHTML = `<span>Update failed: ${esc(msg || 'no connection')}</span><button class="wbtn small" type="button" onclick="this.parentNode.hidden=true">OK</button>`; };
-  window.wolSetSoundMuted = muted => {
-    const value = setSoundMuted(muted);
-    pref.set('wol.soundMuted', value ? 'on' : 'off');
-    return value;
-  };
-  setSoundMuted(pref.get('wol.soundMuted') === 'on');
-  updateMuteButton();
   // version.json is ~200 bytes; once a minute while the app is open is nothing for the phone
   setInterval(() => { if (!document.hidden) checkUpdate(); }, 60000);
   // ---------- payouts: every prize the game shows is scaled to the stake (house keeps ~1%) ----------
@@ -5537,8 +5534,8 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
         if (!m && o.eyebrow === 'Final answer' && /^€[\d.]+$/.test(o.title || '')) m = [0, o.title.slice(1)];
         const isPhelanTomb = /, Phelan['’]s Tomb$/.test(String(o.title || ''));
         if (m && isPhelanTomb && !isTest()) {
+          playSfx('jackpot');
           run.paid = true;
-          soundEffect('jackpot');
           const prizeCents = W.payCents(m[1]);
           (async () => {
             let jackpot = 0;

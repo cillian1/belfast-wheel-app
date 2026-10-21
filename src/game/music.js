@@ -1,7 +1,7 @@
 // ---------- music: a driving Egyptian groove (Hijaz on D) that builds with every wild ----------
 // Owns synthesized background music and its playback controls.
 const Music = (() => {
-  let on = true, level = 0, duckV = 1, master = null, noise = null, timer = null, nextT = 0, step = 0, drone = null;
+  let on = true, muted = false, muteLoaded = false, level = 0, duckV = 1, master = null, noise = null, timer = null, nextT = 0, step = 0, drone = null;
   try { on = localStorage.getItem('wol-music') !== 'off'; } catch (e) {}
   const hz = m => 440 * Math.pow(2, (m - 69) / 12);
   const OUD = [62, 0, 63, 66, 67, 66, 63, 0];
@@ -91,16 +91,24 @@ const Music = (() => {
     const eighth = 60 / bpm() / 2;
     while (nextT < AC.currentTime + .12) { play(step, nextT); nextT += eighth; step = (step + 1) % 32; }
   }
-  function applyGain() { if (master) master.gain.setTargetAtTime(on && !soundMuted && !document.hidden ? VOL * duckV : 0, AC.currentTime, .25); }
+  function loadMute() {
+    if (muteLoaded || !window.wolPref) return;
+    muteLoaded = true;
+    try { muted = !!(window.wolPref && window.wolPref.get('wol-audio-muted') === 'on'); } catch (e) {}
+  }
+  function applyGain() { if (master) master.gain.setTargetAtTime(on && !muted && !document.hidden ? VOL * duckV : 0, AC.currentTime, .25); }
   return {
     get on() { return on; },
-    start() { if (!AC) return; init(); if (!master) return; if (!timer) { nextT = AC.currentTime + .05; timer = setInterval(sched, 25); } applyGain(); },
+    get muted() { loadMute(); return muted; },
+    syncMute() { loadMute(); setEffectsMuted(muted); applyGain(); },
+    start() { loadMute(); if (!AC) return; init(); if (!master) return; setEffectsMuted(muted); if (!timer) { nextT = AC.currentTime + .05; timer = setInterval(sched, 25); } applyGain(); },
     toggle() { on = !on; try { localStorage.setItem('wol-music', on ? 'on' : 'off'); } catch (e) {} if (on) this.start(); else applyGain(); return on; },
+    toggleMute() { loadMute(); muted = !muted; try { window.wolPref && window.wolPref.set('wol-audio-muted', muted ? 'on' : 'off'); } catch (e) {} setEffectsMuted(muted); applyGain(); return muted; },
     setLevel(n) { level = n; },
     setMode(m) { mode = m; if (drone) drone.gain.setTargetAtTime(m === 'farm' || m === 'race' ? .015 : droneV, AC.currentTime, .4); },
     duck(v) { duckV = v; applyGain(); },
     sting(n) { // a fast Hijaz run up the scale, longer with each wild, and the cymbals
-      if (!AC || !master || soundMuted) return; const t = AC.currentTime + .02, run = [62, 63, 66, 67, 69, 70, 72, 74, 75, 78, 79, 81].slice(0, 5 + n * 2);
+      if (!AC || !master || muted) return; const t = AC.currentTime + .02, run = [62, 63, 66, 67, 69, 70, 72, 74, 75, 78, 79, 81].slice(0, 5 + n * 2);
       run.forEach((m, i) => ney(hz(m + 12), t + i * .06, i === run.length - 1 ? .9 : .1, .1));
       zill(t + run.length * .06, .09); doum(t + run.length * .06, .9);
     },

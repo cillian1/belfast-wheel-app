@@ -246,7 +246,7 @@ function popSound() {
   if (!AC) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
   o.frequency.setValueAtTime(260, t); o.frequency.exponentialRampToValueAtTime(70, t + .12);
   g.gain.setValueAtTime(.35, t); g.gain.exponentialRampToValueAtTime(.0001, t + .2);
-  o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + .22); tick(1.6, 1200);
+  o.connect(g); g.connect(effectsOutput()); o.start(t); o.stop(t + .22); tick(1.6, 1200);
 }
 // pop-up dome: press, the dice fly up, tumble, bounce off the glass and each other, and settle
 async function rollDice() {
