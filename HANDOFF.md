@@ -11,7 +11,7 @@
   3. **Wave 3, alone:** #45 (frame-rate-independent results + shorter waits; fast-sim odds check, and any odds change waits for Cillian).
   4. **Release:** a PR `update-26` → `main` bumping to 26 with a name, notes and `Closes #…` for every sub-task, then post DONE.
 - **If stuck:** post `BLOCKED: <reason>` on that issue straight away and move on to the next independent step. Don't retry forever. Cillian checks in the morning.
-- **Last updated:** 2026-10-21 23:52 by Claude. Update 26 now runs under "How an update runs": every open issue has a cut line, #49 has a repro, #45/#49 need the odds pre-check, and there is one goal per issue (#42/#43 split into #52/#53). After 26: #45 first.
+- **Last updated:** 2026-10-21 23:52 by Claude. Update 26 now runs under "How an update runs": every open issue has a cut line, #49 has a repro, #45/#49 need the odds pre-check, and there is one goal per issue (#42/#43 split into #52/#53).
 
 **Rules for this section:**
 0. **Any decision (closing or dropping a PR, moving work between updates, reprioritising, shipping) goes into NOW in the same step it's made** (Claude does this), so nobody has to ask.
