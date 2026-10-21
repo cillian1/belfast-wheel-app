@@ -1,8 +1,8 @@
 {
-  "game": 9,
+  "game": 10,
   "apk": 2,
-  "gameBuild": 53,
-  "notes": "Watch other players live",
+  "gameBuild": 54,
+  "notes": "Every bonus room ends with a real activity",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk"
 }

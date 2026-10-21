@@ -277,11 +277,11 @@ footer{position:fixed;top:8px;left:10px;z-index:5;color:rgba(220,225,230,.55);fo
   <input class="vh" type="file" id="lib" accept="image/*">
 
 
-  <footer>Build 53 · app 9</footer>
+  <footer>Build 54 · app 10</footer>
 </div>
 
 <script>
-const BUILD = 53;
+const BUILD = 54;
 const $ = s => document.querySelector(s);
 const TAU = Math.PI * 2, BASE = -Math.PI / 2;
 const LABEL_FONT = '"IBM Plex Sans Condensed","Arial Narrow",sans-serif';
@@ -2363,6 +2363,34 @@ function drawStank(now) {
   }
 }
 
+// every bonus room still sends you somewhere after its prize (user, Oct 21): the prize is the reward, the activity is the night
+const BELFAST_PUBS = ["Kelly's Cellars", 'The Crown Liquor Saloon', 'The Duke of York', 'The Spaniard', 'Bittles Bar', "White's Tavern", 'The Points', "McHugh's", 'The Garrick', 'The Sunflower', "Robinson's", 'The John Hewitt', 'The Dirty Onion', 'The Harp Bar', "Muriel's Cafe Bar", 'Fibber Magees', 'The Errigle Inn', "Lavery's", 'The Hatfield House', "Madden's Bar", 'The National', 'The Morning Star', 'The American Bar', 'The Parlour'];
+const ROOM_ACTS = {
+  pub: () => `Then head to ${pick(BELFAST_PUBS)}, and the first round there is on the winner`,
+  monster: () => pick([
+    'Then buy a can of Monster from the nearest shop and get a stranger to cheers you with it',
+    'Then find the shop with the most Monster flavours and buy the weirdest one for the group to share',
+    'Then swap your next pint for a can of Monster, and finish it before the lads finish theirs',
+    'Then get a can of Monster and toast Phelan out loud on the street',
+    'Then find a Monster flavour none of you have tried and everyone rates it out of ten',
+  ]),
+  god: () => pick([
+    'Then go to Smithfield Market and find the oddest bit of second-hand tech in there',
+    'Then find a phone repair shop and ask what they would give you for an old Nokia',
+    'Then find an arcade and win at least one ticket before you leave',
+    'Then go into CeX and rate the retro consoles out of ten, like Phelan would',
+    'Then find the nearest late chippy and order exactly what Phelan would',
+  ]),
+  pyramid: () => pick([
+    'Then head to the Cathedral Quarter for the best night out in Belfast: start at The Duke of York and keep going',
+    "Then get to Kelly's Cellars for trad and stay until they call last orders",
+    'Then go to The Dirty Onion and grab a spot in the yard for the night',
+    'Then go up to The Perch rooftop bar and toast the pyramid',
+    "Then it's a big one: The Spaniard first, then wherever the Cathedral Quarter takes you",
+  ]),
+};
+function roomAct(kind) { return ROOM_ACTS[kind](); }
+
 // ---------- the Wild room roulette: every Wild and ankh you carried in becomes a ball ----------
 const WILD_ACTS = [
   'Message Zena', 'Message Phelan', 'Message Laurence', 'Tell Phelan you love him', "Email Phelan's work", 'Track down Phelan',
@@ -2517,7 +2545,7 @@ async function vaultRun(steps, cash, acts) {
   const total = d.amt + cash;
   $('#caption').textContent = 'Tap Spin to go back to the top';
   setVerdict({ eyebrow: 'Final answer · €' + $m(total), title: `The locksafe pays €${$m(d.amt)}`, body: (cash ? `Plus €${$m(cash)} from the roulette. ` : '') + (acts.length ? 'Do these before the next spin: ' + acts.join('. ') + '.' : ''), steps: steps.slice(), q: quote() });
-  speak(['Final answer', ...spokenMoves(steps), ...acts, `The golden locksafe pays ${$m(d.amt)} euro`, cash ? `plus ${$m(cash)} from the roulette` : ''].filter(Boolean));
+  speak(['Final answer', ...spokenMoves(steps), ...acts, `The golden locksafe pays ${$m(d.amt)} euro`, cash ? `plus ${$m(cash)} from the roulette` : '', roomAct('pub')].filter(Boolean));
   logMove(`Ultra bonus · golden locksafe · €${$m(total)}`);
 }
 async function bonusRun(steps, w = 3, b = 0) {
@@ -2609,7 +2637,7 @@ async function bonusRun(steps, w = 3, b = 0) {
   roul.label = [`€${$m(cash)}`, gold ? `${gold} GOLD WILD${gold > 1 ? 'S' : ''} AT €${$m(50)}, NO LOCKSAFE` : '']; roul.labelGold = true; roul.tally = ''; draw();
   ting(); buzz([60, 40, 120]);
   setVerdict({ eyebrow: 'Final answer · €' + $m(cash), title: `The Stank Chamber pays €${$m(cash)}`, body: (gold ? `${gold} gold Wild${gold > 1 ? 's' : ''} at €${$m(50)} each, short of the locksafe. ` : '') + (acts.length ? 'Do these before the next spin: ' + acts.join('. ') + '.' : ''), steps: steps.slice(), q: quote() });
-  speak(['Final answer', ...spokenMoves(steps), ...acts, `The Stank Chamber pays ${$m(cash)} euro`]);
+  speak(['Final answer', ...spokenMoves(steps), ...acts, `The Stank Chamber pays ${$m(cash)} euro`, roomAct('pub')]);
   $('#caption').textContent = 'Tap Spin to go back to the top';
   logMove(`Ultra bonus · roulette · €${$m(cash)}`);
 }
@@ -3212,7 +3240,7 @@ async function godRoom(steps) {
     await ghostTo(N * .62, N * .4, 700);
     god.say = pick(MOCK); draw(); await wait(2600); god.say = `Here. €${$m(cons)} for your trouble.`; draw(); await wait(1800);
     setVerdict({ eyebrow: 'Final answer · €' + $m(cons), title: 'Phelan keeps the rest', body: '', steps: steps.slice(), q: quote() });
-    speak(['Final answer', ...spokenMoves(steps), `Phelan gives you ${$m(cons)} euro for your trouble`]);
+    speak(['Final answer', ...spokenMoves(steps), `Phelan gives you ${$m(cons)} euro for your trouble`, roomAct('god')]);
     return;
   }
   god.say = 'Fair play. Come on, the big one.'; draw(); Music.sting(4); buzz([80, 50, 80, 50, 250]); await wait(1800); god.say = '';
@@ -3239,7 +3267,7 @@ async function godRoom(steps) {
   god.say = prize >= 100 ? `€${$m(prize)}. Don't tell Mark.` : `€${$m(prize)}. Better than a toaster.`; draw();
   setVerdict({ eyebrow: 'Final answer · €' + $m(prize), title: 'The God wheel pays €' + $m(prize), body: '', steps: steps.slice(), q: quote() });
   await wait(1600);
-  speak(['Final answer', ...spokenMoves(steps), `The God wheel pays ${$m(prize)} euro`]);
+  speak(['Final answer', ...spokenMoves(steps), `The God wheel pays ${$m(prize)} euro`, roomAct('god')]);
 }
 // ---------- the Pyramid: all six tiles lit ----------
 // the six tiles spiral into an eye of Horus, a pyramid rises out of the desert, a walk through the tomb, three doors,
@@ -3445,7 +3473,7 @@ async function pyramidRun(steps) {
     ting(); buzz([60, 40, 60]);
     $('#caption').textContent = '';
     setVerdict({ eyebrow: 'Final answer · €' + $m(d.amt), title: 'The pyramid pays €' + $m(d.amt), body: '', steps: steps.slice(), q: quote() });
-    speak(['Final answer', ...spokenMoves(steps), `The pyramid pays ${$m(d.amt)} euro`]);
+    speak(['Final answer', ...spokenMoves(steps), `The pyramid pays ${$m(d.amt)} euro`, roomAct('pyramid')]);
     return;
   }
   // 5. the finale
@@ -3480,7 +3508,7 @@ async function pyramidRun(steps) {
   const prize = p.v, label = prize === 1000 ? ("" + '€' + $m(1000) + ", Phelan's Tomb") : '€' + $m(prize);
   setVerdict({ eyebrow: 'Final answer · €' + $m(prize), title: label, body: '', steps: steps.slice(), q: quote() });
   await wait(1200);
-  speak(['Final answer', ...spokenMoves(steps), prize === 1000 ? ("Phelan's Tomb. The pyramid pays " + $m(1000) + ' euro' + "") : `The pyramid pays ${$m(prize)} euro`]);
+  speak(['Final answer', ...spokenMoves(steps), prize === 1000 ? ("Phelan's Tomb. The pyramid pays " + $m(1000) + ' euro' + "") : `The pyramid pays ${$m(prize)} euro`, roomAct('pyramid')]);
 }
 async function monsterRun(steps, w = 0, b = 3) {
   roomHit = true; buzz([80, 60, 80, 60, 250]);
@@ -3585,7 +3613,7 @@ async function monsterRun(steps, w = 0, b = 3) {
   const lvl = TANK_LEVELS.reduce((a, l) => total >= l.at ? l : a, TANK_LEVELS[0]);
   ting(); buzz([60, 40, 120]); Music.sting(4);
   setVerdict({ eyebrow: 'Final answer', title: `€${$m(lvl.v)}`, body: `The Monster tank filled to the €${$m(lvl.v)} line${bigCans ? `, with ${bigCans} big can${bigCans > 1 ? 's' : ''} from the special dice` : ''}. That is your bonus. Collect it before the next spin.`, steps: steps.slice(), q: quote() });
-  speak(['Final answer', ...spokenMoves(steps), `The Monster tank pays ${$m(lvl.v)} euro`]);
+  speak(['Final answer', ...spokenMoves(steps), `The Monster tank pays ${$m(lvl.v)} euro`, roomAct('monster')]);
   $('#caption').textContent = 'Tap Spin to go back to the top';
   logMove(`Bonus · Monster tank · €${$m(lvl.v)}`);
 }
@@ -4462,7 +4490,7 @@ if (document.fonts && document.fonts.load) {
 }
 </script>
 
-<script>window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":9,"ev":10,"edge":0.99,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};</script>
+<script>window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":10,"ev":10,"edge":0.99,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};</script>
 <script>
 // ---------- wallet layer for the Android app ----------
 // Injected after the game's own script by tools/build.mjs. It wraps spin() and setVerdict(),
