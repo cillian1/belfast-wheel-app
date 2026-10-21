@@ -161,7 +161,8 @@ body{box-sizing:border-box;margin:0}
 .wbar .who.test{border:2px dashed #4fd1c5;background:rgba(20,70,68,.5)}.wbar .who.test small{color:#8ef0e6}.wbar .who.test b{color:#8ef0e6}
 body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;right:0;bottom:0;z-index:30;text-align:center;font:700 11px/1 var(--body);letter-spacing:.2em;padding:6px 0 calc(6px + env(safe-area-inset-bottom,0px));background:#0f4f4c;color:#c8fff8;pointer-events:none}
 .wlive{display:inline-flex;vertical-align:middle;margin-left:12px;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1.5px solid #ff4d4d;background:rgba(60,8,8,.85);color:#fff;font-weight:700;letter-spacing:.12em}
-.wlive i{width:9px;height:9px;border-radius:50%;background:#ff3b3b;box-shadow:0 0 8px #ff3b3b;animation:wblink 1.2s ease-in-out infinite}
+.wlive i{width:9px;height:9px;border-radius:50%;background:#9b5de5;box-shadow:0 0 6px #9b5de5}
+.wlive.on i{background:#ff3b3b;box-shadow:0 0 8px #ff3b3b;animation:wblink 1.2s ease-in-out infinite}
 .wlive em{font-style:normal;background:#ff3b3b;border-radius:999px;padding:2px 7px;letter-spacing:0;font-size:12px}
 .wlive em:empty{display:none}
 @keyframes wblink{50%{opacity:.25}}
@@ -507,13 +508,13 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   const liveBtn = el('button', 'wlive'); liveBtn.type = 'button'; liveBtn.innerHTML = '<i></i>WATCH<em></em>';
   const hdr = document.querySelector('.app header > span'); if (hdr) hdr.appendChild(liveBtn); else appEl.prepend(liveBtn);
   let others = [], watchers = 0, streaming = false;
-  function paintLive() { ($w('wLive') || liveBtn).querySelector('em').textContent = watchers ? '👁 ' + watchers : others.length ? String(others.length) : ''; }
+  function paintLive() { ($w('wLive') || liveBtn).classList.toggle('on', others.length > 0); ($w('wLive') || liveBtn).querySelector('em').textContent = watchers ? '👁 ' + watchers : others.length ? String(others.length) : ''; }
   async function heartbeat() {
     if (document.hidden) return;
     try {
-      if (W.user && W.me) await db.patch('live/' + W.user, { name: W.me.name, at: now(), play: !!(W.run && W.run.live) });
+      if (W.user && W.me) await db.put('live/' + W.user + '/p', { name: W.me.name, at: now(), play: !!(W.run && W.run.live) }); // PUT, not PATCH: PATCH goes through a method-override header on Android
       const all = await db.get('live') || {}, t = now();
-      others = Object.entries(all).filter(([k, v]) => k !== W.user && v && v.name && t - (v.at || 0) < ONLINE_MS).map(([k, v]) => Object.assign({ key: k }, v));
+      others = Object.entries(all).map(([k, v]) => Object.assign({ key: k }, v && v.p && v.p.name ? v.p : v)).filter(o => o.key !== W.user && o.name && t - (o.at || 0) < ONLINE_MS);
       const w = (W.user && all[W.user] && all[W.user].w) || {};
       watchers = Object.entries(w).filter(([k, v]) => k !== W.user && t - v < WATCH_MS).length;
       paintLive();
@@ -556,7 +557,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   async function watch(key, name) {
     viewing = key; const mine = viewing;
     view.hidden = false;
-    view.innerHTML = `<div class="wwh"><div><b>${esc(name)}</b><small id="wwSub">Connecting…</small></div><span class="wlive" style="margin:0"><i></i>LIVE</span></div>
+    view.innerHTML = `<div class="wwh"><div><b>${esc(name)}</b><small id="wwSub">Connecting…</small></div><span class="wlive on" style="margin:0"><i></i>LIVE</span></div>
       <div class="wscr"><img id="wwImg" alt=""><ol id="wwFin" hidden></ol><p id="wwMsg">Asking ${esc(name)}'s phone for the picture…</p></div>
       <div class="wvd"><small id="wwE"></small><h3 id="wwT"></h3><p id="wwB"></p><p id="wwC" style="color:var(--mute);margin-top:6px"></p></div>
       <button class="wbtn" type="button" id="wwX" style="width:100%;max-width:560px">Stop watching</button>`;
