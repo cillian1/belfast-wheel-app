@@ -1,8 +1,8 @@
 {
-  "game": 14,
+  "game": 15,
   "apk": 2,
-  "gameBuild": 55,
-  "notes": "Reset spin button under Spin",
+  "gameBuild": 56,
+  "notes": "A full Wild or Bonus set still gets its room after the God room",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk"
 }

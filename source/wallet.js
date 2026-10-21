@@ -331,6 +331,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   };
 
   window.wolResetOk = () => !(W.run && W.run.paid); // no resetting once the prize is being paid
+  window.wolNextRoom = () => { if (W.run) W.run.paid = false; }; // a second room in the same run (God room, then a full set) pays its own prize
   const gameVerdict = setVerdict;
   let lastVerdict = null; // what the player's screen says, for anyone watching
   setVerdict = function (o) {

@@ -282,11 +282,11 @@ footer{position:fixed;top:8px;left:10px;z-index:5;color:rgba(220,225,230,.55);fo
   <input class="vh" type="file" id="lib" accept="image/*">
 
 
-  <footer>Build 55 · app 14</footer>
+  <footer>Build 56 · app 15</footer>
 </div>
 
 <script>
-const BUILD = 55;
+const BUILD = 56;
 const $ = s => document.querySelector(s);
 const TAU = Math.PI * 2, BASE = -Math.PI / 2;
 const LABEL_FONT = '"IBM Plex Sans Condensed","Arial Narrow",sans-serif';
@@ -2014,7 +2014,23 @@ async function runMain() {
     setVerdict({ eyebrow: 'Going deeper', title: it.wild ? 'Wild' : it.bonus ? 'Bonus' : steps[steps.length - 1].text, body: k < DEPTH ? '' : 'Something is waking up underneath.', steps: steps.slice(), flash: it.wild || it.bonus });
   }
   if (wilds >= 3 && bonus >= 3) { await pyramidRun(steps); return; }
-  if (godHit) { await godRoom(steps); return; }
+  if (godHit) {
+    await godRoom(steps);
+    // a full set you were holding still gets its room once Phelan's shop is done
+    if (wilds >= 3 || bonus >= 3) {
+      await wait(5000);
+      try { speechSynthesis.cancel(); } catch (e) {}
+      hideFinal(); ghost = null; ghostSay = '';
+      if (window.wolNextRoom) wolNextRoom(); // the next room's prize is paid on top of the God room's
+      setVerdict({ eyebrow: 'Not finished', title: wilds >= 3 ? 'Your Wilds are still lit' : 'Your ankhs are still lit', body: '', steps: steps.slice(), flash: true });
+      $('#caption').textContent = wilds >= 3 ? 'The Wild room is still open' : 'The Bonus room is still open';
+      Music.sting(3); buzz([60, 40, 60, 40, 200]);
+      await wait(1800);
+      god = null;
+      if (wilds >= 3) await bonusRun(steps, wilds, bonus); else await monsterRun(steps, wilds, bonus);
+    }
+    return;
+  }
   if (wilds >= 3) { await bonusRun(steps, wilds, bonus); return; }
   if (bonus >= 3) { await monsterRun(steps, wilds, bonus); return; }
   await wait(500);
@@ -4509,7 +4525,7 @@ if (document.fonts && document.fonts.load) {
 }
 </script>
 
-<script>window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":14,"ev":15.1078,"edge":0.995,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};</script>
+<script>window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":15,"ev":15.1078,"edge":0.995,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};</script>
 <script>
 // ---------- wallet layer for the Android app ----------
 // Injected after the game's own script by tools/build.mjs. It wraps spin() and setVerdict(),
@@ -4822,6 +4838,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   };
 
   window.wolResetOk = () => !(W.run && W.run.paid); // no resetting once the prize is being paid
+  window.wolNextRoom = () => { if (W.run) W.run.paid = false; }; // a second room in the same run (God room, then a full set) pays its own prize
   const gameVerdict = setVerdict;
   let lastVerdict = null; // what the player's screen says, for anyone watching
   setVerdict = function (o) {
