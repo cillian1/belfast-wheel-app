@@ -192,7 +192,7 @@ Bump the version once at the end (next free number) with a name.
 ## Task 10: Phelan voice lines (ON HOLD, ships in update 25 with Task 9)
 
 Cillian wants Phelan to talk. Phelan heckles **out loud** at his existing cameos (Ghost Phelan, Phelan's wheel/revenge, Phelan's Tomb) and on near misses (the pointer stops one slice off a big prize).
-- Use the browser's built-in speech (`speechSynthesis`), with a lowered pitch, a slightly fast rate and an en-GB/en-IE voice if one is available. No audio files. Reuse his existing speech-bubble lines and add about 20 short new heckles. Keep them in a `PHELAN_LINES` list so real recordings could replace them later.
+- Use the browser's built-in speech (`speechSynthesis`), with a **squeaky, annoying voice**: pitch at max (2), fast rate (~1.35), and an en-GB/en-IE voice if one is available. No audio files. Reuse his existing speech-bubble lines and add about 20 short new heckles. Keep them in a `PHELAN_LINES` list so real recordings could replace them later.
 - Speak the line the bubble shows. Max one line every ~8 s, and never over a result/verdict reveal. Fail silently if speech isn't supported.
 - Respect the Task 8 **mute button** (and add a "Phelan voice on/off" toggle saved with `pref`).
 - Pick lines with a separate non-game RNG, **not** `Math.random()`, so the game's random order is unchanged. No gameplay, odds or payout changes.
