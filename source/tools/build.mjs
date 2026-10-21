@@ -43,6 +43,13 @@ const walletCfg = {
 };
 html += `\n<script>window.WALLET_CFG = ${JSON.stringify(walletCfg)};</script>\n<script>\n${fs.readFileSync(path.join(A, 'wallet.js'), 'utf8')}</script>\n`;
 fs.writeFileSync(path.join(work, 'assets/index.html'), html);
+
+// host page for Cillian (GitHub Pages): same database helpers as the app
+const wallet = fs.readFileSync(path.join(A, 'wallet.js'), 'utf8');
+const shared = wallet.slice(wallet.indexOf('// <shared>'), wallet.indexOf('// </shared>'));
+const host = fs.readFileSync(path.join(A, 'host.html'), 'utf8').replace('/*CFG*/{}', JSON.stringify(walletCfg)).replace('/*SHARED*/', () => shared);
+fs.writeFileSync(path.join(out, 'publish/host.html'), host);
+fs.writeFileSync(path.join(out, 'publish/index.html'), '<!doctype html><meta charset="utf-8"><meta name="robots" content="noindex"><title>Wheel</title><meta http-equiv="refresh" content="0; url=host.html">\n');
 fs.writeFileSync(path.join(work, 'assets/version.txt'), String(cfg.release));
 for (const f of fs.readdirSync(path.join(A, 'fonts'))) if (f.endsWith('.woff2')) fs.copyFileSync(path.join(A, 'fonts', f), path.join(work, 'assets/fonts', f));
 

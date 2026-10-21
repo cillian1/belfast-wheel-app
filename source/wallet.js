@@ -9,6 +9,7 @@
   const app = window.Android && Android.isApp ? Android : null;
   const W = window.W = { user: null, me: null, stake: STAKES[0], run: null, cfg: { edge: CFG.edge, ev: CFG.ev, pin: null } };
 
+  // <shared> (also used by host.html, see tools/build.mjs)
   // ---------- small helpers ----------
   const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -82,6 +83,8 @@
   };
   const log = (k, t, a, extra) => db.push('tx/' + k, Object.assign({ t, a, at: now() }, extra || {})).catch(() => {});
 
+  // </shared>
+
   // ---------- payouts: every prize the game shows is scaled to the stake (house keeps ~1%) ----------
   // ev = the game's average base prize per paid spin (in game euros), measured by simulation.
   window.$m = function (v) {
@@ -100,9 +103,9 @@
 .wstake{display:flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:999px;padding:2px}
 .wstake button{width:30px;height:30px;border:0;background:#1d2228;color:var(--chrome);font-size:18px;line-height:1}
 .wstake button:disabled{opacity:.3}
-.wstake span{min-width:84px;text-align:center;line-height:1.1}
-.wstake span b{display:block;font-size:14px}
-.wstake span i{font-style:normal;font-size:11px;color:#f5d27a;letter-spacing:.06em}
+.wstake span{min-width:64px;text-align:center;line-height:1.1}
+.wstake span small{display:block;font-size:9px;letter-spacing:.22em;color:var(--mute)}
+.wstake span b{display:block;font-size:16px}
 .wtop{border:0;padding:9px 14px;font-weight:700;letter-spacing:.06em;color:#0d1013;background:linear-gradient(180deg,#f8e4a6,#d7a944);box-shadow:0 4px 14px rgba(0,0,0,.45)}
 .locked .wstake{opacity:.5;pointer-events:none}
 .wsheet{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center;background:rgba(5,6,8,.72)}
@@ -146,7 +149,7 @@
   // ---------- top bar ----------
   const bar = el('div', 'wbar');
   bar.innerHTML = `<button class="who" type="button" id="wWho"><small>Log in</small><b>€0</b></button>
-    <div class="wstake" aria-label="Stake per spin"><button type="button" id="wLess" aria-label="Lower stake">−</button><span><b id="wStake">20c</b><i id="wMult"></i></span><button type="button" id="wMore" aria-label="Raise stake">+</button></div>
+    <div class="wstake" aria-label="Bet per spin"><button type="button" id="wLess" aria-label="Lower bet">−</button><span><small>BET</small><b id="wStake">10c</b></span><button type="button" id="wMore" aria-label="Raise bet">+</button></div>
     <button class="wtop" type="button" id="wTop">Top up</button>`;
   const appEl = document.querySelector('.app');
   appEl.insertBefore(bar, appEl.querySelector('.stage'));
@@ -158,7 +161,7 @@
   const banner = el('div', 'wbanner'); banner.hidden = true;
   document.body.append(sheet, login, banner);
   function openSheet(html) { $w('wPanel').innerHTML = html; sheet.hidden = false; return $w('wPanel'); }
-  function closeSheet() { sheet.hidden = true; stopHostPoll(); }
+  function closeSheet() { sheet.hidden = true; }
   let toastT = 0;
   function toast(msg, gold) {
     let t = document.querySelector('.wtoast'); if (!t) { t = el('div', 'wtoast'); document.body.appendChild(t); }
@@ -169,7 +172,7 @@
   function paint() {
     const me = W.me;
     $w('wWho').innerHTML = `<small>${me ? esc(me.name) : 'Log in'}</small><b>${eur(me ? me.balance || 0 : 0)}</b>`;
-    $w('wStake').textContent = stakeLbl(W.stake); $w('wMult').textContent = 'top €' + $m(1000);
+    $w('wStake').textContent = stakeLbl(W.stake);
     const i = STAKES.indexOf(W.stake);
     $w('wLess').disabled = i <= 0; $w('wMore').disabled = i >= STAKES.length - 1;
     if (typeof fitStage === 'function') fitStage();
@@ -283,32 +286,41 @@
     try { const u = await db.txn('users/' + W.user, u => { u.balance += s; u.staked -= s; u.spins -= 1; return u; }); W.me = u; paint(); log(W.user, 'refund', s); toast('Run broke, stake refunded.'); } catch (e) {}
   }
 
-  // ---------- top up (player pays Cillian on Revolut, host confirms) ----------
+  // ---------- top up (player pays Cillian on Revolut and confirms; the host page can reverse) ----------
   function topupSheet(msg) {
     if (!W.me) return showLogin();
-    let amt = 500;
-    const p = openSheet(`<h3>Top up</h3>
+    openSheet(`<h3>Top up</h3>
       ${msg ? `<p class="err">${esc(msg)}</p>` : ''}
-      <p>Pick an amount (€1 minimum), send it on Revolut to <b>@${esc(CFG.revolut)}</b>, then tap <b>Done</b>. It goes on your balance straight away. Cillian checks every top-up, and any that never arrived get taken back off.</p>
-      <div class="wrow" id="wAmts">${[100, 200, 500, 1000, 2000].map(a => `<button class="wbtn" type="button" data-a="${a}">${eur(a)}</button>`).join('')}</div>
-      <input id="wAmt" inputmode="decimal" placeholder="Other amount, e.g. 7.50">
-      <button class="wbtn gold" id="wRev" type="button">Pay €5 with Revolut</button>
-      <button class="wbtn" id="wSent" type="button">Done, I've paid</button>
-      <p class="err" id="wErr"></p>
+      <p>Send any amount from €1 to <b>@${esc(CFG.revolut)}</b> on Revolut. When you come back, confirm what you sent and it goes straight on your balance.</p>
+      <button class="wbtn gold" id="wRev" type="button">Open Revolut</button>
+      <button class="wlink" type="button" id="wPaid">I've already paid</button>
       <button class="wlink" type="button" id="wClose">Close</button>`);
-    const sel = a => { amt = a; p.querySelectorAll('#wAmts button').forEach(b => b.classList.toggle('sel', +b.dataset.a === a)); $w('wRev').textContent = 'Pay ' + eur(a) + ' with Revolut'; };
-    p.querySelectorAll('#wAmts button').forEach(b => b.onclick = () => { $w('wAmt').value = ''; sel(+b.dataset.a); });
-    $w('wAmt').oninput = () => { const v = Math.round(parseFloat($w('wAmt').value.replace(',', '.')) * 100); if (v > 0) sel(v); };
-    sel(500);
     $w('wRev').onclick = () => {
-      if (amt < MIN_TOPUP) return ($w('wErr').textContent = 'The minimum top-up is €1.');
       const url = 'https://revolut.me/' + CFG.revolut;
-      toast('Send ' + eur(amt) + ' to @' + CFG.revolut + ', then come back');
+      confirmSheet(); // already waiting when they come back from Revolut
       if (app) app.openUrl(url); else window.open(url, '_blank');
     };
+    $w('wPaid').onclick = confirmSheet;
+    $w('wClose').onclick = closeSheet;
+  }
+  // back from Revolut: the player says what they sent and it is credited at once
+  function confirmSheet() {
+    if (!W.me) return showLogin();
+    let amt = 0;
+    const p = openSheet(`<h3>Confirm money sent</h3>
+      <p>How much did you send to @${esc(CFG.revolut)}?</p>
+      <div class="wrow" id="wAmts">${[100, 200, 500, 1000, 2000].map(a => `<button class="wbtn" type="button" data-a="${a}">${eur(a)}</button>`).join('')}</div>
+      <input id="wAmt" inputmode="decimal" placeholder="Other amount, e.g. 7.50">
+      <p class="err" id="wErr"></p>
+      <button class="wbtn gold" id="wSent" type="button">Confirm money sent</button>
+      <button class="wlink" type="button" id="wClose">I didn't send anything</button>`);
+    const sel = a => { amt = a; p.querySelectorAll('#wAmts button').forEach(b => b.classList.toggle('sel', +b.dataset.a === a)); $w('wSent').textContent = a ? 'Confirm ' + eur(a) + ' sent' : 'Confirm money sent'; };
+    p.querySelectorAll('#wAmts button').forEach(b => b.onclick = () => { $w('wAmt').value = ''; sel(+b.dataset.a); });
+    $w('wAmt').oninput = () => { const v = Math.round(parseFloat($w('wAmt').value.replace(',', '.')) * 100); sel(v > 0 ? v : 0); };
+    $w('wClose').onclick = closeSheet;
     $w('wSent').onclick = async () => {
+      if (!amt) return ($w('wErr').textContent = 'Pick or type the amount you sent.');
       if (amt < MIN_TOPUP) return ($w('wErr').textContent = 'The minimum top-up is €1.');
-      // trust mode: credit now, the host can reverse it from the Host screen
       try {
         const u = await db.txn('users/' + W.user, u => { u.balance = (u.balance || 0) + amt; u.topped = (u.topped || 0) + amt; return u; });
         W.me = u; paint();
@@ -317,7 +329,6 @@
         closeSheet(); toast(eur(amt) + ' added. Good luck!', true);
       } catch (e) { $w('wErr').textContent = 'No connection. Try again.'; }
     };
-    $w('wClose').onclick = closeSheet;
   }
 
   // ---------- account, stats, leaderboards ----------
@@ -325,7 +336,7 @@
     await refresh();
     const me = W.me; if (!me) return;
     const p = openSheet(`<h3>${esc(me.name)}</h3>
-      <div class="wtabs"><button data-t="me" type="button">Me</button><button data-t="lb" type="button">Leaderboards</button><button data-t="host" type="button">Host</button></div>
+      <div class="wtabs"><button data-t="me" type="button">Me</button><button data-t="lb" type="button">Leaderboards</button></div>
       <div id="wBody"><p>Loading…</p></div>
       <button class="wlink" type="button" id="wClose">Close</button>`);
     p.querySelectorAll('.wtabs button').forEach(b => { b.classList.toggle('on', b.dataset.t === tab); b.onclick = () => accountSheet(b.dataset.t); });
@@ -333,8 +344,7 @@
     const body = $w('wBody');
     try {
       if (tab === 'me') await meTab(body, me);
-      else if (tab === 'lb') await lbTab(body);
-      else hostGate(body);
+      else await lbTab(body);
     } catch (e) { body.innerHTML = '<p class="err">No connection. Try again in a moment.</p>'; }
   }
   async function meTab(body, me) {
@@ -347,7 +357,7 @@
         <div><small>Balance</small><b>${eur(me.balance || 0)}</b></div><div><small>Won in game</small><b>${eur(me.won || 0)}</b></div>
         <div><small>Spins</small><b>${me.spins || 0}</b></div><div><small>Up / down</small><b>${eur(net)}</b></div>
         <div><small>Biggest win</small><b>${eur(me.biggest || 0)}</b></div><div><small>Topped up</small><b>${eur(me.topped || 0)}</b></div></div>
-      ${reqs.length ? `<h4>Waiting on Cillian</h4><ul class="wlist">${reqs.map(([, r]) => `<li>${r.kind === 'topup' ? 'Top-up' : 'Withdrawal'} ${eur(r.a)}<span>${when(r.at)}</span></li>`).join('')}</ul>` : ''}
+      ${reqs.length ? `<h4>Pending</h4><ul class="wlist">${reqs.map(([, r]) => `<li>Withdrawal ${eur(r.a)}<span>${when(r.at)}</span></li>`).join('')}</ul>` : ''}
       <div class="wrow"><button class="wbtn gold" id="wT" type="button">Top up</button><button class="wbtn" id="wW" type="button">Withdraw</button></div>
       <h4>History</h4>
       <ul class="wlist">${rows.map(t => `<li><div>${name[t.t] || t.t}${t.what ? ` <span>${esc(t.what)}</span>` : ''}<br><span>${when(t.at)}</span></div><b class="${t.a >= 0 ? 'plus' : 'minus'}">${t.a >= 0 ? '+' : ''}${eur(t.a)}</b></li>`).join('') || '<li>No spins yet</li>'}</ul>
@@ -374,7 +384,7 @@
   function withdrawSheet() {
     const me = W.me;
     const p = openSheet(`<h3>Withdraw</h3>
-      <p>Your balance is <b>${eur(me.balance || 0)}</b>. Cillian gets the request and sends it to your Revolut.</p>
+      <p>Your balance is <b>${eur(me.balance || 0)}</b>. It stays pending until Cillian sends it to your Revolut.</p>
       <input id="wAmt" inputmode="decimal" placeholder="Amount, e.g. 10">
       <input id="wTag" placeholder="Your Revolut @username" value="${esc(me.revtag || '')}">
       <p class="err" id="wErr"></p>
@@ -393,96 +403,8 @@
         W.me = u; paint();
         await db.push('reqs', { user: W.user, name: u.name, kind: 'withdraw', a, tag, at: now(), status: 'pending' });
         log(W.user, 'withdraw', -a, { what: 'to @' + tag });
-        closeSheet(); toast('Request sent. ' + eur(a) + ' is on hold until Cillian pays it.', true);
+        closeSheet(); toast('Withdrawal of ' + eur(a) + ' pending. Cillian will send it to @' + tag + '.', true);
       } catch (e) { $w('wErr').textContent = 'No connection. Try again.'; }
-    };
-  }
-
-  // ---------- host (Cillian): confirm top-ups, pay withdrawals, settings — all behind a PIN ----------
-  let hostOk = false, hostPoll = 0;
-  const stopHostPoll = () => { clearInterval(hostPoll); hostPoll = 0; };
-  function hostGate(body) {
-    if (hostOk) return hostTab(body);
-    const first = !W.cfg.pin;
-    body.innerHTML = `<p>${first ? 'Set the host PIN. Only the person holding the money should know it.' : 'Host PIN'}</p>
-      <input id="wPin" type="password" inputmode="numeric" maxlength="8" placeholder="PIN">
-      <p class="err" id="wErr"></p><button class="wbtn gold" id="wGo" type="button">${first ? 'Set PIN' : 'Open'}</button>`;
-    $w('wGo').onclick = async () => {
-      const pin = $w('wPin').value; if (pin.length < 4) return ($w('wErr').textContent = 'Use 4 to 8 digits.');
-      const h = sha256('host:' + pin);
-      try {
-        const cfg = await db.get('config') || {};
-        if (!cfg.pin) { await db.patch('config', { pin: h }); W.cfg.pin = h; }
-        else if (cfg.pin !== h) return ($w('wErr').textContent = 'Wrong PIN.');
-        hostOk = true; hostTab(body);
-      } catch (e) { $w('wErr').textContent = 'No connection.'; }
-    };
-  }
-  async function hostTab(body) {
-    const all = Object.entries(await db.get('reqs') || {});
-    const reqs = all.filter(([, r]) => r.status === 'pending').sort((a, b) => a[1].at - b[1].at);
-    const tops = all.filter(([, r]) => r.kind === 'topup' && (r.status === 'credited' || r.status === 'reversed')).sort((a, b) => b[1].at - a[1].at).slice(0, 25);
-    const users = await db.get('users') || {};
-    const owed = Object.values(users).reduce((a, u) => a + (u.balance || 0), 0);
-    body.innerHTML = `<div class="wgrid"><div><small>Withdrawals waiting</small><b>${reqs.length}</b></div><div><small>Owed on balances</small><b>${eur(owed)}</b></div></div>
-      <h4>Withdrawals</h4>
-      <ul class="wlist">${reqs.map(([id, r]) => `<li><div><b>${esc(r.name)}</b> ${r.kind === 'topup' ? 'says they sent' : 'wants'} <b>${eur(r.a)}</b>${r.kind === 'withdraw' ? ` <span>to @${esc(r.tag)}</span>` : ''}<br><span>${when(r.at)}</span></div>
-        <div class="wrow" style="flex:none">${r.kind === 'withdraw' ? `<button class="wbtn small" data-rev="${esc(r.tag)}" type="button">Revolut</button>` : ''}<button class="wbtn small gold" data-ok="${id}" type="button">${r.kind === 'topup' ? 'Got it' : 'Paid'}</button><button class="wbtn small red" data-no="${id}" type="button">✕</button></div></li>`).join('') || '<li>Nothing waiting</li>'}</ul>
-      <h4>Top-ups (check these arrived in Revolut)</h4>
-      <ul class="wlist">${tops.map(([id, r]) => `<li><div><b>${esc(r.name)}</b> ${eur(r.a)}<br><span>${when(r.at)}${r.status === 'reversed' ? ' · reversed' : ''}</span></div>${r.status === 'credited' ? `<button class="wbtn small red" data-undo="${id}" type="button">Reverse</button>` : ''}</li>`).join('') || '<li>No top-ups yet</li>'}</ul>
-      <h4>Balances</h4>
-      <ul class="wlist">${Object.entries(users).map(([k, u]) => `<li><div>${esc(u.name)}<br><span>won ${eur(u.won || 0)} · topped ${eur(u.topped || 0)} · out ${eur(u.withdrawn || 0)}</span></div><div class="wrow" style="flex:none"><b>${eur(u.balance || 0)}</b><button class="wbtn small" data-adj="${k}" type="button">±</button></div></li>`).join('')}</ul>
-      <h4>Payout</h4>
-      <p>Players get back about <b>${Math.round(W.cfg.edge * 100)}%</b> of what they stake over time (house keeps ${Math.round(100 - W.cfg.edge * 100)}%). Average base prize per spin: €${(+W.cfg.ev).toFixed(2)}.</p>
-      <div class="wrow"><input id="wEdge" inputmode="numeric" placeholder="Payout % e.g. 99"><button class="wbtn small" id="wEdgeGo" type="button">Save</button></div>`;
-    body.querySelectorAll('[data-rev]').forEach(b => b.onclick = () => { const u = 'https://revolut.me/' + b.dataset.rev; if (app && app.openRevolut) app.openRevolut(u); else window.open(u, '_blank'); });
-    body.querySelectorAll('[data-ok]').forEach(b => b.onclick = () => settle(b.dataset.ok, true, body));
-    body.querySelectorAll('[data-no]').forEach(b => b.onclick = () => { if (b.dataset.armed) settle(b.dataset.no, false, body); else { b.dataset.armed = 1; b.textContent = 'Sure?'; } });
-    body.querySelectorAll('[data-undo]').forEach(b => b.onclick = () => { if (b.dataset.armed) reverse(b.dataset.undo, body); else { b.dataset.armed = 1; b.textContent = 'Sure?'; } });
-    body.querySelectorAll('[data-adj]').forEach(b => b.onclick = () => adjust(b.dataset.adj, users[b.dataset.adj], body));
-    $w('wEdgeGo').onclick = async () => {
-      const v = parseFloat($w('wEdge').value); if (!(v >= 50 && v <= 120)) return toast('Pick 50 to 120');
-      await db.patch('config', { edge: v / 100 }); W.cfg.edge = v / 100; try { faces.godWheel = null; faces.cosmic = null; } catch (e) {} hostTab(body);
-    };
-    if (!hostPoll) hostPoll = setInterval(() => { if (!sheet.hidden && document.contains(body)) hostTab(body); else stopHostPoll(); }, 20000);
-  }
-  // a top-up that never showed up in Revolut: take it back off (balance can go below zero if it was already spent)
-  async function reverse(id, body) {
-    try {
-      const r = await db.get('reqs/' + id); if (!r || r.status !== 'credited') return hostTab(body);
-      await db.patch('reqs/' + id, { status: 'reversed', done: now() });
-      await db.txn('users/' + r.user, u => { u.balance = (u.balance || 0) - r.a; u.topped = (u.topped || 0) - r.a; return u; });
-      await log(r.user, 'adjust', -r.a, { what: 'top-up reversed' });
-      toast(eur(r.a) + ' taken back from ' + r.name);
-      if (r.user === W.user) refresh();
-      hostTab(body);
-    } catch (e) { toast('No connection'); }
-  }
-  async function settle(id, ok, body) {
-    try {
-      const r = await db.get('reqs/' + id); if (!r || r.status !== 'pending') return hostTab(body);
-      await db.patch('reqs/' + id, { status: ok ? 'done' : 'rejected', done: now() });
-      if (r.kind === 'topup' && ok) {
-        await db.txn('users/' + r.user, u => { u.balance = (u.balance || 0) + r.a; u.topped = (u.topped || 0) + r.a; return u; });
-        await log(r.user, 'topup', r.a); toast(eur(r.a) + ' added for ' + r.name, true);
-      } else if (r.kind === 'withdraw') {
-        if (ok) { await db.txn('users/' + r.user, u => { u.withdrawn = (u.withdrawn || 0) + r.a; return u; }); toast('Marked paid'); }
-        else { await db.txn('users/' + r.user, u => { u.balance = (u.balance || 0) + r.a; return u; }); await log(r.user, 'refund', r.a, { what: 'withdrawal cancelled' }); toast('Cancelled, money back on their balance'); }
-      }
-      if (r.user === W.user) refresh();
-      hostTab(body);
-    } catch (e) { toast('No connection'); }
-  }
-  function adjust(k, u, body) {
-    const p = openSheet(`<h3>Adjust ${esc(u.name)}</h3><p>Balance ${eur(u.balance || 0)}. Add or take away (e.g. 5 or -2.50). Use this for cash top-ups.</p>
-      <input id="wAmt" inputmode="decimal" placeholder="Amount"><div class="wrow"><button class="wbtn gold" id="wGo" type="button">Apply</button><button class="wbtn" id="wBack" type="button">Back</button></div>`);
-    $w('wBack').onclick = () => accountSheet('host');
-    $w('wGo').onclick = async () => {
-      const a = Math.round(parseFloat($w('wAmt').value.replace(',', '.')) * 100); if (!a) return;
-      await db.txn('users/' + k, u => { u.balance = Math.max(0, (u.balance || 0) + a); if (a > 0) u.topped = (u.topped || 0) + a; return u; });
-      await log(k, a > 0 ? 'topup' : 'adjust', a, { what: 'by host' });
-      if (k === W.user) refresh();
-      accountSheet('host');
     };
   }
 

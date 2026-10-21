@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wheel Host</title>
+<meta name="robots" content="noindex">
+<style>
+:root{--ink:#0a0c0f;--plate:#15181c;--line:#2c333b;--chrome:#e3e8ed;--mute:#8e99a5;--gold:#f5d27a;--red:#ff9b8a;--green:#9be38a;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--ink);color:var(--chrome);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:620px;margin:0 auto;padding:max(16px,env(safe-area-inset-top)) 16px 40px;display:flex;flex-direction:column;gap:14px}
+h1{margin:4px 0 0;font-size:22px;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+h2{margin:10px 0 0;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute);font-weight:600}
+p{margin:0;color:#c3cbd3}
+input{font:inherit;font-size:17px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:#0e1013;color:var(--chrome);width:100%}
+button{font:inherit;cursor:pointer;border-radius:999px;border:1px solid var(--line);background:#20252c;color:var(--chrome);padding:10px 14px;font-weight:600}
+button.gold{border:0;color:#0d1013;background:linear-gradient(180deg,#f8e4a6,#d7a944)}
+button.red{border-color:#6b2a22;background:#2a1512;color:#ffb3a6}
+button.small{padding:7px 11px;font-size:13px}
+.row{display:flex;gap:8px;align-items:center}
+.row>input{flex:1}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.grid div{border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:var(--plate)}
+.grid small{display:block;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--mute)}
+.grid b{font-size:18px}
+ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+li{display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:1px solid #22272e;padding:9px 0}
+li span{color:var(--mute);font-size:13px}
+.acts{display:flex;gap:6px;flex:none}
+.err{color:var(--red);min-height:1.2em;font-size:14px}
+.ok{color:var(--green)}
+.toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:#20252c;border:1px solid var(--gold);color:#f8e4a6;border-radius:999px;padding:8px 16px;font-size:14px;transition:opacity .3s;opacity:0;pointer-events:none}
+.tabs{display:flex;gap:6px}
+.tabs button{flex:1;background:none;color:var(--mute);font-weight:500}
+.tabs button.on{color:var(--gold);border-color:var(--gold)}
+</style>
+</head>
+<body>
+<main id="main"><h1>Wheel Host</h1><p>Loading…</p></main>
+<div class="toast" id="toast"></div>
+<script>
+window.WALLET_CFG = /*CFG*/{};
+(function () {
+  const CFG = window.WALLET_CFG, app = null, MIN_TOPUP = 100;
+  /*SHARED*/
+  const main = document.getElementById('main');
+  const toast = msg => { const t = document.getElementById('toast'); t.textContent = msg; t.style.opacity = 1; clearTimeout(toast.t); toast.t = setTimeout(() => { t.style.opacity = 0; }, 2600); };
+  let tab = 'money', cfg = {}, poll = 0;
+
+  // ---------- PIN (set on first use; the hash lives in config/pin) ----------
+  async function gate(msg) {
+    try { cfg = await db.get('config') || {}; } catch (e) { main.innerHTML = '<h1>Wheel Host</h1><p class="err">Can\'t reach the database. Check your connection and reload.</p>'; return; }
+    if (sessionStorage.getItem('host') === cfg.pin && cfg.pin) return render();
+    const first = !cfg.pin;
+    main.innerHTML = `<h1>Wheel Host</h1><p>${first ? 'Set your host PIN (4 to 8 digits). You need it every time you open this page.' : 'Enter your host PIN.'}</p>
+      <input id="pin" type="password" inputmode="numeric" maxlength="8" placeholder="PIN" autofocus>
+      <p class="err" id="err">${esc(msg || '')}</p><button class="gold" id="go" type="button">${first ? 'Set PIN' : 'Open'}</button>`;
+    const go = async () => {
+      const pin = document.getElementById('pin').value;
+      if (pin.length < 4) return (document.getElementById('err').textContent = 'Use 4 to 8 digits.');
+      const h = sha256('host:' + pin);
+      if (first) await db.patch('config', { pin: h });
+      else if (h !== cfg.pin) return (document.getElementById('err').textContent = 'Wrong PIN.');
+      try { sessionStorage.setItem('host', h); } catch (e) {}
+      cfg.pin = h; render();
+    };
+    document.getElementById('go').onclick = go;
+    document.getElementById('pin').onkeydown = e => { if (e.key === 'Enter') go(); };
+  }
+
+  // ---------- main screen ----------
+  async function render() {
+    let all, users, st;
+    try { [all, users, st] = await Promise.all([db.get('reqs'), db.get('users'), db.get('stats')]); }
+    catch (e) { toast('No connection'); return; }
+    all = Object.entries(all || {}); users = users || {}; st = st || {};
+    const wd = all.filter(([, r]) => r.kind === 'withdraw' && r.status === 'pending').sort((a, b) => a[1].at - b[1].at);
+    const tops = all.filter(([, r]) => r.kind === 'topup' && r.status !== 'pending').sort((a, b) => b[1].at - a[1].at).slice(0, 40);
+    const done = all.filter(([, r]) => r.kind === 'withdraw' && r.status !== 'pending').sort((a, b) => b[1].at - a[1].at).slice(0, 15);
+    const owed = Object.values(users).reduce((a, u) => a + (u.balance || 0), 0);
+    const inn = Object.values(users).reduce((a, u) => a + (u.topped || 0), 0), out = Object.values(users).reduce((a, u) => a + (u.withdrawn || 0), 0);
+    main.innerHTML = `<h1>Wheel Host</h1>
+      <div class="grid"><div><small>To pay out</small><b>${wd.length}</b></div><div><small>On balances</small><b>${eur(owed)}</b></div>
+        <div><small>Topped up</small><b>${eur(inn)}</b></div><div><small>Paid out</small><b>${eur(out)}</b></div>
+        <div><small>Your fund</small><b>${eur(inn - out)}</b></div><div><small>Spins</small><b>${st.spins || 0}</b></div></div>
+      <div class="tabs"><button type="button" data-t="money">Money</button><button type="button" data-t="players">Players</button><button type="button" data-t="settings">Settings</button></div>
+      <div id="body"></div>`;
+    main.querySelectorAll('.tabs button').forEach(b => { b.classList.toggle('on', b.dataset.t === tab); b.onclick = () => { tab = b.dataset.t; render(); }; });
+    const body = document.getElementById('body');
+    if (tab === 'money') {
+      body.innerHTML = `<h2>Withdrawals to pay</h2>
+        <ul>${wd.map(([id, r]) => `<li><div><b>${esc(r.name)}</b> wants <b>${eur(r.a)}</b> to @${esc(r.tag)}<br><span>${when(r.at)}</span></div>
+          <div class="acts"><button class="small" data-rev="${esc(r.tag)}" type="button">Revolut</button><button class="small gold" data-paid="${id}" type="button">Paid</button><button class="small red" data-cancel="${id}" type="button">✕</button></div></li>`).join('') || '<li><span>Nothing to pay</span></li>'}</ul>
+        <p><span>Tap Revolut to open their page, send the money, then tap Paid. ✕ cancels it and puts the money back on their balance.</span></p>
+        <h2>Top-ups (check they arrived in your Revolut)</h2>
+        <ul>${tops.map(([id, r]) => `<li><div><b>${esc(r.name)}</b> ${eur(r.a)}<br><span>${when(r.at)}${r.status === 'reversed' ? ' · <b class="err">reversed</b>' : ''}</span></div>
+          ${r.status === 'reversed' ? '' : `<button class="small red" data-undo="${id}" type="button">Reverse</button>`}</li>`).join('') || '<li><span>No top-ups yet</span></li>'}</ul>
+        <h2>Paid out</h2>
+        <ul>${done.map(([, r]) => `<li><div>${esc(r.name)} ${eur(r.a)} <span>@${esc(r.tag)}</span><br><span>${when(r.done || r.at)}</span></div><span class="${r.status === 'done' ? 'ok' : 'err'}">${r.status === 'done' ? 'paid' : 'cancelled'}</span></li>`).join('') || '<li><span>None yet</span></li>'}</ul>`;
+    } else if (tab === 'players') {
+      body.innerHTML = `<h2>Balances</h2>
+        <ul>${Object.entries(users).sort((a, b) => (b[1].balance || 0) - (a[1].balance || 0)).map(([k, u]) => `<li><div><b>${esc(u.name)}</b> ${eur(u.balance || 0)}<br><span>${u.spins || 0} spins · staked ${eur(u.staked || 0)} · won ${eur(u.won || 0)} · in ${eur(u.topped || 0)} · out ${eur(u.withdrawn || 0)}</span></div>
+          <button class="small" data-adj="${k}" type="button">±</button></li>`).join('') || '<li><span>No players yet</span></li>'}</ul>`;
+    } else {
+      const edge = cfg.edge || CFG.edge;
+      body.innerHTML = `<h2>Payout</h2>
+        <p>Players get back about <b>${Math.round(edge * 100)}%</b> of what they stake over time, so the house keeps ${Math.round(100 - edge * 100)}%. Prizes on every phone scale to this.</p>
+        <div class="row"><input id="edge" inputmode="numeric" placeholder="Payout %, e.g. 99"><button class="gold" id="edgeGo" type="button">Save</button></div>
+        <h2>Host PIN</h2><div class="row"><input id="newPin" type="password" inputmode="numeric" maxlength="8" placeholder="New PIN"><button id="pinGo" type="button">Change</button></div>
+        <button id="lock" type="button">Lock this page</button>`;
+      document.getElementById('edgeGo').onclick = async () => {
+        const v = parseFloat(document.getElementById('edge').value); if (!(v >= 50 && v <= 120)) return toast('Pick 50 to 120');
+        await db.patch('config', { edge: v / 100 }); cfg.edge = v / 100; toast('Saved'); render();
+      };
+      document.getElementById('pinGo').onclick = async () => {
+        const pin = document.getElementById('newPin').value; if (pin.length < 4) return toast('Use 4 to 8 digits');
+        const h = sha256('host:' + pin); await db.patch('config', { pin: h }); cfg.pin = h; try { sessionStorage.setItem('host', h); } catch (e) {} toast('PIN changed');
+      };
+      document.getElementById('lock').onclick = () => { try { sessionStorage.removeItem('host'); } catch (e) {} gate(); };
+    }
+    const twice = (b, fn) => { if (b.dataset.armed) fn(); else { b.dataset.armed = 1; b.textContent = 'Sure?'; } };
+    body.querySelectorAll('[data-rev]').forEach(b => b.onclick = () => window.open('https://revolut.me/' + b.dataset.rev, '_blank'));
+    body.querySelectorAll('[data-paid]').forEach(b => b.onclick = () => payout(b.dataset.paid, true));
+    body.querySelectorAll('[data-cancel]').forEach(b => b.onclick = () => twice(b, () => payout(b.dataset.cancel, false)));
+    body.querySelectorAll('[data-undo]').forEach(b => b.onclick = () => twice(b, () => reverse(b.dataset.undo)));
+    body.querySelectorAll('[data-adj]').forEach(b => b.onclick = () => adjust(b.dataset.adj, users[b.dataset.adj]));
+    clearInterval(poll); poll = setInterval(() => { if (!document.hidden && !main.querySelector('input:focus')) render(); }, 20000);
+  }
+
+  async function payout(id, paid) {
+    try {
+      const r = await db.get('reqs/' + id); if (!r || r.status !== 'pending') return render();
+      await db.patch('reqs/' + id, { status: paid ? 'done' : 'rejected', done: now() });
+      if (paid) { await db.txn('users/' + r.user, u => { u.withdrawn = (u.withdrawn || 0) + r.a; return u; }); toast('Marked paid'); }
+      else { await db.txn('users/' + r.user, u => { u.balance = (u.balance || 0) + r.a; return u; }); await log(r.user, 'refund', r.a, { what: 'withdrawal cancelled' }); toast('Cancelled, money back on their balance'); }
+      render();
+    } catch (e) { toast('No connection'); }
+  }
+  // a top-up that never showed up in Revolut: take it back off (the balance can go below zero if it was spent)
+  async function reverse(id) {
+    try {
+      const r = await db.get('reqs/' + id); if (!r || (r.status !== 'credited' && r.status !== 'done')) return render();
+      await db.patch('reqs/' + id, { status: 'reversed', done: now() });
+      await db.txn('users/' + r.user, u => { u.balance = (u.balance || 0) - r.a; u.topped = (u.topped || 0) - r.a; return u; });
+      await log(r.user, 'adjust', -r.a, { what: 'top-up reversed' });
+      toast(eur(r.a) + ' taken back from ' + r.name); render();
+    } catch (e) { toast('No connection'); }
+  }
+  function adjust(k, u) {
+    const body = document.getElementById('body');
+    body.innerHTML = `<h2>Adjust ${esc(u.name)}</h2><p>Balance ${eur(u.balance || 0)}. Add or take away, e.g. 5 or -2.50 (cash top-ups go here).</p>
+      <div class="row"><input id="amt" inputmode="decimal" placeholder="Amount"><button class="gold" id="go" type="button">Apply</button><button id="back" type="button">Back</button></div>`;
+    document.getElementById('back').onclick = render;
+    document.getElementById('go').onclick = async () => {
+      const a = Math.round(parseFloat(document.getElementById('amt').value.replace(',', '.')) * 100); if (!a) return;
+      await db.txn('users/' + k, u => { u.balance = (u.balance || 0) + a; if (a > 0) u.topped = (u.topped || 0) + a; return u; });
+      await log(k, a > 0 ? 'topup' : 'adjust', a, { what: 'by host' });
+      toast('Done'); render();
+    };
+  }
+  gate();
+})();
+</script>
+</body>
+</html>
