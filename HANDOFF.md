@@ -2,11 +2,11 @@
 
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
-- **Task:** Task 4, Stage 4: performance (`COPILOT_TASKS.md`, issue #8; PR #14). Task 5: replays and host watching remains queued.
+- **Task:** Task 5: every replay saved, Watch tabs, host page watching (`COPILOT_TASKS.md`, issue #12)
 - **Owner:** Copilot
-- **Status:** Stage 4 PR #14 is open and ready for Claude review; it has not been merged.
-- **Next:** Claude reviews and merges PR #14 → Task 5 remains queued until Stage 4 merges.
-- **Last updated:** 2026-10-21 21:44 by Copilot
+- **Status:** go now. Task 4 is complete (Stage 4, PR #14, merged as update 22 "Smoother Wheels").
+- **Next:** Copilot opens the Task 5 PR and posts `DONE: Task 5` on #12 → Claude does a quick check and merges.
+- **Last updated:** 2026-10-21 21:55 by Claude
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
@@ -65,6 +65,7 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 
 ## Done log (history only, newest first; nothing here is current)
 
+- 2026-10-21: Task 4 Stage 4, performance (PR #14), merged as update 22 "Smoother Wheels". Task 4 is complete.
 - 2026-10-21: Task 4 Stage 4 performance pass (PR #14), with a size-keyed Pyramid cache, allocation reductions, and hidden-tab animation pausing.
 - 2026-10-21: Task 4 Stage 3, the wallet split into db/ui/money/watch/notes (PR #11), merged. Wallet lines unchanged, and an end-to-end charge and payout passed.
 - 2026-10-21: Task 4 Stage 3, split the wallet into five modules; verified `money.js` is an exact extraction and the checker passes.
