@@ -15,6 +15,10 @@ function drawPyramidShape(g, rise, tipOff) {
   // left face lit by the sun, right face in shade
   g.beginPath(); g.moveTo(tx - tw, ty); g.lineTo(ax - w, base + dy); g.lineTo(ax, base + dy); g.lineTo(ax, ty); g.closePath(); g.fillStyle = grad(g, ax - w, 0, ax, 0, [[0, '#e8b46a'], [1, '#c48b47']]); g.fill();
   g.beginPath(); g.moveTo(ax, ty); g.lineTo(ax, base + dy); g.lineTo(ax + w, base + dy); g.lineTo(tx + tw, ty); g.closePath(); g.fillStyle = grad(g, ax, 0, ax + w, 0, [[0, '#8f5f2e'], [1, '#6e4520']]); g.fill();
+  g.beginPath(); g.moveTo(ax - w, base + dy); g.lineTo(ax, ay); g.lineTo(ax + w, base + dy);
+  g.strokeStyle = 'rgba(255,232,190,.48)'; g.lineWidth = 2 * D; g.stroke();
+  g.beginPath(); g.moveTo(ax, ay); g.lineTo(ax, base + dy);
+  g.strokeStyle = 'rgba(55,30,12,.55)'; g.lineWidth = 2 * D; g.stroke();
   g.strokeStyle = 'rgba(70,40,15,.35)'; g.lineWidth = D;
   for (let j = 1; j < 14; j++) { const f = cut + (1 - cut) * j / 14, y = ay + H * f, hw = w * f; g.beginPath(); g.moveTo(ax - hw, y); g.lineTo(ax + hw, y); g.stroke(); }
   // the door
@@ -271,8 +275,9 @@ async function monsterRun(steps, w = 0, b = 3) {
   setVerdict({ eyebrow: 'Bonus', title: 'The planet wheel', body: 'Big money. Spin it.', steps: steps.slice(), flash: false });
   const n = COSMIC.length, tg = target(n), s0 = rotC, e0 = rotC + 7 * TAU + mod(-tg.a - rotC, TAU);
   let last = sliceAt(s0, n);
+  planet.spinning = true;
   await animate(7500, t => { rotC = s0 + (e0 - s0) * easeOut(t); const sl = sliceAt(rotC, n); if (sl !== last) { last = sl; tick(1.1, 1600); flap(1); } draw(); });
-  rotC = mod(rotC, TAU); ting(); buzz([60, 40, 120]);
+  rotC = mod(rotC, TAU); planet.spinning = false; planet.winner = tg.i; planet.winAt = performance.now(); ting(); buzz([60, 40, 120]);
   const won = COSMIC[tg.i];
   setVerdict({ eyebrow: 'Bonus', title: fakeEur(won), body: 'Yours. Nearly.', steps: steps.slice() });
   await wait(1800);

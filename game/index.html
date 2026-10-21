@@ -1064,7 +1064,7 @@ function setLayerOrder(k, order) {
   navCache = null;
 }
 function deadFace(v, k) { return ringFor(k, deadOrderOf(runOrders[k - 1], k, v)); }
-function ensureStank() { if (!faces.stank) { faces.stank = buildStank(); faces.goldPointer = buildGoldPointer(); faces.stankBg = buildStankBg(); faces.bingo = buildBingoSprites(); } }
+function ensureStank() { if (!faces.stank) { faces.stank = buildStank(); faces.stankBg = buildStankBg(); faces.bingo = buildBingoSprites(); } }
 let warmTimer = 0;
 function warmUp() {
   clearTimeout(warmTimer);
@@ -1640,18 +1640,35 @@ async function spinLayer(k, dur, dir) {
   liveK = k; sweepOn = true; winGlow = null;
   try { const i = await spinLayerRun(k, dur, dir); winGlow = { k, i, t0: performance.now() }; return i; } finally { liveK = -1; sweepOn = false; }
 }
-// the slice a wheel stopped on glows and pulses, then settles to a soft gold edge
-function drawWinGlow() {
-  if (!winGlow || scene !== 'nested' || !LAYERS[winGlow.k]) return;
-  const { k, i, t0 } = winGlow, sc = layerVisible(k); if (sc <= 0) return;
-  const n = LAYERS[k].length, seg = TAU / n, a0 = BASE + i * seg + rot[k], t = (performance.now() - t0) / 1000;
+function drawWheelRim(sc = 1) {
+  if (!faces.base) return;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(c, c, R * sc, 0, TAU); ctx.arc(c, c, R * .93 * sc, 0, TAU, true); ctx.clip();
+  drawScaled(faces.base, 0, sc);
+  ctx.restore();
+}
+function drawWheelSweep(spinning, sc = 1) {
+  if (!spinning || !faces.sweep) return;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .65;
+  drawScaled(faces.sweep, performance.now() / 420, sc);
+  ctx.restore();
+}
+function drawWheelSliceGlow(rotation, n, i, t0, sc = 1, inner = .55, outer = .93) {
+  if (i == null) return;
+  const seg = TAU / n, a0 = BASE + i * seg, t = Math.max(0, (performance.now() - t0) / 1000);
   const a = Math.min(1, t * 3) * (t < 2.4 ? .55 + .3 * Math.sin(t * 7) : .35);
-  ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  ctx.beginPath(); ctx.arc(c, c, R * .93 * sc, a0, a0 + seg); ctx.arc(c, c, R * .55 * sc, a0 + seg, a0, true); ctx.closePath();
+  ctx.save(); ctx.translate(c, c); ctx.rotate(rotation); ctx.globalCompositeOperation = 'lighter';
+  ctx.beginPath(); ctx.arc(0, 0, R * outer * sc, a0, a0 + seg); ctx.arc(0, 0, R * inner * sc, a0 + seg, a0, true); ctx.closePath();
   ctx.fillStyle = `rgba(255,214,120,${.32 * a})`; ctx.fill();
   ctx.shadowColor = 'rgba(255,210,110,.9)'; ctx.shadowBlur = R * .04 * sc;
   ctx.strokeStyle = `rgba(255,232,170,${.9 * a})`; ctx.lineWidth = 2.2 * D; ctx.stroke();
   ctx.restore();
+}
+// the slice a wheel stopped on glows and pulses, then settles to a soft gold edge
+function drawWinGlow() {
+  if (!winGlow || scene !== 'nested' || !LAYERS[winGlow.k]) return;
+  const { k, i, t0 } = winGlow, sc = layerVisible(k); if (sc <= 0) return;
+  drawWheelSliceGlow(rot[k], LAYERS[k].length, i, t0, sc);
 }
 // a Wild, ankh or God slice: the ones worth teasing and the ones Ghost Phelan pushes you onto
 const hotSlice = it => !!(it && (it.wild || it.bonus || it.god));
@@ -2351,14 +2368,6 @@ function buildStank() {
   g.fillStyle = 'rgba(255,248,214,.7)'; g.fillText('S', c, c + R * .012 + D); g.fillStyle = '#3d2706'; g.fillText('S', c, c + R * .012);
   return k;
 }
-function buildGoldPointer() {
-  const k = mk(), g = k.getContext('2d');
-  g.save(); g.shadowColor = 'rgba(0,0,0,.7)'; g.shadowBlur = R * .03; g.shadowOffsetY = R * .015;
-  g.beginPath(); g.moveTo(c, c - R * .83); g.lineTo(c - R * .07, c - R * 1.035); g.quadraticCurveTo(c, c - R * 1.07, c + R * .07, c - R * 1.035); g.closePath();
-  g.fillStyle = grad(g, c - R * .07, 0, c + R * .07, 0, [[0, '#6b4510'], [.35, '#fff6d0'], [.5, '#c99a3a'], [.7, '#fff1b8'], [1, '#5a3c0c']]);
-  g.fill(); g.restore();
-  return k;
-}
 function buildStankBg() {
   const k = mk(), g = k.getContext('2d');
   const bg = g.createRadialGradient(c, c * .9, 0, c, c, N * .75);
@@ -2519,9 +2528,10 @@ function drawStank(now) {
   const dt = lastBallDraw ? Math.max(0, Math.min(.05, (now - lastBallDraw) / 1000)) : 0; lastBallDraw = now;
   ballPhase += dt * ballSpeed;
   ctx.drawImage(faces.stankBg, 0, 0);
-  drawScaled(faces.stank, rotS, STANK_SC);
+  drawScaled(faces.stank, rotS, STANK_SC); drawWheelRim(STANK_SC);
   ctx.globalCompositeOperation = 'overlay'; drawScaled(faces.sheen, 0, STANK_SC); ctx.globalCompositeOperation = 'source-over';
-  drawPointer(faces.goldPointer, STANK_SC);
+  drawWheelSweep(bingo.length > 0 && pickIdx < 0, STANK_SC);
+  drawPointer(faces.pointer, STANK_SC);
   const br = R * .064;
   bingo.forEach((b, i) => {
     if (i === pickIdx && handT >= 1) return;
@@ -2648,6 +2658,8 @@ function drawRoul(now) {
   drawScaled(faces.roulBowl, 0, ROUL_SC);
   drawScaled(faces.roulHead, roul.rot, ROUL_SC);
   ctx.globalCompositeOperation = 'overlay'; drawScaled(faces.sheen, 0, ROUL_SC); ctx.globalCompositeOperation = 'source-over';
+  drawWheelRim(ROUL_SC); drawWheelSweep(roul.spinning, ROUL_SC);
+  roul.balls.forEach(b => { if (b.landed) drawWheelSliceGlow(roul.rot, ROUL_N, b.pocket, b.winAt, ROUL_SC, R_POCKET, R_TRACK); });
   const br = R * .048 * ROUL_SC;
   roul.balls.forEach(b => {
     const p = roulBallXY(b);
@@ -2665,6 +2677,7 @@ function drawRoul(now) {
     ctx.font = `700 ${N * .055}px ${LABEL_FONT}`; ctx.fillStyle = 'rgba(0,0,0,.75)'; ctx.fillText(big, c, N * .9 + 2 * D); ctx.fillStyle = roul.labelGold ? '#ffe9a8' : '#f4eee0'; ctx.fillText(big, c, N * .9);
     if (small) { ctx.font = `600 ${N * .028}px ${LABEL_FONT}`; ctx.fillStyle = 'rgba(0,0,0,.75)'; ctx.fillText(small, c, N * .955 + D); ctx.fillStyle = '#e8dcc0'; ctx.fillText(small, c, N * .955); }
   }
+  drawPointer(faces.pointer, ROUL_SC);
 }
 // the elite Wild room: down into a golden locksafe, three gold doors, gold tablets behind them
 function drawVault(now) {
@@ -2768,7 +2781,7 @@ async function bonusRun(steps, w = 3, b = 0) {
   // the Stankman's roulette: every Wild and ankh you carried in lifts off the tiles and becomes a ball
   if (!faces.roulBowl || faces.roulBowl.width !== N) faces.roulBowl = buildRoulBowl();
   const pk = rollPockets(); faces.roulHead = buildRoulHead(pk);
-  roul = { rot: 0, t: 0, pk, balls: [], label: null, tally: '' };
+  roul = { rot: 0, t: 0, pk, balls: [], label: null, tally: '', spinning: false };
   scene = 'roul'; Music.setMode('stank');
   $('#caption').textContent = "The Stankman's Roulette"; Music.setLevel(4); Music.duck(1); Music.sting(4);
   setVerdict({ eyebrow: 'Ultra bonus', title: "The Stankman's Roulette", body: 'Every Wild and ankh you brought in becomes a ball. Land three on gold and the locksafe opens.', steps: steps.slice() });
@@ -2799,18 +2812,19 @@ async function bonusRun(steps, w = 3, b = 0) {
     bl.rel0 = -Math.PI / 2 - rotAt(bl.s); bl.T = bl.rel0 - mod(bl.rel0 - pa, TAU) - TAU * 4;
   });
   whoosh(true); tick(1.4, 900); buzz(25);
-  let lastTick = 0;
+  let lastTick = 0; roul.spinning = true;
   await animate(Dsec * 1000, t => {
     roul.t = t * Dsec; roul.rot = rotAt(roul.t);
     roul.balls.forEach(bl => {
       if (roul.t < bl.s) return;
       const u = Math.min(1, (roul.t - bl.s) / (bl.land - bl.s));
       if (u > .7 && u < 1) { const k = Math.floor((u - .7) / .3 * 3); if (k !== bl.bn) { bl.bn = k; tick(.7, 2600 + Math.random() * 400); } }
-      if (u >= 1 && !bl.landed) { bl.landed = true; tick(1.3, 1500); buzz(15); }
+      if (u >= 1 && !bl.landed) { bl.landed = true; bl.winAt = performance.now(); tick(1.3, 1500); buzz(15); }
     });
     if (roul.t - lastTick > .09 * (1 + t * 3)) { lastTick = roul.t; tick(.25, 3200); }
     draw();
   });
+  roul.spinning = false;
   // read them out, one ball at a time
   let cash = 0, gold = 0; const acts = [];
   for (const bl of roul.balls) {
@@ -3057,7 +3071,12 @@ function drawPlanetScene(now) {
   const r = lerp(N * .2, R * .95, P.grow), x = lerp(N * .74, c, P.grow), y = lerp(N * .24, c, P.grow);
   if (P.morph < 1) { ctx.globalAlpha = 1 - P.morph; drawPlanet(x, y, r, now); ctx.globalAlpha = 1; }
   if (P.melt <= 0) {
-    if (P.morph > 0) { ctx.globalAlpha = P.morph; drawScaled(faces.cosmic, rotC, 1); ctx.globalAlpha = 1; drawPointer(faces.pointer, 1); }
+    if (P.morph > 0) {
+      ctx.globalAlpha = P.morph; drawScaled(faces.cosmic, rotC, 1); drawWheelRim(1);
+      drawWheelSweep(P.spinning, 1);
+      if (P.winner != null) drawWheelSliceGlow(rotC, COSMIC.length, P.winner, P.winAt);
+      ctx.globalAlpha = 1; drawPointer(faces.pointer, 1);
+    }
   } else {
     // the wheel melts: strips sag and stretch, it goes molten, lava rises underneath
     const m = P.melt, tmp = P.tmp, g = tmp.getContext('2d'), hs = tmp.width / N; g.setTransform(hs, 0, 0, hs, 0, 0); g.clearRect(0, 0, N, N);
@@ -3104,15 +3123,30 @@ function drawMonster(now) {
   const lg = ctx.createLinearGradient(0, fy, 0, y1); lg.addColorStop(0, '#c8ff6a'); lg.addColorStop(.1, '#7cff3a'); lg.addColorStop(1, '#1f7a10');
   ctx.beginPath(); ctx.moveTo(x0, y1); for (let sx = x0; sx <= x1; sx += N / 60) ctx.lineTo(sx, fy + Math.sin(sx / N * 30 + now * .006) * N * .004 * (M.pouring ? 2 : 1)); ctx.lineTo(x1, y1); ctx.fillStyle = lg; ctx.fill();
   for (let i = 0; i < 18; i++) { const bx = x0 + ((i * 0.618) % 1) * (x1 - x0), by = y1 - ((now * .0002 * (1 + i % 3) + i * .13) % 1) * (y1 - fy); if (by > fy) { ctx.beginPath(); ctx.arc(bx, by, N * .004, 0, TAU); ctx.fillStyle = 'rgba(230,255,200,.5)'; ctx.fill(); } }
+  if (M.pouring) {
+    const sx = lerp(x0, x1, mod(now * .00035, 1)), shine = ctx.createLinearGradient(sx - N * .045, 0, sx + N * .045, 0);
+    shine.addColorStop(0, 'rgba(255,255,255,0)'); shine.addColorStop(.5, 'rgba(235,255,220,.22)'); shine.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = shine; ctx.fillRect(x0, y0, x1 - x0, H);
+  }
   ctx.restore();
   const cur = TANK_LEVELS.reduce((a, l) => M.fill >= l.at ? l : a, TANK_LEVELS[0]);
   TANK_LEVELS.forEach((l, i) => {
     const ya = lvlY(l.at), yb = lvlY(i < TANK_LEVELS.length - 1 ? TANK_LEVELS[i + 1].at : TANK_CAP), on = l === cur && M.fill > 0;
     if (i) { ctx.beginPath(); ctx.moveTo(x0, ya); ctx.lineTo(x1, ya); ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1.5 * D; ctx.setLineDash([6 * D, 5 * D]); ctx.stroke(); ctx.setLineDash([]); }
+    if (on) {
+      ctx.save(); ctx.shadowColor = 'rgba(200,255,106,.9)'; ctx.shadowBlur = N * .025;
+      ctx.beginPath(); ctx.moveTo(x0, ya); ctx.lineTo(x1, ya); ctx.strokeStyle = '#c8ff6a'; ctx.lineWidth = 2.5 * D; ctx.stroke(); ctx.restore();
+    }
     ctx.font = `700 ${N * (on ? .04 : .032)}px ${LABEL_FONT}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     ctx.fillStyle = on ? '#c8ff6a' : 'rgba(220,235,210,.6)'; ctx.fillText('€' + $m(l.v), x1 + N * .025, (ya + yb) / 2);
   });
-  rrect(ctx, x0, y0, x1 - x0, H, N * .02); ctx.strokeStyle = 'rgba(220,235,225,.8)'; ctx.lineWidth = 3 * D; ctx.stroke();
+  ctx.save(); ctx.shadowColor = M.pouring ? 'rgba(170,255,130,.7)' : 'rgba(220,235,225,.3)'; ctx.shadowBlur = M.pouring ? N * .025 : N * .01;
+  rrect(ctx, x0, y0, x1 - x0, H, N * .02);
+  const frame = ctx.createLinearGradient(x0, y0, x1, y1);
+  frame.addColorStop(0, '#f2fff0'); frame.addColorStop(.3, '#91a18e'); frame.addColorStop(.55, '#e2f0de'); frame.addColorStop(1, '#43513f');
+  ctx.strokeStyle = frame; ctx.lineWidth = 4 * D; ctx.stroke(); ctx.restore();
+  ctx.beginPath(); ctx.moveTo(x0 + N * .015, y0 + N * .01); ctx.lineTo(x1 - N * .015, y0 + N * .01);
+  ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = D; ctx.stroke();
   // pour streams, then the dice, the dots and the cans on top
   M.cans.forEach(k => { if (k.state === 'pour') { ctx.beginPath(); ctx.moveTo(k.x, k.y + N * .02); ctx.lineTo(k.x + Math.sin(now * .03) * N * .003, fy); ctx.strokeStyle = k.sp === 'W' ? 'rgba(255,214,90,.9)' : k.sp === 'B' ? 'rgba(190,130,255,.9)' : 'rgba(140,255,70,.85)'; ctx.lineWidth = N * (k.sp ? .014 : .008); ctx.stroke(); } });
   M.dice.forEach(d => {
@@ -3208,7 +3242,13 @@ function drawZena(now) {
   g.fillStyle = '#1d3a2a'; g.fillRect(N * .43, N * .6, N * .14, N * .25); g.fillStyle = '#d9b44a'; g.beginPath(); g.arc(N * .545, N * .73, N * .008, 0, TAU); g.fill();
   g.font = `700 ${N * .03}px ${LABEL_FONT}`; g.textAlign = 'center'; g.fillStyle = '#e8e2d0'; g.fillText("ZENA'S", c, N * .58);
   g.fillStyle = '#5a4a2a'; g.fillRect(N * .41, N * .86, N * .18, N * .035); g.font = `700 ${N * .018}px ${LABEL_FONT}`; g.fillStyle = '#d8cfa8'; g.fillText('NO PHELANS', c, N * .88);
-  if (Z.wheel > 0) { g.fillStyle = `rgba(5,8,4,${.65 * Z.wheel})`; g.fillRect(0, 0, N, N); g.globalAlpha = Z.wheel; drawScaled(faces.phelanWheel, Z.rot, .7 + .3 * Z.wheel); drawPointer(faces.pointer, .7 + .3 * Z.wheel); g.globalAlpha = 1; }
+  if (Z.wheel > 0) {
+    const sc = .7 + .3 * Z.wheel;
+    g.fillStyle = `rgba(5,8,4,${.65 * Z.wheel})`; g.fillRect(0, 0, N, N); g.globalAlpha = Z.wheel;
+    drawScaled(faces.phelanWheel, Z.rot, sc); drawWheelRim(sc); drawWheelSweep(Z.spinning, sc);
+    if (Z.winner != null) drawWheelSliceGlow(Z.rot, Z.items.length, Z.winner, Z.winAt, sc);
+    drawPointer(faces.pointer, sc); g.globalAlpha = 1;
+  }
   if (ghost) drawGhost();
   if (ghost && Z.say) bubble(g, Z.say, ghost.x, ghost.y - R * .22);
   g.restore();
@@ -3237,6 +3277,7 @@ async function phelanRevenge() {
   whoosh(true); buzz([60]);
   const s0 = zena.rot, e0 = s0 + 6 * TAU + mod(-tg.a - s0, TAU);
   let lastS = sliceAt(s0, n), g0 = { x: ghost.x, y: ghost.y };
+  zena.spinning = true;
   await animate(7500, t => {
     zena.rot = s0 + (e0 - s0) * easeOut(t);
     if (t < .12) { const a = zena.rot + .5; ghost.x = c + Math.cos(a) * R; ghost.y = c + Math.sin(a) * R; g0 = { x: ghost.x, y: ghost.y }; }
@@ -3244,7 +3285,7 @@ async function phelanRevenge() {
     const sl = sliceAt(zena.rot, n); if (sl !== lastS) { lastS = sl; tick(1, 1400); pegBuzz(); }
     draw();
   });
-  zena.rot = mod(zena.rot, TAU); ting(); buzz([40, 50, 80]);
+  zena.rot = mod(zena.rot, TAU); zena.spinning = false; zena.winner = tg.i; zena.winAt = performance.now(); ting(); buzz([40, 50, 80]);
   const r = { ...items[tg.i], phelan: true };
   zena.say = pick(['Enjoy that, lads.', 'Revenge is sweet.', "That's for the room.", 'Zena says hi.']); draw();
   await wait(1500);
@@ -3325,7 +3366,9 @@ function drawGodRoom(now) {
   if (G.ph === 'wheel') {
     g.fillStyle = grad(g, 0, 0, 0, N, [[0, '#120c04'], [1, '#2b1d0a']]); g.fillRect(0, 0, N, N);
     const rg = g.createRadialGradient(c, c, R * .5, c, c, N * .75); rg.addColorStop(0, 'rgba(255,220,120,.25)'); rg.addColorStop(1, 'rgba(255,220,120,0)'); g.fillStyle = rg; g.fillRect(0, 0, N, N);
-    drawScaled(faces.godWheel, G.rot, 1); drawPointer(faces.pointer, 1);
+    drawScaled(faces.godWheel, G.rot, 1); drawWheelRim(1); drawWheelSweep(G.spinning, 1);
+    if (G.winner != null) drawWheelSliceGlow(G.rot, GOD_PRIZES.length, G.winner, G.winAt);
+    drawPointer(faces.pointer, 1);
   } else {
     // the shop: a back wall of dead tellies, a sign, scrap all over the floor
     g.fillStyle = grad(g, 0, 0, 0, N, [[0, '#1d2224'], [.55, '#2c3436'], [.56, '#3b3328'], [1, '#221c14']]); g.fillRect(0, 0, N, N);
@@ -3450,6 +3493,7 @@ async function godRoom(steps) {
   whoosh(true); buzz([60]);
   const s0 = god.rot, e0 = s0 + 7 * TAU + mod(-tg.a - s0, TAU);
   let lastS = sliceAt(s0, n), g0 = { x: ghost.x, y: ghost.y };
+  god.spinning = true;
   await animate(8000, t => {
     god.rot = s0 + (e0 - s0) * easeOut(t);
     if (t < .12) { const a = god.rot + .5; ghost.x = c + Math.cos(a) * R; ghost.y = c + Math.sin(a) * R; g0 = { x: ghost.x, y: ghost.y }; }
@@ -3457,7 +3501,7 @@ async function godRoom(steps) {
     const sl = sliceAt(god.rot, n); if (sl !== lastS) { lastS = sl; tick(1, 1700); pegBuzz(); }
     draw();
   });
-  god.rot = mod(god.rot, TAU);
+  god.rot = mod(god.rot, TAU); god.spinning = false; god.winner = tg.i; god.winAt = performance.now();
   const prize = GOD_PRIZES[tg.i];
   ting(); Music.sting(4); buzz(prize >= 100 ? [100, 50, 100, 50, 400] : [40, 40, 80]);
   god.say = prize >= 100 ? `€${$m(prize)}. Don't tell Mark.` : `€${$m(prize)}. Better than a toaster.`; draw();
@@ -3482,6 +3526,10 @@ function drawPyramidShape(g, rise, tipOff) {
   // left face lit by the sun, right face in shade
   g.beginPath(); g.moveTo(tx - tw, ty); g.lineTo(ax - w, base + dy); g.lineTo(ax, base + dy); g.lineTo(ax, ty); g.closePath(); g.fillStyle = grad(g, ax - w, 0, ax, 0, [[0, '#e8b46a'], [1, '#c48b47']]); g.fill();
   g.beginPath(); g.moveTo(ax, ty); g.lineTo(ax, base + dy); g.lineTo(ax + w, base + dy); g.lineTo(tx + tw, ty); g.closePath(); g.fillStyle = grad(g, ax, 0, ax + w, 0, [[0, '#8f5f2e'], [1, '#6e4520']]); g.fill();
+  g.beginPath(); g.moveTo(ax - w, base + dy); g.lineTo(ax, ay); g.lineTo(ax + w, base + dy);
+  g.strokeStyle = 'rgba(255,232,190,.48)'; g.lineWidth = 2 * D; g.stroke();
+  g.beginPath(); g.moveTo(ax, ay); g.lineTo(ax, base + dy);
+  g.strokeStyle = 'rgba(55,30,12,.55)'; g.lineWidth = 2 * D; g.stroke();
   g.strokeStyle = 'rgba(70,40,15,.35)'; g.lineWidth = D;
   for (let j = 1; j < 14; j++) { const f = cut + (1 - cut) * j / 14, y = ay + H * f, hw = w * f; g.beginPath(); g.moveTo(ax - hw, y); g.lineTo(ax + hw, y); g.stroke(); }
   // the door
@@ -3738,8 +3786,9 @@ async function monsterRun(steps, w = 0, b = 3) {
   setVerdict({ eyebrow: 'Bonus', title: 'The planet wheel', body: 'Big money. Spin it.', steps: steps.slice(), flash: false });
   const n = COSMIC.length, tg = target(n), s0 = rotC, e0 = rotC + 7 * TAU + mod(-tg.a - rotC, TAU);
   let last = sliceAt(s0, n);
+  planet.spinning = true;
   await animate(7500, t => { rotC = s0 + (e0 - s0) * easeOut(t); const sl = sliceAt(rotC, n); if (sl !== last) { last = sl; tick(1.1, 1600); flap(1); } draw(); });
-  rotC = mod(rotC, TAU); ting(); buzz([60, 40, 120]);
+  rotC = mod(rotC, TAU); planet.spinning = false; planet.winner = tg.i; planet.winAt = performance.now(); ting(); buzz([60, 40, 120]);
   const won = COSMIC[tg.i];
   setVerdict({ eyebrow: 'Bonus', title: fakeEur(won), body: 'Yours. Nearly.', steps: steps.slice() });
   await wait(1800);
@@ -3880,7 +3929,7 @@ Object.keys(MARK_BY_DEST).forEach(k => MARK_BY_DEST[k].forEach((it, i) => it.t =
 const LEAVE = { lbl: ['LEAVE MARK', 'ALONE'], t: 'Leave Mark alone', b: 'No question for Mark this time. He gets away with it.', special: 'leave' };
 const OWNWAY = { lbl: ['GO YOUR', 'OWN WAY'], t: 'Reject all commands, go your own way', b: 'Forget everything the wheels said. Go wherever you like.', special: 'own' };
 
-let pipes = null, carried = [], d6 = [], d6Sum = 0, chickens = [], arrows = [], fires = [], feathers = [], camX = 0, markItems = [], rotM = 0, formT = [], showMark = 0, chainNote = '', raceLine = 0;
+let pipes = null, carried = [], d6 = [], d6Sum = 0, chickens = [], arrows = [], fires = [], feathers = [], camX = 0, markItems = [], rotM = 0, formT = [], showMark = 0, chainNote = '', raceLine = 0, markSpinning = false, markWin = null;
 
 // the pipes: one tube drops the balls into a pinball pit (bumpers and flippers, all physics),
 // then three chutes catch them. Only the green chute counts.
@@ -4253,7 +4302,12 @@ function drawFarm(now) {
       if (ft.t <= 0) return; const e = easeInOut(Math.min(1, ft.t));
       drawMarkWedge(ft.idx ?? i, markItems.length, lerp(ft.x - camX, c, e), lerp(ft.y, c, e), lerp(.1, 1, e));
     });
-    if (showMark > 0) { ctx.globalAlpha = showMark; drawScaled(faces.mark, rotM, 1); drawMarkGlow(now); ctx.globalAlpha = 1; drawPointer(faces.wheat, 1); }
+    if (showMark > 0) {
+      ctx.globalAlpha = showMark; drawScaled(faces.mark, rotM, 1); drawWheelRim(1); drawMarkGlow(now);
+      drawWheelSweep(markSpinning, 1);
+      if (markWin) drawWheelSliceGlow(rotM, markItems.length, markWin.i, markWin.t0);
+      ctx.globalAlpha = 1; drawPointer(faces.pointer, 1);
+    }
   }
   ctx.restore();
   if (chainNote) {
@@ -4326,7 +4380,7 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
   if (!faces.farm) faces.farm = buildFarm();
   if (!snap || snap.width !== N) snap = mk();
   { const g = snap.getContext('2d'); g.clearRect(0, 0, N, N); dots.forEach(p => p.hide = true); draw(); g.drawImage(cv, 0, 0); dots.forEach(p => p.hide = false); }
-  d6 = []; scene = 'farm'; Music.setMode('farm'); playSfx('farm'); camX = 0; chickens = []; arrows = []; fires = []; feathers = []; markItems = []; formT = []; showMark = 0; chainNote = ''; raceLine = 0; snapA = 1;
+  d6 = []; scene = 'farm'; Music.setMode('farm'); playSfx('farm'); camX = 0; chickens = []; arrows = []; fires = []; feathers = []; markItems = []; formT = []; showMark = 0; chainNote = ''; raceLine = 0; snapA = 1; markSpinning = false; markWin = null;
   dots.forEach((p, i) => {
     p.sx = p.x; p.sy = p.y; p.delay = .1 + (i / Math.max(1, dots.length)) * .5;
     chickens.push({ x: N * (.08 + Math.random() * .84), y: N * (.64 + Math.random() * .28), dir: Math.random() < .5 ? -1 : 1, ph: 0, peck: 0, alive: true, pop: 0 });
@@ -4477,12 +4531,13 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
   // 6. spin it
   const tg = target(markItems.length), s0 = rotM, e0 = rotM + 6 * TAU + mod(-tg.a - rotM, TAU);
   let lastS = sliceAt(s0, markItems.length);
+  markSpinning = true;
   await farmLoop(8, (dt, el) => {
     const p = Math.min(1, el / 7.5); rotM = s0 + (e0 - s0) * easeOut(p);
     const sl = sliceAt(rotM, markItems.length); if (sl !== lastS) { lastS = sl; tick(1, 1500); flap(1); }
     return p >= 1;
   });
-  rotM = mod(rotM, TAU); ting(); buzz([40, 50, 80]);
+  rotM = mod(rotM, TAU); markSpinning = false; markWin = { i: tg.i, t0: performance.now() }; ting(); buzz([40, 50, 80]);
   return markItems[tg.i];
 }
 // ---------- Chicken Race: 1 in 4 farm runs, the survivors dance, then race for the prizes on their tags ----------
