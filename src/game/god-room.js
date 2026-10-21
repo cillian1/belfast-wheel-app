@@ -18,6 +18,7 @@ const MOCK = [
   "Unlucky. I'm keeping the toaster.",
 ];
 let god = null, tapPick = null, ghostSay = '';
+const GOD_PICK_BUTTONS = [['hi', 'HIGHER ▲', '#2f7a3b'], ['lo', 'LOWER ▼', '#8e2a20']];
 function buildGodWheel(items) {
   const k = mk(), g = k.getContext('2d'), n = items.length, seg = TAU / n, r0 = R * .18, r1 = R * .93;
   g.beginPath(); g.arc(c, c, R, 0, TAU); g.fillStyle = '#1a1206'; g.fill();
@@ -94,7 +95,7 @@ function drawGodRoom(now) {
         g.font = `800 ${N * .06}px ${LABEL_FONT}`; g.fillStyle = '#fff6e0'; g.fillText(v.ok ? '✓ RIGHT' : '✗ WRONG', 0, 0); g.restore();
       }
       if (G.pick) { const r = hlRects(), p = .5 + .5 * Math.sin(now / 200);
-        [['hi', 'HIGHER ▲', '#2f7a3b'], ['lo', 'LOWER ▼', '#8e2a20']].forEach(([k, t, col]) => { const b = r[k]; rrect(g, b.x, b.y, b.w, b.h, N * .03); g.fillStyle = col; g.fill(); g.strokeStyle = `rgba(255,240,200,${.4 + .4 * p})`; g.lineWidth = 3 * D; g.stroke(); g.font = `700 ${N * .045}px ${LABEL_FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff6e0'; g.fillText(t, b.x + b.w / 2, b.y + b.h / 2); });
+        GOD_PICK_BUTTONS.forEach(([k, t, col]) => { const b = r[k]; rrect(g, b.x, b.y, b.w, b.h, N * .03); g.fillStyle = col; g.fill(); g.strokeStyle = `rgba(255,240,200,${.4 + .4 * p})`; g.lineWidth = 3 * D; g.stroke(); g.font = `700 ${N * .045}px ${LABEL_FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff6e0'; g.fillText(t, b.x + b.w / 2, b.y + b.h / 2); });
       }
       for (let j = 0; j < 4; j++) { g.beginPath(); g.arc(c - N * .09 + j * N * .06, N * .755, N * .014, 0, TAU); g.fillStyle = j < G.right ? '#f3c34e' : 'rgba(255,255,255,.18)'; g.fill(); }
     }
@@ -145,7 +146,7 @@ async function godRoom(steps) {
   cards[0].up = true; ting(); draw();
   ghostTo(N * .9, N * .1, 900);
   setBtn('Higher or lower', true); $('#caption').textContent = 'Higher or lower?';
-  let alive = true; (function pulse() { if (!alive) return; draw(); requestAnimationFrame(pulse); })();
+  const stopPulse = visibleDrawLoop(draw);
   let lost = false;
   for (let j = 1; j < 5; j++) {
     const prev = cards[j - 1], nx = cards[j];
@@ -177,7 +178,7 @@ async function godRoom(steps) {
     }
   }
   god.banner = ''; god.label = false;
-  alive = false;
+  stopPulse();
   if (lost) {
     const cons = 0;
     await ghostTo(N * .62, N * .4, 700);

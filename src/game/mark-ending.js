@@ -343,6 +343,8 @@ function drawChicken(g, x, y, s, dir, ph, peck, flash, kind) {
 }
 const MARK_COLS = i => i % 2 ? ['#8e2a20', 'dark'] : ['#efe4c8', 'light'];
 function markWedgeStyle(it, i) { return it.kind === 'W' ? ['#d9a628', 'light'] : it.kind === 'B' ? ['#7b3fc4', 'dark'] : it.special === 'leave' ? ['#2f7a3b', 'dark'] : it.special === 'own' ? ['#141414', 'dark'] : MARK_COLS(i); }
+const chickenDrawOrder = [];
+function compareChickenY(a, b) { return a.y - b.y; }
 function buildMarkWheel(items) {
   const k = mk(), g = k.getContext('2d'), n = items.length, seg = TAU / n, r0 = R * .16, r1 = R * .93;
   g.save(); g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = R * .08; g.shadowOffsetY = R * .04;
@@ -397,12 +399,16 @@ function drawFarm(now) {
     ctx.fillStyle = gr; ctx.fillRect(f.x - camX - N * .08, f.y - N * .1, N * .16, N * .14);
   });
   if (raceLine) drawRaceLine();
-  [...chickens].sort((a, b) => a.y - b.y).forEach(ch => {
-    if (!ch.alive || ch.slice || ch.pop <= .01) return;
+  chickenDrawOrder.length = 0;
+  for (let i = 0; i < chickens.length; i++) chickenDrawOrder.push(chickens[i]);
+  chickenDrawOrder.sort(compareChickenY);
+  for (let i = 0; i < chickenDrawOrder.length; i++) {
+    const ch = chickenDrawOrder[i];
+    if (!ch.alive || ch.slice || ch.pop <= .01) continue;
     if (ch.glow > 0) { const gr = ctx.createRadialGradient(ch.x - camX, ch.y - N * .01, 0, ch.x - camX, ch.y - N * .01, N * .06); gr.addColorStop(0, ch.special === 'B' ? `rgba(190,140,255,${ch.glow})` : `rgba(255,225,120,${ch.glow})`); gr.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(ch.x - camX, ch.y - N * .01, N * .06, 0, TAU); ctx.fill(); }
     drawChicken(ctx, ch.x - camX, ch.y, N * .055 * ch.pop, ch.dir, ch.ph, ch.peck, ch.flash || 0, ch.special);
     if (ch.tag) drawRaceTag(ch);
-  });
+  }
   carried.forEach(b => {
     if (b.s <= .01) return;
     const x = b.x - camX, gl = b.glow * (.75 + .25 * Math.sin(t * 6)), gr = ctx.createRadialGradient(x, b.y, 0, x, b.y, b.r * 4);

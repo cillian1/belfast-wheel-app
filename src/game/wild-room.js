@@ -141,9 +141,9 @@ async function vaultRun(steps, cash, acts) {
   await crossTo(() => { vault.ph = 'doors'; vault.pickable = true; }, 800);
   $('#caption').textContent = 'Pick a gold door';
   setBtn('Pick a door', true);
-  let alive = true; (function pulse() { if (!alive) return; draw(); requestAnimationFrame(pulse); })();
+  const stopPulse = visibleDrawLoop(draw);
   const chosen = await waitTap((x, y) => { for (let j = 0; j < 3; j++) { const d = doorRect(j); if (x > d.x - N * .03 && x < d.x + d.w + N * .03 && y > d.y - N * .06 && y < d.y + d.h + N * .03) return j; } return null; });
-  alive = false; vault.pickable = false;
+  stopPulse(); vault.pickable = false;
   const d = vault.doors[chosen];
   Music.sting(3); buzz([40, 40, 40]);
   await animate(1400, t => { d.open = easeInOut(t); if (t < .8 && Math.random() < .3) tick(.4, 600 + Math.random() * 200); draw(); });
