@@ -2,11 +2,11 @@
 
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
-- **Task:** Task 5 replay reliability follow-up (Issue #12), alongside Tasks 6–8 in parallel (issues #17, #18, #19; PRs #21, #20, #22).
-- **Owner:** Copilot builds; Cillian verifies and merges this follow-up. Claude is unavailable for this task.
-- **Status:** Task 5 shipped as update 23 in PR #16. The replay playback and persistent pruning-cadence follow-up is implemented and ready for review in PR #24. Bundle/check, focused Node regressions, and headless Edge mock-database playback/render checks pass; live Firebase was not accessed. Tasks 6–8 remain parallel on `update-24`; this follow-up does not bump version 23.
-- **Next:** Cillian verifies and merges PR #24; keep auto-merge off until then.
-- **Last updated:** 2026-10-21 22:32 by Copilot
+- **Task:** Tasks 6, 7, 8 in parallel (issues #17, #18, #19; PRs #21, #20, #22). Task 5 merged as update 23.
+- **Owner:** Copilot does ALL the work (Cillian, 2026-10-21): building, conflicts, version bumps, release notes, HANDOFF/COPILOT_TASKS updates, and the release PR. Claude only presses merge (GitHub won't let Copilot merge its own PRs). Money/odds/prize changes still go to Cillian.
+- **Status:** Tasks 6–8 run IN PARALLEL and ship together as ONE update (Cillian, 2026-10-21). Their PRs target branch `update-24`, not main. Do NOT bump the version in them (stay on 23). Before DONE, merge latest `update-24` in, fix conflicts yourself, rebuild and check.
+- **Next:** Copilot posts `DONE: Task N`; Claude merges it into `update-24`. When Tasks 6, 7 and 8 are all in `update-24`, **Copilot** opens one release PR `update-24` → `main` that bumps to update 24 (name it, notes, gameVersion, footer, rebuild, check) and posts `DONE: update 24`. Claude merges it, then starts Task 9 (#23).
+- **Last updated:** 2026-10-21 22:35 by Claude
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.

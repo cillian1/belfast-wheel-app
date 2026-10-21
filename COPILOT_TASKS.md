@@ -178,6 +178,17 @@ Give every other room the same treatment the main wheels got in update 20: a lig
 3. **A mute button** in the header next to Music: one tap mutes all music and effects, remembered with `pref`. The current "Music on/off" stays for music only.
 Keep it light on CPU (no new per-frame audio work). No gameplay changes.
 
+## Task 9: smoothness update (ON HOLD until update 24 is on main; Claude posts "/go")
+
+Cillian: the game isn't laggy but it feels **sluggish**, and it must run well on **low-end phones**. Ship as one update with its own name. Plan:
+1. **Measure first.** Add a hidden FPS/frame-time overlay (toggle with `?perf=1`). Profile every room in Chrome DevTools with 4x CPU throttle at 360px, and note the worst frames (paint, GC, long tasks) in the PR.
+2. **Snappy input.** Every tap must show feedback within one frame: press state on buttons, `touch-action: manipulation`, no 300 ms delays, no work before the first paint after a tap. Start the spin animation instantly and do the rest after.
+3. **Shorter dead time.** Find the waits between spin end, result text, payout and next action. Trim the idle pauses and let a tap skip a result/transition animation to its end state. Do **not** change spin outcomes, odds, prizes or the order of `Math.random()` calls, and the `Final answer · €X` verdict must still show exactly once.
+4. **Frame budget.** Keep each frame under ~8 ms of script on a mid phone: cache static layers (wheel faces, rims, backgrounds) on offscreen canvases, avoid per-frame allocations, gradients and `shadowBlur`, and cap the devicePixelRatio at 2.
+5. **Low-end mode.** Auto-detect slow devices (`hardwareConcurrency <= 4`, `deviceMemory <= 3`, or measured frame time over budget for 2 s). It uses fewer particles, no blur/glow passes, a lower DPR (1.5) and 30 fps idle animations. Add a "Quality: Auto / High / Low" setting saved with `pref`.
+6. **Prove it.** Put before/after frame-time numbers for each room in the PR (throttled), check layouts at 320/360/412px, and make sure Watch mirroring and replays still play back.
+Bump the version once at the end (next free number) with a name.
+
 ---
 
 ## When you finish a task
