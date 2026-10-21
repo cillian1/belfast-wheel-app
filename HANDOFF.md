@@ -2,16 +2,12 @@
 
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
-- **Task:** Update 25 (Task 9 smoothness PR #34 + Task 10 Phelan voice PR #35, into `update-25`), then update 26 (Task 11, sub-tasks #39–#43).
+- **Task:** Task 11C (#41), offline banner and loading states; PR into `update-26`, no version bump.
 - **Owner:** Copilot builds overnight while Cillian sleeps. Copilot opens each PR and posts `DONE: Task …`, and **Claude does a quick check and merges**, then starts the next wave. Copilot does not merge. Anything that changes money, odds, prizes or payouts waits for Cillian.
-- **Status / order (in sequence):**
-  1. Update 25 shipped as "Smooth Operator" (game 25, build 62).
-  2. **Wave 1 STARTED (23:35):** #39, #40, #41 in parallel on `update-26`. Each gets a PR into `update-26`, no version bump.
-  3. When #39, #40 and #41 are all merged into `update-26`, Claude starts **wave 2:** #42 and #43.
-  4. When wave 2 is merged, Claude starts **wave 3:** #45 (frame-rate-independent RNG + shorter waits; odds check, any odds change waits for Cillian).
-  5. When wave 3 is merged, open the release PR `update-26` → `main` (bump to 26, name it) and post DONE.
+- **Status:** Started; wave 1 issues #39, #40 and #41 are in parallel on `update-26`.
+- **Next:** Finish #41, then wait for #39–#41 to merge before wave 2 (#42 and #43).
 - **If stuck:** if a step fails twice (CI red you can't fix, a conflict you can't resolve, or anything touching money), stop. Post one note on that issue saying what's blocked and move on to the next independent step. Don't retry forever. Cillian checks in the morning.
-- **Last updated:** 2026-10-21 23:30 by Claude
+- **Last updated:** 2026-10-21 23:25 by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
