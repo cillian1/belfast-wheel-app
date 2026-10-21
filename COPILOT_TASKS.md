@@ -219,6 +219,7 @@ Simple, low-risk changes only. Ship as one update.
    - b. Clean up merged/stale `copilot/*` branches and list what you deleted in the PR. Cillian turns on "Automatically delete head branches" in Settings.
    - c. `.github/ISSUE_TEMPLATE/copilot-task.md` with the sections Goal, Files likely touched, Done when, Don't touch (money/odds/prizes), and the label `copilot-task`.
    - d. Add a rule to `.github/copilot-instructions.md`: tasks running in parallel must not edit the same files. List the files you expect to touch on the issue before starting, and if they overlap with another open task, wait or coordinate on #30.
+7. **Stink ghost reactions.** The new ghost sprite reacts. On a near miss (pointer one slice off a big prize) it **pulls a face**: a quick squash and wince, a green tint, a short "ugh" bubble and an extra stink puff. On a big win (same threshold as the Big wins tab) it **cheers**: a jump, a spin, sparkle flies and a "WAHEY" bubble. Build these as transforms/overlays on the existing sprite (no new big images, ≤ 20 KB extra). Pick bubble text with a separate non-game RNG and keep the `Math.random()` order. Skip the extras in Low quality mode. Visual only.
 (No "what's new" screen: the update banner already covers it. No history filters.)
 No money, odds or prize changes; keep the `Math.random()` order.
 
