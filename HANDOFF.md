@@ -4,9 +4,9 @@
 
 - **Task:** Update 26 (Task 11). Update 25 "Smooth Operator" shipped (game 25, build 62).
 - **Owner:** Copilot builds overnight while Cillian sleeps. Copilot opens each PR into `update-26` and posts `DONE: Task …`. **Claude does a quick check and merges**, then starts the next wave. Copilot does not merge. Anything that changes money, odds, prizes or payouts waits for Cillian.
-- **PR #34 stays CLOSED. Do not reopen or sync it.** Its code (Task 9: quality modes, low-end mode, faster taps, with the wait changes removed) **IS on main and in update 25** (commit 66a5cb1, merged by hand by Claude). Its leftovers live in #45 (shorter waits) and #49 (freezes).
+- **PR #34 stays CLOSED. Do not reopen or sync it.** Its code (Task 9: quality modes, low-end mode, faster taps, with the wait changes removed) **IS on main and in update 25** (commit 66a5cb1, merged by hand by Claude). Its leftovers live in #45 (shorter waits) and #49 (main-wheel freezes).
 - **Order:**
-  1. **Now, in parallel:** #49 freezes between wheels/rooms (**TOP PRIORITY**), plus wave 1: #39 → PR #46 (CI/template/release notes), #40 → PR #47 (notifications), #41 → PR #48 (offline + loading). All PRs target `update-26`, with no version bump.
+  1. **Now, in parallel:** #49 main-wheel freezes between wheels (**TOP PRIORITY**; main wheel only, rooms later), plus wave 1: #39 → PR #46 (CI/template/release notes), #40 → PR #47 (notifications), #41 → PR #48 (offline + loading). All PRs target `update-26`, with no version bump.
   2. **Wave 2** (Claude starts it when step 1 is merged): #42 (history + buttons), #43 (ghost reactions + country song).
   3. **Wave 3, alone:** #45 (frame-rate-independent results + shorter waits; fast-sim odds check, and any odds change waits for Cillian).
   4. **Release:** a PR `update-26` → `main` bumping to 26 with a name, notes and `Closes #…` for every sub-task, then post DONE.
