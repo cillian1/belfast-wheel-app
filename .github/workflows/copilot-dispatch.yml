@@ -1,0 +1,28 @@
+# When Claude posts "@copilot ..." on an issue labelled copilot-task, hand the issue to Copilot's
+# coding agent straight away (assigning Copilot starts a session). Needs the COPILOT_ASSIGN_TOKEN
+# secret: a fine-grained token from Cillian's account (Copilot can't be assigned with GITHUB_TOKEN).
+name: Copilot dispatch
+on:
+  issue_comment:
+    types: [created]
+permissions:
+  contents: read
+jobs:
+  dispatch:
+    if: >-
+      !github.event.issue.pull_request &&
+      contains(github.event.issue.labels.*.name, 'copilot-task') &&
+      contains(github.event.comment.body, '@copilot') &&
+      !startsWith(github.event.comment.body, 'DONE')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assign the issue to Copilot
+        env:
+          GH_TOKEN: ${{ secrets.COPILOT_ASSIGN_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then echo "COPILOT_ASSIGN_TOKEN secret is not set"; exit 1; fi
+          # a fresh assignment is what starts a new Copilot session, so drop it first if it's already there
+          gh issue edit "$ISSUE" -R "$REPO" --remove-assignee @copilot || true
+          gh issue edit "$ISSUE" -R "$REPO" --add-assignee @copilot
