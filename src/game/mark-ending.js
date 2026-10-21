@@ -1,4 +1,5 @@
 // ---------- the Mark ending: pipes, dice, chickens, fire arrows, the farm, Mark's wheel ----------
+// Owns the Mark ending, farm simulation, and Mark's wheel.
 const MARK_QS = [
   { lbl: ['WHY KICK', 'PHELAN OUT?'], t: 'Ask Mark why he really kicked Phelan out' },
   { lbl: ["PHELAN'S", 'ROOM SMELL'], t: "Ask Mark to describe the smell of Phelan's old room" },
@@ -61,13 +62,6 @@ const OWNWAY = { lbl: ['GO YOUR', 'OWN WAY'], t: 'Reject all commands, go your o
 
 let pipes = null, carried = [], d6 = [], d6Sum = 0, chickens = [], arrows = [], fires = [], feathers = [], camX = 0, markItems = [], rotM = 0, formT = [], showMark = 0, chainNote = '', raceLine = 0;
 
-function pathWithLengths(pts) { const L = [0]; for (let i = 1; i < pts.length; i++) L.push(L[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1])); return { pts, L, total: L[L.length - 1] }; }
-function pathAt(p, s) {
-  if (s <= 0) return [p.pts[0][0], p.pts[0][1] + s];
-  let i = 1; while (i < p.L.length - 1 && p.L[i] < s) i++;
-  const t = Math.min(1, (s - p.L[i - 1]) / ((p.L[i] - p.L[i - 1]) || 1));
-  return [lerp(p.pts[i - 1][0], p.pts[i][0], t), lerp(p.pts[i - 1][1], p.pts[i][1], t)];
-}
 // the pipes: one tube drops the balls into a pinball pit (bumpers and flippers, all physics),
 // then three chutes catch them. Only the green chute counts.
 function setupPipes(n) {
@@ -462,6 +456,17 @@ function walkChicken(ch, dt, speed) {
   const st = Math.min(d, speed * dt); ch.x += dx / d * st; ch.y += dy / d * st; ch.dir = dx >= 0 ? 1 : -1; ch.ph += dt * 18; ch.peck = 0;
   return false;
 }
+function planMarkFlights(markItems, alive, n, wheelSize) {
+  const spc = alive.filter(ch => ch.special).slice(0, n), plain = alive.filter(ch => !spc.includes(ch)).slice(0, n - spc.length);
+  const free = markItems.map((it, j) => j).filter(j => !markItems[j].kind);
+  const sliceOf = new Map();
+  spc.forEach(ch => { const j = markItems.findIndex((it, q) => it.kind === ch.special && ![...sliceOf.values()].includes(q)); sliceOf.set(ch, j); });
+  plain.forEach((ch, q) => sliceOf.set(ch, free[q]));
+  const fliers = [...plain, ...spc];
+  const formT = fliers.map(ch => ({ x: ch.x, y: ch.y - wheelSize * .02, t: 0, idx: sliceOf.get(ch), kind: ch.special || null }));
+  const startAt = fliers.map((ch, i) => i < plain.length ? i * .18 : plain.length * .18 + .6 + (i - plain.length) * 1.1);
+  return { spc, fliers, formT, startAt };
+}
 async function markChain(steps, dest, held = { W: 0, B: 0 }) {
   const ballsIn = counts[winner];
   // 1. the winning slot's balls go up the tube and down the pipes
@@ -625,14 +630,8 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
   markItems = items.sort(() => Math.random() - .5);
   faces.mark = buildMarkWheel(markItems);
   // each chicken becomes its own slice: a gold or purple chicken turns into its prize slice, plain ones into the rest
-  const spc = alive.filter(ch => ch.special).slice(0, specials.length), plain = alive.filter(ch => !spc.includes(ch)).slice(0, n - spc.length);
-  const free = markItems.map((it, j) => j).filter(j => !markItems[j].kind);
-  const sliceOf = new Map();
-  spc.forEach(ch => { const j = markItems.findIndex((it, q) => it.kind === ch.special && ![...sliceOf.values()].includes(q)); sliceOf.set(ch, j); });
-  plain.forEach((ch, q) => sliceOf.set(ch, free[q]));
-  const fliers = [...plain, ...spc]; // the special ones go last, slowly, so you see them turn
-  formT = fliers.map(ch => ({ x: ch.x, y: ch.y - N * .02, t: 0, idx: sliceOf.get(ch), kind: ch.special || null }));
-  const startAt = fliers.map((ch, i) => i < plain.length ? i * .18 : plain.length * .18 + .6 + (i - plain.length) * 1.1);
+  const { spc, fliers, formT: flights, startAt } = planMarkFlights(markItems, alive, n, N); // special chickens go last, slowly, so you see them turn
+  formT = flights;
   $('#caption').textContent = "Mark's wheel";
   setVerdict({ eyebrow: "Mark's wheel", title: 'Mark’s wheel', body: 'Every surviving chicken becomes a slice.', steps: steps.slice(), flash: false });
   await farmLoop(n * .18 + spc.length * 1.1 + 3, (dt, el) => {
@@ -660,4 +659,3 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
   rotM = mod(rotM, TAU); ting(); buzz([40, 50, 80]);
   return markItems[tg.i];
 }
-

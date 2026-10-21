@@ -1,4 +1,5 @@
 // ---------- sound ----------
+// Owns short sound effects and vibration feedback.
 let AC = null;
 function audio() { try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume(); } catch (e) { AC = null; } }
 function tick(v, f = 2500) {

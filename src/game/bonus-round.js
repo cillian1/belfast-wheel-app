@@ -1,4 +1,5 @@
 // ---------- the bonus round: rollercoaster, the planet wheel, twelve-sided dice, the Monster tank ----------
+// Owns bonus-room dice, coaster, planet, and Monster tank behavior.
 const TANK_LEVELS = [{ at: 0, v: 30 }, { at: 68, v: 50 }, { at: 78, v: 80 }, { at: 90, v: 150 }];
 const TANK_CAP = 120;
 const COSMIC = [1000, 5000, 10000, 1000, 5000, 1000, 10000, 5000, 1000, 5000, 10000, 5000];
@@ -259,4 +260,3 @@ async function roll12(dice) {
   dice.forEach((d, i) => { d.M = to[i]; d.top = d12Top(d.M); });
   ting();
 }
-

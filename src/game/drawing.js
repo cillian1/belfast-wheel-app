@@ -1,4 +1,5 @@
 // ---------- drawing ----------
+// Owns main canvas drawing and stage layout.
 function drawScaled(img, r, sc) { ctx.save(); ctx.translate(c, c); ctx.scale(sc, sc); ctx.rotate(r); ctx.drawImage(img, -c, -c); ctx.restore(); }
 let domeBulge = 0;
 function drawDice(sc) {
@@ -260,4 +261,3 @@ function resize() {
   N = cv.width = cv.height = n; c = N / 2; R = N / 2 * .935 * .82;
   build(); if (old) rescaleBalls(old); draw();
 }
-

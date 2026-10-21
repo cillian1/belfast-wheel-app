@@ -1,4 +1,5 @@
 // ---------- ultra bonus: 77 Bridgefield and the Stankman's Wheel ----------
+// Owns Stank Chamber assets and room behavior.
 const INTRO_TEXT = "On a cold winter's eve at 77 Bridgefield, a faint spirit watches over you.";
 let introT = 0, camT = 0, hallZ = 0, doorT = 0, flash = 0, rotS = 0;
 let bingo = [], ballSpeed = 1, ballPhase = 0, lastBallDraw = 0, pickIdx = -1, handT = 0, liftT = 0, handClosed = false, prize = null;
@@ -271,4 +272,3 @@ const ROOM_ACTS = {
   ]),
 };
 function roomAct(kind) { return ROOM_ACTS[kind](); }
-

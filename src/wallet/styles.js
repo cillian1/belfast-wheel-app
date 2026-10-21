@@ -1,4 +1,5 @@
   // ---------- styles ----------
+  // Owns wallet-specific visual styles.
   const css = `
 .wbar{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px;margin-bottom:-2px}
 .wbar .who{display:flex;flex-direction:column;align-items:flex-start;background:none;border:1px solid var(--line);border-radius:12px;padding:4px 10px;color:var(--chrome);min-width:0}
@@ -151,4 +152,3 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
 }
 `;
   document.head.appendChild(el('style', null, css));
-

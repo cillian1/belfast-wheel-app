@@ -1,4 +1,5 @@
 // ---------- boot ----------
+// Owns initial canvas sizing, input handlers, and game startup.
 fitStage();
 new ResizeObserver(resize).observe(cv);
 resize();

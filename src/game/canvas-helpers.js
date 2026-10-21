@@ -1,4 +1,5 @@
 // ---------- canvas helpers ----------
+// Owns reusable canvas paths, wheel decoration, and dart sprites.
 const cv = $('#wheel'); let ctx = cv.getContext('2d');
 let N = 0, c = 0, R = 0, D = 1;
 let faces = {};
@@ -197,4 +198,3 @@ function buildDart() {
   g.beginPath(); g.arc(c, c, Rb - D, 0, TAU); g.strokeStyle = '#070605'; g.lineWidth = 3 * D; g.stroke();
   return k;
 }
-

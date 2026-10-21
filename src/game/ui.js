@@ -1,4 +1,5 @@
 // ---------- UI ----------
+// Owns verdict presentation and main-run orchestration.
 const spinBtn = $('#spinBtn'), plate = $('#verdict');
 function setVerdict({ eyebrow = 'The wheel says', title, body = '', steps = null, q = null, show = false, photo = false, flash = true }) {
   $('#vEyebrow').textContent = eyebrow; $('#vTitle').textContent = title;
@@ -14,6 +15,15 @@ function setVerdict({ eyebrow = 'The wheel says', title, body = '', steps = null
   if (flash) { plate.classList.remove('landed'); void plate.offsetWidth; plate.classList.add('landed'); }
 }
 function setBtn(text, disabled) { spinBtn.textContent = text; spinBtn.disabled = disabled; }
+
+function finalSpeech(m, moves, dest) {
+  if (m.special === 'own') return ['Final answer', 'Reject all commands', 'Go your own way'];
+  if (m.race) return ['Final answer', 'Chicken Race', `${m.name} wins`, `That one is worth ${$m(m.prize)} euro`];
+  const said = ['Final answer', ...moves.map((s, i) => (i === 0 ? 'First, ' : 'Then, ') + s.text.toLowerCase()), (moves.length ? 'Then, ' : '') + dest.b.replace(/^and /, ''), m.special === 'leave' ? 'And leave Mark alone' : 'And ' + m.t.charAt(0).toLowerCase() + m.t.slice(1)];
+  if (m.prize) said.push(`That one is worth ${$m(m.prize)} euro`);
+  if (m.phelan) said.push(m.b);
+  return said;
+}
 
 async function backToMain() {
   winGlow = null; ghost = null; ghostSay = ''; doorPick = null; tapPick = null; $('.stage').classList.remove('pick');
@@ -225,19 +235,15 @@ async function runMain() {
   let m = await markChain(steps, dest, { W: wilds, B: bonus });
   if (m.revenge) m = await phelanRevenge();
   const moves = steps.filter(s => !s.dest && !/^(Wild|Bonus|More)/.test(s.text));
-  let finalSteps, said;
+  let finalSteps;
   if (m.special === 'own') {
     finalSteps = [{ text: m.t, dest: true }];
-    said = ['Final answer', 'Reject all commands', 'Go your own way'];
   } else if (m.race) {
     finalSteps = [...steps, { text: m.t, dest: true }];
-    said = ['Final answer', 'Chicken Race', `${m.name} wins`, `That one is worth ${$m(m.prize)} euro`];
   } else {
     finalSteps = [...steps, { text: m.t, dest: true }];
-    said = ['Final answer', ...moves.map((s, i) => (i === 0 ? 'First, ' : 'Then, ') + s.text.toLowerCase()), (moves.length ? 'Then, ' : '') + dest.b.replace(/^and /, ''), m.special === 'leave' ? 'And leave Mark alone' : 'And ' + m.t.charAt(0).toLowerCase() + m.t.slice(1)];
-    if (m.prize) said.push(`That one is worth ${$m(m.prize)} euro`);
-    if (m.phelan) said.push(m.b);
   }
+  const said = finalSpeech(m, moves, dest);
   chainNote = '';
   setVerdict({ eyebrow: m.prize ? `Final answer · €${$m(m.prize)}` : 'Final answer', title: m.t, body: m.b || 'Go and ask him. No backing out.', steps: finalSteps, q: quote() });
   $('#caption').textContent = 'Tap Spin to go back to the top';
@@ -245,4 +251,3 @@ async function runMain() {
   $('#caption').textContent = 'Tap Spin to go back to the top';
   logMove(steps.map(s => s.text.replace(/^And /, '')).join(' · '));
 }
-

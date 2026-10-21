@@ -1,4 +1,5 @@
 // ---------- the Pyramid: all six tiles lit ----------
+// Owns Pyramid and Monster room scenes and outcomes.
 // the six tiles spiral into an eye of Horus, a pyramid rises out of the desert, a walk through the tomb, three doors,
 // and behind the Wild door the tip opens, coins pour, Cleopatra rises with the prizes and Ghost Phelan snatches one
 const PYR_PRIZES = [150, 300, 500, 1000, 2500];
@@ -346,4 +347,3 @@ async function monsterRun(steps, w = 0, b = 3) {
   $('#caption').textContent = 'Tap Spin to go back to the top';
   logMove(`Bonus · Monster tank · €${$m(lvl.v)}`);
 }
-

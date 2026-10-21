@@ -1,4 +1,5 @@
   // ---------- big wins are saved as their state frames, so anyone can rewatch them later ----------
+  // Owns highlight recording, compression, and live-feed publishing.
   // hlm/{id} is the small card for the list, hld/{id} the frames (gzipped where the phone can)
   let rec = null, wasBusy = false, feedRoom = '';
   async function pack(text) {
@@ -47,4 +48,3 @@
       await db.put('hld/' + id, data);
     } catch (e) {}
   }
-

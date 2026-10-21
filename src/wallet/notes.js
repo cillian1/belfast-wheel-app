@@ -1,4 +1,5 @@
   // ---------- notes from the host (gifts and messages): a card that stays on screen until it's tapped away ----------
+  // Owns host notes and gift notifications.
   let noteShowing = false;
   async function checkNotes() {
     const away = document.hidden;

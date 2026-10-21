@@ -1,4 +1,5 @@
 // ---------- content ----------
+// Owns wheel content, run text, and move selection data.
 const MAIN = [
   { lbl: ['FORWARD', '? M'], go: () => ({ t: `Forward ${metres()} metres`, b: "Straight ahead, whatever way you’re facing. A big stride is about a metre." }) },
   { lbl: ['GO', 'DEEPER'], deep: true },
@@ -169,4 +170,3 @@ const HEADS = {
 function headThought() { const who = pick(['Austin', 'Mark', 'Cillian']); return { who, text: who === 'Austin' ? quote() : pick(HEADS[who]) }; }
 const PHOTO_N = 16;
 const S = .56; // each nested wheel is this much smaller than the one around it
-

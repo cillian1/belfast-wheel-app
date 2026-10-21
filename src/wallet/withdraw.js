@@ -1,4 +1,5 @@
   // ---------- withdraw (request goes to the host screen; Cillian pays on Revolut) ----------
+  // Owns withdrawal request UI.
   function withdrawSheet() {
     const me = W.me;
     if (isTest()) return toast('Test account money is not real, so it cannot be withdrawn.');
@@ -26,4 +27,3 @@
       } catch (e) { $w('wErr').textContent = 'No connection. Try again.'; }
     };
   }
-

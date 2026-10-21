@@ -1,4 +1,5 @@
   // ---------- live feed: the big moments from everyone, across the top ----------
+  // Owns the feed ticker, watch list, mirror playback, and replay UI.
   const ticker = el('div', 'wfeed'); ticker.hidden = true; document.body.appendChild(ticker);
   let feedSeen = null, feedQ = [], feedShowing = false;
   async function pollFeed() {
@@ -183,4 +184,3 @@
     const done = () => location.reload(); // the game underneath was drawing someone else's run: start it fresh
     if (key && !key.startsWith('hl:')) db.put('live/' + key + '/w/' + me4(), null).then(done, done); else done();
   }
-

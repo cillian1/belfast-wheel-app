@@ -1,4 +1,5 @@
   // ---------- updates (version.json in the GitHub repo) ----------
+  // Owns update checks and update prompts.
   async function checkUpdate() {
     if (!CFG.updateUrl) return;
     try {
@@ -22,4 +23,3 @@
     $w('wUp').onclick = go; $w('wLater').onclick = () => { banner.hidden = true; snooze = now() + 10 * 60000; };
   }
   window.wolUpdateFailed = msg => { banner.hidden = false; banner.innerHTML = `<span>Update failed: ${esc(msg || 'no connection')}</span><button class="wbtn small" type="button" onclick="this.parentNode.hidden=true">OK</button>`; };
-

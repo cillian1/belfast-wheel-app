@@ -1,4 +1,5 @@
   // ---------- live: who is on now, and watching them play ----------
+  // Owns watcher heartbeats and the live game-state stream.
   // live/{key} = { name, at, play } is a heartbeat. A watcher writes live/{key}/w/{them} = time every few seconds;
   // only then does the player's phone send small JPEG frames of the wheel to livef/{key}. No watchers, no frames.
   const ONLINE_MS = 90000, WATCH_MS = 20000, me4 = () => W.user || 'guest';
@@ -76,4 +77,3 @@
       }
     } finally { streaming = false; }
   }
-

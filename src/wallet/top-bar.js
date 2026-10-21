@@ -1,4 +1,5 @@
   // ---------- top bar ----------
+  // Owns the wallet header, stake controls, and toast UI.
   const bar = el('div', 'wbar');
   bar.innerHTML = `<button class="who" type="button" id="wWho"><small>Log in</small><b>€0</b></button>
     <div class="wmid"><div class="wpot"><small>JACKPOT</small><b id="wPot">€50</b></div></div>
@@ -96,4 +97,3 @@
   $w('wMore').addEventListener('click', () => { const c = nextStake(); if (c) setStake(c); });
   $w('wTop').addEventListener('click', () => W.me ? topupSheet() : showLogin());
   $w('wWho').addEventListener('click', () => W.me ? accountSheet() : showLogin());
-

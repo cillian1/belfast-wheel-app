@@ -1,4 +1,5 @@
 // ---------- the Wild room roulette: every Wild and ankh you carried in becomes a ball ----------
+// Owns Wild-room vault and roulette behavior.
 const WILD_ACTS = [
   'Message Zena', 'Message Phelan', 'Message Laurence', 'Tell Phelan you love him', "Email Phelan's work", 'Track down Phelan',
   'Buy the next round of shots', 'Do a lap of the bar dancing', 'Get a stranger to say Phelan', 'Order your next drink in an accent',
@@ -248,4 +249,3 @@ async function bonusRun(steps, w = 3, b = 0) {
   $('#caption').textContent = 'Tap Spin to go back to the top';
   logMove(`Ultra bonus · roulette · €${$m(cash)}`);
 }
-

@@ -1,4 +1,5 @@
 // ---------- state ----------
+// Owns mutable game state helpers and special dice.
 let scene = 'nested', zoom = 1, busy = false, fade = 0;
 const rot = Array(MAXD + 1).fill(0);
 let dice = [];
@@ -22,4 +23,3 @@ function rescaleBalls(oldB) {
   if (!oldB || !oldB.N || oldB.N === N) return;
   const f = N / oldB.N; balls.forEach(b => { b.x *= f; b.y *= f; b.vx *= f; b.vy *= f; }); ballR *= f;
 }
-

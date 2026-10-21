@@ -1,4 +1,5 @@
   // ---------- account, stats, leaderboards ----------
+  // Owns account-sheet history, statistics, and leaderboard views.
   async function accountSheet(tab = 'me', selectedBoard) {
     await refresh();
     const me = W.me; if (!me) return;
@@ -100,4 +101,3 @@
     body.querySelectorAll('.wboard-pick button').forEach(button => { button.onclick = () => { boardKey = button.dataset.board; pref.set('wol.lbBoard', boardKey); renderBoard(); }; });
     renderBoard();
   }
-

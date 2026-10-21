@@ -1,8 +1,10 @@
+<!-- Owns the page shell and insertion points used by tools/bundle.mjs. -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Wheel of Life</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
+/* Owns the font-face definitions used throughout the app. */
 @font-face {
   font-family: 'Cormorant Garamond';
   font-style: italic;
@@ -118,6 +120,7 @@
 </style>
 <style>
 /* Layout: one-screen instrument. Chrome wheel centred (it zooms through nested wheels and ends on a ball-drop board), a brushed-steel verdict plate under it. Accent: anodized titanium heat-tint, kept for "Show me" and the controls. */
+/* Owns shared game, room, and wallet layout and presentation. */
 :root{
   --ink:#0a0c0f;
   --plate:#1f242b;
@@ -288,6 +291,7 @@ footer{position:fixed;top:8px;left:10px;z-index:5;color:rgba(220,225,230,.55);fo
 </div>
 
 <script>
+// Owns shared game constants, geometry, and utility functions.
 const BUILD = 59;
 const $ = s => document.querySelector(s);
 const TAU = Math.PI * 2, BASE = -Math.PI / 2;
@@ -298,8 +302,8 @@ const mod = (a, n) => ((a % n) + n) % n;
 const lerp = (a, b, t) => a + (b - a) * t;
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 const metres = () => pick([5, 10, 15, 20, 25, 30, 40, 50, 75, 100]);
-
 // ---------- content ----------
+// Owns wheel content, run text, and move selection data.
 const MAIN = [
   { lbl: ['FORWARD', '? M'], go: () => ({ t: `Forward ${metres()} metres`, b: "Straight ahead, whatever way you’re facing. A big stride is about a metre." }) },
   { lbl: ['GO', 'DEEPER'], deep: true },
@@ -470,8 +474,8 @@ const HEADS = {
 function headThought() { const who = pick(['Austin', 'Mark', 'Cillian']); return { who, text: who === 'Austin' ? quote() : pick(HEADS[who]) }; }
 const PHOTO_N = 16;
 const S = .56; // each nested wheel is this much smaller than the one around it
-
 // ---------- canvas helpers ----------
+// Owns reusable canvas paths, wheel decoration, and dart sprites.
 const cv = $('#wheel'); let ctx = cv.getContext('2d');
 let N = 0, c = 0, R = 0, D = 1;
 let faces = {};
@@ -670,8 +674,8 @@ function buildDart() {
   g.beginPath(); g.arc(c, c, Rb - D, 0, TAU); g.strokeStyle = '#070605'; g.lineWidth = 3 * D; g.stroke();
   return k;
 }
-
 // ---------- the room: dim, a fire going ----------
+// Owns the ambient room background and its animation.
 const room = $('#room'), rctx = room.getContext('2d');
 let RW = 0, RH = 0, RDp = 1, roomBg = null, fireBox = null, lastRoom = 0;
 const EMBERS = Array.from({ length: 26 }, () => ({ x: Math.random(), y: Math.random(), v: .15 + Math.random() * .35, s: 1 + Math.random() * 1.5 }));
@@ -745,8 +749,8 @@ function drawRoom(now) {
   rctx.restore();
 }
 roomResize(); window.addEventListener('resize', roomResize); requestAnimationFrame(drawRoom);
-
 // ---------- faces ----------
+// Owns cached wheel, pointer, ball, and board face construction.
 function buildBase() {
   const k = mk(), g = k.getContext('2d');
   g.save(); g.shadowColor = 'rgba(0,0,0,.75)'; g.shadowBlur = R * .09; g.shadowOffsetY = R * .045;
@@ -961,27 +965,6 @@ function buildPointer() {
   g.beginPath(); g.arc(c - jr * .3, jy - jr * .35, jr * .28, 0, TAU); g.fillStyle = 'rgba(255,255,255,.75)'; g.fill();
   return k;
 }
-function buildFinal() {
-  const k = mk(), g = k.getContext('2d'), n = FINAL.length, seg = TAU / n, r0 = R * .16, r1 = R * .93;
-  g.save(); g.shadowColor = 'rgba(0,0,0,.75)'; g.shadowBlur = R * .08; g.shadowOffsetY = R * .04;
-  g.beginPath(); g.arc(c, c, R, 0, TAU); g.fillStyle = '#0c0e11'; g.fill(); g.restore();
-  chromeRim(g, r1, R);
-  FINAL.forEach((s, i) => {
-    const a0 = BASE + i * seg, a1 = a0 + seg;
-    wedgePath(g, a0, a1, r0, r1); g.fillStyle = wedgeFill(g, a0, a1, r0, r1, tintStops(s.tint)); g.fill();
-  });
-  const sh = g.createRadialGradient(c, c, r0, c, c, r1);
-  sh.addColorStop(0, 'rgba(0,0,0,.5)'); sh.addColorStop(.3, 'rgba(0,0,0,0)'); sh.addColorStop(.62, 'rgba(0,0,0,.05)'); sh.addColorStop(.7, 'rgba(0,0,0,.45)'); sh.addColorStop(.88, 'rgba(0,0,0,.35)'); sh.addColorStop(1, 'rgba(0,0,0,.55)');
-  wedgePath(g, 0, TAU - 1e-4, r0, r1); g.fillStyle = sh; g.fill();
-  hairlines(g, [.64, .9]);
-  ridges(g, n, r0, r1);
-  weather(g, r0, r1, .7);
-  FINAL.forEach((s, i) => wedgeText(g, BASE + (i + .5) * seg, R * .43, s.lbl, R * .06, R * .3, 'dark'));
-  const dome = g.createRadialGradient(c - R * .04, c - R * .05, 0, c, c, R * .16);
-  dome.addColorStop(0, '#ffffff'); dome.addColorStop(.3, '#d9dfe4'); dome.addColorStop(.7, '#6b737c'); dome.addColorStop(1, '#262a30');
-  g.beginPath(); g.arc(c, c, R * .16, 0, TAU); g.fillStyle = dome; g.fill();
-  return k;
-}
 function ballImg(b) { return b.kind === 'W' ? faces.wildBall : b.kind === 'B' ? faces.bonusBall : b.gold ? faces.gold : faces.ball; }
 function buildBall(gold) {
   const s = Math.max(16, Math.ceil(R * .08)), k = mk(s, s), g = k.getContext('2d'), r = s / 2;
@@ -1093,8 +1076,8 @@ function build() {
   buildBoard();
   if (photoImg) faces.photo = buildPhoto();
 }
-
 // ---------- state ----------
+// Owns mutable game state helpers and special dice.
 let scene = 'nested', zoom = 1, busy = false, fade = 0;
 const rot = Array(MAXD + 1).fill(0);
 let dice = [];
@@ -1118,8 +1101,8 @@ function rescaleBalls(oldB) {
   if (!oldB || !oldB.N || oldB.N === N) return;
   const f = N / oldB.N; balls.forEach(b => { b.x *= f; b.y *= f; b.vx *= f; b.vy *= f; }); ballR *= f;
 }
-
 // ---------- drawing ----------
+// Owns main canvas drawing and stage layout.
 function drawScaled(img, r, sc) { ctx.save(); ctx.translate(c, c); ctx.scale(sc, sc); ctx.rotate(r); ctx.drawImage(img, -c, -c); ctx.restore(); }
 let domeBulge = 0;
 function drawDice(sc) {
@@ -1381,8 +1364,8 @@ function resize() {
   N = cv.width = cv.height = n; c = N / 2; R = N / 2 * .935 * .82;
   build(); if (old) rescaleBalls(old); draw();
 }
-
 // ---------- sound ----------
+// Owns short sound effects and vibration feedback.
 let AC = null;
 function audio() { try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume(); } catch (e) { AC = null; } }
 function tick(v, f = 2500) {
@@ -1406,6 +1389,7 @@ function whoosh(up) {
   o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + 1.25);
 }
 // ---------- music: a driving Egyptian groove (Hijaz on D) that builds with every wild ----------
+// Owns synthesized background music and its playback controls.
 const Music = (() => {
   let on = true, level = 0, duckV = 1, master = null, noise = null, timer = null, nextT = 0, step = 0, drone = null;
   try { on = localStorage.getItem('wol-music') !== 'off'; } catch (e) {}
@@ -1508,8 +1492,8 @@ document.addEventListener('visibilitychange', () => Music.vis());
 function buzz(p) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} }
 let lastPegBuzz = 0; // a tiny tap per peg, never faster than the motor can feel
 function pegBuzz() { const t = performance.now(); if (t - lastPegBuzz > 45) { lastPegBuzz = t; buzz(7); } }
-
 // ---------- motion ----------
+// Owns wheel spins, transitions, and animated game effects.
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const easeOut = t => 1 - Math.pow(1 - t, 4);
 const easeIn = t => t * t * t;
@@ -1699,7 +1683,6 @@ async function goldenRun() {
 }
 async function boostRun(kind, fromK) {
   const img = mk(96, 96); paintTile(img, kind);
-  const targets = [];
   for (let j = fromK + 1; j <= DEPTH; j++) { boostNew[j] = boostedOrder(runOrders[j - 1], kind, 4, j); faces['boost' + j] = ringFor(j, boostNew[j]); }
   Music.sting(3); buzz([40, 30, 40, 30, 120]); whoosh(true);
   setVerdict({ eyebrow: 'Going deeper', title: kind === 'W' ? 'More Wilds' : 'More Bonus', body: 'The wheels below are changing.', flash: true });
@@ -1869,8 +1852,8 @@ async function burstDiceRun() {
   await wait(1300);
   running = false;
 }
-
 // ---------- ball physics ----------
+// Owns ball-drop simulation and final-slot counting.
 let lastPeg = 0;
 function physicsStep(dt) {
   const g = N * 1.7, r = ballR, free = balls.filter(b => b.free);
@@ -1951,8 +1934,8 @@ function countSlots() {
   balls.forEach(b => { const j = Math.max(0, Math.min(FINAL.length - 1, Math.floor((b.x - B.m) / B.w))); cs[j]++; });
   return cs;
 }
-
 // ---------- UI ----------
+// Owns verdict presentation and main-run orchestration.
 const spinBtn = $('#spinBtn'), plate = $('#verdict');
 function setVerdict({ eyebrow = 'The wheel says', title, body = '', steps = null, q = null, show = false, photo = false, flash = true }) {
   $('#vEyebrow').textContent = eyebrow; $('#vTitle').textContent = title;
@@ -1968,6 +1951,15 @@ function setVerdict({ eyebrow = 'The wheel says', title, body = '', steps = null
   if (flash) { plate.classList.remove('landed'); void plate.offsetWidth; plate.classList.add('landed'); }
 }
 function setBtn(text, disabled) { spinBtn.textContent = text; spinBtn.disabled = disabled; }
+
+function finalSpeech(m, moves, dest) {
+  if (m.special === 'own') return ['Final answer', 'Reject all commands', 'Go your own way'];
+  if (m.race) return ['Final answer', 'Chicken Race', `${m.name} wins`, `That one is worth ${$m(m.prize)} euro`];
+  const said = ['Final answer', ...moves.map((s, i) => (i === 0 ? 'First, ' : 'Then, ') + s.text.toLowerCase()), (moves.length ? 'Then, ' : '') + dest.b.replace(/^and /, ''), m.special === 'leave' ? 'And leave Mark alone' : 'And ' + m.t.charAt(0).toLowerCase() + m.t.slice(1)];
+  if (m.prize) said.push(`That one is worth ${$m(m.prize)} euro`);
+  if (m.phelan) said.push(m.b);
+  return said;
+}
 
 async function backToMain() {
   winGlow = null; ghost = null; ghostSay = ''; doorPick = null; tapPick = null; $('.stage').classList.remove('pick');
@@ -2179,19 +2171,15 @@ async function runMain() {
   let m = await markChain(steps, dest, { W: wilds, B: bonus });
   if (m.revenge) m = await phelanRevenge();
   const moves = steps.filter(s => !s.dest && !/^(Wild|Bonus|More)/.test(s.text));
-  let finalSteps, said;
+  let finalSteps;
   if (m.special === 'own') {
     finalSteps = [{ text: m.t, dest: true }];
-    said = ['Final answer', 'Reject all commands', 'Go your own way'];
   } else if (m.race) {
     finalSteps = [...steps, { text: m.t, dest: true }];
-    said = ['Final answer', 'Chicken Race', `${m.name} wins`, `That one is worth ${$m(m.prize)} euro`];
   } else {
     finalSteps = [...steps, { text: m.t, dest: true }];
-    said = ['Final answer', ...moves.map((s, i) => (i === 0 ? 'First, ' : 'Then, ') + s.text.toLowerCase()), (moves.length ? 'Then, ' : '') + dest.b.replace(/^and /, ''), m.special === 'leave' ? 'And leave Mark alone' : 'And ' + m.t.charAt(0).toLowerCase() + m.t.slice(1)];
-    if (m.prize) said.push(`That one is worth ${$m(m.prize)} euro`);
-    if (m.phelan) said.push(m.b);
   }
+  const said = finalSpeech(m, moves, dest);
   chainNote = '';
   setVerdict({ eyebrow: m.prize ? `Final answer · €${$m(m.prize)}` : 'Final answer', title: m.t, body: m.b || 'Go and ask him. No backing out.', steps: finalSteps, q: quote() });
   $('#caption').textContent = 'Tap Spin to go back to the top';
@@ -2199,8 +2187,8 @@ async function runMain() {
   $('#caption').textContent = 'Tap Spin to go back to the top';
   logMove(steps.map(s => s.text.replace(/^And /, '')).join(' · '));
 }
-
 // ---------- ultra bonus: 77 Bridgefield and the Stankman's Wheel ----------
+// Owns Stank Chamber assets and room behavior.
 const INTRO_TEXT = "On a cold winter's eve at 77 Bridgefield, a faint spirit watches over you.";
 let introT = 0, camT = 0, hallZ = 0, doorT = 0, flash = 0, rotS = 0;
 let bingo = [], ballSpeed = 1, ballPhase = 0, lastBallDraw = 0, pickIdx = -1, handT = 0, liftT = 0, handClosed = false, prize = null;
@@ -2473,8 +2461,8 @@ const ROOM_ACTS = {
   ]),
 };
 function roomAct(kind) { return ROOM_ACTS[kind](); }
-
 // ---------- the Wild room roulette: every Wild and ankh you carried in becomes a ball ----------
+// Owns Wild-room vault and roulette behavior.
 const WILD_ACTS = [
   'Message Zena', 'Message Phelan', 'Message Laurence', 'Tell Phelan you love him', "Email Phelan's work", 'Track down Phelan',
   'Buy the next round of shots', 'Do a lap of the bar dancing', 'Get a stranger to say Phelan', 'Order your next drink in an accent',
@@ -2724,8 +2712,8 @@ async function bonusRun(steps, w = 3, b = 0) {
   $('#caption').textContent = 'Tap Spin to go back to the top';
   logMove(`Ultra bonus · roulette · €${$m(cash)}`);
 }
-
 // ---------- 3D six-sided dice ----------
+// Owns six-sided die geometry and rotation math.
 const DIE_FACES = [
   { n: [0, 0, 1], u: [1, 0, 0], v: [0, 1, 0], val: 1 },
   { n: [0, 0, -1], u: [-1, 0, 0], v: [0, 1, 0], val: 6 },
@@ -2795,8 +2783,8 @@ function drawDie3D(g, x, y, s, M, sp) {
     g.globalAlpha = 1;
   });
 }
-
 // ---------- the bonus round: rollercoaster, the planet wheel, twelve-sided dice, the Monster tank ----------
+// Owns bonus-room dice, coaster, planet, and Monster tank behavior.
 const TANK_LEVELS = [{ at: 0, v: 30 }, { at: 68, v: 50 }, { at: 78, v: 80 }, { at: 90, v: 150 }];
 const TANK_CAP = 120;
 const COSMIC = [1000, 5000, 10000, 1000, 5000, 1000, 10000, 5000, 1000, 5000, 10000, 5000];
@@ -3057,8 +3045,8 @@ async function roll12(dice) {
   dice.forEach((d, i) => { d.M = to[i]; d.top = d12Top(d.M); });
   ting();
 }
-
 // ---------- Phelan's revenge: not one ball in the green ----------
+// Owns Phelan's revenge wheel and ending.
 // Ghost Phelan laughs, takes you to his sister Zena's house and spins his own wheel of Phelan orders
 const PHELAN_OPTS = [
   { lbl: ['RING', 'ZENA'], t: 'Ring Zena', b: "Ring Zena and tell her the lads say hello from Belfast. On speaker, so everyone hears." },
@@ -3140,6 +3128,7 @@ async function phelanRevenge() {
   return r;
 }
 // ---------- the God room: Phelan's electronic waste shop ----------
+// Owns God room visuals and shop interactions.
 // Ghost Phelan shows you round his e-waste shop, picks a bit of scrap that bursts into a deck, five cards of higher or lower,
 // and four right in a row gets you onto his God wheel, which he spins himself
 const SCRAP = [
@@ -3353,6 +3342,7 @@ async function godRoom(steps) {
   speak(['Final answer', ...spokenMoves(steps), `The God wheel pays ${$m(prize)} euro`, roomAct('god')]);
 }
 // ---------- the Pyramid: all six tiles lit ----------
+// Owns Pyramid and Monster room scenes and outcomes.
 // the six tiles spiral into an eye of Horus, a pyramid rises out of the desert, a walk through the tomb, three doors,
 // and behind the Wild door the tip opens, coins pour, Cleopatra rises with the prizes and Ghost Phelan snatches one
 const PYR_PRIZES = [150, 300, 500, 1000, 2500];
@@ -3700,8 +3690,8 @@ async function monsterRun(steps, w = 0, b = 3) {
   $('#caption').textContent = 'Tap Spin to go back to the top';
   logMove(`Bonus · Monster tank · €${$m(lvl.v)}`);
 }
-
 // ---------- the Mark ending: pipes, dice, chickens, fire arrows, the farm, Mark's wheel ----------
+// Owns the Mark ending, farm simulation, and Mark's wheel.
 const MARK_QS = [
   { lbl: ['WHY KICK', 'PHELAN OUT?'], t: 'Ask Mark why he really kicked Phelan out' },
   { lbl: ["PHELAN'S", 'ROOM SMELL'], t: "Ask Mark to describe the smell of Phelan's old room" },
@@ -3764,13 +3754,6 @@ const OWNWAY = { lbl: ['GO YOUR', 'OWN WAY'], t: 'Reject all commands, go your o
 
 let pipes = null, carried = [], d6 = [], d6Sum = 0, chickens = [], arrows = [], fires = [], feathers = [], camX = 0, markItems = [], rotM = 0, formT = [], showMark = 0, chainNote = '', raceLine = 0;
 
-function pathWithLengths(pts) { const L = [0]; for (let i = 1; i < pts.length; i++) L.push(L[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1])); return { pts, L, total: L[L.length - 1] }; }
-function pathAt(p, s) {
-  if (s <= 0) return [p.pts[0][0], p.pts[0][1] + s];
-  let i = 1; while (i < p.L.length - 1 && p.L[i] < s) i++;
-  const t = Math.min(1, (s - p.L[i - 1]) / ((p.L[i] - p.L[i - 1]) || 1));
-  return [lerp(p.pts[i - 1][0], p.pts[i][0], t), lerp(p.pts[i - 1][1], p.pts[i][1], t)];
-}
 // the pipes: one tube drops the balls into a pinball pit (bumpers and flippers, all physics),
 // then three chutes catch them. Only the green chute counts.
 function setupPipes(n) {
@@ -4165,6 +4148,17 @@ function walkChicken(ch, dt, speed) {
   const st = Math.min(d, speed * dt); ch.x += dx / d * st; ch.y += dy / d * st; ch.dir = dx >= 0 ? 1 : -1; ch.ph += dt * 18; ch.peck = 0;
   return false;
 }
+function planMarkFlights(markItems, alive, n, wheelSize) {
+  const spc = alive.filter(ch => ch.special).slice(0, n), plain = alive.filter(ch => !spc.includes(ch)).slice(0, n - spc.length);
+  const free = markItems.map((it, j) => j).filter(j => !markItems[j].kind);
+  const sliceOf = new Map();
+  spc.forEach(ch => { const j = markItems.findIndex((it, q) => it.kind === ch.special && ![...sliceOf.values()].includes(q)); sliceOf.set(ch, j); });
+  plain.forEach((ch, q) => sliceOf.set(ch, free[q]));
+  const fliers = [...plain, ...spc];
+  const formT = fliers.map(ch => ({ x: ch.x, y: ch.y - wheelSize * .02, t: 0, idx: sliceOf.get(ch), kind: ch.special || null }));
+  const startAt = fliers.map((ch, i) => i < plain.length ? i * .18 : plain.length * .18 + .6 + (i - plain.length) * 1.1);
+  return { spc, fliers, formT, startAt };
+}
 async function markChain(steps, dest, held = { W: 0, B: 0 }) {
   const ballsIn = counts[winner];
   // 1. the winning slot's balls go up the tube and down the pipes
@@ -4328,14 +4322,8 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
   markItems = items.sort(() => Math.random() - .5);
   faces.mark = buildMarkWheel(markItems);
   // each chicken becomes its own slice: a gold or purple chicken turns into its prize slice, plain ones into the rest
-  const spc = alive.filter(ch => ch.special).slice(0, specials.length), plain = alive.filter(ch => !spc.includes(ch)).slice(0, n - spc.length);
-  const free = markItems.map((it, j) => j).filter(j => !markItems[j].kind);
-  const sliceOf = new Map();
-  spc.forEach(ch => { const j = markItems.findIndex((it, q) => it.kind === ch.special && ![...sliceOf.values()].includes(q)); sliceOf.set(ch, j); });
-  plain.forEach((ch, q) => sliceOf.set(ch, free[q]));
-  const fliers = [...plain, ...spc]; // the special ones go last, slowly, so you see them turn
-  formT = fliers.map(ch => ({ x: ch.x, y: ch.y - N * .02, t: 0, idx: sliceOf.get(ch), kind: ch.special || null }));
-  const startAt = fliers.map((ch, i) => i < plain.length ? i * .18 : plain.length * .18 + .6 + (i - plain.length) * 1.1);
+  const { spc, fliers, formT: flights, startAt } = planMarkFlights(markItems, alive, n, N); // special chickens go last, slowly, so you see them turn
+  formT = flights;
   $('#caption').textContent = "Mark's wheel";
   setVerdict({ eyebrow: "Mark's wheel", title: 'Mark’s wheel', body: 'Every surviving chicken becomes a slice.', steps: steps.slice(), flash: false });
   await farmLoop(n * .18 + spc.length * 1.1 + 3, (dt, el) => {
@@ -4363,8 +4351,8 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
   rotM = mod(rotM, TAU); ting(); buzz([40, 50, 80]);
   return markItems[tg.i];
 }
-
 // ---------- Chicken Race: 1 in 4 farm runs, the survivors dance, then race for the prizes on their tags ----------
+// Owns Chicken Race drawing, timing, and winner selection.
 const RACE_CHANCE = .25, RACE_MAX = 8, RACE_T = 6;
 const RACE_NAMES = ['Clucky', 'Nugget', 'Henrietta', 'Peggy', 'Drumstick', 'Eggbert', 'Feathers', 'Big Bertha', 'Colonel', 'Scrambles', 'Goldie', 'Penny'];
 const racePay = v => typeof $m === 'function' ? $m(v) : v;
@@ -4481,8 +4469,8 @@ async function chickenRace(steps, alive) {
     prize: v, race: true, name: win.name,
   };
 }
-
 // ---------- Show me ----------
+// Owns spin controls, photo flow, tiles, and auto-spin.
 function enterPhoto(img) {
   photoImg = img; scene = 'photo'; rotP = 0; hi = null; hiA = 0; photoZoom = 0; photoDone = false;
   faces.photo = buildPhoto(); draw();
@@ -4650,8 +4638,8 @@ function setExtras(el, kind, n) {
   if (n > 4) { if (!em) { em = document.createElement('em'); el.appendChild(em); } em.textContent = '+' + (n - 4); } else if (em) em.remove();
 }
 function setWilds(n) { setTiles(n, 0); if (!n) $('#wilds').classList.remove('over', 'overB', 'overW'); }
-
 // ---------- read the moves out loud ----------
+// Owns spoken move summaries and speech controls.
 function logMove() {}
 function spokenMoves(steps) { return steps.filter(s => !s.dest && !/^(Wild|Bonus|More|The God|Go back up)/.test(s.text)).map((s, i) => (i === 0 ? 'First, ' : 'Then, ') + s.text.toLowerCase()); }
 // phones only allow speech once a tap has started it, so the first tap anywhere unlocks it with a silent line
@@ -4716,8 +4704,8 @@ function speak(lines) {
   } catch (e) {}
 }
 sayBtn.addEventListener('click', () => { if (!sayLast) return; sayBtn.classList.remove('pulse'); sayBtn.textContent = 'Read it out'; try { sayNow(sayLast); } catch (e) {} });
-
 // ---------- boot ----------
+// Owns initial canvas sizing, input handlers, and game startup.
 fitStage();
 new ResizeObserver(resize).observe(cv);
 resize();
@@ -4725,11 +4713,13 @@ if (document.fonts && document.fonts.load) {
   Promise.all([document.fonts.load(`700 20px ${LABEL_FONT}`), document.fonts.load(`20px ${DISPLAY_FONT}`), document.fonts.load(`italic 500 20px "Cormorant Garamond"`)])
     .catch(() => {}).then(() => { if (N) { build(); draw(); } });
 }
+
 </script>
 
 <script>window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":21,"ev":16.24,"edge":0.995,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};</script>
 <script>
 // ---------- wallet layer for the Android app ----------
+// Owns wallet configuration, shared state, and app bindings.
 // Injected after the game's own script by tools/build.mjs. It wraps spin() and setVerdict(),
 // and money shown by the game goes through $m() (see tools/money.mjs).
 // Accounts, balances, requests and stats live in a Firebase Realtime Database (REST, no SDK).
@@ -4743,6 +4733,7 @@ if (document.fonts && document.fonts.load) {
 
   // <shared> (also used by host.html, see tools/build.mjs)
   // ---------- small helpers ----------
+  // Owns shared wallet formatting, preferences, and hashing helpers.
   const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const eur = c => { const v = Math.abs(c) / 100, s = Number.isInteger(v) ? String(v) : v.toFixed(2); return (c < 0 ? '−€' : '€') + s; };
@@ -4790,8 +4781,8 @@ if (document.fonts && document.fonts.load) {
     }
     return H.map(x => (x >>> 0).toString(16).padStart(8, '0')).join('');
   }
-
   // ---------- Firebase REST ----------
+  // Owns database REST requests and transaction logging.
   // in the app, requests go through Java (no CORS from a file:// page); in a browser, plain fetch
   const waiting = {}; let reqN = 0;
   window.__httpDone = id => { const raw = app.httpTake(id), w = waiting[id]; delete waiting[id]; if (!w) return;
@@ -4831,8 +4822,8 @@ if (document.fonts && document.fonts.load) {
   const log = (k, t, a, extra) => db.push('tx/' + k, Object.assign({ t, a, at: now() }, extra || {})).catch(() => {});
 
   // </shared>
-
   // ---------- payouts: every prize the game shows is scaled to the stake (house keeps ~1%) ----------
+  // Owns payout-value conversion and payment display helpers.
   // ev = the game's average base prize per paid spin (in game euros), measured by simulation.
   window.$m = function (v) {
     const s = W.run ? W.run.stake : W.stake;
@@ -4840,8 +4831,8 @@ if (document.fonts && document.fonts.load) {
     return (c / 100).toFixed(2).replace(/\.00$/, '');
   };
   W.payCents = v => Math.round(+v * 100);
-
   // ---------- styles ----------
+  // Owns wallet-specific visual styles.
   const css = `
 .wbar{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px;margin-bottom:-2px}
 .wbar .who{display:flex;flex-direction:column;align-items:flex-start;background:none;border:1px solid var(--line);border-radius:12px;padding:4px 10px;color:var(--chrome);min-width:0}
@@ -4994,8 +4985,8 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
 }
 `;
   document.head.appendChild(el('style', null, css));
-
   // ---------- top bar ----------
+  // Owns the wallet header, stake controls, and toast UI.
   const bar = el('div', 'wbar');
   bar.innerHTML = `<button class="who" type="button" id="wWho"><small>Log in</small><b>€0</b></button>
     <div class="wmid"><div class="wpot"><small>JACKPOT</small><b id="wPot">€50</b></div></div>
@@ -5093,8 +5084,8 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   $w('wMore').addEventListener('click', () => { const c = nextStake(); if (c) setStake(c); });
   $w('wTop').addEventListener('click', () => W.me ? topupSheet() : showLogin());
   $w('wWho').addEventListener('click', () => W.me ? accountSheet() : showLogin());
-
   // ---------- accounts ----------
+  // Owns account login, refresh, and logout flows.
   function showLogin(msg) {
     login.hidden = false;
     login.innerHTML = `<div class="wpanel"><h1>WHEEL OF LIFE</h1>
@@ -5137,8 +5128,8 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     } catch (e) {}
   }
   function logout() { W.user = W.me = null; pref.set('wol.user', null); pref.set('wol.pass', null); paint(); closeSheet(); showLogin(); }
-
   // ---------- spins: pay the stake, play, collect ----------
+  // Owns spin charging, collection, and refund handling.
   const gameSpin = spin;
   let charging = false;
   spin = async function () {
@@ -5223,8 +5214,8 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   async function refund(s) {
     try { const u = await db.txn('users/' + W.user, u => { u.balance += s; u.staked -= s; u.spins -= 1; return u; }); W.me = u; paint(); log(W.user, 'refund', s); toast('Run broke, stake refunded.'); } catch (e) {}
   }
-
   // ---------- top up (player pays Cillian on Revolut and confirms; the host page can reverse) ----------
+  // Owns the top-up confirmation sheets.
   function topupSheet(msg) {
     if (!W.me) return showLogin();
     if (isTest()) {
@@ -5275,8 +5266,8 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
       } catch (e) { $w('wErr').textContent = 'No connection. Try again.'; }
     };
   }
-
   // ---------- account, stats, leaderboards ----------
+  // Owns account-sheet history, statistics, and leaderboard views.
   async function accountSheet(tab = 'me', selectedBoard) {
     await refresh();
     const me = W.me; if (!me) return;
@@ -5378,8 +5369,8 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     body.querySelectorAll('.wboard-pick button').forEach(button => { button.onclick = () => { boardKey = button.dataset.board; pref.set('wol.lbBoard', boardKey); renderBoard(); }; });
     renderBoard();
   }
-
   // ---------- withdraw (request goes to the host screen; Cillian pays on Revolut) ----------
+  // Owns withdrawal request UI.
   function withdrawSheet() {
     const me = W.me;
     if (isTest()) return toast('Test account money is not real, so it cannot be withdrawn.');
@@ -5407,8 +5398,8 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
       } catch (e) { $w('wErr').textContent = 'No connection. Try again.'; }
     };
   }
-
   // ---------- live: who is on now, and watching them play ----------
+  // Owns watcher heartbeats and the live game-state stream.
   // live/{key} = { name, at, play } is a heartbeat. A watcher writes live/{key}/w/{them} = time every few seconds;
   // only then does the player's phone send small JPEG frames of the wheel to livef/{key}. No watchers, no frames.
   const ONLINE_MS = 90000, WATCH_MS = 20000, me4 = () => W.user || 'guest';
@@ -5486,8 +5477,8 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
       }
     } finally { streaming = false; }
   }
-
   // ---------- big wins are saved as their state frames, so anyone can rewatch them later ----------
+  // Owns highlight recording, compression, and live-feed publishing.
   // hlm/{id} is the small card for the list, hld/{id} the frames (gzipped where the phone can)
   let rec = null, wasBusy = false, feedRoom = '';
   async function pack(text) {
@@ -5536,8 +5527,8 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
       await db.put('hld/' + id, data);
     } catch (e) {}
   }
-
   // ---------- messages from watchers: Ghost Phelan carries them across, see-through so they don't get in the way ----------
+  // Owns watcher messages and the Ghost Phelan overlay.
   let lastMsg = '', ghostSprite = null;
   function ghostImg() {
     if (ghostSprite) return ghostSprite;
@@ -5565,8 +5556,8 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     setTimeout(() => { box.classList.remove('in'); box.classList.add('out'); }, 5200);
     setTimeout(() => box.remove(), 6400);
   }
-
   // ---------- live feed: the big moments from everyone, across the top ----------
+  // Owns the feed ticker, watch list, mirror playback, and replay UI.
   const ticker = el('div', 'wfeed'); ticker.hidden = true; document.body.appendChild(ticker);
   let feedSeen = null, feedQ = [], feedShowing = false;
   async function pollFeed() {
@@ -5751,8 +5742,8 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     const done = () => location.reload(); // the game underneath was drawing someone else's run: start it fresh
     if (key && !key.startsWith('hl:')) db.put('live/' + key + '/w/' + me4(), null).then(done, done); else done();
   }
-
   // ---------- updates (version.json in the GitHub repo) ----------
+  // Owns update checks and update prompts.
   async function checkUpdate() {
     if (!CFG.updateUrl) return;
     try {
@@ -5776,8 +5767,8 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     $w('wUp').onclick = go; $w('wLater').onclick = () => { banner.hidden = true; snooze = now() + 10 * 60000; };
   }
   window.wolUpdateFailed = msg => { banner.hidden = false; banner.innerHTML = `<span>Update failed: ${esc(msg || 'no connection')}</span><button class="wbtn small" type="button" onclick="this.parentNode.hidden=true">OK</button>`; };
-
   // ---------- boot ----------
+  // Owns wallet startup and initial state restoration.
   const savedStake = +pref.get('wol.stake'); if (okStake(savedStake)) W.stake = savedStake;
   W.user = pref.get('wol.user');
   W.jackpot = JACKPOT_START;
@@ -5789,6 +5780,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   setInterval(() => { if (!busy && !document.hidden) refresh(); }, 30000);
   heartbeat(); setTimeout(heartbeat, 2500); setInterval(() => { if (!streaming) heartbeat(); }, 15000); // the second one runs once the account has loaded
   // ---------- notes from the host (gifts and messages): a card that stays on screen until it's tapped away ----------
+  // Owns host notes and gift notifications.
   let noteShowing = false;
   async function checkNotes() {
     const away = document.hidden;

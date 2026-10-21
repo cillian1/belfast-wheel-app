@@ -1,4 +1,5 @@
 // ---------- 3D six-sided dice ----------
+// Owns six-sided die geometry and rotation math.
 const DIE_FACES = [
   { n: [0, 0, 1], u: [1, 0, 0], v: [0, 1, 0], val: 1 },
   { n: [0, 0, -1], u: [-1, 0, 0], v: [0, 1, 0], val: 6 },
@@ -68,4 +69,3 @@ function drawDie3D(g, x, y, s, M, sp) {
     g.globalAlpha = 1;
   });
 }
-

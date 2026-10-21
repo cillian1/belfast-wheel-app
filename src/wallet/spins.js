@@ -1,4 +1,5 @@
   // ---------- spins: pay the stake, play, collect ----------
+  // Owns spin charging, collection, and refund handling.
   const gameSpin = spin;
   let charging = false;
   spin = async function () {
@@ -83,4 +84,3 @@
   async function refund(s) {
     try { const u = await db.txn('users/' + W.user, u => { u.balance += s; u.staked -= s; u.spins -= 1; return u; }); W.me = u; paint(); log(W.user, 'refund', s); toast('Run broke, stake refunded.'); } catch (e) {}
   }
-

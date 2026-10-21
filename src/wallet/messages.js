@@ -1,4 +1,5 @@
   // ---------- messages from watchers: Ghost Phelan carries them across, see-through so they don't get in the way ----------
+  // Owns watcher messages and the Ghost Phelan overlay.
   let lastMsg = '', ghostSprite = null;
   function ghostImg() {
     if (ghostSprite) return ghostSprite;
@@ -26,4 +27,3 @@
     setTimeout(() => { box.classList.remove('in'); box.classList.add('out'); }, 5200);
     setTimeout(() => box.remove(), 6400);
   }
-

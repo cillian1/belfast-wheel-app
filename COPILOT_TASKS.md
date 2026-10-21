@@ -134,6 +134,8 @@ Merged into Task 4 below. Don't open a separate PR for it.
 
 **Status (Task 4, Stage 1):** Split the live page mechanically into `src/` modules and added the dependency-free Node bundler and checker. `node tools/bundle.mjs` rebuilt `game/index.html` byte-for-byte identical to pre-change `main` (`git diff --exit-code -- game/index.html` is clean); `node tools/check.mjs` parsed all 3 inline scripts and confirmed `version.json` `game` matches `gameVersion` 21. No behavior, version, payout, `Math.random()` call order/count, or watched globals changed. No open questions; Stage 2 has not started.
 
+**Status (Task 4, Stage 2):** Removed the unused `buildFinal`, `pathWithLengths`, and `pathAt` functions after whole-repo identifier and string-lookup searches, including wallet `MIRROR`; removed the unused local `targets` array. Extracted deterministic final-speech and Mark-wheel-flight planning helpers, and added ownership headers to source modules. `node tools/check.mjs` passes; the bundle has the same 120 `Math.random()` callsite lines as `main`, in the same order. No prize/payout, wallet, version, or watched-global changes. The dormant `godBurst` helper remains because it contains random callsites; deleting it would violate the no-random-call-change criterion.
+
 ### What Claude checks before merging each stage
 
 - Screenshots of the main wheel, inner wheels, each room, the farm and Chicken Race, and the account sheet, before and after, at 360 and 412px.

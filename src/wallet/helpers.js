@@ -1,4 +1,5 @@
   // ---------- small helpers ----------
+  // Owns shared wallet formatting, preferences, and hashing helpers.
   const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const eur = c => { const v = Math.abs(c) / 100, s = Number.isInteger(v) ? String(v) : v.toFixed(2); return (c < 0 ? '−€' : '€') + s; };
@@ -46,4 +47,3 @@
     }
     return H.map(x => (x >>> 0).toString(16).padStart(8, '0')).join('');
   }
-

@@ -1,4 +1,5 @@
   // ---------- Firebase REST ----------
+  // Owns database REST requests and transaction logging.
   // in the app, requests go through Java (no CORS from a file:// page); in a browser, plain fetch
   const waiting = {}; let reqN = 0;
   window.__httpDone = id => { const raw = app.httpTake(id), w = waiting[id]; delete waiting[id]; if (!w) return;
@@ -38,4 +39,3 @@
   const log = (k, t, a, extra) => db.push('tx/' + k, Object.assign({ t, a, at: now() }, extra || {})).catch(() => {});
 
   // </shared>
-

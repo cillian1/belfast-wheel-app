@@ -1,4 +1,5 @@
 // ---------- wallet layer for the Android app ----------
+// Owns wallet configuration, shared state, and app bindings.
 // Injected after the game's own script by tools/build.mjs. It wraps spin() and setVerdict(),
 // and money shown by the game goes through $m() (see tools/money.mjs).
 // Accounts, balances, requests and stats live in a Firebase Realtime Database (REST, no SDK).

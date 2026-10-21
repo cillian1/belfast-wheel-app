@@ -1,4 +1,5 @@
   // ---------- payouts: every prize the game shows is scaled to the stake (house keeps ~1%) ----------
+  // Owns payout-value conversion and payment display helpers.
   // ev = the game's average base prize per paid spin (in game euros), measured by simulation.
   window.$m = function (v) {
     const s = W.run ? W.run.stake : W.stake;
@@ -6,4 +7,3 @@
     return (c / 100).toFixed(2).replace(/\.00$/, '');
   };
   W.payCents = v => Math.round(+v * 100);
-
