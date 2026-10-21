@@ -6,8 +6,6 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 | Issue | Task | Status | PRs |
 |---|---|---|---|
-| #23 | Task 9: smoothness update (on hold until update 24) | Done, waiting to merge |  |
-| #25 | Task 10: Phelan voice lines (on hold, update 25) | Done, waiting to merge |  |
 | #38 | Task 11: update 26 housekeeping (on hold) | On hold |  |
 | #39 | Task 11A: CI test, task template, branch cleanup | In progress | #46 (draft) → update-26 |
 | #40 | Task 11B: fewer live notifications | In progress | #47 (draft) → update-26 |
