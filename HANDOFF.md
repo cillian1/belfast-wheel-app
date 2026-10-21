@@ -4,9 +4,9 @@
 
 - **Task:** Tasks 6, 7, 8 in parallel (issues #17, #18, #19; PRs #21, #20, #22). Task 5 merged as update 23.
 - **Owner:** Copilot builds; Claude does a quick check and merges.
-- **Status:** Tasks 6–8 run IN PARALLEL (Cillian, 2026-10-21): each issue has its own Copilot PR. Before DONE, merge main in, fix conflicts yourself, take the next free version number (main is now on 23).
-- **Next:** Copilot self-reviews each PR and posts `DONE: Task N` on its issue; Claude does a quick check and merges.
-- **Last updated:** 2026-10-21 22:20 by Claude
+- **Status:** Tasks 6–8 run IN PARALLEL and ship together as ONE update (Cillian, 2026-10-21). Their PRs target branch `update-24`, not main. Do NOT bump the version in them (stay on 23). Before DONE, merge latest `update-24` in, fix conflicts yourself, rebuild and check.
+- **Next:** Copilot posts `DONE: Task N`; Claude checks and merges into `update-24`. When all three are in, Claude bumps to update 24 and merges `update-24` into main.
+- **Last updated:** 2026-10-21 22:27 by Claude
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
