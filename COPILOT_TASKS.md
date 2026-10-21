@@ -214,6 +214,11 @@ Simple, low-risk changes only. Ship as one update.
 3. **Clear offline banner.** When the connection drops, show a fixed "No connection, reconnecting…" banner (Firebase `.info/connected` plus `navigator.onLine`). Block starting a paid spin while offline, with a clear message instead of hanging, and hide the banner when it's back. Don't touch the charge/payout code itself; just gate the Spin button before it is called.
 4. **Slightly bigger buttons.** Make small buttons a bit bigger (at least ~44px tap targets) and give icon-only buttons a short label, checked at 320/360/412px. Keep the layout otherwise the same.
 5. **Loading states** on anything that loads from the database (History, Stats/Leaderboard, Replays/Big wins, host lists): show "Loading…" while it waits, "Nothing here yet" when it's empty, and "Couldn't load, tap to retry" after ~10 s or on an error.
+6. **Workflow tidy-up (repo only, no game change):**
+   - a. A CI workflow `.github/workflows/ci.yml` on every PR and push: `node tools/bundle.mjs` and fail if `game/index.html` differs, `node tools/check.mjs`, then load the game headless (Playwright/Chromium) at 360px with a seeded `Math.random`, run a quick spin, and fail on console errors. It also fails if the odds/sim output, the `Math.random()` call count or the prize/ev/edge values differ from main. Name the job `ci` so Cillian can make it a required check in branch protection (repo settings are his to change).
+   - b. Clean up merged/stale `copilot/*` branches and list what you deleted in the PR. Cillian turns on "Automatically delete head branches" in Settings.
+   - c. `.github/ISSUE_TEMPLATE/copilot-task.md` with the sections Goal, Files likely touched, Done when, Don't touch (money/odds/prizes), and the label `copilot-task`.
+   - d. Add a rule to `.github/copilot-instructions.md`: tasks running in parallel must not edit the same files. List the files you expect to touch on the issue before starting, and if they overlap with another open task, wait or coordinate on #30.
 (No "what's new" screen: the update banner already covers it. No history filters.)
 No money, odds or prize changes; keep the `Math.random()` order.
 
