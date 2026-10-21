@@ -154,7 +154,7 @@ function paintMuteButton() {
 }
 paintMuteButton();
 window.addEventListener('wol-audio-preference-ready', paintMuteButton);
-muteBtn.addEventListener('click', () => { audio(); Music.toggleMute(); paintMuteButton(); });
+muteBtn.addEventListener('click', () => { audio(); if (Music.toggleMute()) phelanStop(); paintMuteButton(); });
 
 const wildTiles = [...document.querySelectorAll('.wt')];
 function paintTile(k, kind) {

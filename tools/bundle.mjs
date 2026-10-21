@@ -30,6 +30,7 @@ const gameModules = [
   'src/game/chicken-race.js',
   'src/game/show-me.js',
   'src/game/read-moves.js',
+  'src/game/phelan-voice.js',
   'src/game/boot.js',
 ];
 const walletModules = [

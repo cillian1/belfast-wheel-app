@@ -124,6 +124,7 @@ async function spinLayerRun(k, dur, dir) {
       draw();
     });
     rot[k] = r0; draw();
+    if (ghostNear) phelanSay(phelanLine('near'));
   }
   ting(); buzz([30, 40, 60]);
   return t.i;
@@ -135,6 +136,7 @@ async function ghostPhelan(k, i, near) {
   setVerdict({ eyebrow: 'Something cold', title: 'Ghost Phelan', body: '', flash: true });
   Music.sting(2); buzz([20, 80, 20, 80, 20]);
   ghost = { x: N * 1.15, y: py + R * .15, a: 0, side: near || 1 };
+  ghostSay = phelanLine('cameo'); phelanSay(ghostSay);
   await animate(1100, p => { const e = easeOut(p); ghost.x = lerp(N * 1.15, px + R * .22 * ghost.side, e); ghost.y = py + R * .15 + Math.sin(p * 6) * R * .02; ghost.a = Math.min(1, p * 2); draw(); });
   let last = sliceAt(rot[k], n);
   await animate(near ? 900 : 500, p => {
@@ -144,7 +146,7 @@ async function ghostPhelan(k, i, near) {
   });
   if (near) { rot[k] = mod(r0 + push, TAU); ting(); buzz([60, 40, 120]); }
   await animate(1000, p => { ghost.x = px + R * .22 * ghost.side - R * .08 * ghost.side - p * N * .9; ghost.y -= R * .004; ghost.a = 1 - p; draw(); });
-  ghost = null; draw();
+  ghost = null; ghostSay = ''; draw();
   return dest;
 }
 function drawGhost() {
