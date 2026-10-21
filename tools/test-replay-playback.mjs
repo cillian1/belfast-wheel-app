@@ -5,9 +5,12 @@ import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const source = readFileSync(resolve(root, 'src/wallet/watch.js'), 'utf8');
+const dbSource = readFileSync(resolve(root, 'src/wallet/db.js'), 'utf8');
 const helperMatch = source.match(/  function decodeReplayFrames\(text\) \{[\s\S]*?\n  \}/);
 const replayMatch = source.match(/  async function replay\(id, card, path = 'hld'\) \{[\s\S]*?\n  \}/);
 if (!helperMatch || !replayMatch) throw new Error('Could not find replay playback functions in src/wallet/watch.js');
+assert.match(dbSource, /const now = \(\) => Date\.now\(\);/);
+assert.match(source, /rec\.frames\.push\(\[now\(\) - rec\.t0,/);
 
 function createHarness(payload, options = {}) {
   const events = [], states = [], messages = [], requested = [], timeouts = [];
@@ -74,6 +77,9 @@ const epochFrames = JSON.stringify([
 ]);
 const epoch = new Function(`${helperMatch[0]}; return decodeReplayFrames;`)();
 assert.deepEqual(epoch(epochFrames).map(([at]) => at), [0, 350], 'playback uses elapsed milliseconds from the first frame');
+assert.throws(() => epoch(JSON.stringify([[null, frame('Bad timestamp')]])), /timestamp is invalid/);
+assert.throws(() => epoch(JSON.stringify([[0, JSON.stringify({ N: 512 })]])), /missing its game state/);
+assert.throws(() => epoch(JSON.stringify([[0, frame('First')], [10, frame('Next')], [5, frame('Out of order')]])), /invalid timestamp/);
 
 const malformed = createHarness(JSON.stringify([[0, frame('First frame')], [50, '{bad json']]));
 await malformed.runtime.replay('broken', {}, 'rpd');
