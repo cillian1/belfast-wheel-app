@@ -4,14 +4,16 @@
 
 - **Task:** Task 11G (#49): keep the main-wheel rim lights animating through wheel-to-wheel transitions.
 - **Owner:** Copilot implements and opens PRs into `update-26`; Claude reviews and merges. Copilot does not merge. Anything that changes money, odds, prizes or payouts waits for Cillian.
-- **Status / order (in sequence):**
-  1. Update 25 shipped as "Smooth Operator" (game 25, build 62).
-  2. **Wave 1:** #39, #40, #41 and #49 are active on `update-26`; PR #50 is ready for review, with no version bump.
-  3. When #39, #40 and #41 are merged into `update-26`, Claude starts **wave 2:** #42 and #43.
-  4. When wave 2 is merged, Claude starts **wave 3:** #45 (frame-rate-independent RNG + shorter waits; odds check, any odds change waits for Cillian).
-  5. When wave 3 is merged, open the release PR `update-26` → `main` (bump to 26, name it) and post DONE.
-- **If stuck:** if a step fails twice (CI red you can't fix, a conflict you can't resolve, or anything touching money), stop. Post one note on that issue saying what's blocked and move on to the next independent step. Don't retry forever. Cillian checks in the morning.
-- **Last updated:** 2026-10-22 00:42 by Copilot (#49 ready for review; 360px, 4× profile: busy gaps changed from no redraws to 10–14 redraws at 48ms intervals in High and Auto; no long tasks during wheel interactions)
+- **PR #34 stays CLOSED. Do not reopen or sync it.** It shipped in update 25 (merged by hand). Its leftovers live in #45 (shorter waits) and #49 (freezes).
+- **Order:**
+  1. **Wave 1:** #49 → PR #50 (ready for review), plus #39 → PR #46 (CI/template/release notes), #40 → PR #47 (notifications), #41 → PR #48 (offline + loading). All target `update-26`, with no version bump.
+  2. **Wave 2** (Claude starts it when step 1 is merged): #42 (history + buttons), #43 (ghost reactions + country song).
+  3. **Wave 3, alone:** #45 (frame-rate-independent results + shorter waits; fast-sim odds check, and any odds change waits for Cillian).
+  4. **Release:** a PR `update-26` → `main` bumping to 26 with a name, notes and `Closes #…` for every sub-task, then post DONE.
+- **If stuck:** if a step fails twice, post one note on that issue saying what's blocked and move on to the next independent step. Don't retry forever. Cillian checks in the morning.
+- **Status:** PR #50 is ready for review on `update-26`, with no version bump. Main-wheel High/Auto profiles at 360px and 4× CPU show 0 redraws during 450ms gaps before, versus 10 redraws afterward at 48.6ms/48.3ms maximum intervals; no >=50ms wheel-interaction tasks.
+- **Next:** Claude reviews and merges #50, then completes wave 1; Copilot does not merge.
+- **Last updated:** 2026-10-22 00:53 by Copilot (#49 scope narrowed to main-wheel transitions; profile confirmed no extra `Math.random()` calls during idle redraws)
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
