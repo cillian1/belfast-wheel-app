@@ -159,7 +159,7 @@ Merged into Task 4 below. Don't open a separate PR for it.
 
 **Done when:** runs save and play back, the tabs work at 320–412px, the host iframe works for live and replays, and pruning is shown in the PR to delete exactly the oldest entries. Bump to the next version with an update name.
 
-**Status (Task 5):** Implemented every non-test replay, 3,000-card oldest-first pruning, app Watch tabs, host Live/Replays viewers, and dismiss-only legacy top-ups; Me counts pending withdrawals only. Version 23 is “Replay Night”. `node tools/bundle.mjs`, `node tools/check.mjs`, host script parsing, and `git diff --check` pass. Edge mock-database tests cover save/playback, pruning, Mine/Everyone, test exclusion, and dismiss-without-credit; wallet, Watch sheet, and host layouts passed at 320, 360, and 412px. A sampled 10-second replay was 41 frames / 2,530 packed bytes. Live Firebase gameplay remains untested.
+**Status (Task 5):** Shipped every non-test replay, 3,000-card oldest-first pruning, app Watch tabs, host Live/Replays viewers, pending-withdrawal filtering, and dismiss-only legacy top-ups in version 23, “Replay Night” (PR #16). Follow-up fixes persist prune cadence across restarts and harden playback in ready-for-review PR #24: replay deltas/schema are validated, first-frame timing is rebased to elapsed milliseconds, frame loading/unpacking times out after 15 seconds, and load/play/render failures are visible. `node tools/test-replay-playback.mjs` covers immediate first-frame playback, timestamp units, malformed frames, playback errors and stalled reads/unpack; `node tools/test-replay-pruning.mjs` simulates restarts, shallow listings at saves 50/100, and exact-oldest deletion to 3,000. Bundle/check/whitespace checks pass; headless Edge mock-database checks confirm frame advancement, canvas rendering, RAF continuity, malformed-data feedback, and visible render errors. Live Firebase gameplay remains untested.
 
 ---
 
@@ -184,6 +184,8 @@ Give every other room the same treatment the main wheels got in update 20: a lig
 2. **Sound effects** for the big moments that are silent today: room entry stings, the Chicken Race countdown, finish and ghost trip, the jackpot, trophy unlocks, and Go back up.
 3. **A mute button** in the header next to Music: one tap mutes all music and effects, remembered with `pref`. The current "Music on/off" stays for music only.
 Keep it light on CPU (no new per-frame audio work). No gameplay changes.
+
+**Status:** Added synthesized themes for the main wheel, Stank Chamber, God room, Monster tank, Pyramid, Mark's farm, Chicken Race, and Phelan's revenge, plus room/major-event effects and a persisted global mute separate from the music toggle. `node tools/bundle.mjs`, `node tools/check.mjs`, `git diff --check`, and mocked WebAudio preference/mute checks passed. Release metadata remains version 23 / Build 60 for the combined update.
 
 ## Task 9: smoothness update (ON HOLD until update 24 is on main; Claude posts "/go")
 
