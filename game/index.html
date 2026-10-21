@@ -287,12 +287,12 @@ footer{position:fixed;top:8px;left:10px;z-index:5;color:rgba(220,225,230,.55);fo
   <input class="vh" type="file" id="lib" accept="image/*">
 
 
-  <footer>Build 61 · app 24<br><small style="font-size:8.5px;letter-spacing:.04em">Room Glow-ups</small></footer>
+  <footer>Build 60 · app 23<br><small style="font-size:8.5px;letter-spacing:.04em">Replay Night</small></footer>
 </div>
 
 <script>
 // Owns shared game constants, geometry, and utility functions.
-const BUILD = 61;
+const BUILD = 60;
 const $ = s => document.querySelector(s);
 const TAU = Math.PI * 2, BASE = -Math.PI / 2;
 const LABEL_FONT = '"IBM Plex Sans Condensed","Arial Narrow",sans-serif';
@@ -1063,7 +1063,7 @@ function setLayerOrder(k, order) {
   navCache = null;
 }
 function deadFace(v, k) { return ringFor(k, deadOrderOf(runOrders[k - 1], k, v)); }
-function ensureStank() { if (!faces.stank) { faces.stank = buildStank(); faces.goldPointer = buildGoldPointer(); faces.stankBg = buildStankBg(); faces.bingo = buildBingoSprites(); } }
+function ensureStank() { if (!faces.stank) { faces.stank = buildStank(); faces.stankBg = buildStankBg(); faces.bingo = buildBingoSprites(); } }
 let warmTimer = 0;
 function warmUp() {
   clearTimeout(warmTimer);
@@ -2311,18 +2311,6 @@ function buildStank() {
   g.fillStyle = 'rgba(255,248,214,.7)'; g.fillText('S', c, c + R * .012 + D); g.fillStyle = '#3d2706'; g.fillText('S', c, c + R * .012);
   return k;
 }
-function buildGoldPointer() {
-  const k = mk(), g = k.getContext('2d');
-  g.save(); g.shadowColor = 'rgba(0,0,0,.7)'; g.shadowBlur = R * .03; g.shadowOffsetY = R * .015;
-  g.beginPath(); g.moveTo(c, c - R * .83); g.lineTo(c - R * .07, c - R * 1.035); g.quadraticCurveTo(c, c - R * 1.07, c + R * .07, c - R * 1.035); g.closePath();
-  g.fillStyle = '#3d290a'; g.fill(); g.restore();
-  g.beginPath(); g.moveTo(c, c - R * .83); g.lineTo(c - R * .07, c - R * 1.035); g.quadraticCurveTo(c - R * .035, c - R * 1.065, c, c - R * 1.07); g.closePath();
-  g.fillStyle = grad(g, c - R * .07, 0, c, 0, [[0, '#fff9dd'], [.5, '#f3cf6e'], [1, '#8a5a12']]); g.fill();
-  g.beginPath(); g.moveTo(c, c - R * .83); g.lineTo(c + R * .07, c - R * 1.035); g.quadraticCurveTo(c + R * .035, c - R * 1.065, c, c - R * 1.07); g.closePath();
-  g.fillStyle = grad(g, c + R * .07, 0, c, 0, [[0, '#5a3c0c'], [.5, '#c99a3a'], [1, '#fff1b8']]); g.fill();
-  g.beginPath(); g.moveTo(c, c - R * .84); g.lineTo(c, c - R * 1.06); g.strokeStyle = 'rgba(255,255,230,.85)'; g.lineWidth = D; g.stroke();
-  return k;
-}
 function buildStankBg() {
   const k = mk(), g = k.getContext('2d');
   const bg = g.createRadialGradient(c, c * .9, 0, c, c, N * .75);
@@ -2486,7 +2474,7 @@ function drawStank(now) {
   drawScaled(faces.stank, rotS, STANK_SC); drawWheelRim(STANK_SC);
   ctx.globalCompositeOperation = 'overlay'; drawScaled(faces.sheen, 0, STANK_SC); ctx.globalCompositeOperation = 'source-over';
   drawWheelSweep(bingo.length > 0 && pickIdx < 0, STANK_SC);
-  drawPointer(faces.goldPointer, STANK_SC);
+  drawPointer(faces.pointer, STANK_SC);
   const br = R * .064;
   bingo.forEach((b, i) => {
     if (i === pickIdx && handT >= 1) return;
@@ -2632,6 +2620,7 @@ function drawRoul(now) {
     ctx.font = `700 ${N * .055}px ${LABEL_FONT}`; ctx.fillStyle = 'rgba(0,0,0,.75)'; ctx.fillText(big, c, N * .9 + 2 * D); ctx.fillStyle = roul.labelGold ? '#ffe9a8' : '#f4eee0'; ctx.fillText(big, c, N * .9);
     if (small) { ctx.font = `600 ${N * .028}px ${LABEL_FONT}`; ctx.fillStyle = 'rgba(0,0,0,.75)'; ctx.fillText(small, c, N * .955 + D); ctx.fillStyle = '#e8dcc0'; ctx.fillText(small, c, N * .955); }
   }
+  drawPointer(faces.pointer, ROUL_SC);
 }
 // the elite Wild room: down into a golden locksafe, three gold doors, gold tablets behind them
 function drawVault(now) {
@@ -4259,7 +4248,7 @@ function drawFarm(now) {
       ctx.globalAlpha = showMark; drawScaled(faces.mark, rotM, 1); drawWheelRim(1); drawMarkGlow(now);
       drawWheelSweep(markSpinning, 1);
       if (markWin) drawWheelSliceGlow(rotM, markItems.length, markWin.i, markWin.t0);
-      ctx.globalAlpha = 1; drawPointer(faces.wheat, 1);
+      ctx.globalAlpha = 1; drawPointer(faces.pointer, 1);
     }
   }
   ctx.restore();
@@ -4858,7 +4847,7 @@ if (document.fonts && document.fonts.load) {
 
 </script>
 
-<script>window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":24,"ev":16.24,"edge":0.995,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};</script>
+<script>window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":23,"ev":16.24,"edge":0.995,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};</script>
 <script>
 // ---------- wallet layer for the Android app ----------
 // Owns wallet configuration, shared state, and app bindings.

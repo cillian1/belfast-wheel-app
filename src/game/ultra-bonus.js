@@ -41,18 +41,6 @@ function buildStank() {
   g.fillStyle = 'rgba(255,248,214,.7)'; g.fillText('S', c, c + R * .012 + D); g.fillStyle = '#3d2706'; g.fillText('S', c, c + R * .012);
   return k;
 }
-function buildGoldPointer() {
-  const k = mk(), g = k.getContext('2d');
-  g.save(); g.shadowColor = 'rgba(0,0,0,.7)'; g.shadowBlur = R * .03; g.shadowOffsetY = R * .015;
-  g.beginPath(); g.moveTo(c, c - R * .83); g.lineTo(c - R * .07, c - R * 1.035); g.quadraticCurveTo(c, c - R * 1.07, c + R * .07, c - R * 1.035); g.closePath();
-  g.fillStyle = '#3d290a'; g.fill(); g.restore();
-  g.beginPath(); g.moveTo(c, c - R * .83); g.lineTo(c - R * .07, c - R * 1.035); g.quadraticCurveTo(c - R * .035, c - R * 1.065, c, c - R * 1.07); g.closePath();
-  g.fillStyle = grad(g, c - R * .07, 0, c, 0, [[0, '#fff9dd'], [.5, '#f3cf6e'], [1, '#8a5a12']]); g.fill();
-  g.beginPath(); g.moveTo(c, c - R * .83); g.lineTo(c + R * .07, c - R * 1.035); g.quadraticCurveTo(c + R * .035, c - R * 1.065, c, c - R * 1.07); g.closePath();
-  g.fillStyle = grad(g, c + R * .07, 0, c, 0, [[0, '#5a3c0c'], [.5, '#c99a3a'], [1, '#fff1b8']]); g.fill();
-  g.beginPath(); g.moveTo(c, c - R * .84); g.lineTo(c, c - R * 1.06); g.strokeStyle = 'rgba(255,255,230,.85)'; g.lineWidth = D; g.stroke();
-  return k;
-}
 function buildStankBg() {
   const k = mk(), g = k.getContext('2d');
   const bg = g.createRadialGradient(c, c * .9, 0, c, c, N * .75);
@@ -216,7 +204,7 @@ function drawStank(now) {
   drawScaled(faces.stank, rotS, STANK_SC); drawWheelRim(STANK_SC);
   ctx.globalCompositeOperation = 'overlay'; drawScaled(faces.sheen, 0, STANK_SC); ctx.globalCompositeOperation = 'source-over';
   drawWheelSweep(bingo.length > 0 && pickIdx < 0, STANK_SC);
-  drawPointer(faces.goldPointer, STANK_SC);
+  drawPointer(faces.pointer, STANK_SC);
   const br = R * .064;
   bingo.forEach((b, i) => {
     if (i === pickIdx && handT >= 1) return;

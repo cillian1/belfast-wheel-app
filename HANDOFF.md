@@ -2,11 +2,11 @@
 
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
-- **Task:** Task 7 (issue #18, PR #20); Tasks 6 and 8 continue in parallel.
+- **Task:** Task 7 (issue #18, PR #20); Tasks 6 and 8 continue in parallel for update 24.
 - **Owner:** Copilot builds; Claude does a quick check and merges.
-- **Status:** Room glow-up implementation is complete; syncing latest `update-24` and correcting the PR to keep version 23 and replace invalid screenshot captures.
-- **Next:** Rebuild, validate all scenes and update the PR; Claude merges this task into `update-24` with Tasks 6 and 8.
-- **Last updated:** 2026-10-21 22:30 by Copilot
+- **Status:** Task 7 is ready for review in PR #20 against `update-24`; version 23/build 60 remain unchanged for the combined release.
+- **Next:** Claude reviews and merges into `update-24`; the combined release bump follows after Tasks 6–8 are integrated.
+- **Last updated:** 2026-10-21 22:35 by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
@@ -65,7 +65,7 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 
 ## Done log (history only, newest first; nothing here is current)
 
-- 2026-10-21: Task 7 room glow-ups ready in PR #20 as update 24 "Room Glow-ups"; visual-only wheel, tank and Pyramid polish.
+- 2026-10-21: Task 7 room glow-ups ready in PR #20 for the combined update 24; visual-only wheel, tank and Pyramid polish, with version 23/build 60 unchanged.
 - 2026-10-21: Task 5 replays + Watch tabs + host watching (PR #16), merged as update 23.
 - 2026-10-21: Task 5 replay saving, pruning, player/host watching and legacy request fixes are ready for review in PR #16 as update 23 "Replay Night".
 - 2026-10-21: Task 4 Stage 4, performance (PR #14), merged as update 22 "Smoother Wheels". Task 4 is complete.

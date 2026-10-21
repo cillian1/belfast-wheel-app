@@ -83,6 +83,7 @@ function drawRoul(now) {
     ctx.font = `700 ${N * .055}px ${LABEL_FONT}`; ctx.fillStyle = 'rgba(0,0,0,.75)'; ctx.fillText(big, c, N * .9 + 2 * D); ctx.fillStyle = roul.labelGold ? '#ffe9a8' : '#f4eee0'; ctx.fillText(big, c, N * .9);
     if (small) { ctx.font = `600 ${N * .028}px ${LABEL_FONT}`; ctx.fillStyle = 'rgba(0,0,0,.75)'; ctx.fillText(small, c, N * .955 + D); ctx.fillStyle = '#e8dcc0'; ctx.fillText(small, c, N * .955); }
   }
+  drawPointer(faces.pointer, ROUL_SC);
 }
 // the elite Wild room: down into a golden locksafe, three gold doors, gold tablets behind them
 function drawVault(now) {
