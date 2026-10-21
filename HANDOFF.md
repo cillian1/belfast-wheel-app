@@ -2,16 +2,17 @@
 
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
-- **Task:** Update 25 (Task 9 smoothness PR #34 + Task 10 Phelan voice PR #35, into `update-25`), then update 26 (Task 11, sub-tasks #39–#43).
-- **Owner:** Copilot builds overnight while Cillian sleeps. Copilot opens each PR and posts `DONE: Task …`, and **Claude does a quick check and merges**, then starts the next wave. Copilot does not merge. Anything that changes money, odds, prizes or payouts waits for Cillian.
+- **Task:** Task 11B: fewer live notifications (#40), PR into `update-26`, no version bump.
+- **Owner:** Copilot builds the task and opens the PR; Claude does a quick check and merges it. Copilot does not merge. Anything that changes money, odds, prizes or payouts waits for Cillian.
 - **Status / order (in sequence):**
-  1. Update 25 shipped as "Smooth Operator" (game 25, build 62).
-  2. **Wave 1 STARTED (23:35):** #39, #40, #41 in parallel on `update-26`. Each gets a PR into `update-26`, no version bump.
-  3. When #39, #40 and #41 are all merged into `update-26`, Claude starts **wave 2:** #42 and #43.
-  4. When wave 2 is merged, Claude starts **wave 3:** #45 (frame-rate-independent RNG + shorter waits; odds check, any odds change waits for Cillian).
-  5. When wave 3 is merged, open the release PR `update-26` → `main` (bump to 26, name it) and post DONE.
+  1. Update 25 shipped as "Smooth Operator".
+  2. **Wave 1 STARTED:** #39, #40 and #41 run in parallel on `update-26`, each with a PR into `update-26` and no version bump.
+  3. Task #40 is complete in PR #47; routine room-landing feed posts are removed and notable-event notifications are unchanged. Bundle and check pass; awaiting review and merge.
+  4. When #39, #40 and #41 are merged into `update-26`, Claude starts **wave 2:** #42 and #43.
+  5. When wave 2 is merged, Claude starts **wave 3:** #45 (frame-rate-independent RNG + shorter waits; odds check, any odds change waits for Cillian).
+  6. When wave 3 is merged, open the release PR `update-26` → `main` (bump to 26, name it) and post DONE.
 - **If stuck:** if a step fails twice (CI red you can't fix, a conflict you can't resolve, or anything touching money), stop. Post one note on that issue saying what's blocked and move on to the next independent step. Don't retry forever. Cillian checks in the morning.
-- **Last updated:** 2026-10-21 23:30 by Claude
+- **Last updated:** 2026-10-21 23:31 by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
@@ -80,6 +81,7 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 
 ## Done log (history only, newest first; nothing here is current)
 
+- 2026-10-21: Task 11B (#40, PR #47) removed routine room-landing live-feed posts; big-win and other notable-event notifications remain unchanged.
 - 2026-10-21: Combined Tasks 6–8 and replay reliability as update 24 “Room to Grow” (Build 61); ready for review in PR #33 to `main`.
 - 2026-10-21: Task 6 new ghost merged into `update-24` in PR #21; checked all 10 scenes at 360/412px.
 - 2026-10-21: Task 5 replay playback reliability and restart-safe pruning follow-up (PR #24) merged into `update-24`; version 23 / Build 60 unchanged.

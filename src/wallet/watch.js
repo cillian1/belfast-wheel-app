@@ -80,7 +80,7 @@
   // ---------- big wins are saved as their state frames, so anyone can rewatch them later ----------
   // Owns highlight recording, compression, and live-feed publishing.
   // hlm/{id} is the small card for the list, hld/{id} the frames (gzipped where the phone can)
-  let rec = null, wasBusy = false, feedRoom = '';
+  let rec = null, wasBusy = false;
   async function pack(text) {
     try {
       if (typeof CompressionStream === 'undefined') return { z: 0, s: text };
@@ -99,12 +99,12 @@
   // runs on every phone a few times a second: records the run, spots the big moments for the live feed
   setInterval(() => {
     const playing = typeof busy !== 'undefined' && busy;
-    if (playing && !wasBusy) { rec = { t0: now(), last: null, frames: [], room: '', win: null, stake: W.run && W.run.live ? W.run.stake : W.stake, user: W.user, name: W.me && W.me.name, test: isTest() || W.user === TEST_KEY }; feedRoom = ''; }
+    if (playing && !wasBusy) { rec = { t0: now(), last: null, frames: [], room: '', win: null, stake: W.run && W.run.live ? W.run.stake : W.stake, user: W.user, name: W.me && W.me.name, test: isTest() || W.user === TEST_KEY }; }
     wasBusy = playing;
     if (!rec) return;
     try {
       const st = capture(), sc = JSON.parse(st.scene || '""');
-      if (ROOMS[sc] && !rec.room) { rec.room = ROOMS[sc]; if (feedRoom !== rec.room) { feedRoom = rec.room; feed(`${W.me ? W.me.name : 'Someone'} just hit ${rec.room} 🔥`); } }
+      if (ROOMS[sc] && !rec.room) rec.room = ROOMS[sc];
       if (sc === 'stank' || sc === 'roul') awardTrophy('stank');
       if (sc === 'monster') awardTrophy('monster');
       if (sc === 'god' || sc === 'zena') awardTrophy('god');
