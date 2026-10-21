@@ -4667,7 +4667,7 @@ if (document.fonts && document.fonts.load) {
 .locked .wstake{opacity:.5;pointer-events:none}
 .wsheet{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center;background:rgba(5,6,8,.72)}
 .wsheet[hidden]{display:none}
-.wpanel{width:100%;max-width:560px;max-height:92vh;overflow:auto;background:linear-gradient(180deg,#1c1f24,#121418);border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0;padding:20px 18px calc(22px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px;color:var(--chrome)}
+.wpanel{box-sizing:border-box;width:100%;max-width:560px;max-height:92vh;overflow:auto;background:linear-gradient(180deg,#1c1f24,#121418);border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0;padding:20px 18px calc(22px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px;color:var(--chrome)}
 .wpanel h3{margin:0;font-family:var(--display);font-weight:400;font-size:18px;letter-spacing:.06em}
 .wpanel h4{margin:8px 0 0;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute);font-weight:600}
 .wpanel p{margin:0;color:#c3cbd3}
@@ -4685,6 +4685,27 @@ if (document.fonts && document.fonts.load) {
 .wgrid div{border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:#15181c}
 .wgrid small{display:block;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--mute)}
 .wgrid b{font-family:var(--display);font-weight:400;font-size:16px}
+.waccount{display:flex;flex-direction:column;gap:12px}
+.wbalance{border:1px solid var(--line);border-radius:14px;padding:12px;background:#15181c;text-align:center}
+.wbalance small{display:block;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--mute)}
+.wbalance b{display:block;font-family:var(--display);font-weight:400;font-size:30px;color:#f5d27a;overflow-wrap:anywhere}
+.waccount .wrow{margin-top:8px}
+.waccount .wstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.waccount .wstats div{min-width:0;text-align:center;border:1px solid var(--line);border-radius:10px;padding:7px 4px;background:#15181c}
+.waccount .wstats small{display:block;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.waccount .wstats b{display:block;overflow-wrap:anywhere;font-family:var(--display);font-weight:400;font-size:15px}
+.waccount .wstats .plus{color:#9be38a}.waccount .wstats .minus{color:#ff9b8a}
+.wpending{border:1px solid #8c6a20;border-radius:10px;padding:8px 10px;background:#2a2312;color:#f8e4a6;font-size:13px}
+.whistory-day{margin-top:8px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute)}
+.whistory-entry{min-width:0;overflow-wrap:anywhere}
+.whistory-entry>div:first-child{flex:1}
+.wboard-pick{display:flex;gap:6px;flex-wrap:wrap}
+.wboard-pick .wbtn{flex:1 1 40%;min-width:0;padding:8px 6px;font-size:12px;white-space:normal}
+.wboard-stats{font-size:13px;line-height:1.5;color:#c3cbd3}
+.wboard-stats b{color:#f5d27a}
+.wboard li>div{min-width:0;overflow-wrap:anywhere}
+.wboard li>b{flex:none}
+.wyou{margin-left:5px;color:#f5d27a;font-size:11px;white-space:nowrap}
 .wlist{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
 .wlist li{display:flex;justify-content:space-between;gap:10px;align-items:center;border-bottom:1px solid #22272e;padding:6px 0;font-size:14px}
 .wlist li span{color:var(--mute);font-size:12px}
@@ -5016,19 +5037,20 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   }
 
   // ---------- account, stats, leaderboards ----------
-  async function accountSheet(tab = 'me') {
+  async function accountSheet(tab = 'me', selectedBoard) {
     await refresh();
     const me = W.me; if (!me) return;
+    const board = ['won', 'biggest', 'spins', 'net'].includes(selectedBoard) ? selectedBoard : (pref.get('wol.lbBoard') || 'won');
     const p = openSheet(`<h3>${esc(me.name)}</h3>
       <div class="wtabs"><button data-t="me" type="button">Me</button><button data-t="lb" type="button">Leaderboards</button></div>
       <div id="wBody"><p>Loading…</p></div>
       <button class="wlink" type="button" id="wClose">Close</button>`);
-    p.querySelectorAll('.wtabs button').forEach(b => { b.classList.toggle('on', b.dataset.t === tab); b.onclick = () => accountSheet(b.dataset.t); });
+    p.querySelectorAll('.wtabs button').forEach(b => { b.classList.toggle('on', b.dataset.t === tab); b.onclick = () => accountSheet(b.dataset.t, board); });
     $w('wClose').onclick = closeSheet;
     const body = $w('wBody');
     try {
       if (tab === 'me') await meTab(body, me);
-      else await lbTab(body);
+      else await lbTab(body, board);
     } catch (e) { body.innerHTML = '<p class="err">No connection. Try again in a moment.</p>'; }
   }
   async function meTab(body, me) {
@@ -5037,31 +5059,71 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     const net = (me.won || 0) - (me.staked || 0);
     const rows = Object.values(tx).sort((a, b) => b.at - a.at);
     const name = { spin: 'Spin', win: 'Win', topup: 'Top-up', withdraw: 'Withdrawal', refund: 'Refund', adjust: 'Adjustment', payout: 'Paid out' };
-    body.innerHTML = `<div class="wgrid">
-        <div><small>Balance</small><b>${eur(me.balance || 0)}</b></div><div><small>Won in game</small><b>${eur(me.won || 0)}</b></div>
-        <div><small>Spins</small><b>${me.spins || 0}</b></div><div><small>Up / down</small><b>${eur(net)}</b></div>
-        <div><small>Biggest win</small><b>${eur(me.biggest || 0)}</b></div><div><small>Topped up</small><b>${eur(me.topped || 0)}</b></div></div>
-      ${reqs.length ? `<h4>Pending</h4><ul class="wlist">${reqs.map(([, r]) => `<li>Withdrawal ${eur(r.a)}<span>${when(r.at)}</span></li>`).join('')}</ul>` : ''}
-      <div class="wrow"><button class="wbtn gold" id="wT" type="button">Top up</button><button class="wbtn" id="wW" type="button">Withdraw</button></div>
-      <h4>History</h4>
-      <ul class="wlist">${rows.map(t => `<li><div>${name[t.t] || t.t}${t.what ? ` <span>${esc(t.what)}</span>` : ''}<br><span>${when(t.at)}</span></div><b class="${t.a >= 0 ? 'plus' : 'minus'}">${t.a >= 0 ? '+' : ''}${eur(t.a)}</b></li>`).join('') || '<li>No spins yet</li>'}</ul>
-      <button class="wlink" type="button" id="wOut">Log out</button>`;
+    const history = [];
+    rows.forEach(t => {
+      const date = new Date(t.at), day = date.toDateString();
+      const previous = history[history.length - 1];
+      if (t.t === 'spin' && previous && previous.day === day && previous.type === 'spins') {
+        previous.count++;
+        previous.amount += t.a || 0;
+        previous.at = Math.max(previous.at, t.at);
+      } else history.push({ day, at: t.at, type: t.t === 'spin' ? 'spins' : 'entry', count: t.t === 'spin' ? 1 : 0, amount: t.a || 0, tx: t });
+    });
+    const today = new Date().toDateString(), yesterday = new Date(Date.now() - 86400000).toDateString();
+    const dayLabel = day => day === today ? 'Today' : day === yesterday ? 'Yesterday' : new Date(day).toLocaleDateString('en-IE', { day: 'numeric', month: 'short', year: 'numeric' });
+    const pending = reqs.reduce((sum, [, r]) => sum + (Number(r.a) || 0), 0);
+    let historyLimit = 15;
+    const renderHistory = () => {
+      let lastDay = null;
+      const shown = history.slice(0, historyLimit).map(item => {
+        const header = item.day !== lastDay ? `<li class="whistory-day">${dayLabel(item.day)}</li>` : '';
+        lastDay = item.day;
+        if (item.type === 'spins') return `${header}<li class="whistory-entry"><div>${item.count} ${item.count === 1 ? 'spin' : 'spins'} <span>${when(item.at)}</span></div><b class="${item.amount >= 0 ? 'plus' : 'minus'}">${eur(item.amount)}</b></li>`;
+        const t = item.tx;
+        return `${header}<li class="whistory-entry"><div>${esc(name[t.t] || t.t)}${t.what ? ` <span>${esc(t.what)}</span>` : ''}<br><span>${when(t.at)}</span></div><b class="${t.a >= 0 ? 'plus' : 'minus'}">${t.a >= 0 ? '+' : ''}${eur(t.a)}</b></li>`;
+      }).join('');
+      $w('wHistory').innerHTML = shown || '<li>No spins yet</li>';
+      $w('wMoreHistory').hidden = history.length <= historyLimit;
+    };
+    body.innerHTML = `<div class="waccount">
+        <div class="wbalance"><small>Balance</small><b>${eur(me.balance || 0)}</b>
+          <div class="wrow"><button class="wbtn gold" id="wT" type="button">Top up</button><button class="wbtn" id="wW" type="button">Withdraw</button></div>
+        </div>
+        <div class="wstats">
+          <div><small>Spins</small><b>${me.spins || 0}</b></div><div><small>Biggest win</small><b>${eur(me.biggest || 0)}</b></div>
+          <div><small>Up / down</small><b class="${net >= 0 ? 'plus' : 'minus'}">${eur(net)}</b></div>
+        </div>
+        ${reqs.length ? `<div class="wpending">Pending withdrawals (${reqs.length}) · ${eur(pending)}</div>` : ''}
+        <h4>History</h4><ul class="wlist" id="wHistory"></ul>
+        <button class="wlink" type="button" id="wMoreHistory">Show more</button>
+        <button class="wlink" type="button" id="wOut">Log out</button>
+      </div>`;
+    renderHistory();
+    $w('wMoreHistory').onclick = () => { historyLimit += 15; renderHistory(); };
     $w('wT').onclick = () => topupSheet(); $w('wW').onclick = withdrawSheet; $w('wOut').onclick = logout;
   }
-  async function lbTab(body) {
+  async function lbTab(body, selectedBoard) {
     const [users, st] = await Promise.all([db.get('users'), db.get('stats')]);
-    const list = Object.values(users || {}).filter(u => !u.test), s = st || {};
-    const board = (title, f, fmt) => {
-      const top = list.filter(u => f(u)).sort((a, b) => f(b) - f(a)).slice(0, 5);
-      return `<h4>${title}</h4><ul class="wlist">${top.map((u, i) => `<li><div>${['🥇', '🥈', '🥉', '4.', '5.'][i]} ${esc(u.name)}</div><b>${fmt(f(u))}</b></li>`).join('') || '<li>Nobody yet</li>'}</ul>`;
+    const list = Object.entries(users || {}).filter(([, u]) => !u.test), s = st || {};
+    const boards = {
+      won: { title: 'Most won', value: u => u.won || 0, format: eur },
+      biggest: { title: 'Biggest win', value: u => u.biggest || 0, format: eur },
+      spins: { title: 'Most spins', value: u => u.spins || 0, format: n => n },
+      net: { title: 'Best up/down', value: u => (u.won || 0) - (u.staked || 0), format: eur },
     };
-    body.innerHTML = `<div class="wgrid">
-        <div><small>Spins, everyone</small><b>${s.spins || 0}</b></div><div><small>Players</small><b>${list.length}</b></div>
-        <div><small>Won, everyone</small><b>${eur(s.won || 0)}</b></div><div><small>Biggest win</small><b>${eur(s.biggest || 0)}</b>${s.biggestBy ? `<small>${esc(s.biggestBy)}</small>` : ''}</div></div>
-      ${board('Most won', u => u.won || 0, eur)}
-      ${board('Biggest single win', u => u.biggest || 0, eur)}
-      ${board('Most spins', u => u.spins || 0, n => n)}
-      ${board('Best up / down', u => (u.won || 0) - (u.staked || 0) || 0, eur)}`;
+    let boardKey = boards[selectedBoard] ? selectedBoard : 'won';
+    body.innerHTML = `<div class="wboard-stats">Everyone: <b>${s.spins || 0} spins</b> · Biggest ever win: <b>${eur(s.biggest || 0)}${s.biggestBy ? ` by ${esc(s.biggestBy)}` : ''}</b></div>
+      <div class="wboard-pick">${Object.entries(boards).map(([key, b]) => `<button class="wbtn${key === boardKey ? ' sel' : ''}" data-board="${key}" type="button">${b.title}</button>`).join('')}</div>
+      <h4 id="wBoardTitle"></h4><ul class="wlist wboard" id="wBoardRows"></ul>`;
+    const renderBoard = () => {
+      const board = boards[boardKey];
+      const ranked = list.slice().sort((a, b) => board.value(b[1]) - board.value(a[1]) || String(a[1].name).localeCompare(String(b[1].name)));
+      $w('wBoardTitle').textContent = board.title;
+      $w('wBoardRows').innerHTML = ranked.map(([key, u], i) => `<li><div>${i + 1}. ${esc(u.name)}${key === W.user ? '<span class="wyou">You</span>' : ''}</div><b>${board.format(board.value(u))}</b></li>`).join('') || '<li>Nobody yet</li>';
+      body.querySelectorAll('.wboard-pick button').forEach(button => button.classList.toggle('sel', button.dataset.board === boardKey));
+    };
+    body.querySelectorAll('.wboard-pick button').forEach(button => { button.onclick = () => { boardKey = button.dataset.board; pref.set('wol.lbBoard', boardKey); renderBoard(); }; });
+    renderBoard();
   }
 
   // ---------- withdraw (request goes to the host screen; Cillian pays on Revolut) ----------
