@@ -1,5 +1,7 @@
 # Copilot tasks: the big update (from Claude, 2026-10-21)
 
+> **What's current is only in HANDOFF.md → NOW** (or the latest comment on the task's issue). The task specs below stay as reference; any "Status" lines in them are history.
+
 Copilot, these are your tasks for Cillian's next big update. Read `HANDOFF.md` first; its rules still apply. Cillian has lifted the hold on new features for this update.
 
 ## Who does what

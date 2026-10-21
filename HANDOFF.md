@@ -1,14 +1,22 @@
 # Working on the Wheel of Life repo
 
-## How Copilot gets work (from Claude, 2026-10-21)
+## NOW (the only current section, rewritten on every task start, finish and merge)
 
-Cillian has asked Claude to give Copilot its work directly, without going through him. Copilot, your poll should pick up **every open issue labelled `copilot-task`**, plus issues assigned to you and comments that mention @copilot, even when the issue isn't assigned to you (Claude can't assign issues through the API). Each issue links its section in `COPILOT_TASKS.md`. Do the oldest open one first, and only start a task once the task it says to wait for has merged. Claude reviews and merges your PRs.
+- **Task:** Task 4, Stage 2: tidy without changing behaviour (`COPILOT_TASKS.md`, issue #8)
+- **Owner:** Copilot
+- **Status:** go now. Nothing is waiting on Claude. Stage 1 (PR #9) is merged.
+- **Next:** Copilot opens the Stage 2 PR → Claude reviews and merges → Claude says on #8 when to start Stage 3.
+- **Last updated:** 2026-10-21 21:20 by Claude
 
-Two assistants work on this repo: Claude (in Cillian's Claude project) and GitHub Copilot. These are the rules both follow, so neither breaks the other's work or the live app.
+**Rules for this section:**
+1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
+2. Whoever starts, finishes or merges a task rewrites NOW in the same commit or PR (Claude does it on every merge), and moves a one-line summary of the finished task to the Done log.
+3. If NOW and the latest comment on the task's issue disagree, **the latest issue comment wins**.
+4. Don't add task notes, questions or statuses anywhere else in this file. Questions go on the issue or the PR.
 
-## Current task for Copilot (from Claude, updated 2026-10-21 21:15)
+## How Copilot gets work
 
-**Go now: Task 4, Stage 2 (tidy without changing behaviour)** in `COPILOT_TASKS.md`. You're not waiting on Claude for anything. Stage 1 (PR #9) is reviewed and merged, and PRs #1, #4, #5 and #7 are all merged. Branch from the latest `main`, open one PR for Stage 2, then stop. Claude reviews and merges it, then tells you on issue #8 when to start Stage 3.
+Claude gives Copilot its work directly. Cillian isn't in the loop for routine work. Copilot's poll picks up **every open issue labelled `copilot-task`**, plus issues assigned to it and comments that mention @copilot, even when the issue isn't assigned to it (Claude can't assign through the API). Each issue links its section in `COPILOT_TASKS.md`. Do the oldest open one first.
 
 ## What's live
 
@@ -46,12 +54,15 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 
 ## How the two assistants work together
 
-- **Copilot works on a branch and opens a pull request.** It never pushes straight to `main`, and never merges its own PR.
-- **Claude reviews the PR** when Cillian asks: it checks the version rules, the win wording, the wallet and the layout on a phone-sized screen, then says whether it's safe to merge. Cillian merges.
-- Claude ships its own releases straight to `main` when Cillian asks, and always pulls first, so pull before starting a branch.
-- One release at a time. If both have work ready, the second one rebases and takes the next version number.
+- **Copilot works on a branch and opens a pull request.** It never pushes straight to `main` and never merges its own PR.
+- **Claude reviews and merges** Copilot's PRs: version rules, the win wording, the wallet, a seeded replay, and the layout on phone-sized screens. **PRs that touch money, odds or prizes are merged by Cillian only.**
+- Claude ships its own work to `main` and always pulls first, so pull before starting a branch.
+- One release at a time. If both have work ready, the second one merges `main` in and takes the next version number.
 - Keep commits small and say what changed for players. A PR that touches money says so in its title.
 
-## Current plan
+## Done log (history only, newest first; nothing here is current)
 
-The big update after 19 is planned in [COPILOT_TASKS.md](COPILOT_TASKS.md). Copilot: your tasks are there.
+- 2026-10-21: Task 4 Stage 1, the split into `src/` with `tools/bundle.mjs` (PR #9), merged, byte-identical.
+- 2026-10-21: update 21 "Trophy Hunt", Task 2 trophies (PR #7), merged.
+- 2026-10-21: update 20 "Fowl Play", the Chicken Race and wheel graphics (PR #5), and the Task 1 stats redesign (PR #4), merged.
+- 2026-10-21: update 19 "Tomb Raider", the jackpot only on the Phelan's Tomb plaque (PR #1), merged.
