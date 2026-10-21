@@ -26,6 +26,9 @@ if (!fs.existsSync(dx)) run('curl', ['-sfo', dx, 'https://repo1.maven.org/maven2
 
 // 2. the page: local fonts, prizes through $m(), wallet layer on top
 let html = fs.readFileSync(game, 'utf8');
+// the artifact host adds these; a WebView needs them in the page (else: Latin-1 text and a 980px desktop viewport)
+if (!/<meta charset/i.test(html)) html = '<meta charset="utf-8">\n' + html;
+if (!/<meta name="viewport"/i.test(html)) html = html.replace('<meta charset="utf-8">', '<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">');
 const build = (/const BUILD = (\d+)/.exec(html) || [])[1] || '?';
 const fontCss = fs.readFileSync(path.join(A, 'fonts/fonts.css'), 'utf8').replace(/FONTDIR\//g, 'file:///android_asset/fonts/');
 html = html.replace(/<link rel="preconnect"[^>]*>\s*/g, '').replace(/<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com[^>]*>/, '<style>\n' + fontCss + '</style>');
