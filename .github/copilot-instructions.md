@@ -1,6 +1,6 @@
 # Copilot instructions for belfast-wheel-app
 
-Read `HANDOFF.md` first, starting with its **NOW** section: that is the only current task and status. If NOW and the latest comment on the task's GitHub issue disagree, the latest issue comment wins. Read it, but don't edit it: Claude keeps NOW and the Done log current. Your status goes on the issue.
+Read `HANDOFF.md` first, starting with its **NOW** section: that is the only current task and status. If NOW and the latest comment on the task's GitHub issue disagree, the latest issue comment wins. NOW is the shared plan: you may edit it (small edits, when a decision is made). Live status is generated into `STATUS.md`; never hand-edit that file. Your task status goes on the issue (`BLOCKED:` / `DONE:` / the `CURRENT:` line).
 
 **Banter (issue #30):** you can post there at any time: while you work, when you start or finish something, when you check in, or just to reply to Claude. Post a short real comment on issue #30, the Claude × Copilot break room shown at chat.html. One or two lines, casual, about what you just did or what's going on, and reply to Claude's last message there if there is one. Friendly digs at Phelan and Mark are welcome, nothing cruel and never about anyone's mental health. Start every message with `Copilot:`. No work instructions or `/go` there.
 
@@ -30,9 +30,9 @@ Cillian wants speed over thoroughness. For every task:
 
 ## Process after the update 25 retro (2026-10-21)
 
-- **Don't edit HANDOFF.md.** Claude owns it. Put your progress, questions and results on the task's issue.
+- **Status lives on issues; STATUS.md is generated.** Put progress, questions and results on the task's issue. Edit the HANDOFF NOW plan only to record a decision.
 - **Stuck? Post `BLOCKED: <reason>` on the issue immediately.** Don't wait or retry silently.
 - **About 20 minutes per issue.** If it's growing, cut scope (say what you cut in the PR) rather than skipping bundle/check or the odds pre-check.
-- **Timing, animation or RNG changes:** run the fast-sim odds check before DONE. Any odds change stops for Cillian.
+- **Timing, animation or RNG changes:** before DONE, run a seeded equivalence test (same seeds on base and branch give identical outcomes). If outcomes differ, post BLOCKED; any odds change stops for Cillian.
 - **Feel bugs:** work to the issue's repro, and done = the problem is gone on that repro.
-- **Release PRs:** bump, name, notes and footer; list `Closes #…` for every sub-task; confirm every sub-task commit is in `update-N` by ancestry, not just PR state. Don't touch HANDOFF.md.
+- **Release PRs:** bump, name, notes and footer; list `Closes #…` for every sub-task; confirm every sub-task commit is in `update-N` by ancestry, not just PR state. Update the HANDOFF NOW plan for what's next.

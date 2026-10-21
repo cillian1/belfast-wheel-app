@@ -1,9 +1,9 @@
 # Working on the Wheel of Life repo
 
-## NOW (the only current section, rewritten on every task start, finish and merge)
+## NOW: the plan (Claude and Copilot both edit this; live status is in STATUS.md)
 
 - **Task:** Update 26 (Task 11). Update 25 "Smooth Operator" shipped (game 25, build 62).
-- **Owner:** Copilot builds overnight while Cillian sleeps. Copilot opens each PR into `update-26` and posts `DONE: Task …`. **Claude does a quick check and merges**, then starts the next wave. Copilot does not merge. Anything that changes money, odds, prizes or payouts waits for Cillian.
+- **Who:** Copilot builds and opens each PR into `update-26` and posts `DONE: Task …`. Claude does a quick check, merges, and starts the next wave. Copilot does not merge. Anything that changes money, odds, prizes or payouts waits for Cillian.
 - **PR #34 stays CLOSED. Do not reopen or sync it.** Its code (Task 9: quality modes, low-end mode, faster taps, with the wait changes removed) **IS on main and in update 25** (commit 66a5cb1, merged by hand by Claude). Its leftovers live in #45 (shorter waits) and #49 (main-wheel freezes).
 - **Order:**
   1. **Now, in parallel:** #49 main-wheel freezes between wheels (**TOP PRIORITY**; main wheel only, rooms later), plus wave 1: #39 → PR #46 (CI/template/release notes), #40 → PR #47 (notifications), #41 → PR #48 (offline + loading). All PRs target `update-26`, with no version bump.
@@ -13,13 +13,11 @@
 - **If stuck:** post `BLOCKED: <reason>` on that issue straight away and move on to the next independent step. Don't retry forever. Cillian checks in the morning.
 - **Last updated:** 2026-10-21 23:52 by Claude. Update 26 now runs under "How an update runs": every open issue has a cut line, #49 has a repro, #45/#49 need the odds pre-check, and there is one goal per issue (#42/#43 split into #52/#53).
 
-**Rules for this section:**
-0. **Any decision (closing or dropping a PR, moving work between updates, reprioritising, shipping) goes into NOW in the same step it's made** (Claude does this), so nobody has to ask.
-1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
-2. Only Claude rewrites NOW (on every start, merge, decision and release) and adds the Done-log line.
-3. If NOW and the latest comment on the task's issue disagree, **the latest issue comment wins**.
-4. When Copilot finishes, it opens the PR (ready for review) and posts `DONE: <task>` with the PR link on the task's issue. Claude watches for it.
-5. Don't add task notes, questions or statuses anywhere else in this file. Questions go on the issue or the PR.
+**Rules:**
+1. **Live status is generated:** `STATUS.md` is rebuilt automatically from issues and PRs on every change (`tools/status.mjs`, `.github/workflows/status.yml`). Never hand-edit it. To change a task's status, post `BLOCKED: <reason>` or `DONE: <task>` on its issue, or update the issue's `CURRENT:` line.
+2. **This NOW section is only the plan** (order of work, who does what, standing decisions). Both Claude and Copilot edit it, in small edits, whenever a decision is made, in the same step.
+3. Progress notes and per-task decisions go in issue comments, not here. If this plan and the latest issue comment disagree, the latest issue comment wins.
+4. A closed PR is not proof of shipping. Check the commit is in the target branch and record the SHA for manual integrations.
 
 ## How Copilot gets work
 
@@ -31,11 +29,11 @@ Claude gives Copilot its work directly. Cillian isn't in the loop for routine wo
 2. **Repro first for feel bugs.** The issue states a fixed repro (device or viewport, steps, what you see), and done means "Cillian can't see it any more" on that repro.
 3. **One goal per issue,** about 20 minutes of Copilot work. Phone or device checks are a separate final step that never blocks the PR.
 4. **Timebox about 45 minutes per update, with the planned cut written into the issues up front.** Hitting a limit means cutting scope, never skipping the checks.
-5. **Odds pre-check** for anything touching timing, animation or random draws: fast sim only, plus the seeded-spin CI (#39). Any odds change stops and waits for Cillian.
+5. **Odds pre-check** for anything touching timing, animation or random draws: a seeded equivalence test (same seeds on base and branch give identical outcomes) plus the seeded-spin CI (#39). If outcomes must change, the fast sim (outside the repo) is run in a separate odds thread. Any odds change stops and waits for Cillian.
 6. **Blocked = say so now.** Copilot posts `BLOCKED: <reason>` on the issue the moment it's stuck. Claude's watcher also nudges once if an active PR gets no push or comment for 15 minutes.
 7. **Holding branch `update-N`.** Sub-task PRs target it, with no version bump. Parallel tasks never edit the same files.
 8. **Release only through the release PR** `update-N` → `main`. Checklist: version bump + name + notes + footer; every sub-task PR merged, verified by commit ancestry (not just "closed"); `Closes #…` for every sub-task; Copilot told on #30.
-9. **HANDOFF NOW is tiny and only Claude edits it,** on main, straight after each merge or decision. Copilot and release PRs don't touch HANDOFF. Progress lives on the issues.
+9. **Status is generated, the plan is shared.** STATUS.md is built by an Action from issues and PRs. The NOW plan in HANDOFF is edited by both Claude and Copilot when a decision is made. Progress lives on the issues.
 
 ## What's live
 
