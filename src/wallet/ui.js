@@ -59,6 +59,8 @@
 .wboard li>div{min-width:0;overflow-wrap:anywhere}
 .wboard li>b{flex:none}
 .wyou{margin-left:5px;color:#f5d27a;font-size:11px;white-space:nowrap}
+.wplayers{display:flex;gap:6px;overflow-x:auto;padding:2px 0;max-width:100%}
+.wplayers .wbtn{white-space:nowrap}
 .wlist{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
 .wlist li{display:flex;justify-content:space-between;gap:10px;align-items:center;border-bottom:1px solid #22272e;padding:6px 0;font-size:14px}
 .wlist li span{color:var(--mute);font-size:12px}
@@ -354,7 +356,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   }
   async function meTab(body, me) {
     const tx = await db.get('tx/' + W.user, '?orderBy="$key"&limitToLast=40') || {};
-    const reqs = Object.entries(await db.get('reqs').catch(() => null) || {}).filter(([, r]) => r.user === W.user && r.status === 'pending');
+    const reqs = Object.entries(await db.get('reqs').catch(() => null) || {}).filter(([, r]) => r.user === W.user && r.kind === 'withdraw' && r.status === 'pending');
     const net = (me.won || 0) - (me.staked || 0);
     const rows = Object.values(tx).sort((a, b) => b.at - a.at);
     const name = { spin: 'Spin', win: 'Win', topup: 'Top-up', withdraw: 'Withdrawal', refund: 'Refund', adjust: 'Adjustment', payout: 'Paid out' };
