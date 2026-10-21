@@ -23,14 +23,15 @@ export function moneyify(js) {
   });
   walk.ancestor(ast, {
     TemplateLiteral(n) {
-      if (skipped.has(n)) return;
+      // an amount worked out in code (`€${v}`) is always a prize, even inside a question's label
       n.expressions.forEach((e, i) => {
         const before = n.quasis[i].value.cooked || '', after = n.quasis[i + 1].value.cooked || '';
         if (/€$/.test(before) || /^ euro/.test(after) || (/^plus $/.test(before) && /^ from the roulette/.test(after))) wrap(e);
       });
+      if (skipped.has(n)) return;
       n.quasis.forEach(q => {
         const raw = q.value.raw;
-        if (!skipped.has(q) && /€\d/.test(raw)) {
+        if (/€\d/.test(raw)) {
           const out = raw.replace(/€(\d+)/g, (_, d) => '€${$m(' + d + ')}');
           edits.push([q.start, q.end, out]);
         }

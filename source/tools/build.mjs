@@ -32,6 +32,12 @@ if (!/<meta name="viewport"/i.test(html)) html = html.replace('<meta charset="ut
 const build = (/const BUILD = (\d+)/.exec(html) || [])[1] || '?';
 const fontCss = fs.readFileSync(path.join(A, 'fonts/fonts.css'), 'utf8').replace(/FONTDIR\//g, 'file:///android_asset/fonts/');
 html = html.replace(/<link rel="preconnect"[^>]*>\s*/g, '').replace(/<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com[^>]*>/, '<style>\n' + fontCss + '</style>');
+// app-only odds: near-miss tip chance, and (optionally) no money on Mark's prize chickens
+const patch = (re, to, what) => { if (!re.test(html)) throw new Error('game changed, cannot patch ' + what); html = html.replace(re, to); };
+if (cfg.tip != null) patch(/let TIP_CHANCE = [\d.]+;/, `let TIP_CHANCE = ${cfg.tip};`, 'TIP_CHANCE');
+if (cfg.markPrizes === false) patch(
+  /v = k === 'W' \? 10 : 5; return \{ lbl: \[`€\$\{v\}`, \.\.\.q\.lbl\.slice\(0, 2\)\]\.slice\(0, 3\), t: q\.t, b: `\$\{k === 'W' \? 'A gold' : 'A purple'\} chicken made it: €\$\{v\} if Mark answers properly\.`, prize: v,/,
+  "v = 0; return { lbl: q.lbl.slice(0, 3), t: q.t, b: `${k === 'W' ? 'A gold' : 'A purple'} chicken made it.`, prize: v,", 'Mark prize chickens');
 const a = html.indexOf('<script>') + 8, b = html.lastIndexOf('</script>');
 const m = moneyify(html.slice(a, b));
 console.log(`game build ${build}: ${m.count} money edits`);
