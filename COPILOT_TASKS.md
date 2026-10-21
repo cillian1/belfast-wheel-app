@@ -161,6 +161,23 @@ Merged into Task 4 below. Don't open a separate PR for it.
 
 ---
 
+## Task 6: the new ghost (after Task 5 merges)
+
+Cillian wants **every** ghost in the game replaced by his new stink ghost: Ghost Phelan on the inner wheels, the God room / Zena ghost, the watch-message ghost and the Chicken Race trip. The source image will be at `assets/ghost-source.jpg`. It's a JPG with a **fake checkerboard painted into the background**, so cut it out properly: remove the checkerboard and keep the glow, the stink trails and the flies with soft alpha edges. Make a trimmed PNG/WebP sprite of ≤ 512 px (≤ 150 KB) and embed it in `game/index.html` as a data URI via the bundler, because phones load one file. Replace `drawGhost()` and `ghostImg()` so they draw the sprite at the same position, size and alpha, with a slow bob and a little wobble on the trails. Speech bubbles stay. Same timings and the same `Math.random()` calls. Check every ghost scene at 360 and 412px and put screenshots in the PR.
+
+## Task 7: room glow-ups (after Task 6 merges)
+
+Give every other room the same treatment the main wheels got in update 20: a light sweep while a wheel spins, a glow on the winning slice, a shaded 3D rim and a bevelled pointer. The wheels in the Stank Chamber (Stankman's wheel, the roulette), the God wheel, Phelan's wheel, Mark's wheel, the Monster tank and planet wheels, and the Pyramid. See `buildSweep`, `drawWinGlow`, `buildPointer` and `buildBase` in `src/game` for how the main wheels do it, and reuse those helpers. Visual only: no change to slices, odds, timings, prizes or `Math.random()` order. Before and after screenshots of each room in the PR.
+
+## Task 8: sound pack and mute (after Task 7 merges)
+
+1. **A theme tune per room**, made with the existing WebAudio music engine (`Music`, `Music.setMode`): main wheel, Stank Chamber, God room, Monster tank, Pyramid, Mark's farm (plus the Chicken Race), and Phelan's revenge. Short loops in the same style, no audio files.
+2. **Sound effects** for the big moments that are silent today: room entry stings, the Chicken Race countdown, finish and ghost trip, the jackpot, trophy unlocks, and Go back up.
+3. **A mute button** in the header next to Music: one tap mutes all music and effects, remembered with `pref`. The current "Music on/off" stays for music only.
+Keep it light on CPU (no new per-frame audio work). No gameplay changes.
+
+---
+
 ## When you finish a task
 
 Add a short status line under that task in this file (done, how tested, open questions), open the PR with a clear title, and stop. Claude reviews it and Cillian merges.

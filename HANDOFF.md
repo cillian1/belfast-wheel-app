@@ -5,7 +5,7 @@
 - **Task:** Task 5: every replay saved, Watch tabs, host page watching (`COPILOT_TASKS.md`, issue #12)
 - **Owner:** Copilot
 - **Status:** go now. Task 4 is complete (Stage 4, PR #14, merged as update 22 "Smoother Wheels").
-- **Next:** Copilot opens the Task 5 PR and posts `DONE: Task 5` on #12 → Claude does a quick check and merges.
+- **Next:** Copilot opens the Task 5 PR (#16) and posts `DONE: Task 5` on #12 → Claude merges → `/go` on Task 6, then 7, then 8, one at a time.
 - **Last updated:** 2026-10-21 21:55 by Claude
 
 **Rules for this section:**
