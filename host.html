@@ -202,7 +202,7 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
           <div class="acts"><button class="small" data-rev="${esc(r.tag)}" type="button">Revolut</button><button class="small gold" data-paid="${id}" type="button">Paid</button><button class="small red" data-cancel="${id}" type="button">✕</button></div></li>`).join('') || '<li><span>Nothing here yet</span></li>'}</ul>
         <p><span>Tap Revolut to open their page, send the money, then tap Paid. ✕ cancels it and puts the money back on their balance.</span></p>
         <h2>Old top-up requests</h2>
-        <ul>        ${oldTops.map(([id, r]) => `<li><div><b>${esc(r.name)}</b> ${eur(r.a)}<br><span>${when(r.at)}</span></div><button class="small red" data-dismiss-topup="${esc(id)}" type="button">Dismiss</button></li>`).join('') || '<li><span>Nothing here yet</span></li>'}</ul>
+        <ul>${oldTops.map(([id, r]) => `<li><div><b>${esc(r.name)}</b> ${eur(r.a)}<br><span>${when(r.at)}</span></div><button class="small red" data-dismiss-topup="${esc(id)}" type="button">Dismiss</button></li>`).join('') || '<li><span>Nothing here yet</span></li>'}</ul>
         <h2>Top-ups (check they arrived in your Revolut)</h2>
         <ul>${tops.map(([id, r]) => `<li><div><b>${esc(r.name)}</b> ${eur(r.a)}<br><span>${when(r.at)}${r.status === 'reversed' ? ' · <b class="err">reversed</b>' : ''}</span></div>
           ${r.status === 'reversed' ? '' : `<button class="small red" data-undo="${id}" type="button">Reverse</button>`}</li>`).join('') || '<li><span>Nothing here yet</span></li>'}</ul>
