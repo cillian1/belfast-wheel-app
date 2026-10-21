@@ -96,7 +96,11 @@ function idle(now) {
   idleRaf = 0;
   if (document.hidden) return;
   idleRaf = requestAnimationFrame(idle);
-  if (!busy && scene === 'nested' && zoom === 1 && now - lastIdle > (Perf.low ? 33 : 40)) { lastIdle = now; liveK = 0; draw(); liveK = -1; }
+  // the rim lights keep moving through the gaps between spins and scene changes: redraw whenever no run frame has drawn lately
+  if (scene === 'nested' && now - lastIdle > (Perf.low ? 33 : 40) && (!busy || performance.now() - lastDraw > 30)) {
+    lastIdle = now;
+    if (liveK < 0 && zoom === 1) { liveK = 0; draw(); liveK = -1; } else draw();
+  }
 }
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && idleRaf) { cancelAnimationFrame(idleRaf); idleRaf = 0; }
