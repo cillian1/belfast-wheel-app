@@ -2,9 +2,9 @@
   "db": "https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app",
   "revolut": "cillian9bw",
   "repo": "cillian1/belfast-wheel-app",
-  "release": 5,
+  "release": 6,
   "apk": 2,
-  "ev": 8.8,
+  "ev": 10,
   "edge": 0.99,
   "stakes": [
     10,
@@ -18,5 +18,5 @@
     90,
     100
   ],
-  "notes": "Bet from 10c, host tools moved to the host page"
+  "notes": "Prize tuning"
 }

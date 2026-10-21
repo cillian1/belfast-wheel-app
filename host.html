@@ -40,7 +40,7 @@ li span{color:var(--mute);font-size:13px}
 <main id="main"><h1>Wheel Host</h1><p>Loading…</p></main>
 <div class="toast" id="toast"></div>
 <script>
-window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":5,"ev":8.8,"edge":0.99,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};
+window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":6,"ev":10,"edge":0.99,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};
 (function () {
   const CFG = window.WALLET_CFG, app = null, MIN_TOPUP = 100;
   // <shared> (also used by host.html, see tools/build.mjs)
@@ -157,7 +157,8 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
     main.innerHTML = `<h1>Wheel Host</h1>
       <div class="grid"><div><small>To pay out</small><b>${wd.length}</b></div><div><small>On balances</small><b>${eur(owed)}</b></div>
         <div><small>Topped up</small><b>${eur(inn)}</b></div><div><small>Paid out</small><b>${eur(out)}</b></div>
-        <div><small>Your fund</small><b>${eur(inn - out)}</b></div><div><small>Spins</small><b>${st.spins || 0}</b></div></div>
+        <div><small>Your fund</small><b>${eur(inn - out)}</b></div><div><small>Spins</small><b>${st.spins || 0}</b></div>
+        <div><small>Staked</small><b>${eur(st.staked || 0)}</b></div><div><small>Won back</small><b>${eur(st.won || 0)}${st.staked ? ` <span>${Math.round(100 * (st.won || 0) / st.staked)}%</span>` : ''}</b></div></div>
       <div class="tabs"><button type="button" data-t="money">Money</button><button type="button" data-t="players">Players</button><button type="button" data-t="settings">Settings</button></div>
       <div id="body"></div>`;
     main.querySelectorAll('.tabs button').forEach(b => { b.classList.toggle('on', b.dataset.t === tab); b.onclick = () => { tab = b.dataset.t; render(); }; });
@@ -179,7 +180,7 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
     } else {
       const edge = cfg.edge || CFG.edge;
       body.innerHTML = `<h2>Payout</h2>
-        <p>Players get back about <b>${Math.round(edge * 100)}%</b> of what they stake over time, so the house keeps ${Math.round(100 - edge * 100)}%. Prizes on every phone scale to this.</p>
+        <p>Players get back about <b>${Math.round(edge * 100)}%</b> of what they stake over time, so the house keeps ${Math.round(100 - edge * 100)}%. Prizes on every phone scale to this. Luck swings a lot over a few hundred spins, so watch "Won back" on the top and nudge this if it drifts far from the target over time.</p>
         <div class="row"><input id="edge" inputmode="numeric" placeholder="Payout %, e.g. 99"><button class="gold" id="edgeGo" type="button">Save</button></div>
         <h2>Host PIN</h2><div class="row"><input id="newPin" type="password" inputmode="numeric" maxlength="8" placeholder="New PIN"><button id="pinGo" type="button">Change</button></div>
         <button id="lock" type="button">Lock this page</button>`;
