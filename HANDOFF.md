@@ -7,7 +7,7 @@
 - **Status / order (in sequence):**
   1. Update 25 shipped as "Smooth Operator" (game 25, build 62).
   2. **Wave 1 STARTED (23:35):** #39, #40, #41 in parallel on `update-26`. Each gets a PR into `update-26`, no version bump.
-  3. When #39, #40 and #41 are all merged into `update-26`, Claude starts **wave 2:** #42 and #43.
+  3. When #39, #40 and #41 are all merged into `update-26`, Claude starts **wave 2:** #42, #43 and #49 (lights freeze between wheels).
   4. When wave 2 is merged, Claude starts **wave 3:** #45 (frame-rate-independent RNG + shorter waits; odds check, any odds change waits for Cillian).
   5. When wave 3 is merged, open the release PR `update-26` → `main` (bump to 26, name it) and post DONE.
 - **If stuck:** if a step fails twice (CI red you can't fix, a conflict you can't resolve, or anything touching money), stop. Post one note on that issue saying what's blocked and move on to the next independent step. Don't retry forever. Cillian checks in the morning.
