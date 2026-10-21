@@ -138,6 +138,8 @@ Merged into Task 4 below. Don't open a separate PR for it.
 
 **Status (Task 4, Stage 3):** Consolidated the wallet into `db.js`, `ui.js`, `watch.js`, `notes.js`, and `money.js`. `node tools/check.mjs` passes; `money.js` matches the original payout, jackpot, and spin source lines exactly (SHA-256 `30bee6aa4a8a1625a2c997c02f04a0a5a35f53298891ec77e74a9aca1f77dc06`, line endings normalized). Versions unchanged; Stage 4 not started.
 
+**Status (Task 4, Stage 4):** Added an `N`-keyed Pyramid desert canvas cache (0 pixel-channel differences at 816×816), removed per-frame wheel-nav key arrays/joins and dice/farm sort-copy allocations, and paused fireplace, idle, and door-choice draw loops while hidden. `node tools/check.mjs` and `git diff --check` pass; all 242 `Math.random()` call sites match `main`; a 30-second Edge max-depth profile at 412px/DPR 2 measured 0.143 ms average / 0.20 ms p95 on `main` and 0.146 ms / 0.30 ms here (no measurable gain beyond measurement noise). No money, watched-global, or player-timing changes.
+
 ### What Claude checks before merging each stage
 
 - Screenshots of the main wheel, inner wheels, each room, the farm and Chicken Race, and the account sheet, before and after, at 360 and 412px.

@@ -4,6 +4,7 @@
 // and behind the Wild door the tip opens, coins pour, Cleopatra rises with the prizes and Ghost Phelan snatches one
 const PYR_PRIZES = [150, 300, 500, 1000, 2500];
 let pyr = null, doorPick = null;
+let desertCache = null;
 function pyrBase() { return N * .66; }
 function drawPyramidShape(g, rise, tipOff) {
   const base = pyrBase(), H = N * .42, w = N * .33, dy = (1 - rise) * H * 1.05, ax = c, ay = base - H + dy;
@@ -26,12 +27,16 @@ function drawPyramidShape(g, rise, tipOff) {
   g.restore();
   return { ax, ty, tw };
 }
-function drawDesert(g, now) {
-  const base = pyrBase();
-  g.fillStyle = grad(g, 0, 0, 0, base, [[0, '#2a1640'], [.45, '#8e3a3a'], [.8, '#e0743a'], [1, '#f6b45a']]); g.fillRect(0, 0, N, base + 2);
-  const sg = g.createRadialGradient(N * .74, base - N * .06, 0, N * .74, base - N * .06, N * .2); sg.addColorStop(0, 'rgba(255,230,150,1)'); sg.addColorStop(.35, 'rgba(255,190,90,.8)'); sg.addColorStop(1, 'rgba(255,150,60,0)');
-  g.fillStyle = sg; g.fillRect(0, 0, N, base);
-  return base;
+function drawDesert(g) {
+  if (!desertCache || desertCache.width !== N) {
+    desertCache = mk();
+    const bg = desertCache.getContext('2d'), base = pyrBase();
+    bg.fillStyle = grad(bg, 0, 0, 0, base, [[0, '#2a1640'], [.45, '#8e3a3a'], [.8, '#e0743a'], [1, '#f6b45a']]); bg.fillRect(0, 0, N, base + 2);
+    const sg = bg.createRadialGradient(N * .74, base - N * .06, 0, N * .74, base - N * .06, N * .2); sg.addColorStop(0, 'rgba(255,230,150,1)'); sg.addColorStop(.35, 'rgba(255,190,90,.8)'); sg.addColorStop(1, 'rgba(255,150,60,0)');
+    bg.fillStyle = sg; bg.fillRect(0, 0, N, base);
+  }
+  g.drawImage(desertCache, 0, 0);
+  return pyrBase();
 }
 function drawDunes(g) {
   const base = pyrBase();
@@ -190,9 +195,9 @@ async function pyramidRun(steps) {
   $('#caption').textContent = 'Pick a door';
   setBtn('Pick a door', true);
   const stage = $('.stage'); stage.classList.add('pick');
-  let alive = true; (function pulse() { if (!alive) return; draw(); requestAnimationFrame(pulse); })();
+  const stopPulse = visibleDrawLoop(draw);
   const chosen = await new Promise(res => { doorPick = res; });
-  doorPick = null; stage.classList.remove('pick'); pyr.pickable = false; alive = false;
+  doorPick = null; stage.classList.remove('pick'); pyr.pickable = false; stopPulse();
   const d = pyr.doors[chosen];
   Music.sting(3); buzz([40, 40, 40]);
   await animate(1400, t => { d.open = easeInOut(t); if (t < .8 && Math.random() < .3) tick(.4, 200 + Math.random() * 100); draw(); });

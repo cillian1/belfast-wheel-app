@@ -1,9 +1,9 @@
 {
-  "game": 21,
+  "game": 22,
   "apk": 3,
-  "gameBuild": 59,
-  "notes": "Earn trophies for spins, rooms, and big wins",
+  "gameBuild": 60,
+  "notes": "Smoother animations and faster deep runs",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk",
-  "name": "Trophy Hunt"
+  "name": "Smoother Wheels"
 }

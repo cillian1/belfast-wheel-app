@@ -287,12 +287,12 @@ footer{position:fixed;top:8px;left:10px;z-index:5;color:rgba(220,225,230,.55);fo
   <input class="vh" type="file" id="lib" accept="image/*">
 
 
-  <footer>Build 59 · app 21<br><small style="font-size:8.5px;letter-spacing:.04em">Trophy Hunt</small></footer>
+  <footer>Build 60 · app 22<br><small style="font-size:8.5px;letter-spacing:.04em">Smoother Wheels</small></footer>
 </div>
 
 <script>
 // Owns shared game constants, geometry, and utility functions.
-const BUILD = 59;
+const BUILD = 60;
 const $ = s => document.querySelector(s);
 const TAU = Math.PI * 2, BASE = -Math.PI / 2;
 const LABEL_FONT = '"IBM Plex Sans Condensed","Arial Narrow",sans-serif';
@@ -677,7 +677,7 @@ function buildDart() {
 // ---------- the room: dim, a fire going ----------
 // Owns the ambient room background and its animation.
 const room = $('#room'), rctx = room.getContext('2d');
-let RW = 0, RH = 0, RDp = 1, roomBg = null, fireBox = null, lastRoom = 0;
+let RW = 0, RH = 0, RDp = 1, roomBg = null, fireBox = null, lastRoom = 0, roomRaf = 0;
 const EMBERS = Array.from({ length: 26 }, () => ({ x: Math.random(), y: Math.random(), v: .15 + Math.random() * .35, s: 1 + Math.random() * 1.5 }));
 function buildRoom() {
   const k = document.createElement('canvas'); k.width = room.width; k.height = room.height;
@@ -724,7 +724,9 @@ function roomResize() {
   rctx.setTransform(1, 0, 0, 1, 0, 0); rctx.drawImage(roomBg, 0, 0);
 }
 function drawRoom(now) {
-  requestAnimationFrame(drawRoom);
+  roomRaf = 0;
+  if (document.hidden) return;
+  roomRaf = requestAnimationFrame(drawRoom);
   if (now - lastRoom < 66 || !roomBg) return; lastRoom = now;
   const t = now / 1000, F = fireBox;
   // repaint just the fireplace opening from the baked room, then the flames and embers over it
@@ -748,7 +750,12 @@ function drawRoom(now) {
   });
   rctx.restore();
 }
-roomResize(); window.addEventListener('resize', roomResize); requestAnimationFrame(drawRoom);
+function scheduleRoom() {
+  if (document.hidden) { if (roomRaf) { cancelAnimationFrame(roomRaf); roomRaf = 0; } return; }
+  if (!roomRaf) roomRaf = requestAnimationFrame(drawRoom);
+}
+document.addEventListener('visibilitychange', scheduleRoom);
+roomResize(); window.addEventListener('resize', roomResize); scheduleRoom();
 // ---------- faces ----------
 // Owns cached wheel, pointer, ball, and board face construction.
 function buildBase() {
@@ -1105,6 +1112,30 @@ function rescaleBalls(oldB) {
 // Owns main canvas drawing and stage layout.
 function drawScaled(img, r, sc) { ctx.save(); ctx.translate(c, c); ctx.scale(sc, sc); ctx.rotate(r); ctx.drawImage(img, -c, -c); ctx.restore(); }
 let domeBulge = 0;
+const diceDrawOrder = [];
+function compareDiceHeight(a, b) { return (a.z || 0) - (b.z || 0); }
+function visibleDrawLoop(render) {
+  let raf = 0, active = true;
+  const schedule = () => { if (active && !document.hidden && !raf) raf = requestAnimationFrame(frame); };
+  function frame() {
+    raf = 0;
+    if (!active || document.hidden) return;
+    render();
+    schedule();
+  }
+  const visibility = () => {
+    if (document.hidden && raf) { cancelAnimationFrame(raf); raf = 0; }
+    else schedule();
+  };
+  document.addEventListener('visibilitychange', visibility);
+  if (!document.hidden) render();
+  schedule();
+  return () => {
+    active = false;
+    if (raf) cancelAnimationFrame(raf);
+    document.removeEventListener('visibilitychange', visibility);
+  };
+}
 function drawDice(sc) {
   ctx.save(); ctx.translate(c, c); ctx.scale(sc, sc);
   const s0 = R * .13;
@@ -1122,14 +1153,18 @@ function drawDice(sc) {
     ctx.font = `700 ${R * .1}px ${LABEL_FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = '#ffe9a8'; ctx.fillText('+' + d.v, d.x * R, d.y * R - (1 - d.label) * R * .12); ctx.restore();
   });
-  [...dice].sort((a, b) => (a.z || 0) - (b.z || 0)).forEach(d => {
-    if (d.gone) return;
+  diceDrawOrder.length = 0;
+  for (let i = 0; i < dice.length; i++) diceDrawOrder.push(dice[i]);
+  diceDrawOrder.sort(compareDiceHeight);
+  for (let i = 0; i < diceDrawOrder.length; i++) {
+    const d = diceDrawOrder[i];
+    if (d.gone) continue;
     const s = s0 * (1 + (d.z || 0) * .9 + (d.swell || 0) * .35) * (d.born ?? 1);
-    if (s <= 0) return;
+    if (s <= 0) continue;
     if (!d.M) { d.M = snapRot(randRot()); d.v = topValue(d.M); }
     if (d.glow > 0) { const gr = ctx.createRadialGradient(d.x * R, d.y * R, 0, d.x * R, d.y * R, s * 1.2); gr.addColorStop(0, d.sp === 'W' ? `rgba(255,215,90,${.8 * d.glow})` : `rgba(180,110,255,${.8 * d.glow})`); gr.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(d.x * R, d.y * R, s * 1.2, 0, TAU); ctx.fill(); }
     drawDie3D(ctx, d.x * R, d.y * R, s * .82, d.M, d.sp);
-  });
+  }
   // the clear pop-up dome over the dice
   const dr = R * .5 * (1 + domeBulge * .05);
   const dg = ctx.createRadialGradient(-dr * .35, -dr * .45, 0, 0, 0, dr);
@@ -1160,8 +1195,38 @@ function drawDeepGlow(sc) {
   ctx.restore();
 }
 let lastIdle = 0;
-(function idle(now) { requestAnimationFrame(idle); if (!busy && scene === 'nested' && zoom === 1 && !document.hidden && now - lastIdle > 40) { lastIdle = now; liveK = 0; draw(); liveK = -1; } })(0);
+let idleRaf = 0;
+function idle(now) {
+  idleRaf = 0;
+  if (document.hidden) return;
+  idleRaf = requestAnimationFrame(idle);
+  if (!busy && scene === 'nested' && zoom === 1 && now - lastIdle > 40) { lastIdle = now; liveK = 0; draw(); liveK = -1; }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && idleRaf) { cancelAnimationFrame(idleRaf); idleRaf = 0; }
+  else if (!document.hidden && !idleRaf) idleRaf = requestAnimationFrame(idle);
+});
+if (!document.hidden) idleRaf = requestAnimationFrame(idle);
 let liveK = -1, navCache = null, evenA = 1;
+function navCacheMatches(cache) {
+  if (!cache || cache.N !== N || cache.DEPTH !== DEPTH || cache.zoom !== zoom || cache.liveK !== liveK) return false;
+  if (cache.rotations.length !== rot.length) return false;
+  for (let k = 0; k < rot.length; k++) if (cache.rotations[k] !== (k === liveK ? '' : rot[k].toFixed(5))) return false;
+  if (cache.deadTo.length !== deadTo.length || cache.deadFrom.length !== deadFrom.length || cache.deadA.length !== deadA.length) return false;
+  for (let k = 0; k < deadTo.length; k++) if (cache.deadTo[k] !== deadTo[k] || cache.deadFrom[k] !== deadFrom[k] || cache.deadA[k] !== deadA[k]) return false;
+  if (liveK === DEPTH) return cache.dice === null;
+  if (!cache.dice || cache.dice.length !== dice.length) return false;
+  for (let i = 0; i < dice.length; i++) if (cache.dice[i] !== dice[i].x + dice[i].y + (dice[i].gone ? 1 : 0)) return false;
+  return true;
+}
+function snapshotNavCache() {
+  return {
+    N, DEPTH, zoom, liveK,
+    rotations: rot.map((r, k) => k === liveK ? '' : r.toFixed(5)),
+    deadTo: deadTo.slice(), deadFrom: deadFrom.slice(), deadA: deadA.slice(),
+    dice: liveK === DEPTH ? null : dice.map(d => d.x + d.y + (d.gone ? 1 : 0)),
+  };
+}
 function drawLayer(g, k, sc) {
   const sv = ctx; ctx = g;
   const ga = ctx.globalAlpha; if (k === MAXD && evenA < 1) ctx.globalAlpha = ga * evenA;
@@ -1196,8 +1261,7 @@ function drawNested() {
   // the static wheels under and over the moving one are cached, so a spin redraws one wheel, not five
   let cache = null;
   if (liveK >= 0) {
-    const key = [N, DEPTH, zoom, liveK, rot.map((r, k) => k === liveK ? '' : r.toFixed(5)).join(), deadTo.join(), deadFrom.join(), deadA.join(), liveK === DEPTH ? '' : dice.map(d => d.x + d.y + (d.gone ? 1 : 0)).join()].join('|');
-    if (!navCache || navCache.key !== key) {
+    if (!navCacheMatches(navCache)) {
       const mkc = () => { const k2 = mk(); return { cv: k2, g: k2.getContext('2d') }; };
       const u = navCache && navCache.N === N ? navCache.u : mkc(), o = navCache && navCache.N === N ? navCache.o : mkc();
       u.g.clearRect(0, 0, N, N); o.g.clearRect(0, 0, N, N);
@@ -1209,7 +1273,7 @@ function drawNested() {
         drawLayer(k < liveK ? u.g : o.g, k, sc);
       }
       [u.g, o.g].forEach(g => g.restore());
-      navCache = { key, N, u, o };
+      navCache = { ...snapshotNavCache(), u, o };
     }
     cache = navCache;
   }
@@ -2604,9 +2668,9 @@ async function vaultRun(steps, cash, acts) {
   await crossTo(() => { vault.ph = 'doors'; vault.pickable = true; }, 800);
   $('#caption').textContent = 'Pick a gold door';
   setBtn('Pick a door', true);
-  let alive = true; (function pulse() { if (!alive) return; draw(); requestAnimationFrame(pulse); })();
+  const stopPulse = visibleDrawLoop(draw);
   const chosen = await waitTap((x, y) => { for (let j = 0; j < 3; j++) { const d = doorRect(j); if (x > d.x - N * .03 && x < d.x + d.w + N * .03 && y > d.y - N * .06 && y < d.y + d.h + N * .03) return j; } return null; });
-  alive = false; vault.pickable = false;
+  stopPulse(); vault.pickable = false;
   const d = vault.doors[chosen];
   Music.sting(3); buzz([40, 40, 40]);
   await animate(1400, t => { d.open = easeInOut(t); if (t < .8 && Math.random() < .3) tick(.4, 600 + Math.random() * 200); draw(); });
@@ -3147,6 +3211,7 @@ const MOCK = [
   "Unlucky. I'm keeping the toaster.",
 ];
 let god = null, tapPick = null, ghostSay = '';
+const GOD_PICK_BUTTONS = [['hi', 'HIGHER ▲', '#2f7a3b'], ['lo', 'LOWER ▼', '#8e2a20']];
 function buildGodWheel(items) {
   const k = mk(), g = k.getContext('2d'), n = items.length, seg = TAU / n, r0 = R * .18, r1 = R * .93;
   g.beginPath(); g.arc(c, c, R, 0, TAU); g.fillStyle = '#1a1206'; g.fill();
@@ -3223,7 +3288,7 @@ function drawGodRoom(now) {
         g.font = `800 ${N * .06}px ${LABEL_FONT}`; g.fillStyle = '#fff6e0'; g.fillText(v.ok ? '✓ RIGHT' : '✗ WRONG', 0, 0); g.restore();
       }
       if (G.pick) { const r = hlRects(), p = .5 + .5 * Math.sin(now / 200);
-        [['hi', 'HIGHER ▲', '#2f7a3b'], ['lo', 'LOWER ▼', '#8e2a20']].forEach(([k, t, col]) => { const b = r[k]; rrect(g, b.x, b.y, b.w, b.h, N * .03); g.fillStyle = col; g.fill(); g.strokeStyle = `rgba(255,240,200,${.4 + .4 * p})`; g.lineWidth = 3 * D; g.stroke(); g.font = `700 ${N * .045}px ${LABEL_FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff6e0'; g.fillText(t, b.x + b.w / 2, b.y + b.h / 2); });
+        GOD_PICK_BUTTONS.forEach(([k, t, col]) => { const b = r[k]; rrect(g, b.x, b.y, b.w, b.h, N * .03); g.fillStyle = col; g.fill(); g.strokeStyle = `rgba(255,240,200,${.4 + .4 * p})`; g.lineWidth = 3 * D; g.stroke(); g.font = `700 ${N * .045}px ${LABEL_FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff6e0'; g.fillText(t, b.x + b.w / 2, b.y + b.h / 2); });
       }
       for (let j = 0; j < 4; j++) { g.beginPath(); g.arc(c - N * .09 + j * N * .06, N * .755, N * .014, 0, TAU); g.fillStyle = j < G.right ? '#f3c34e' : 'rgba(255,255,255,.18)'; g.fill(); }
     }
@@ -3274,7 +3339,7 @@ async function godRoom(steps) {
   cards[0].up = true; ting(); draw();
   ghostTo(N * .9, N * .1, 900);
   setBtn('Higher or lower', true); $('#caption').textContent = 'Higher or lower?';
-  let alive = true; (function pulse() { if (!alive) return; draw(); requestAnimationFrame(pulse); })();
+  const stopPulse = visibleDrawLoop(draw);
   let lost = false;
   for (let j = 1; j < 5; j++) {
     const prev = cards[j - 1], nx = cards[j];
@@ -3306,7 +3371,7 @@ async function godRoom(steps) {
     }
   }
   god.banner = ''; god.label = false;
-  alive = false;
+  stopPulse();
   if (lost) {
     const cons = 0;
     await ghostTo(N * .62, N * .4, 700);
@@ -3347,6 +3412,7 @@ async function godRoom(steps) {
 // and behind the Wild door the tip opens, coins pour, Cleopatra rises with the prizes and Ghost Phelan snatches one
 const PYR_PRIZES = [150, 300, 500, 1000, 2500];
 let pyr = null, doorPick = null;
+let desertCache = null;
 function pyrBase() { return N * .66; }
 function drawPyramidShape(g, rise, tipOff) {
   const base = pyrBase(), H = N * .42, w = N * .33, dy = (1 - rise) * H * 1.05, ax = c, ay = base - H + dy;
@@ -3369,12 +3435,16 @@ function drawPyramidShape(g, rise, tipOff) {
   g.restore();
   return { ax, ty, tw };
 }
-function drawDesert(g, now) {
-  const base = pyrBase();
-  g.fillStyle = grad(g, 0, 0, 0, base, [[0, '#2a1640'], [.45, '#8e3a3a'], [.8, '#e0743a'], [1, '#f6b45a']]); g.fillRect(0, 0, N, base + 2);
-  const sg = g.createRadialGradient(N * .74, base - N * .06, 0, N * .74, base - N * .06, N * .2); sg.addColorStop(0, 'rgba(255,230,150,1)'); sg.addColorStop(.35, 'rgba(255,190,90,.8)'); sg.addColorStop(1, 'rgba(255,150,60,0)');
-  g.fillStyle = sg; g.fillRect(0, 0, N, base);
-  return base;
+function drawDesert(g) {
+  if (!desertCache || desertCache.width !== N) {
+    desertCache = mk();
+    const bg = desertCache.getContext('2d'), base = pyrBase();
+    bg.fillStyle = grad(bg, 0, 0, 0, base, [[0, '#2a1640'], [.45, '#8e3a3a'], [.8, '#e0743a'], [1, '#f6b45a']]); bg.fillRect(0, 0, N, base + 2);
+    const sg = bg.createRadialGradient(N * .74, base - N * .06, 0, N * .74, base - N * .06, N * .2); sg.addColorStop(0, 'rgba(255,230,150,1)'); sg.addColorStop(.35, 'rgba(255,190,90,.8)'); sg.addColorStop(1, 'rgba(255,150,60,0)');
+    bg.fillStyle = sg; bg.fillRect(0, 0, N, base);
+  }
+  g.drawImage(desertCache, 0, 0);
+  return pyrBase();
 }
 function drawDunes(g) {
   const base = pyrBase();
@@ -3533,9 +3603,9 @@ async function pyramidRun(steps) {
   $('#caption').textContent = 'Pick a door';
   setBtn('Pick a door', true);
   const stage = $('.stage'); stage.classList.add('pick');
-  let alive = true; (function pulse() { if (!alive) return; draw(); requestAnimationFrame(pulse); })();
+  const stopPulse = visibleDrawLoop(draw);
   const chosen = await new Promise(res => { doorPick = res; });
-  doorPick = null; stage.classList.remove('pick'); pyr.pickable = false; alive = false;
+  doorPick = null; stage.classList.remove('pick'); pyr.pickable = false; stopPulse();
   const d = pyr.doors[chosen];
   Music.sting(3); buzz([40, 40, 40]);
   await animate(1400, t => { d.open = easeInOut(t); if (t < .8 && Math.random() < .3) tick(.4, 200 + Math.random() * 100); draw(); });
@@ -4035,6 +4105,8 @@ function drawChicken(g, x, y, s, dir, ph, peck, flash, kind) {
 }
 const MARK_COLS = i => i % 2 ? ['#8e2a20', 'dark'] : ['#efe4c8', 'light'];
 function markWedgeStyle(it, i) { return it.kind === 'W' ? ['#d9a628', 'light'] : it.kind === 'B' ? ['#7b3fc4', 'dark'] : it.special === 'leave' ? ['#2f7a3b', 'dark'] : it.special === 'own' ? ['#141414', 'dark'] : MARK_COLS(i); }
+const chickenDrawOrder = [];
+function compareChickenY(a, b) { return a.y - b.y; }
 function buildMarkWheel(items) {
   const k = mk(), g = k.getContext('2d'), n = items.length, seg = TAU / n, r0 = R * .16, r1 = R * .93;
   g.save(); g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = R * .08; g.shadowOffsetY = R * .04;
@@ -4089,12 +4161,16 @@ function drawFarm(now) {
     ctx.fillStyle = gr; ctx.fillRect(f.x - camX - N * .08, f.y - N * .1, N * .16, N * .14);
   });
   if (raceLine) drawRaceLine();
-  [...chickens].sort((a, b) => a.y - b.y).forEach(ch => {
-    if (!ch.alive || ch.slice || ch.pop <= .01) return;
+  chickenDrawOrder.length = 0;
+  for (let i = 0; i < chickens.length; i++) chickenDrawOrder.push(chickens[i]);
+  chickenDrawOrder.sort(compareChickenY);
+  for (let i = 0; i < chickenDrawOrder.length; i++) {
+    const ch = chickenDrawOrder[i];
+    if (!ch.alive || ch.slice || ch.pop <= .01) continue;
     if (ch.glow > 0) { const gr = ctx.createRadialGradient(ch.x - camX, ch.y - N * .01, 0, ch.x - camX, ch.y - N * .01, N * .06); gr.addColorStop(0, ch.special === 'B' ? `rgba(190,140,255,${ch.glow})` : `rgba(255,225,120,${ch.glow})`); gr.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(ch.x - camX, ch.y - N * .01, N * .06, 0, TAU); ctx.fill(); }
     drawChicken(ctx, ch.x - camX, ch.y, N * .055 * ch.pop, ch.dir, ch.ph, ch.peck, ch.flash || 0, ch.special);
     if (ch.tag) drawRaceTag(ch);
-  });
+  }
   carried.forEach(b => {
     if (b.s <= .01) return;
     const x = b.x - camX, gl = b.glow * (.75 + .25 * Math.sin(t * 6)), gr = ctx.createRadialGradient(x, b.y, 0, x, b.y, b.r * 4);
@@ -4716,7 +4792,7 @@ if (document.fonts && document.fonts.load) {
 
 </script>
 
-<script>window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":21,"ev":16.24,"edge":0.995,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};</script>
+<script>window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":22,"ev":16.24,"edge":0.995,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};</script>
 <script>
 // ---------- wallet layer for the Android app ----------
 // Owns wallet configuration, shared state, and app bindings.

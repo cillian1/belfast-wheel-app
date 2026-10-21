@@ -4,9 +4,9 @@
 
 - **Task:** Task 4, Stage 4: performance (`COPILOT_TASKS.md`, issue #8). After that, Task 5: replays and host watching.
 - **Owner:** Copilot
-- **Status:** go now. Stage 3 (PR #11) is reviewed and merged. Nothing is waiting on Claude.
-- **Next:** Copilot opens the Stage 4 PR and posts `DONE: Stage 4` on #8 → Claude reviews and merges → Copilot starts Task 5 (issue to follow).
-- **Last updated:** 2026-10-21 21:35 by Claude
+- **Status:** Stage 4 implementation and validation are complete on the fresh performance branch; final review and PR publication are underway.
+- **Next:** Copilot opens the ready-for-review Stage 4 PR and posts `DONE: Stage 4` on #8 → Claude reviews and merges → Task 5 remains queued.
+- **Last updated:** 2026-10-21 21:43 by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.

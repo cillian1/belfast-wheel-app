@@ -2,6 +2,30 @@
 // Owns main canvas drawing and stage layout.
 function drawScaled(img, r, sc) { ctx.save(); ctx.translate(c, c); ctx.scale(sc, sc); ctx.rotate(r); ctx.drawImage(img, -c, -c); ctx.restore(); }
 let domeBulge = 0;
+const diceDrawOrder = [];
+function compareDiceHeight(a, b) { return (a.z || 0) - (b.z || 0); }
+function visibleDrawLoop(render) {
+  let raf = 0, active = true;
+  const schedule = () => { if (active && !document.hidden && !raf) raf = requestAnimationFrame(frame); };
+  function frame() {
+    raf = 0;
+    if (!active || document.hidden) return;
+    render();
+    schedule();
+  }
+  const visibility = () => {
+    if (document.hidden && raf) { cancelAnimationFrame(raf); raf = 0; }
+    else schedule();
+  };
+  document.addEventListener('visibilitychange', visibility);
+  if (!document.hidden) render();
+  schedule();
+  return () => {
+    active = false;
+    if (raf) cancelAnimationFrame(raf);
+    document.removeEventListener('visibilitychange', visibility);
+  };
+}
 function drawDice(sc) {
   ctx.save(); ctx.translate(c, c); ctx.scale(sc, sc);
   const s0 = R * .13;
@@ -19,14 +43,18 @@ function drawDice(sc) {
     ctx.font = `700 ${R * .1}px ${LABEL_FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = '#ffe9a8'; ctx.fillText('+' + d.v, d.x * R, d.y * R - (1 - d.label) * R * .12); ctx.restore();
   });
-  [...dice].sort((a, b) => (a.z || 0) - (b.z || 0)).forEach(d => {
-    if (d.gone) return;
+  diceDrawOrder.length = 0;
+  for (let i = 0; i < dice.length; i++) diceDrawOrder.push(dice[i]);
+  diceDrawOrder.sort(compareDiceHeight);
+  for (let i = 0; i < diceDrawOrder.length; i++) {
+    const d = diceDrawOrder[i];
+    if (d.gone) continue;
     const s = s0 * (1 + (d.z || 0) * .9 + (d.swell || 0) * .35) * (d.born ?? 1);
-    if (s <= 0) return;
+    if (s <= 0) continue;
     if (!d.M) { d.M = snapRot(randRot()); d.v = topValue(d.M); }
     if (d.glow > 0) { const gr = ctx.createRadialGradient(d.x * R, d.y * R, 0, d.x * R, d.y * R, s * 1.2); gr.addColorStop(0, d.sp === 'W' ? `rgba(255,215,90,${.8 * d.glow})` : `rgba(180,110,255,${.8 * d.glow})`); gr.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(d.x * R, d.y * R, s * 1.2, 0, TAU); ctx.fill(); }
     drawDie3D(ctx, d.x * R, d.y * R, s * .82, d.M, d.sp);
-  });
+  }
   // the clear pop-up dome over the dice
   const dr = R * .5 * (1 + domeBulge * .05);
   const dg = ctx.createRadialGradient(-dr * .35, -dr * .45, 0, 0, 0, dr);
@@ -57,8 +85,38 @@ function drawDeepGlow(sc) {
   ctx.restore();
 }
 let lastIdle = 0;
-(function idle(now) { requestAnimationFrame(idle); if (!busy && scene === 'nested' && zoom === 1 && !document.hidden && now - lastIdle > 40) { lastIdle = now; liveK = 0; draw(); liveK = -1; } })(0);
+let idleRaf = 0;
+function idle(now) {
+  idleRaf = 0;
+  if (document.hidden) return;
+  idleRaf = requestAnimationFrame(idle);
+  if (!busy && scene === 'nested' && zoom === 1 && now - lastIdle > 40) { lastIdle = now; liveK = 0; draw(); liveK = -1; }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && idleRaf) { cancelAnimationFrame(idleRaf); idleRaf = 0; }
+  else if (!document.hidden && !idleRaf) idleRaf = requestAnimationFrame(idle);
+});
+if (!document.hidden) idleRaf = requestAnimationFrame(idle);
 let liveK = -1, navCache = null, evenA = 1;
+function navCacheMatches(cache) {
+  if (!cache || cache.N !== N || cache.DEPTH !== DEPTH || cache.zoom !== zoom || cache.liveK !== liveK) return false;
+  if (cache.rotations.length !== rot.length) return false;
+  for (let k = 0; k < rot.length; k++) if (cache.rotations[k] !== (k === liveK ? '' : rot[k].toFixed(5))) return false;
+  if (cache.deadTo.length !== deadTo.length || cache.deadFrom.length !== deadFrom.length || cache.deadA.length !== deadA.length) return false;
+  for (let k = 0; k < deadTo.length; k++) if (cache.deadTo[k] !== deadTo[k] || cache.deadFrom[k] !== deadFrom[k] || cache.deadA[k] !== deadA[k]) return false;
+  if (liveK === DEPTH) return cache.dice === null;
+  if (!cache.dice || cache.dice.length !== dice.length) return false;
+  for (let i = 0; i < dice.length; i++) if (cache.dice[i] !== dice[i].x + dice[i].y + (dice[i].gone ? 1 : 0)) return false;
+  return true;
+}
+function snapshotNavCache() {
+  return {
+    N, DEPTH, zoom, liveK,
+    rotations: rot.map((r, k) => k === liveK ? '' : r.toFixed(5)),
+    deadTo: deadTo.slice(), deadFrom: deadFrom.slice(), deadA: deadA.slice(),
+    dice: liveK === DEPTH ? null : dice.map(d => d.x + d.y + (d.gone ? 1 : 0)),
+  };
+}
 function drawLayer(g, k, sc) {
   const sv = ctx; ctx = g;
   const ga = ctx.globalAlpha; if (k === MAXD && evenA < 1) ctx.globalAlpha = ga * evenA;
@@ -93,8 +151,7 @@ function drawNested() {
   // the static wheels under and over the moving one are cached, so a spin redraws one wheel, not five
   let cache = null;
   if (liveK >= 0) {
-    const key = [N, DEPTH, zoom, liveK, rot.map((r, k) => k === liveK ? '' : r.toFixed(5)).join(), deadTo.join(), deadFrom.join(), deadA.join(), liveK === DEPTH ? '' : dice.map(d => d.x + d.y + (d.gone ? 1 : 0)).join()].join('|');
-    if (!navCache || navCache.key !== key) {
+    if (!navCacheMatches(navCache)) {
       const mkc = () => { const k2 = mk(); return { cv: k2, g: k2.getContext('2d') }; };
       const u = navCache && navCache.N === N ? navCache.u : mkc(), o = navCache && navCache.N === N ? navCache.o : mkc();
       u.g.clearRect(0, 0, N, N); o.g.clearRect(0, 0, N, N);
@@ -106,7 +163,7 @@ function drawNested() {
         drawLayer(k < liveK ? u.g : o.g, k, sc);
       }
       [u.g, o.g].forEach(g => g.restore());
-      navCache = { key, N, u, o };
+      navCache = { ...snapshotNavCache(), u, o };
     }
     cache = navCache;
   }

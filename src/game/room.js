@@ -1,7 +1,7 @@
 // ---------- the room: dim, a fire going ----------
 // Owns the ambient room background and its animation.
 const room = $('#room'), rctx = room.getContext('2d');
-let RW = 0, RH = 0, RDp = 1, roomBg = null, fireBox = null, lastRoom = 0;
+let RW = 0, RH = 0, RDp = 1, roomBg = null, fireBox = null, lastRoom = 0, roomRaf = 0;
 const EMBERS = Array.from({ length: 26 }, () => ({ x: Math.random(), y: Math.random(), v: .15 + Math.random() * .35, s: 1 + Math.random() * 1.5 }));
 function buildRoom() {
   const k = document.createElement('canvas'); k.width = room.width; k.height = room.height;
@@ -48,7 +48,9 @@ function roomResize() {
   rctx.setTransform(1, 0, 0, 1, 0, 0); rctx.drawImage(roomBg, 0, 0);
 }
 function drawRoom(now) {
-  requestAnimationFrame(drawRoom);
+  roomRaf = 0;
+  if (document.hidden) return;
+  roomRaf = requestAnimationFrame(drawRoom);
   if (now - lastRoom < 66 || !roomBg) return; lastRoom = now;
   const t = now / 1000, F = fireBox;
   // repaint just the fireplace opening from the baked room, then the flames and embers over it
@@ -72,4 +74,9 @@ function drawRoom(now) {
   });
   rctx.restore();
 }
-roomResize(); window.addEventListener('resize', roomResize); requestAnimationFrame(drawRoom);
+function scheduleRoom() {
+  if (document.hidden) { if (roomRaf) { cancelAnimationFrame(roomRaf); roomRaf = 0; } return; }
+  if (!roomRaf) roomRaf = requestAnimationFrame(drawRoom);
+}
+document.addEventListener('visibilitychange', scheduleRoom);
+roomResize(); window.addEventListener('resize', roomResize); scheduleRoom();
