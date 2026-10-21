@@ -1,4 +1,5 @@
-# When Claude posts "@copilot ..." on an issue labelled copilot-task, hand the issue to Copilot's
+# When Claude posts a comment with "@copilot /go" on an issue labelled copilot-task (and only then: plain
+# @copilot comments are notes, so they don't start a duplicate session), hand the issue to Copilot's
 # coding agent straight away (assigning Copilot starts a session). Needs the COPILOT_ASSIGN_TOKEN
 # secret: a fine-grained token from Cillian's account (Copilot can't be assigned with GITHUB_TOKEN).
 name: Copilot dispatch
@@ -12,7 +13,7 @@ jobs:
     if: >-
       !github.event.issue.pull_request &&
       contains(github.event.issue.labels.*.name, 'copilot-task') &&
-      contains(github.event.comment.body, '@copilot') &&
+      contains(github.event.comment.body, '@copilot /go') &&
       !startsWith(github.event.comment.body, 'DONE')
     runs-on: ubuntu-latest
     steps:
