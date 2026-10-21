@@ -4,39 +4,20 @@ const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const easeOut = t => 1 - Math.pow(1 - t, 4);
 const easeIn = t => t * t * t;
 const easeInOut = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-const tapSkips = new Set();
-function animate(dur, step, tapSkippable = false) {
+function animate(dur, step) {
   if (reduce) dur = Math.min(dur, 1200);
   return new Promise(res => {
     const t0 = performance.now();
-    let raf = 0, done = false;
-    const finish = () => {
-      if (done) return;
-      done = true;
-      if (raf) cancelAnimationFrame(raf);
-      tapSkips.delete(finish);
-      try { step(1); } catch (e) { console.error(String(e && e.stack || e)); }
-      res();
-    };
     // the first frame's timestamp can be a hair before t0, so clamp at 0; and a frame that throws must never stall the run
     function f(now) {
       const t = Math.max(0, Math.min(1, (now - t0) / dur));
       try { step(t); } catch (e) { console.error(String(e && e.stack || e)); }
-      if (t < 1) raf = requestAnimationFrame(f);
-      else { done = true; tapSkips.delete(finish); res(); }
+      if (t < 1) requestAnimationFrame(f); else res();
     }
-    if (tapSkippable) tapSkips.add(finish);
-    raf = requestAnimationFrame(f);
+    requestAnimationFrame(f);
   });
 }
-// Only marked result and transition pauses are shortened or skipped; gameplay beats stay timed as written.
-const wait = (ms, tapSkippable = false) => new Promise(r => {
-  if (reduce) ms = Math.min(ms, 300); else if (tapSkippable) ms = Math.round(ms * .75);
-  const done = () => { clearTimeout(t); tapSkips.delete(done); r(); };
-  const t = setTimeout(done, ms);
-  if (tapSkippable) tapSkips.add(done);
-});
-document.addEventListener('pointerdown', () => tapSkips.forEach(skip => skip()), true);
+const wait = ms => new Promise(r => setTimeout(r, reduce ? Math.min(ms, 300) : ms));
 const sliceAt = (r, n) => Math.floor(mod(-r, TAU) / (TAU / n)) % n;
 function target(n) { const i = Math.floor(Math.random() * n); return { i, a: (i + .15 + Math.random() * .7) * TAU / n }; }
 
@@ -175,9 +156,9 @@ async function dive(z) {
   });
   zoom = z; streak = 0; draw(); ting(); buzz(30);
 }
-async function zoomTo(z, dur, tapSkippable = false) {
+async function zoomTo(z, dur) {
   const from = zoom; whoosh(z > from);
-  await animate(dur, t => { zoom = from * Math.pow(z / from, easeInOut(t)); draw(); }, tapSkippable);
+  await animate(dur, t => { zoom = from * Math.pow(z / from, easeInOut(t)); draw(); });
   zoom = z; draw();
 }
 // smooth scene change: the last frame melts away over the new scene, never through black
@@ -275,7 +256,7 @@ async function crossTo(setup, dur = 800) {
   await animate(dur, t => { snapA = 1 - easeInOut(t); draw(); });
   snapA = 0; draw();
 }
-async function fadeTo(v, dur, tapSkippable = false) { const f0 = fade; await animate(dur, t => { fade = lerp(f0, v, t); draw(); }, tapSkippable); fade = v; draw(); }
+async function fadeTo(v, dur) { const f0 = fade; await animate(dur, t => { fade = lerp(f0, v, t); draw(); }); fade = v; draw(); }
 
 function popSound() {
   if (!AC) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();

@@ -27,12 +27,12 @@ async function spinPhoto() {
   ting(); buzz([30, 40, 60]);
   hi = p.i;
   await animate(450, t => { hiA = t; draw(); });
-  await wait(500, true);
+  await wait(500);
   const from = rotP, to = Math.round(rotP / TAU) * TAU;
-  await animate(1700, t => { rotP = from + (to - from) * easeInOut(t); draw(); }, true);
+  await animate(1700, t => { rotP = from + (to - from) * easeInOut(t); draw(); });
   rotP = 0; draw();
-  await wait(300, true); whoosh(true);
-  await animate(1800, t => { photoZoom = easeInOut(t); draw(); }, true);
+  await wait(300); whoosh(true);
+  await animate(1800, t => { photoZoom = easeInOut(t); draw(); });
   const clock = Math.round(((p.i + .5) * 360 / PHOTO_N) / 30) % 12 || 12;
   const title = `Head toward ${clock} o'clock`;
   setVerdict({ eyebrow: 'Final answer', title, body: 'Whatever is in that slice of the picture, that is where you are going. Walk toward it until you reach it or something stops you. That is your turn done.', q: quote() });
@@ -60,7 +60,7 @@ setInterval(() => {
 }, 3000);
 async function spin() {
   if (busy) return; lock(true); audio(); Music.start();
-  if ($('.stage').classList.contains('done')) { hideFinal(); sayLast = null; try { speechSynthesis.cancel(); } catch (e) {} await wait(700, true); }
+  if ($('.stage').classList.contains('done')) { hideFinal(); sayLast = null; try { speechSynthesis.cancel(); } catch (e) {} await wait(700); }
   try {
     if (scene === 'photo' && !photoDone) { await spinPhoto(); setBtn('Spin', false); }
     else {
