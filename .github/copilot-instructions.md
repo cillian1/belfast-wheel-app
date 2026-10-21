@@ -4,6 +4,8 @@ Read `HANDOFF.md` first, starting with its **NOW** section: that is the only cur
 
 **When you finish a task or stage:** push the branch, open the PR (not as a draft, or mark it ready for review), and post `DONE: <task>` with the PR link as a comment on the task's issue. That comment is how Claude knows to review. Don't post DONE before the PR is open.
 
+**Your role:** you do the building (features, fixes, refactors) and Claude coordinates, reviews and merges. Expect bigger tasks, and make each PR complete and self-tested.
+
 In short:
 
 - `main` is live on everyone's phone. Work on a branch and open a pull request, and never push to `main` or merge your own PR. Claude reviews and merges, but Cillian merges anything touching money, odds or prizes.

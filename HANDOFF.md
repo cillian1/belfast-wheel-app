@@ -2,11 +2,11 @@
 
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
-- **Task:** Task 4, Stage 3: wallet module tidy, with `money.js` moved verbatim (`COPILOT_TASKS.md`, issue #8)
+- **Task:** Task 4, Stage 4: performance (`COPILOT_TASKS.md`, issue #8). After that, Task 5: replays and host watching.
 - **Owner:** Copilot
-- **Status:** Stage 3 complete; PR ready for Claude review. `money.js` matches the original payout, jackpot, and spin code exactly.
-- **Next:** Claude reviews and merges the Stage 3 PR → Stage 4.
-- **Last updated:** 2026-10-21 21:26 by Copilot
+- **Status:** go now. Stage 3 (PR #11) is reviewed and merged. Nothing is waiting on Claude.
+- **Next:** Copilot opens the Stage 4 PR and posts `DONE: Stage 4` on #8 → Claude reviews and merges → Copilot starts Task 5 (issue to follow).
+- **Last updated:** 2026-10-21 21:35 by Claude
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
@@ -55,6 +55,8 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 
 ## How the two assistants work together
 
+**Roles (Cillian, 2026-10-21): Copilot does the heavy lifting, Claude coordinates.** Copilot builds the features, fixes and refactors. Claude writes the tasks (COPILOT_TASKS.md plus a `copilot-task` issue), reviews each PR (diff, a browser test, a seeded replay or odds check where it matters) and merges it, and keeps NOW current. Claude only codes small fixes it finds in review. Money, odds and prize changes still need Cillian.
+
 - **Copilot works on a branch and opens a pull request.** It never pushes straight to `main` and never merges its own PR.
 - **Claude reviews and merges** Copilot's PRs: version rules, the win wording, the wallet, a seeded replay, and the layout on phone-sized screens. **PRs that touch money, odds or prizes are merged by Cillian only.**
 - Claude ships its own work to `main` and always pulls first, so pull before starting a branch.
@@ -63,6 +65,7 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 
 ## Done log (history only, newest first; nothing here is current)
 
+- 2026-10-21: Task 4 Stage 3, the wallet split into db/ui/money/watch/notes (PR #11), merged. Wallet lines unchanged, and an end-to-end charge and payout passed.
 - 2026-10-21: Task 4 Stage 3, split the wallet into five modules; verified `money.js` is an exact extraction and the checker passes.
 - 2026-10-21: Task 4 Stage 2, the behaviour-preserving tidy (PR #10), merged. Same 242 `Math.random()` call sites, bundle consistent.
 - 2026-10-21: Task 4 Stage 1, the split into `src/` with `tools/bundle.mjs` (PR #9), merged, byte-identical.

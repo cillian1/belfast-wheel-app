@@ -144,6 +144,21 @@ Merged into Task 4 below. Don't open a separate PR for it.
 - A seeded replay: the same `Math.random` sequence must give the same run, slices and prize before and after.
 - The fast sim's payback is unchanged.
 
+## Task 5: every replay saved, Watch tabs, host page watching (start after Task 4 Stage 4 merges)
+
+**Goal (Cillian):** save every run as a replay, not just big wins. Players can browse their own replays and everyone else's, and Cillian's host page can watch live games and replays. No money changes.
+
+**Build:**
+1. **Save every run.** The wallet already records each run as state frames (`rec` in `watch.js`) and saves only big wins to `hlm`/`hld`. Keep that, and also save **every** non-test run: a small card at `rpm/{userKey}/{pushId}` = `{ at, stake, amt ('' if no win), title, room, len }` and the packed frames at `rpd/{pushId}`, using the existing `pack()` format. Measure a typical run's packed size and put it in the PR.
+2. **Pruning.** Keep big wins forever. After saving, if a player has more than 3000 cards, delete their oldest cards and frames, using a `shallow=true` key listing at most once every 50 saves.
+3. **Watch sheet tabs.** Split the WATCH sheet into **Live** (today's list of players online), **Big wins** (today's "Big wins to rewatch") and **Replays**. Replays opens on **Mine** (newest first, 20 at a time with Show more). A toggle switches to **Everyone**, with a row of player chips (the test account excluded). Each row shows the room reached or "Main wheel", the prize or "no win", and the time. Tapping one plays it with the existing `replay()` screen, generalised to read `rpd/`.
+4. **Host page.** `host.html` gets **Live** and **Replays** tabs. It loads `game/index.html` from the same GitHub Pages site in a full-screen iframe with `?watch=<key>&name=<name>` or `?replay=<id>`. Add that viewer mode to the wallet boot: with those params, skip login, open the watch or replay screen directly, and on Close post a message to the parent page instead of reloading.
+5. Add `rpm` and `rpd` to HANDOFF's database list.
+
+**Done when:** runs save and play back, the tabs work at 320–412px, the host iframe works for live and replays, and pruning is shown in the PR to delete exactly the oldest entries. Bump to the next version with an update name.
+
+---
+
 ## When you finish a task
 
 Add a short status line under that task in this file (done, how tested, open questions), open the PR with a clear title, and stop. Claude reviews it and Cillian merges.
