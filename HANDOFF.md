@@ -4,9 +4,9 @@
 
 - **Task:** Task 7 (issue #18, PR #20); Tasks 6 and 8 continue in parallel.
 - **Owner:** Copilot builds; Claude does a quick check and merges.
-- **Status:** Task 7 complete as update 24, after merging latest main (update 23); visual-only changes with no `Math.random()` callsite changes.
-- **Next:** Copilot posts `DONE: Task 7` on issue #18; Tasks 6 and 8 continue independently.
-- **Last updated:** 2026-10-21 21:23 by Copilot
+- **Status:** Room glow-up implementation is complete; syncing latest `update-24` and correcting the PR to keep version 23 and replace invalid screenshot captures.
+- **Next:** Rebuild, validate all scenes and update the PR; Claude merges this task into `update-24` with Tasks 6 and 8.
+- **Last updated:** 2026-10-21 22:30 by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
