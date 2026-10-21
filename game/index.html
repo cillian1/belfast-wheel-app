@@ -2810,7 +2810,7 @@ function buildCosmic() {
   COSMIC.forEach((v, i) => {
     const a0 = BASE + i * seg, a1 = a0 + seg;
     wedgePath(g, a0, a1, r0, r1);
-    g.fillStyle = wedgeFill(g, a0, a1, r0, r1, v === 25000 ? GOLD_A : v === 5000 ? PURPLE_A : [[0, '#0b3b3a'], [.3, '#4fd1c5'], [.55, '#0f4f4c'], [.8, '#8ef0e6'], [1, '#0b3b3a']]);
+    g.fillStyle = wedgeFill(g, a0, a1, r0, r1, v === 10000 ? GOLD_A : v === 5000 ? PURPLE_A : [[0, '#0b3b3a'], [.3, '#4fd1c5'], [.55, '#0f4f4c'], [.8, '#8ef0e6'], [1, '#0b3b3a']]);
     g.fill();
     wedgeText(g, a0 + seg / 2, R * .6, [fakeEur(v)], R * .1, R * .5, v === 5000 ? 'dark' : 'light');
   });
