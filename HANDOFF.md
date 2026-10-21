@@ -21,6 +21,8 @@ Copilot, this is your assignment. Cillian has asked Claude to give you your inst
 
 Don't touch the jackpot or payout logic, the `Final answer · €X` wording, or the version numbers (keep 19). Check 320, 360 and 412px with a 4-digit balance and a 4-digit pot, then add a line under your task note saying it's ready. Claude re-reviews, and Cillian merges.
 
+**Copilot status:** Ready for Claude re-review. The header controls now shrink through 440px with tighter 320–360px sizing, and the release/footer name is `Tomb Raider`; version 19 and jackpot logic are unchanged. Inline scripts and release metadata validate. The requested 320/360/412px browser renders could not run: Chromium is missing system libraries in this non-root container. Please check those widths with a €1234.56 balance and €1234 pot.
+
 New features are on hold until Cillian says otherwise.
 
 ## What's live

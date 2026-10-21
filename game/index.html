@@ -284,7 +284,7 @@ footer{position:fixed;top:8px;left:10px;z-index:5;color:rgba(220,225,230,.55);fo
   <input class="vh" type="file" id="lib" accept="image/*">
 
 
-  <footer>Build 58 · app 19<br><small style="font-size:8.5px;letter-spacing:.04em">The Phelan's Tomb Jackpot</small></footer>
+  <footer>Build 58 · app 19<br><small style="font-size:8.5px;letter-spacing:.04em">Tomb Raider</small></footer>
 </div>
 
 <script>
@@ -4745,20 +4745,29 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
 .wwatch .wvd small{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute)}
 .wwatch .wvd h3{margin:4px 0;font-family:var(--display);font-weight:400;font-size:24px;color:#f5d27a}
 .wwatch .wvd p{margin:0;font-size:15px;color:var(--chrome)}
-@media(max-width:380px){
+@media(max-width:440px){
   .wbar{gap:4px}
-  .wbar .who{padding:3px 5px;max-width:62px}
-  .wbar .who small{font-size:8px;max-width:5em}
-  .wbar .wmid{flex:0 1 auto}
-  .wbar .wright{gap:3px}
-  .wpot{min-width:0;padding:3px 6px}
+  .wbar .who{flex:0 1 76px;min-width:0;padding:3px 5px;overflow:hidden}
+  .wbar .who small{font-size:8px;max-width:100%}
+  .wbar .who b{max-width:100%;font-family:var(--body);font-size:12px;letter-spacing:0;white-space:nowrap}
+  .wbar .wmid{flex:1 1 0;min-width:0}
+  .wbar .wright{flex:0 1 auto;min-width:0;gap:3px}
+  .wpot{flex:0 1 auto;min-width:0;padding:3px 6px}
   .wpot small{font-size:8px;letter-spacing:.1em}
-  .wpot b{font-size:13px;white-space:nowrap}
-  .wstake{gap:1px;padding:1px}
-  .wstake button{width:24px;height:26px}
-  .wstake span{min-width:42px}
+  .wpot b{font-family:var(--body);font-size:12px;letter-spacing:0;white-space:nowrap}
+  .wstake{flex:0 1 auto;min-width:0;gap:1px;padding:1px}
+  .wstake button{flex:0 0 24px;width:24px;height:26px}
+  .wstake span{flex:1 1 42px;min-width:34px}
   .wstake span b{font-size:14px}
-  .wtop{padding:7px 8px;font-size:12px}
+  .wtop{flex:0 0 auto;padding:7px 8px;font-size:12px;white-space:nowrap}
+}
+@media(max-width:360px){
+  .wbar .who{flex-basis:68px;padding:3px 4px}
+  .wbar .who b{font-size:11px}
+  .wpot b{font-size:11px}
+  .wstake button{flex-basis:22px;width:22px}
+  .wstake span{min-width:32px}
+  .wtop{padding:6px}
 }
 `;
   document.head.appendChild(el('style', null, css));
