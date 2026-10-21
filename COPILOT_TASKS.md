@@ -165,6 +165,11 @@ Merged into Task 4 below. Don't open a separate PR for it.
 
 Cillian wants **every** ghost in the game replaced by his new stink ghost: Ghost Phelan on the inner wheels, the God room / Zena ghost, the watch-message ghost and the Chicken Race trip. The source image will be at `assets/ghost-source.jpg`. It's a JPG with a **fake checkerboard painted into the background**, so cut it out properly: remove the checkerboard and keep the glow, the stink trails and the flies with soft alpha edges. Make a trimmed PNG/WebP sprite of ≤ 512 px (≤ 150 KB) and embed it in `game/index.html` as a data URI via the bundler, because phones load one file. Replace `drawGhost()` and `ghostImg()` so they draw the sprite at the same position, size and alpha, with a slow bob and a little wobble on the trails. Speech bubbles stay. Same timings and the same `Math.random()` calls. Check every ghost scene at 360 and 412px and put screenshots in the PR.
 
+**Status:** Replaced the shared game and Watch-message ghost renderers with the embedded 384×378 WebP (143,748 bytes). `node tools/bundle.mjs`, `node tools/check.mjs`, and the 242-callsite random-sequence check pass. Headless Chromium exercised inner wheel, God room, Zena room, Chicken Race, and Watch-message renders at 360×800 and 412×915:
+
+![Ghost scenes at 360px](screenshots/task-6/ghost-scenes-360.jpg)
+![Ghost scenes at 412px](screenshots/task-6/ghost-scenes-412.jpg)
+
 ## Task 7: room glow-ups (after Task 6 merges)
 
 Give every other room the same treatment the main wheels got in update 20: a light sweep while a wheel spins, a glow on the winning slice, a shaded 3D rim and a bevelled pointer. The wheels in the Stank Chamber (Stankman's wheel, the roulette), the God wheel, Phelan's wheel, Mark's wheel, the Monster tank and planet wheels, and the Pyramid. See `buildSweep`, `drawWinGlow`, `buildPointer` and `buildBase` in `src/game` for how the main wheels do it, and reuse those helpers. Visual only: no change to slices, odds, timings, prizes or `Math.random()` order. Before and after screenshots of each room in the PR.

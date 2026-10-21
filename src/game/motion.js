@@ -112,17 +112,14 @@ async function ghostPhelan(k, i, near) {
   return dest;
 }
 function drawGhost() {
-  const g = ctx, s = R * .26;
-  g.save(); g.globalAlpha = ghost.a * .85; g.translate(ghost.x, ghost.y);
-  g.shadowColor = 'rgba(160,255,200,.8)'; g.shadowBlur = s * .5;
-  g.beginPath(); g.moveTo(-s * .5, s * .6); g.lineTo(-s * .5, -s * .1); g.arc(0, -s * .1, s * .5, Math.PI, 0); g.lineTo(s * .5, s * .6);
-  for (let j = 0; j < 4; j++) g.quadraticCurveTo(s * (.5 - j * .25 - .125), s * (j % 2 ? .45 : .8), s * (.5 - (j + 1) * .25), s * .6);
-  g.fillStyle = 'rgba(235,250,245,.92)'; g.fill(); g.shadowBlur = 0;
-  g.fillStyle = '#1b2a26'; g.beginPath(); g.ellipse(-s * .17, -s * .12, s * .07, s * .1, 0, 0, TAU); g.ellipse(s * .17, -s * .12, s * .07, s * .1, 0, 0, TAU); g.fill();
-  g.beginPath(); g.ellipse(0, s * .12, s * .09, s * .06, 0, 0, TAU); g.fill();
-  g.fillStyle = '#3d4a2e'; g.beginPath(); g.ellipse(0, -s * .55, s * .42, s * .1, 0, Math.PI, 0); g.fill(); // his cap
-  g.strokeStyle = 'rgba(150,200,90,.7)'; g.lineWidth = s * .04; // the stink follows him even now
-  [-.4, 0, .4].forEach((o, j) => { g.beginPath(); g.moveTo(s * (o + .7), s * .2); g.bezierCurveTo(s * (o + .85), 0, s * (o + .6), -s * .2, s * (o + .8), -s * .4 - j * s * .05); g.stroke(); });
+  const g = ctx, s = R * .26, t = performance.now() / 1000, size = s * 1.8;
+  if (!GHOST_IMAGE.complete || !GHOST_IMAGE.naturalWidth) return;
+  const w = size, h = size * GHOST_IMAGE.naturalHeight / GHOST_IMAGE.naturalWidth;
+  g.save(); g.globalAlpha = ghost.a * .85;
+  g.translate(ghost.x + Math.sin(t * 1.8) * s * .012, ghost.y + Math.sin(t * 1.4) * s * .025);
+  g.rotate(Math.sin(t * 2) * .018);
+  g.transform(1, 0, Math.sin(t * 2.4) * .018, 1, 0, 0);
+  g.drawImage(GHOST_IMAGE, -w / 2, -h / 2, w, h);
   g.restore();
 }
 // the dive between wheels: a wind-up, a drum roll that speeds up, speed lines, a little overshoot and a crash

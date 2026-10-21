@@ -130,8 +130,12 @@
   // ---------- messages from watchers: Ghost Phelan carries them across, see-through so they don't get in the way ----------
   // Owns watcher messages and the Ghost Phelan overlay.
   let lastMsg = '', ghostSprite = null;
-  function ghostImg() {
+  async function ghostImg() {
     if (ghostSprite) return ghostSprite;
+    if (!GHOST_IMAGE.complete) await new Promise(resolve => {
+      GHOST_IMAGE.addEventListener('load', resolve, { once: true });
+      GHOST_IMAGE.addEventListener('error', resolve, { once: true });
+    });
     const k = document.createElement('canvas'); k.width = 180; k.height = 200;
     const keep = [ctx, ghost, R];
     try { ctx = k.getContext('2d'); ghost = { x: 90, y: 110, a: 1, side: 1 }; R = 300; drawGhost(); } catch (e) {}
@@ -146,9 +150,9 @@
       else if (!lastMsg) lastMsg = '-';
     } catch (e) {}
   }
-  function showGhostMsg(from, text) {
+  async function showGhostMsg(from, text) {
     const st = document.querySelector('.stage'); if (!st || !text) return;
-    const box = el('div', 'wghost'), img = ghostImg();
+    const box = el('div', 'wghost'), img = await ghostImg();
     const k = document.createElement('canvas'); k.width = img.width; k.height = img.height; k.getContext('2d').drawImage(img, 0, 0);
     box.innerHTML = `<p><b>${esc(from)}</b> ${esc(text)}</p>`; box.prepend(k);
     st.appendChild(box);
