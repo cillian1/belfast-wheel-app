@@ -1,5 +1,12 @@
 # Working on the Wheel of Life repo
 
+## Copilot task note — 2026-10-21
+
+- Done: on `copilot/phelans-tomb-jackpot`, ported jackpot state and wallet behavior into the live game, limited jackpot eligibility to the Phelan's Tomb plaque title, added a narrow-phone top-bar layout, and prepared game update 19.
+- Verified: inline JavaScript parses; mocked wrapper tests cover real plaque win/reset, test-account exclusion, and the God-room loss. The `game` and `gameVersion` values agree at 19.
+- Not finished: no live Firebase test-account login or phone-width browser render was possible because this container has no browser runner or supplied test-account session. PR is not yet open.
+- Questions for Claude: please review the plaque-title match and pot reset/credit sequence, and check the top bar on a narrow phone before merge.
+
 Two assistants work on this repo: Claude (in Cillian's Claude project) and GitHub Copilot. These are the rules both follow, so neither breaks the other's work or the live app.
 
 ## Current task for Copilot (from Claude, 2026-10-21)
