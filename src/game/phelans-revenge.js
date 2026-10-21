@@ -39,7 +39,13 @@ function drawZena(now) {
   g.fillStyle = '#1d3a2a'; g.fillRect(N * .43, N * .6, N * .14, N * .25); g.fillStyle = '#d9b44a'; g.beginPath(); g.arc(N * .545, N * .73, N * .008, 0, TAU); g.fill();
   g.font = `700 ${N * .03}px ${LABEL_FONT}`; g.textAlign = 'center'; g.fillStyle = '#e8e2d0'; g.fillText("ZENA'S", c, N * .58);
   g.fillStyle = '#5a4a2a'; g.fillRect(N * .41, N * .86, N * .18, N * .035); g.font = `700 ${N * .018}px ${LABEL_FONT}`; g.fillStyle = '#d8cfa8'; g.fillText('NO PHELANS', c, N * .88);
-  if (Z.wheel > 0) { g.fillStyle = `rgba(5,8,4,${.65 * Z.wheel})`; g.fillRect(0, 0, N, N); g.globalAlpha = Z.wheel; drawScaled(faces.phelanWheel, Z.rot, .7 + .3 * Z.wheel); drawPointer(faces.pointer, .7 + .3 * Z.wheel); g.globalAlpha = 1; }
+  if (Z.wheel > 0) {
+    const sc = .7 + .3 * Z.wheel;
+    g.fillStyle = `rgba(5,8,4,${.65 * Z.wheel})`; g.fillRect(0, 0, N, N); g.globalAlpha = Z.wheel;
+    drawScaled(faces.phelanWheel, Z.rot, sc); drawWheelRim(sc); drawWheelSweep(Z.spinning, sc);
+    if (Z.winner != null) drawWheelSliceGlow(Z.rot, Z.items.length, Z.winner, Z.winAt, sc);
+    drawPointer(faces.pointer, sc); g.globalAlpha = 1;
+  }
   if (ghost) drawGhost();
   if (ghost && Z.say) bubble(g, Z.say, ghost.x, ghost.y - R * .22);
   g.restore();
@@ -67,6 +73,7 @@ async function phelanRevenge() {
   whoosh(true); buzz([60]);
   const s0 = zena.rot, e0 = s0 + 6 * TAU + mod(-tg.a - s0, TAU);
   let lastS = sliceAt(s0, n), g0 = { x: ghost.x, y: ghost.y };
+  zena.spinning = true;
   await animate(7500, t => {
     zena.rot = s0 + (e0 - s0) * easeOut(t);
     if (t < .12) { const a = zena.rot + .5; ghost.x = c + Math.cos(a) * R; ghost.y = c + Math.sin(a) * R; g0 = { x: ghost.x, y: ghost.y }; }
@@ -74,7 +81,7 @@ async function phelanRevenge() {
     const sl = sliceAt(zena.rot, n); if (sl !== lastS) { lastS = sl; tick(1, 1400); pegBuzz(); }
     draw();
   });
-  zena.rot = mod(zena.rot, TAU); ting(); buzz([40, 50, 80]);
+  zena.rot = mod(zena.rot, TAU); zena.spinning = false; zena.winner = tg.i; zena.winAt = performance.now(); ting(); buzz([40, 50, 80]);
   const r = { ...items[tg.i], phelan: true };
   zena.say = pick(['Enjoy that, lads.', 'Revenge is sweet.', "That's for the room.", 'Zena says hi.']); draw();
   await wait(1500);

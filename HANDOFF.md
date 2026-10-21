@@ -2,11 +2,11 @@
 
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
-- **Task:** Tasks 6, 7, 8 in parallel (issues #17, #18, #19; PRs #21, #20, #22). Task 5 merged as update 23.
-- **Owner:** Copilot does the work; Claude reviews and merges.
-- **Status:** Task 6 is complete in PR #21; its latest issue comment requires the next free version, update 24. Tasks 7 and 8 continue in parallel.
-- **Next:** Mark PR #21 ready and post `DONE: Task 6` with its link on issue #17; Claude reviews and merges it into `update-24`.
-- **Last updated:** 2026-10-21 21:35 by Copilot
+- **Task:** Task 6: the new ghost (issue #17, PR #21); Task 7 is merged into `update-24`, and Task 8 continues in parallel.
+- **Owner:** Copilot does ALL the work (Cillian, 2026-10-21): building, conflicts, version bumps, release notes, HANDOFF/COPILOT_TASKS updates, and the release PR. Claude only presses merge (GitHub won't let Copilot merge its own PRs). Money/odds/prize changes still go to Cillian.
+- **Status:** Task 6's ghost sprite is complete in PR #21; per the latest PR comment, version 23/build 60 stay unchanged for the combined release. Latest `update-24` is merged.
+- **Next:** Finish validation, mark PR #21 ready and post `DONE: Task 6`; Cillian merges it into `update-24`. Copilot prepares the single update 24 release PR after Task 8 is integrated.
+- **Last updated:** 2026-10-21 21:42 by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
@@ -65,7 +65,8 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 
 ## Done log (history only, newest first; nothing here is current)
 
-- 2026-10-21: Task 6, update 24 “Stink Ghost”; embedded cutout sprite and checked all five ghost contexts at 360/412px.
+- 2026-10-21: Task 7 room glow-ups ready in PR #20 for the combined update 24; visual-only wheel, tank and Pyramid polish, with version 23/build 60 unchanged.
+- 2026-10-21: Task 6, stink ghost sprite ready in PR #21 for the combined update 24; checked all five ghost contexts at 360/412px.
 - 2026-10-21: Task 5 replays + Watch tabs + host watching (PR #16), merged as update 23.
 - 2026-10-21: Task 5 replay saving, pruning, player/host watching and legacy request fixes are ready for review in PR #16 as update 23 "Replay Night".
 - 2026-10-21: Task 4 Stage 4, performance (PR #14), merged as update 22 "Smoother Wheels". Task 4 is complete.
