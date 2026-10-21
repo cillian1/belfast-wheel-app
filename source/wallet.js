@@ -859,8 +859,8 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
       const v = await (await fetch(CFG.updateUrl + '?t=' + now(), { cache: 'no-store' })).json();
       const apkHave = app && app.apkVersion ? +app.apkVersion() : 0;
       if (busy || (W.run && W.run.live) || !sheet.hidden) return; // only between runs; the next check offers it
-      if (app && v.apk > apkHave && v.apkUrl) return offer(`New app version${v.notes ? ': ' + v.notes : ''}`, () => { app.installApk(v.apkUrl); banner.innerHTML = '<span>Downloading… Android will restart when it is ready.</span><button class="wbtn gold wbig" type="button">OK</button>'; });
-      if (v.game > CFG.gameVersion && v.gameUrl) return offer(`Game update${v.notes ? ': ' + v.notes : ''}`, () => {
+      if (app && v.apk > apkHave && v.apkUrl) return offer(`New app version${v.name ? ' · ' + v.name : ''}${v.notes ? ': ' + v.notes : ''}`, () => { app.installApk(v.apkUrl); banner.innerHTML = '<span>Downloading… Android will restart when it is ready.</span><button class="wbtn gold wbig" type="button">OK</button>'; });
+      if (v.game > CFG.gameVersion && v.gameUrl) return offer(`Update ${v.game}${v.name ? ' · ' + v.name : ''}${v.notes ? ': ' + v.notes : ''}`, () => {
         if (busy) return toast('Finish this spin first');
         banner.innerHTML = '<span>Updating…</span>';
         if (app && app.updateGame) app.updateGame(v.gameUrl, String(v.game)); else location.reload();

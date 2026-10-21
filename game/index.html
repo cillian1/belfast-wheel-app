@@ -282,11 +282,11 @@ footer{position:fixed;top:8px;left:10px;z-index:5;color:rgba(220,225,230,.55);fo
   <input class="vh" type="file" id="lib" accept="image/*">
 
 
-  <footer>Build 56 · app 15</footer>
+  <footer>Build 57 · app 16<br><small style="font-size:8.5px;letter-spacing:.04em">The Austin Clause</small></footer>
 </div>
 
 <script>
-const BUILD = 56;
+const BUILD = 57;
 const $ = s => document.querySelector(s);
 const TAU = Math.PI * 2, BASE = -Math.PI / 2;
 const LABEL_FONT = '"IBM Plex Sans Condensed","Arial Narrow",sans-serif';
@@ -302,7 +302,7 @@ const MAIN = [
   { lbl: ['FORWARD', '? M'], go: () => ({ t: `Forward ${metres()} metres`, b: "Straight ahead, whatever way you’re facing. A big stride is about a metre." }) },
   { lbl: ['GO', 'DEEPER'], deep: true },
   { lbl: ['NEXT', 'LEFT'], go: () => ({ t: 'Take the next left', b: 'The very next left you reach. Street, alley, arcade, doorway. Whatever comes first.' }) },
-  { lbl: ['SHOW', 'ME'], show: true },
+  { lbl: ['SHOW ME', 'JUST FOR FUN'], show: true },
   { lbl: ['GO', 'DEEPER'], deep: true },
   { lbl: ['RIGHT', '? M'], go: () => ({ t: `Right ${metres()} metres`, b: 'Turn to your right and walk it. If something is in the way, go round it and keep counting.' }) },
   { lbl: ['GO', 'DEEPER'], deep: true },
@@ -310,7 +310,7 @@ const MAIN = [
   { lbl: ['GO', 'DEEPER'], deep: true },
   { lbl: ['BACK', '? M'], go: () => ({ t: `Back ${metres()} metres`, b: 'Turn round and walk back the way you came.' }) },
   { lbl: ['GO', 'DEEPER'], deep: true },
-  { lbl: ['SHOW', 'ME'], show: true },
+  { lbl: ['SHOW ME', 'JUST FOR FUN'], show: true },
   { lbl: ['GO', 'DEEPER'], deep: true },
   { lbl: ['ASK A', 'LOCAL'], go: () => ({ t: 'Ask a local', b: 'Stop the next local and ask where they would go right now. That is where you are going.' }) },
   { lbl: ['GO', 'DEEPER'], deep: true },
@@ -1933,7 +1933,7 @@ async function runMain() {
   const i0 = await spinLayer(0, 7500, 1);
   const slice = MAIN[i0];
   if (slice.show) {
-    setVerdict({ title: 'Show me', body: "Face forward and take one picture of what’s in front of you. The wheel decides what happens to it. Wherever it lands, that’s where you’re walking.", q: quote(), show: true });
+    setVerdict({ eyebrow: 'Show me · just for fun, no prize', title: 'Show me', body: "Face forward and take one picture of what’s in front of you. The wheel decides what happens to it. Wherever it lands, that’s where you’re walking.", q: quote(), show: true });
     logMove('Show me');
     return;
   }
@@ -4525,7 +4525,7 @@ if (document.fonts && document.fonts.load) {
 }
 </script>
 
-<script>window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":15,"ev":15.1078,"edge":0.995,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};</script>
+<script>window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":16,"ev":15.1078,"edge":0.995,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};</script>
 <script>
 // ---------- wallet layer for the Android app ----------
 // Injected after the game's own script by tools/build.mjs. It wraps spin() and setVerdict(),
@@ -5349,8 +5349,8 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
       const v = await (await fetch(CFG.updateUrl + '?t=' + now(), { cache: 'no-store' })).json();
       const apkHave = app && app.apkVersion ? +app.apkVersion() : 0;
       if (busy || (W.run && W.run.live) || !sheet.hidden) return; // only between runs; the next check offers it
-      if (app && v.apk > apkHave && v.apkUrl) return offer(`New app version${v.notes ? ': ' + v.notes : ''}`, () => { app.installApk(v.apkUrl); banner.innerHTML = '<span>Downloading… Android will ask to install it.</span>'; });
-      if (v.game > CFG.gameVersion && v.gameUrl) return offer(`Game update${v.notes ? ': ' + v.notes : ''}`, () => {
+      if (app && v.apk > apkHave && v.apkUrl) return offer(`New app version${v.name ? ' · ' + v.name : ''}${v.notes ? ': ' + v.notes : ''}`, () => { app.installApk(v.apkUrl); banner.innerHTML = '<span>Downloading… Android will ask to install it.</span>'; });
+      if (v.game > CFG.gameVersion && v.gameUrl) return offer(`Update ${v.game}${v.name ? ' · ' + v.name : ''}${v.notes ? ': ' + v.notes : ''}`, () => {
         if (busy) return toast('Finish this spin first');
         banner.innerHTML = '<span>Updating…</span>';
         if (app && app.updateGame) app.updateGame(v.gameUrl, String(v.game)); else location.reload();

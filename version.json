@@ -1,8 +1,9 @@
 {
-  "game": 15,
+  "game": 16,
   "apk": 2,
-  "gameBuild": 56,
-  "notes": "A full Wild or Bonus set still gets its room after the God room",
+  "gameBuild": 57,
+  "notes": "Update 16, The Austin Clause: Show me is now clearly marked as just for fun",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
-  "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk"
+  "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk",
+  "name": "The Austin Clause"
 }
