@@ -7,7 +7,8 @@
   const CFG = window.WALLET_CFG; // { db, revolut, updateUrl, gameVersion, ev, edge, stakes }
   const STAKES = CFG.stakes, MIN_TOPUP = 100;
   const app = window.Android && Android.isApp ? Android : null;
-  const W = window.W = { user: null, me: null, stake: STAKES[0], run: null, cfg: { edge: CFG.edge, ev: CFG.ev, pin: null } };
+  const JACKPOT_START = 5000;
+  const W = window.W = { user: null, me: null, stake: STAKES[0], run: null, jackpot: JACKPOT_START, cfg: { edge: CFG.edge, ev: CFG.ev, pin: null } };
 
   // <shared> (also used by host.html, see tools/build.mjs)
   // ---------- small helpers ----------
@@ -101,6 +102,9 @@
 .wbar .who{display:flex;flex-direction:column;align-items:flex-start;background:none;border:1px solid var(--line);border-radius:12px;padding:4px 10px;color:var(--chrome);min-width:0}
 .wbar .who small{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--mute);max-width:9em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wbar .who b{font-family:var(--display);font-weight:400;font-size:15px;letter-spacing:.04em;color:#f5d27a}
+.wpot{display:flex;flex-direction:column;align-items:center;background:none;border:1px solid var(--line);border-radius:12px;padding:4px 10px;min-width:100px}
+.wpot small{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--mute)}
+.wpot b{font-family:var(--display);font-weight:400;font-size:15px;letter-spacing:.04em;color:#f5d27a}
 .wstake{display:flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:999px;padding:2px}
 .wstake button{width:30px;height:30px;border:0;background:#1d2228;color:var(--chrome);font-size:18px;line-height:1}
 .wstake button:disabled{opacity:.3}
@@ -111,7 +115,7 @@
 .locked .wstake{opacity:.5;pointer-events:none}
 .wsheet{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center;background:rgba(5,6,8,.72)}
 .wsheet[hidden]{display:none}
-.wpanel{width:100%;max-width:560px;max-height:92vh;overflow:auto;background:linear-gradient(180deg,#1c1f24,#121418);border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0;padding:20px 18px calc(22px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px;color:var(--chrome)}
+.wpanel{width:100%;max-width:560px;max-height:92vh;overflow:auto;background:linear-gradient(180deg,#1c1f24,#121418);border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0;padding:18px 18px 22px;display:flex;flex-direction:column;gap:12px;box-shadow:0 -10px 30px rgba(0,0,0,.36)}
 .wpanel h3{margin:0;font-family:var(--display);font-weight:400;font-size:18px;letter-spacing:.06em}
 .wpanel h4{margin:8px 0 0;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute);font-weight:600}
 .wpanel p{margin:0;color:#c3cbd3}
@@ -141,7 +145,7 @@ html,body{overflow-x:hidden}
 body{box-sizing:border-box;margin:0}
 .wilds canvas.wt{width:50px;height:50px}
 .app>.spin{min-height:62px}
-.wbanner{position:fixed;left:10px;right:10px;top:calc(10px + env(safe-area-inset-top,0px));z-index:40;display:flex;flex-direction:column;gap:14px;align-items:stretch;text-align:center;padding:20px 18px;border-radius:20px;background:#2a2312;border:2px solid #f5d27a;color:#f8e4a6;font-size:20px;font-weight:600;box-shadow:0 10px 40px rgba(0,0,0,.7),0 0 30px rgba(245,210,122,.35)}
+.wbanner{position:fixed;left:10px;right:10px;top:calc(10px + env(safe-area-inset-top,0px));z-index:40;display:flex;flex-direction:column;gap:14px;align-items:stretch;text-align:center;padding:20px 16px;border-radius:18px;background:rgba(20,22,26,.94);border:1px solid var(--line);box-shadow:0 12px 30px rgba(0,0,0,.38)}
 .wbanner .wbig{font-size:26px;padding:18px 10px;border-radius:16px;flex:2}
 .wbanner .wrow{gap:10px}
 .wbanner .wrow .wbtn:not(.wbig){font-size:17px;flex:1}
@@ -150,11 +154,11 @@ body{box-sizing:border-box;margin:0}
 .wlogin[hidden]{display:none}
 .wlogin .wpanel{border-radius:20px;border-bottom:1px solid var(--line);max-width:420px}
 .wlogin h1{text-align:center;margin-bottom:6px}
-.wtoast{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:70;background:#20252c;border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-size:14px;color:var(--chrome);box-shadow:0 8px 20px rgba(0,0,0,.5);transition:opacity .3s}
+.wtoast{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:70;background:#20252c;border:1px solid var(--line);border-radius:999px;padding:8px 14px;color:var(--chrome);opacity:1;transition:opacity .25s ease}
 .wtoast.gold{border-color:#f5d27a;color:#f8e4a6}
 .wbar .who.test{border:2px dashed #4fd1c5;background:rgba(20,70,68,.5)}.wbar .who.test small{color:#8ef0e6}.wbar .who.test b{color:#8ef0e6}
 body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;right:0;bottom:0;z-index:30;text-align:center;font:700 11px/1 var(--body);letter-spacing:.2em;padding:6px 0 calc(6px + env(safe-area-inset-bottom,0px));background:#0f4f4c;color:#c8fff8;pointer-events:none}
-.wlive{display:inline-flex;vertical-align:middle;margin-left:12px;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1.5px solid #ff4d4d;background:rgba(60,8,8,.85);color:#fff;font:700 13px/1 var(--body);letter-spacing:.12em;box-shadow:0 0 14px rgba(255,60,60,.35)}
+.wlive{display:inline-flex;vertical-align:middle;margin-left:12px;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1.5px solid #ff4d4d;background:rgba(60,8,8,.85);color:#fff;font-weight:700;letter-spacing:.12em}
 .wlive i{width:9px;height:9px;border-radius:50%;background:#ff3b3b;box-shadow:0 0 8px #ff3b3b;animation:wblink 1.2s ease-in-out infinite}
 .wlive em{font-style:normal;background:#ff3b3b;border-radius:999px;padding:2px 7px;letter-spacing:0;font-size:12px}
 .wlive em:empty{display:none}
@@ -162,14 +166,14 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
 .wpl{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 4px;border-bottom:1px solid var(--line)}
 .wpl b{font-size:17px}.wpl small{display:block;color:var(--mute);font-size:12px;letter-spacing:.06em}
 .wpl small.on{color:#7dff9a}
-.wwatch{position:fixed;inset:0;z-index:60;background:#07090c;display:flex;flex-direction:column;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px));overflow-y:auto;color:var(--chrome)}
+.wwatch{position:fixed;inset:0;z-index:60;background:#07090c;display:flex;flex-direction:column;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px)) 12px}
 .wwatch[hidden]{display:none}
 .wwatch .wwh{width:100%;max-width:560px;display:flex;align-items:center;justify-content:space-between;gap:8px}
 .wwatch .wwh b{font-size:18px}.wwatch .wwh small{display:block;color:var(--mute);font-size:12px}
 .wwatch .wscr{position:relative;width:min(100%,66vh,560px);aspect-ratio:1;border-radius:18px;overflow:hidden;background:#120b07;border:1px solid var(--line)}
 .wwatch .wscr img{width:100%;height:100%;display:block}
 .wwatch .wscr p{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;margin:0;color:var(--mute);font-size:15px}
-.wwatch .wscr ol{position:absolute;inset:0;margin:0;padding:18px 18px 18px 38px;display:flex;flex-direction:column;justify-content:center;gap:6px;font-size:15px;color:#f8e4a6;background:rgba(10,8,6,.88)}
+.wwatch .wscr ol{position:absolute;inset:0;margin:0;padding:18px 18px 18px 38px;display:flex;flex-direction:column;justify-content:center;gap:6px;font-size:15px;color:#f8e4a6;background:rgba(10,8,7,.77)}
 .wwatch .wvd{width:100%;max-width:560px;text-align:center}
 .wwatch .wvd small{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute)}
 .wwatch .wvd h3{margin:4px 0;font-family:var(--display);font-weight:400;font-size:24px;color:#f5d27a}
@@ -180,6 +184,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   // ---------- top bar ----------
   const bar = el('div', 'wbar');
   bar.innerHTML = `<button class="who" type="button" id="wWho"><small>Log in</small><b>€0</b></button>
+    <div class="wpot"><small>JACKPOT</small><b id="wPot">€50</b></div>
     <div class="wstake" aria-label="Bet per spin"><button type="button" id="wLess" aria-label="Lower bet">−</button><span><small>BET</small><b id="wStake">10c</b></span><button type="button" id="wMore" aria-label="Raise bet">+</button></div>
     <button class="wtop" type="button" id="wTop">Top up</button>`;
   const appEl = document.querySelector('.app');
@@ -200,12 +205,23 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     clearTimeout(toastT); toastT = setTimeout(() => { t.style.opacity = 0; }, 2600);
   }
 
+  async function refreshJackpot() {
+    try {
+      const j = await db.get('jackpot').catch(() => ({ amount: JACKPOT_START }));
+      W.jackpot = j && typeof j.amount === 'number' ? j.amount : JACKPOT_START;
+    } catch (e) {
+      W.jackpot = JACKPOT_START;
+    }
+    const pot = $w('wPot'); if (pot) pot.textContent = eur(W.jackpot);
+  }
+
   function paint() {
     const me = W.me;
     $w('wWho').innerHTML = `<small>${me ? (me.test ? 'TEST' : esc(me.name)) : 'Log in'}</small><b>${eur(me ? me.balance || 0 : 0)}</b>`;
     $w('wWho').classList.toggle('test', isTest()); document.body.classList.toggle('wtest', isTest());
     $w('wStake').textContent = stakeLbl(W.stake);
     $w('wLess').disabled = W.stake <= STAKES[0]; $w('wMore').disabled = !nextStake();
+    const pot = $w('wPot'); if (pot) pot.textContent = eur(W.jackpot || JACKPOT_START);
     if (typeof fitStage === 'function') fitStage();
   }
   function setStake(c) {
@@ -265,10 +281,11 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   async function refresh() {
     if (!W.user) return;
     try {
-      const [me, cfg] = await Promise.all([db.get('users/' + W.user), db.get('config')]);
+      const [me, cfg, jackpot] = await Promise.all([db.get('users/' + W.user), db.get('config').catch(() => null), db.get('jackpot').catch(() => ({ amount: JACKPOT_START }))]);
       if (cfg) Object.assign(W.cfg, cfg);
       if (!me || me.pass !== pref.get('wol.pass')) { logout(); return; }
-      W.me = me; paint();
+      W.me = me; W.jackpot = jackpot && typeof jackpot.amount === 'number' ? jackpot.amount : JACKPOT_START;
+      paint();
     } catch (e) {}
   }
   function logout() { W.user = W.me = null; pref.set('wol.user', null); pref.set('wol.pass', null); paint(); closeSheet(); showLogin(); }
@@ -289,7 +306,10 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
       if (short) { if (u) W.me = u; paint(); setBtn('Spin', false); charging = false; return topupSheet('Not enough credit for that stake.'); }
       W.me = u; paint();
       log(W.user, 'spin', -s);
-      if (!isTest()) db.txn('stats', st => { st = st || {}; st.spins = (st.spins || 0) + 1; st.staked = (st.staked || 0) + s; return st; }).catch(() => {});
+      if (!isTest()) {
+        db.txn('stats', st => { st = st || {}; st.spins = (st.spins || 0) + 1; st.staked = (st.staked || 0) + s; return st; }).catch(() => {});
+        db.txn('jackpot', cur => { cur = cur || { amount: JACKPOT_START }; cur.amount = (cur.amount || 0) + s; return cur; }).then(() => refreshJackpot()).catch(() => {});
+      }
     } catch (e) { setBtn('Spin', false); charging = false; toast('No connection. Spin not charged.'); return; }
     W.run = { stake: s, paid: false, live: true };
     charging = false;
@@ -306,6 +326,23 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
       if (run && !run.paid) {
         let m = /^Final answer · €([\d.]+)/.exec(o.eyebrow || '');
         if (!m && o.eyebrow === 'Final answer' && /^€[\d.]+$/.test(o.title || '')) m = [0, o.title.slice(1)];
+        const isPhelanTomb = /phelan/i.test(String(o.title || '') + ' ' + String(o.body || '') + ' ' + String(o.eyebrow || ''));
+        if (m && isPhelanTomb && !isTest()) {
+          run.paid = true;
+          const prizeCents = W.payCents(m[1]);
+          (async () => {
+            let jackpot = 0;
+            await db.txn('jackpot', cur => {
+              const curAmt = Number((cur && cur.amount) || JACKPOT_START);
+              jackpot = Number.isFinite(curAmt) ? curAmt : JACKPOT_START;
+              return { amount: JACKPOT_START };
+            });
+            await credit(prizeCents + jackpot, run.stake, o.title || 'Phelan\'s Tomb');
+            W.jackpot = JACKPOT_START;
+            paint();
+          })().catch(() => {});
+          return r;
+        }
         if (m) { run.paid = true; credit(W.payCents(m[1]), run.stake, o.title); }
         else if (o.title === 'That run broke halfway') { run.paid = true; refund(run.stake); }
       }
@@ -327,7 +364,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   const savePending = () => pref.set('wol.pendingWins', JSON.stringify(pendingWins));
   setInterval(() => { if (pendingWins.length && W.user && navigator.onLine !== false) { const p = pendingWins; pendingWins = []; savePending(); p.forEach(a => credit(...a)); } }, 15000);
   async function refund(s) {
-    try { const u = await db.txn('users/' + W.user, u => { u.balance += s; u.staked -= s; u.spins -= 1; return u; }); W.me = u; paint(); log(W.user, 'refund', s); toast('Run broke, stake refunded.'); } catch (e) {}
+    try { const u = await db.txn('users/' + W.user, u => { u.balance += s; u.staked -= s; u.spins -= 1; return u; }); W.me = u; paint(); log(W.user, 'refund', s); toast('Run broke, stake refunded.'); } catch (e) { toast('No connection. Your stake stays on this phone.'); }
   }
 
   // ---------- top up (player pays Cillian on Revolut and confirms; the host page can reverse) ----------
@@ -411,7 +448,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
       ${reqs.length ? `<h4>Pending</h4><ul class="wlist">${reqs.map(([, r]) => `<li>Withdrawal ${eur(r.a)}<span>${when(r.at)}</span></li>`).join('')}</ul>` : ''}
       <div class="wrow"><button class="wbtn gold" id="wT" type="button">Top up</button><button class="wbtn" id="wW" type="button">Withdraw</button></div>
       <h4>History</h4>
-      <ul class="wlist">${rows.map(t => `<li><div>${name[t.t] || t.t}${t.what ? ` <span>${esc(t.what)}</span>` : ''}<br><span>${when(t.at)}</span></div><b class="${t.a >= 0 ? 'plus' : 'minus'}">${t.a >= 0 ? '+' : ''}${eur(t.a)}</b></li>`).join('') || '<li>No spins yet</li>'}</ul>
+      <ul class="wlist">${rows.map(t => `<li><div>${name[t.t] || t.t}${t.what ? ` <span>${esc(t.what)}</span>` : ''}<br><span>${when(t.at)}</span></div><b class="${t.a >= 0 ? 'plus' : 'minus'}">${eur(t.a)}</b></li>`).join('') || '<li><span>No spins yet</span></li>'}</ul>
       <button class="wlink" type="button" id="wOut">Log out</button>`;
     $w('wT').onclick = () => topupSheet(); $w('wW').onclick = withdrawSheet; $w('wOut').onclick = logout;
   }
@@ -424,7 +461,8 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     };
     body.innerHTML = `<div class="wgrid">
         <div><small>Spins, everyone</small><b>${s.spins || 0}</b></div><div><small>Players</small><b>${list.length}</b></div>
-        <div><small>Won, everyone</small><b>${eur(s.won || 0)}</b></div><div><small>Biggest win</small><b>${eur(s.biggest || 0)}</b>${s.biggestBy ? `<small>${esc(s.biggestBy)}</small>` : ''}</div></div>
+        <div><small>Won, everyone</small><b>${eur(s.won || 0)}</b></div><div><small>Biggest win</small><b>${eur(s.biggest || 0)}</b>${s.biggestBy ? `<small>${esc(s.biggestBy)}</small>` : ''}</div>
+        <div><small>Jackpot</small><b>${eur(W.jackpot || JACKPOT_START)}</b></div><div><small>Live</small><b>${Object.keys(users || {}).filter(k => !((users || {})[k].test || false)).length}</b></div></div>
       ${board('Most won', u => u.won || 0, eur)}
       ${board('Biggest single win', u => u.biggest || 0, eur)}
       ${board('Most spins', u => u.spins || 0, n => n)}
@@ -493,7 +531,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
         const fin = done ? [...document.querySelectorAll('#finalList li')].map(li => li.textContent).slice(0, 8) : null;
         const capEl = document.getElementById('caption');
         try {
-          await db.put('livef/' + W.user, { i: ++i, at: now(), f: shot.toDataURL('image/jpeg', .45), v: lastVerdict, cap: capEl ? capEl.textContent : '', fin, s: W.run && W.run.live ? W.run.stake : W.stake, bal: W.me ? W.me.balance || 0 : 0, play: playing });
+          await db.put('livef/' + W.user, { i: ++i, at: now(), f: shot.toDataURL('image/jpeg', .45), v: lastVerdict, cap: capEl ? capEl.textContent : '', fin, s: W.run && W.run.live ? W.run.stake : W.stake, bal: W.me ? W.me.balance || 0 : 0, play: !!(W.run && W.run.live) });
         } catch (e) { await pause(1500); }
         // about 4 frames a second while the wheel moves, one every 1.5s when it sits still
         const gap = (playing ? 280 : 1500) - (now() - t0); if (gap > 0) await pause(gap);
@@ -508,8 +546,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     $w('wClose').onclick = closeSheet;
     await heartbeat();
     const body = $w('wBody'); if (!body) return;
-    body.innerHTML = others.length ? others.sort((a, b) => (b.play ? 1 : 0) - (a.play ? 1 : 0)).map(o => `<div class="wpl"><div><b>${esc(o.name)}</b><small class="${o.play ? 'on' : ''}">${o.play ? '● Spinning now' : 'Online'}</small></div><button class="wbtn gold small" type="button" data-k="${esc(o.key)}">Watch</button></div>`).join('')
-      : '<p>Nobody else has the wheel open right now. Check back in a minute.</p>';
+    body.innerHTML = others.length ? others.sort((a, b) => (b.play ? 1 : 0) - (a.play ? 1 : 0)).map(o => `<div class="wpl"><div><b>${esc(o.name)}</b><small class="${o.play ? 'on' : ''}">${o.play ? 'Spinning now' : 'Waiting'}</small></div><button class="wbtn small" data-k="${esc(o.key)}" type="button">Watch</button></div>`).join('') : '<p>Nobody else has the wheel open right now. Check back in a minute.</p>';
     body.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { const o = others.find(x => x.key === b.dataset.k); closeSheet(); watch(o.key, o.name); });
   }
   const view = el('div', 'wwatch'); view.hidden = true; document.body.appendChild(view);
@@ -557,7 +594,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
       const v = await (await fetch(CFG.updateUrl + '?t=' + now(), { cache: 'no-store' })).json();
       const apkHave = app && app.apkVersion ? +app.apkVersion() : 0;
       if (busy || (W.run && W.run.live) || !sheet.hidden) return; // only between runs; the next check offers it
-      if (app && v.apk > apkHave && v.apkUrl) return offer(`New app version${v.notes ? ': ' + v.notes : ''}`, () => { app.installApk(v.apkUrl); banner.innerHTML = '<span>Downloading… Android will ask to install it.</span>'; });
+      if (app && v.apk > apkHave && v.apkUrl) return offer(`New app version${v.notes ? ': ' + v.notes : ''}`, () => { app.installApk(v.apkUrl); banner.innerHTML = '<span>Downloading… Android will restart when it is ready.</span><button class="wbtn gold wbig" type="button">OK</button>'; });
       if (v.game > CFG.gameVersion && v.gameUrl) return offer(`Game update${v.notes ? ': ' + v.notes : ''}`, () => {
         if (busy) return toast('Finish this spin first');
         banner.innerHTML = '<span>Updating…</span>';
@@ -573,21 +610,24 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     banner.innerHTML = `<span>⬇ ${esc(text)}</span><div class="wrow"><button class="wbtn gold wbig" id="wUp" type="button">⬇ UPDATE</button><button class="wbtn" id="wLater" type="button">Later</button></div>`;
     $w('wUp').onclick = go; $w('wLater').onclick = () => { banner.hidden = true; snooze = now() + 10 * 60000; };
   }
-  window.wolUpdateFailed = msg => { banner.hidden = false; banner.innerHTML = `<span>Update failed: ${esc(msg || 'no connection')}</span><button class="wbtn small" type="button" onclick="this.parentNode.hidden=true">OK</button>`; };
+  window.wolUpdateFailed = msg => { banner.hidden = false; banner.innerHTML = `<span>Update failed: ${esc(msg || 'no connection')}</span><button class="wbtn small" type="button" onclick="this.parentNode.hidden=true">Close</button>`; };
 
   // ---------- boot ----------
   const savedStake = +pref.get('wol.stake'); if (okStake(savedStake)) W.stake = savedStake;
   W.user = pref.get('wol.user');
+  W.jackpot = JACKPOT_START;
   paint();
   if (W.user) refresh(); else showLogin();
+  refreshJackpot();
   checkUpdate();
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) { refresh(); } });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { refresh(); refreshJackpot(); } });
   setInterval(() => { if (!busy && !document.hidden) refresh(); }, 30000);
   heartbeat(); setInterval(() => { if (!streaming) heartbeat(); }, 15000);
   // a quick look every 3s for someone who just started watching, so their picture starts fast
   setInterval(async () => {
     if (streaming || !W.user || document.hidden) return;
-    try { const w = await db.get('live/' + W.user + '/w') || {}, t = now(); watchers = Object.entries(w).filter(([k, v]) => k !== W.user && t - v < WATCH_MS).length; paintLive(); if (watchers && !streaming) streamLoop(); } catch (e) {}
+    try { const w = await db.get('live/' + W.user + '/w') || {}, t = now(); watchers = Object.entries(w).filter(([k, v]) => k !== W.user && t - v < WATCH_MS).length; paintLive(); if (watchers && !streaming && W.user) streamLoop(); }
+    catch (e) {}
   }, 3000);
   // version.json is ~200 bytes; once a minute while the app is open is nothing for the phone
   setInterval(() => { if (!document.hidden) checkUpdate(); }, 60000);
