@@ -4,9 +4,9 @@
 
 - **Task:** Task 4, Stage 3: wallet module tidy, with `money.js` moved verbatim (`COPILOT_TASKS.md`, issue #8)
 - **Owner:** Copilot
-- **Status:** go now. Stage 2 (PR #10) is reviewed and merged. Nothing is waiting on Claude.
-- **Next:** Copilot opens the Stage 3 PR and posts `DONE: Stage 3` on #8 → Claude reviews and merges → Stage 4.
-- **Last updated:** 2026-10-21 21:30 by Claude
+- **Status:** Stage 3 complete; PR ready for Claude review. `money.js` matches the original payout, jackpot, and spin code exactly.
+- **Next:** Claude reviews and merges the Stage 3 PR → Stage 4.
+- **Last updated:** 2026-10-21 21:26 by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
@@ -63,6 +63,7 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 
 ## Done log (history only, newest first; nothing here is current)
 
+- 2026-10-21: Task 4 Stage 3, split the wallet into five modules; verified `money.js` is an exact extraction and the checker passes.
 - 2026-10-21: Task 4 Stage 2, the behaviour-preserving tidy (PR #10), merged. Same 242 `Math.random()` call sites, bundle consistent.
 - 2026-10-21: Task 4 Stage 1, the split into `src/` with `tools/bundle.mjs` (PR #9), merged, byte-identical.
 - 2026-10-21: update 21 "Trophy Hunt", Task 2 trophies (PR #7), merged.

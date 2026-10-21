@@ -4822,15 +4822,6 @@ if (document.fonts && document.fonts.load) {
   const log = (k, t, a, extra) => db.push('tx/' + k, Object.assign({ t, a, at: now() }, extra || {})).catch(() => {});
 
   // </shared>
-  // ---------- payouts: every prize the game shows is scaled to the stake (house keeps ~1%) ----------
-  // Owns payout-value conversion and payment display helpers.
-  // ev = the game's average base prize per paid spin (in game euros), measured by simulation.
-  window.$m = function (v) {
-    const s = W.run ? W.run.stake : W.stake;
-    const c = Math.max(0, Math.round(+v * W.cfg.edge / W.cfg.ev * s));
-    return (c / 100).toFixed(2).replace(/\.00$/, '');
-  };
-  W.payCents = v => Math.round(+v * 100);
   // ---------- styles ----------
   // Owns wallet-specific visual styles.
   const css = `
@@ -5041,19 +5032,6 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     }).finally(() => pendingTrophies.delete(pendingId));
   }
 
-  async function refreshJackpot() {
-    try {
-      let jackpot = await db.get('jackpot');
-      if (!jackpot || !Number.isFinite(Number(jackpot.amount))) {
-        jackpot = await db.txn('jackpot', current => current && Number.isFinite(Number(current.amount)) ? current : { amount: JACKPOT_START });
-      }
-      W.jackpot = Number(jackpot.amount);
-    } catch (e) {
-      W.jackpot = JACKPOT_START;
-    }
-    const pot = $w('wPot'); if (pot) pot.textContent = eur(W.jackpot);
-  }
-
   function paint() {
     const me = W.me;
     $w('wWho').innerHTML = `<small>${me ? (me.test ? 'TEST' : esc(me.name)) : 'Log in'}</small><b>${eur(me ? me.balance || 0 : 0)}</b>`;
@@ -5128,92 +5106,6 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     } catch (e) {}
   }
   function logout() { W.user = W.me = null; pref.set('wol.user', null); pref.set('wol.pass', null); paint(); closeSheet(); showLogin(); }
-  // ---------- spins: pay the stake, play, collect ----------
-  // Owns spin charging, collection, and refund handling.
-  const gameSpin = spin;
-  let charging = false;
-  spin = async function () {
-    if (busy || charging) return;
-    if (scene === 'photo' && !photoDone) return gameSpin(); // finishing a Show me run is part of the spin already paid for
-    if (!W.me) return showLogin('Log in to spin.');
-    const s = W.stake;
-    if ((W.me.balance || 0) < s) return topupSheet(`You need ${stakeLbl(s)} for a spin. Top up from €1.`);
-    charging = true; setBtn('Paying ' + stakeLbl(s), true);
-    try {
-      let short = false;
-      const u = await db.txn('users/' + W.user, u => { if (!u || (u.balance || 0) < s) { short = true; return undefined; } u.balance -= s; u.spins = (u.spins || 0) + 1; u.staked = (u.staked || 0) + s; u.last = now(); return u; });
-      if (short) { if (u) W.me = u; paint(); setBtn('Spin', false); charging = false; return topupSheet('Not enough credit for that stake.'); }
-      W.me = u; paint();
-      awardTrophy('first');
-      if ((u.spins || 0) >= 100) awardTrophy('spins100');
-      if ((u.spins || 0) >= 1000) awardTrophy('spins1000');
-      log(W.user, 'spin', -s);
-      if (!isTest()) {
-        db.txn('stats', st => { st = st || {}; st.spins = (st.spins || 0) + 1; st.staked = (st.staked || 0) + s; return st; }).catch(() => {});
-        db.txn('jackpot', cur => { cur = cur || { amount: JACKPOT_START }; cur.amount = (cur.amount || 0) + s; return cur; }).then(() => refreshJackpot()).catch(() => {});
-      }
-    } catch (e) { setBtn('Spin', false); charging = false; toast('No connection. Spin not charged.'); return; }
-    W.run = { stake: s, paid: false, live: true };
-    charging = false;
-    try { await gameSpin(); } finally { if (W.run) W.run.live = false; }
-  };
-
-  window.wolResetOk = () => !(W.run && W.run.paid); // no resetting once the prize is being paid
-  window.wolNextRoom = () => { if (W.run) W.run.paid = false; }; // a second room in the same run (God room, then a full set) pays its own prize
-  const gameVerdict = setVerdict;
-  let lastVerdict = null; // what the player's screen says, for anyone watching
-  setVerdict = function (o) {
-    const r = gameVerdict(o);
-    lastVerdict = { e: String(o.eyebrow || ''), t: String(o.title || ''), b: String(o.body || '').slice(0, 240) };
-    try {
-      const run = W.run;
-      if (run && run.live && o.title === 'Golden run') awardTrophy('golden');
-      if (run && !run.paid) {
-        let m = /^Final answer · €([\d.]+)/.exec(o.eyebrow || '');
-        if (!m && o.eyebrow === 'Final answer' && /^€[\d.]+$/.test(o.title || '')) m = [0, o.title.slice(1)];
-        const isPhelanTomb = /, Phelan['’]s Tomb$/.test(String(o.title || ''));
-        if (m && isPhelanTomb && !isTest()) {
-          run.paid = true;
-          const prizeCents = W.payCents(m[1]);
-          (async () => {
-            let jackpot = 0;
-            await db.txn('jackpot', cur => {
-              const curAmt = Number((cur && cur.amount) || JACKPOT_START);
-              jackpot = Number.isFinite(curAmt) ? curAmt : JACKPOT_START;
-              return { amount: JACKPOT_START };
-            });
-            await credit(prizeCents + jackpot, run.stake, o.title || 'Phelan\'s Tomb');
-            W.jackpot = JACKPOT_START;
-            paint();
-          })().catch(() => {});
-          return r;
-        }
-        if (m) { run.paid = true; credit(W.payCents(m[1]), run.stake, o.title); }
-        else if (o.title === 'That run broke halfway') { run.paid = true; refund(run.stake); }
-      }
-    } catch (e) {}
-    return r;
-  };
-  async function credit(c, stake, what) {
-    if (!c) return;
-    toast('You won ' + eur(c) + '!', true);
-    try {
-      const u = await db.txn('users/' + W.user, u => { u.balance = (u.balance || 0) + c; u.won = (u.won || 0) + c; if (c > (u.biggest || 0)) u.biggest = c; return u; });
-      W.me = u; paint();
-      if (/, Phelan['’]s Tomb$/.test(String(what || ''))) awardTrophy('tomb');
-      if (String(what || '').indexOf('Chicken Race') === 0) awardTrophy('race');
-      if (stake > 0 && c >= stake * 50) awardTrophy('big');
-      log(W.user, 'win', c, { stake, what: String(what || '').slice(0, 60) });
-      if (!isTest()) db.txn('stats', st => { st = st || {}; st.won = (st.won || 0) + c; if (c > (st.biggest || 0)) { st.biggest = c; st.biggestBy = W.me.name; } return st; }).catch(() => {});
-    } catch (e) { pendingWins.push([c, stake, what]); savePending(); toast('Win saved on this phone. It adds when you are back online.'); }
-  }
-  // wins that could not reach the database are kept and retried
-  let pendingWins = []; try { pendingWins = JSON.parse(pref.get('wol.pendingWins') || '[]'); } catch (e) {}
-  const savePending = () => pref.set('wol.pendingWins', JSON.stringify(pendingWins));
-  setInterval(() => { if (pendingWins.length && W.user && navigator.onLine !== false) { const p = pendingWins; pendingWins = []; savePending(); p.forEach(a => credit(...a)); } }, 15000);
-  async function refund(s) {
-    try { const u = await db.txn('users/' + W.user, u => { u.balance += s; u.staked -= s; u.spins -= 1; return u; }); W.me = u; paint(); log(W.user, 'refund', s); toast('Run broke, stake refunded.'); } catch (e) {}
-  }
   // ---------- top up (player pays Cillian on Revolut and confirms; the host page can reverse) ----------
   // Owns the top-up confirmation sheets.
   function topupSheet(msg) {
@@ -5397,6 +5289,141 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
         closeSheet(); toast('Withdrawal of ' + eur(a) + ' pending. Cillian will send it to @' + tag + '.', true);
       } catch (e) { $w('wErr').textContent = 'No connection. Try again.'; }
     };
+  }
+  // ---------- updates (version.json in the GitHub repo) ----------
+  // Owns update checks and update prompts.
+  async function checkUpdate() {
+    if (!CFG.updateUrl) return;
+    try {
+      const v = await (await fetch(CFG.updateUrl + '?t=' + now(), { cache: 'no-store' })).json();
+      const apkHave = app && app.apkVersion ? +app.apkVersion() : 0;
+      if (busy || (W.run && W.run.live) || !sheet.hidden) return; // only between runs; the next check offers it
+      if (app && v.apk > apkHave && v.apkUrl) return offer(`New app version${v.name ? ' · ' + v.name : ''}${v.notes ? ': ' + v.notes : ''}`, () => { app.installApk(v.apkUrl); banner.innerHTML = '<span>Downloading… Android will ask to install it.</span>'; });
+      if (v.game > CFG.gameVersion && v.gameUrl) return offer(`Update ${v.game}${v.name ? ' · ' + v.name : ''}${v.notes ? ': ' + v.notes : ''}`, () => {
+        if (busy) return toast('Finish this spin first');
+        banner.innerHTML = '<span>Updating…</span>';
+        if (app && app.updateGame) app.updateGame(v.gameUrl, String(v.game)); else location.reload();
+      });
+    } catch (e) {}
+  }
+  let offered = '', snooze = 0;
+  function offer(text, go) {
+    if (!banner.hidden && offered === text) return;
+    if (now() < snooze) return;
+    banner.hidden = false; offered = text;
+    banner.innerHTML = `<span>⬇ ${esc(text)}</span><div class="wrow"><button class="wbtn gold wbig" id="wUp" type="button">⬇ UPDATE</button><button class="wbtn" id="wLater" type="button">Later</button></div>`;
+    $w('wUp').onclick = go; $w('wLater').onclick = () => { banner.hidden = true; snooze = now() + 10 * 60000; };
+  }
+  window.wolUpdateFailed = msg => { banner.hidden = false; banner.innerHTML = `<span>Update failed: ${esc(msg || 'no connection')}</span><button class="wbtn small" type="button" onclick="this.parentNode.hidden=true">OK</button>`; };
+  // version.json is ~200 bytes; once a minute while the app is open is nothing for the phone
+  setInterval(() => { if (!document.hidden) checkUpdate(); }, 60000);
+  // ---------- payouts: every prize the game shows is scaled to the stake (house keeps ~1%) ----------
+  // Owns payout-value conversion and payment display helpers.
+  // ev = the game's average base prize per paid spin (in game euros), measured by simulation.
+  window.$m = function (v) {
+    const s = W.run ? W.run.stake : W.stake;
+    const c = Math.max(0, Math.round(+v * W.cfg.edge / W.cfg.ev * s));
+    return (c / 100).toFixed(2).replace(/\.00$/, '');
+  };
+  W.payCents = v => Math.round(+v * 100);
+  async function refreshJackpot() {
+    try {
+      let jackpot = await db.get('jackpot');
+      if (!jackpot || !Number.isFinite(Number(jackpot.amount))) {
+        jackpot = await db.txn('jackpot', current => current && Number.isFinite(Number(current.amount)) ? current : { amount: JACKPOT_START });
+      }
+      W.jackpot = Number(jackpot.amount);
+    } catch (e) {
+      W.jackpot = JACKPOT_START;
+    }
+    const pot = $w('wPot'); if (pot) pot.textContent = eur(W.jackpot);
+  }
+
+  // ---------- spins: pay the stake, play, collect ----------
+  // Owns spin charging, collection, and refund handling.
+  const gameSpin = spin;
+  let charging = false;
+  spin = async function () {
+    if (busy || charging) return;
+    if (scene === 'photo' && !photoDone) return gameSpin(); // finishing a Show me run is part of the spin already paid for
+    if (!W.me) return showLogin('Log in to spin.');
+    const s = W.stake;
+    if ((W.me.balance || 0) < s) return topupSheet(`You need ${stakeLbl(s)} for a spin. Top up from €1.`);
+    charging = true; setBtn('Paying ' + stakeLbl(s), true);
+    try {
+      let short = false;
+      const u = await db.txn('users/' + W.user, u => { if (!u || (u.balance || 0) < s) { short = true; return undefined; } u.balance -= s; u.spins = (u.spins || 0) + 1; u.staked = (u.staked || 0) + s; u.last = now(); return u; });
+      if (short) { if (u) W.me = u; paint(); setBtn('Spin', false); charging = false; return topupSheet('Not enough credit for that stake.'); }
+      W.me = u; paint();
+      awardTrophy('first');
+      if ((u.spins || 0) >= 100) awardTrophy('spins100');
+      if ((u.spins || 0) >= 1000) awardTrophy('spins1000');
+      log(W.user, 'spin', -s);
+      if (!isTest()) {
+        db.txn('stats', st => { st = st || {}; st.spins = (st.spins || 0) + 1; st.staked = (st.staked || 0) + s; return st; }).catch(() => {});
+        db.txn('jackpot', cur => { cur = cur || { amount: JACKPOT_START }; cur.amount = (cur.amount || 0) + s; return cur; }).then(() => refreshJackpot()).catch(() => {});
+      }
+    } catch (e) { setBtn('Spin', false); charging = false; toast('No connection. Spin not charged.'); return; }
+    W.run = { stake: s, paid: false, live: true };
+    charging = false;
+    try { await gameSpin(); } finally { if (W.run) W.run.live = false; }
+  };
+
+  window.wolResetOk = () => !(W.run && W.run.paid); // no resetting once the prize is being paid
+  window.wolNextRoom = () => { if (W.run) W.run.paid = false; }; // a second room in the same run (God room, then a full set) pays its own prize
+  const gameVerdict = setVerdict;
+  let lastVerdict = null; // what the player's screen says, for anyone watching
+  setVerdict = function (o) {
+    const r = gameVerdict(o);
+    lastVerdict = { e: String(o.eyebrow || ''), t: String(o.title || ''), b: String(o.body || '').slice(0, 240) };
+    try {
+      const run = W.run;
+      if (run && run.live && o.title === 'Golden run') awardTrophy('golden');
+      if (run && !run.paid) {
+        let m = /^Final answer · €([\d.]+)/.exec(o.eyebrow || '');
+        if (!m && o.eyebrow === 'Final answer' && /^€[\d.]+$/.test(o.title || '')) m = [0, o.title.slice(1)];
+        const isPhelanTomb = /, Phelan['’]s Tomb$/.test(String(o.title || ''));
+        if (m && isPhelanTomb && !isTest()) {
+          run.paid = true;
+          const prizeCents = W.payCents(m[1]);
+          (async () => {
+            let jackpot = 0;
+            await db.txn('jackpot', cur => {
+              const curAmt = Number((cur && cur.amount) || JACKPOT_START);
+              jackpot = Number.isFinite(curAmt) ? curAmt : JACKPOT_START;
+              return { amount: JACKPOT_START };
+            });
+            await credit(prizeCents + jackpot, run.stake, o.title || 'Phelan\'s Tomb');
+            W.jackpot = JACKPOT_START;
+            paint();
+          })().catch(() => {});
+          return r;
+        }
+        if (m) { run.paid = true; credit(W.payCents(m[1]), run.stake, o.title); }
+        else if (o.title === 'That run broke halfway') { run.paid = true; refund(run.stake); }
+      }
+    } catch (e) {}
+    return r;
+  };
+  async function credit(c, stake, what) {
+    if (!c) return;
+    toast('You won ' + eur(c) + '!', true);
+    try {
+      const u = await db.txn('users/' + W.user, u => { u.balance = (u.balance || 0) + c; u.won = (u.won || 0) + c; if (c > (u.biggest || 0)) u.biggest = c; return u; });
+      W.me = u; paint();
+      if (/, Phelan['’]s Tomb$/.test(String(what || ''))) awardTrophy('tomb');
+      if (String(what || '').indexOf('Chicken Race') === 0) awardTrophy('race');
+      if (stake > 0 && c >= stake * 50) awardTrophy('big');
+      log(W.user, 'win', c, { stake, what: String(what || '').slice(0, 60) });
+      if (!isTest()) db.txn('stats', st => { st = st || {}; st.won = (st.won || 0) + c; if (c > (st.biggest || 0)) { st.biggest = c; st.biggestBy = W.me.name; } return st; }).catch(() => {});
+    } catch (e) { pendingWins.push([c, stake, what]); savePending(); toast('Win saved on this phone. It adds when you are back online.'); }
+  }
+  // wins that could not reach the database are kept and retried
+  let pendingWins = []; try { pendingWins = JSON.parse(pref.get('wol.pendingWins') || '[]'); } catch (e) {}
+  const savePending = () => pref.set('wol.pendingWins', JSON.stringify(pendingWins));
+  setInterval(() => { if (pendingWins.length && W.user && navigator.onLine !== false) { const p = pendingWins; pendingWins = []; savePending(); p.forEach(a => credit(...a)); } }, 15000);
+  async function refund(s) {
+    try { const u = await db.txn('users/' + W.user, u => { u.balance += s; u.staked -= s; u.spins -= 1; return u; }); W.me = u; paint(); log(W.user, 'refund', s); toast('Run broke, stake refunded.'); } catch (e) {}
   }
   // ---------- live: who is on now, and watching them play ----------
   // Owns watcher heartbeats and the live game-state stream.
@@ -5742,31 +5769,6 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     const done = () => location.reload(); // the game underneath was drawing someone else's run: start it fresh
     if (key && !key.startsWith('hl:')) db.put('live/' + key + '/w/' + me4(), null).then(done, done); else done();
   }
-  // ---------- updates (version.json in the GitHub repo) ----------
-  // Owns update checks and update prompts.
-  async function checkUpdate() {
-    if (!CFG.updateUrl) return;
-    try {
-      const v = await (await fetch(CFG.updateUrl + '?t=' + now(), { cache: 'no-store' })).json();
-      const apkHave = app && app.apkVersion ? +app.apkVersion() : 0;
-      if (busy || (W.run && W.run.live) || !sheet.hidden) return; // only between runs; the next check offers it
-      if (app && v.apk > apkHave && v.apkUrl) return offer(`New app version${v.name ? ' · ' + v.name : ''}${v.notes ? ': ' + v.notes : ''}`, () => { app.installApk(v.apkUrl); banner.innerHTML = '<span>Downloading… Android will ask to install it.</span>'; });
-      if (v.game > CFG.gameVersion && v.gameUrl) return offer(`Update ${v.game}${v.name ? ' · ' + v.name : ''}${v.notes ? ': ' + v.notes : ''}`, () => {
-        if (busy) return toast('Finish this spin first');
-        banner.innerHTML = '<span>Updating…</span>';
-        if (app && app.updateGame) app.updateGame(v.gameUrl, String(v.game)); else location.reload();
-      });
-    } catch (e) {}
-  }
-  let offered = '', snooze = 0;
-  function offer(text, go) {
-    if (!banner.hidden && offered === text) return;
-    if (now() < snooze) return;
-    banner.hidden = false; offered = text;
-    banner.innerHTML = `<span>⬇ ${esc(text)}</span><div class="wrow"><button class="wbtn gold wbig" id="wUp" type="button">⬇ UPDATE</button><button class="wbtn" id="wLater" type="button">Later</button></div>`;
-    $w('wUp').onclick = go; $w('wLater').onclick = () => { banner.hidden = true; snooze = now() + 10 * 60000; };
-  }
-  window.wolUpdateFailed = msg => { banner.hidden = false; banner.innerHTML = `<span>Update failed: ${esc(msg || 'no connection')}</span><button class="wbtn small" type="button" onclick="this.parentNode.hidden=true">OK</button>`; };
   // ---------- boot ----------
   // Owns wallet startup and initial state restoration.
   const savedStake = +pref.get('wol.stake'); if (okStake(savedStake)) W.stake = savedStake;
@@ -5779,6 +5781,12 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { refresh(); refreshJackpot(); } });
   setInterval(() => { if (!busy && !document.hidden) refresh(); }, 30000);
   heartbeat(); setTimeout(heartbeat, 2500); setInterval(() => { if (!streaming) heartbeat(); }, 15000); // the second one runs once the account has loaded
+  // a quick look every 3s for someone who just started watching, so their picture starts fast
+  setInterval(async () => {
+    if (W.user && !streaming && !document.hidden) checkMsgs();
+    if (streaming || !W.user || document.hidden) return;
+    try { const w = await db.get('live/' + W.user + '/w') || {}, t = now(); watchers = Object.entries(w).filter(([k, v]) => k !== W.user && t - v < WATCH_MS).length; paintLive(); if (watchers && !streaming) streamLoop(); } catch (e) {}
+  }, 3000);
   // ---------- notes from the host (gifts and messages): a card that stays on screen until it's tapped away ----------
   // Owns host notes and gift notifications.
   let noteShowing = false;
@@ -5803,13 +5811,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     } catch (e) { noteShowing = false; }
   }
   setInterval(checkNotes, 8000); setTimeout(checkNotes, 3000);
-  // a quick look every 3s for someone who just started watching, so their picture starts fast
-  setInterval(async () => {
-    if (W.user && !streaming && !document.hidden) checkMsgs();
-    if (streaming || !W.user || document.hidden) return;
-    try { const w = await db.get('live/' + W.user + '/w') || {}, t = now(); watchers = Object.entries(w).filter(([k, v]) => k !== W.user && t - v < WATCH_MS).length; paintLive(); if (watchers && !streaming) streamLoop(); } catch (e) {}
-  }, 3000);
-  // version.json is ~200 bytes; once a minute while the app is open is nothing for the phone
-  setInterval(() => { if (!document.hidden) checkUpdate(); }, 60000);
+
 })();
+
 </script>

@@ -22,12 +22,5 @@
     } catch (e) { noteShowing = false; }
   }
   setInterval(checkNotes, 8000); setTimeout(checkNotes, 3000);
-  // a quick look every 3s for someone who just started watching, so their picture starts fast
-  setInterval(async () => {
-    if (W.user && !streaming && !document.hidden) checkMsgs();
-    if (streaming || !W.user || document.hidden) return;
-    try { const w = await db.get('live/' + W.user + '/w') || {}, t = now(); watchers = Object.entries(w).filter(([k, v]) => k !== W.user && t - v < WATCH_MS).length; paintLive(); if (watchers && !streaming) streamLoop(); } catch (e) {}
-  }, 3000);
-  // version.json is ~200 bytes; once a minute while the app is open is nothing for the phone
-  setInterval(() => { if (!document.hidden) checkUpdate(); }, 60000);
+
 })();

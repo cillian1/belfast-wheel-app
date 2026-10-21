@@ -1,3 +1,25 @@
+  // ---------- payouts: every prize the game shows is scaled to the stake (house keeps ~1%) ----------
+  // Owns payout-value conversion and payment display helpers.
+  // ev = the game's average base prize per paid spin (in game euros), measured by simulation.
+  window.$m = function (v) {
+    const s = W.run ? W.run.stake : W.stake;
+    const c = Math.max(0, Math.round(+v * W.cfg.edge / W.cfg.ev * s));
+    return (c / 100).toFixed(2).replace(/\.00$/, '');
+  };
+  W.payCents = v => Math.round(+v * 100);
+  async function refreshJackpot() {
+    try {
+      let jackpot = await db.get('jackpot');
+      if (!jackpot || !Number.isFinite(Number(jackpot.amount))) {
+        jackpot = await db.txn('jackpot', current => current && Number.isFinite(Number(current.amount)) ? current : { amount: JACKPOT_START });
+      }
+      W.jackpot = Number(jackpot.amount);
+    } catch (e) {
+      W.jackpot = JACKPOT_START;
+    }
+    const pot = $w('wPot'); if (pot) pot.textContent = eur(W.jackpot);
+  }
+
   // ---------- spins: pay the stake, play, collect ----------
   // Owns spin charging, collection, and refund handling.
   const gameSpin = spin;
