@@ -78,6 +78,8 @@ Nothing in your tasks touches money: no balance changes, no prizes, no payout ma
 
 **Done when:** each trophy you could wire fires exactly once per player, survives an app restart, and never changes a balance. Say in the PR how you tested it.
 
+**Status:** Implemented 11 trophies and the Most trophies leaderboard on the current account UI. Inline scripts parse; mocked runtime checks cover single-write deduplication, restart state, and failed-write retry. Live Firebase/account gameplay remains untested here. Chicken Race is deferred until update 20 merges, and release versioning remains pending that update.
+
 ---
 
 ## Task 3: performance pass (start only after update 20 has merged)
