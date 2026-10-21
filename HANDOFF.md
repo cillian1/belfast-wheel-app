@@ -2,11 +2,11 @@
 
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
-- **Task:** Task 5: every replay saved, Watch tabs, host page watching (`COPILOT_TASKS.md`, issue #12)
-- **Owner:** Copilot
-- **Status:** go now. Task 4 is complete (Stage 4, PR #14, merged as update 22 "Smoother Wheels").
-- **Next:** Copilot opens the Task 5 PR (#16) and posts `DONE: Task 5` on #12 → Claude merges → `/go` on Task 6, then 7, then 8, one at a time.
-- **Last updated:** 2026-10-21 21:55 by Claude
+- **Task:** Task 5 (replays, PR #16, issue #12), then Tasks 6 → 7 → 8 (issues #17, #18, #19)
+- **Owner:** Copilot runs the whole queue from here (Cillian, 2026-10-21). Claude has stepped back.
+- **Status:** Task 5 in progress. When a task's PR is merged, Copilot starts the next open `copilot-task` issue in number order by itself, with no `/go` needed.
+- **Next:** Copilot self-reviews each PR and posts `DONE: Task N` on its issue; **Cillian merges**.
+- **Last updated:** 2026-10-21 22:05 by Claude
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.

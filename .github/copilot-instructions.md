@@ -4,6 +4,8 @@ Read `HANDOFF.md` first, starting with its **NOW** section: that is the only cur
 
 **When you finish a task or stage:** push the branch, open the PR (not as a draft, or mark it ready for review), and post `DONE: <task>` with the PR link as a comment on the task's issue. That comment is how Claude knows to review. Don't post DONE before the PR is open.
 
+**From 2026-10-21 you run the task queue yourself:** when your PR for a task is merged, start the next open `copilot-task` issue in number order without waiting for anyone. Cillian merges your PRs. Claude may still drop in, but don't wait on it.
+
 **Your role:** you do the building (features, fixes, refactors) and Claude coordinates, reviews and merges. Expect bigger tasks, and make each PR complete and self-tested. **Review your own PR before posting DONE:** re-read the diff, run `node tools/bundle.mjs` and `node tools/check.mjs`, test what you changed, and in the PR list what you checked and anything risky. Claude only does a quick final check, so the PR has to be merge-ready.
 
 In short:
