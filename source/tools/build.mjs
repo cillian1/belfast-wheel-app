@@ -38,6 +38,10 @@ if (cfg.tip != null) patch(/let TIP_CHANCE = [\d.]+;/, `let TIP_CHANCE = ${cfg.t
 if (cfg.markPrizes === false) patch(
   /v = k === 'W' \? 10 : 5; return \{ lbl: \[`€\$\{v\}`, \.\.\.q\.lbl\.slice\(0, 2\)\]\.slice\(0, 3\), t: q\.t, b: `\$\{k === 'W' \? 'A gold' : 'A purple'\} chicken made it: €\$\{v\} if Mark answers properly\.`, prize: v,/,
   "v = 0; return { lbl: q.lbl.slice(0, 3), t: q.t, b: `${k === 'W' ? 'A gold' : 'A purple'} chicken made it.`, prize: v,", 'Mark prize chickens');
+// app layout: the wheel runs edge to edge, the fireplace shrinks to a strip at the bottom
+patch(/st\.style\.width = Math\.max\(220, Math\.min\(app\.clientWidth, 520, h\)\) \+ 'px';/,
+  "const sw = Math.max(220, Math.min(innerWidth - 4, 600, h - (window.visualViewport ? visualViewport.height : innerHeight) * .1)); st.style.width = sw + 'px'; st.style.marginLeft = st.style.marginRight = sw > app.clientWidth ? (app.clientWidth - sw) / 2 + 'px' : 'auto';", 'fitStage');
+patch(/const fw = Math\.min\(W \* \.96, 600\), fh = Math\.min\(H \* \.46, 420\)/, 'const fw = Math.min(W * .7, 420), fh = Math.min(H * .16, 170)', 'fireplace');
 const a = html.indexOf('<script>') + 8, b = html.lastIndexOf('</script>');
 const m = moneyify(html.slice(a, b));
 console.log(`game build ${build}: ${m.count} money edits`);

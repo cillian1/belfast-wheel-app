@@ -135,7 +135,15 @@
 .wtabs{display:flex;gap:6px}
 .wtabs button{flex:1;border:1px solid var(--line);background:none;color:var(--mute);padding:8px;font-size:13px}
 .wtabs button.on{color:#f5d27a;border-color:#f5d27a}
-.wbanner{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:40;display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:14px;background:#2a2312;border:1px solid #f5d27a;color:#f8e4a6;font-size:14px}
+.app>.stage{max-width:none}
+html,body{overflow-x:hidden}
+body{box-sizing:border-box;margin:0}
+.wilds canvas.wt{width:50px;height:50px}
+.app>.spin{min-height:62px}
+.wbanner{position:fixed;left:10px;right:10px;top:calc(10px + env(safe-area-inset-top,0px));z-index:40;display:flex;flex-direction:column;gap:14px;align-items:stretch;text-align:center;padding:20px 18px;border-radius:20px;background:#2a2312;border:2px solid #f5d27a;color:#f8e4a6;font-size:20px;font-weight:600;box-shadow:0 10px 40px rgba(0,0,0,.7),0 0 30px rgba(245,210,122,.35)}
+.wbanner .wbig{font-size:26px;padding:18px 10px;border-radius:16px;flex:2}
+.wbanner .wrow{gap:10px}
+.wbanner .wrow .wbtn:not(.wbig){font-size:17px;flex:1}
 .wbanner[hidden]{display:none}
 .wlogin{position:fixed;inset:0;z-index:60;background:radial-gradient(circle at 50% 30%,#1e2228,#0a0c0f 70%);display:flex;align-items:center;justify-content:center;padding:20px}
 .wlogin[hidden]{display:none}
@@ -173,8 +181,7 @@
     const me = W.me;
     $w('wWho').innerHTML = `<small>${me ? esc(me.name) : 'Log in'}</small><b>${eur(me ? me.balance || 0 : 0)}</b>`;
     $w('wStake').textContent = stakeLbl(W.stake);
-    const i = STAKES.indexOf(W.stake);
-    $w('wLess').disabled = i <= 0; $w('wMore').disabled = i >= STAKES.length - 1;
+    $w('wLess').disabled = W.stake <= STAKES[0]; $w('wMore').disabled = !nextStake();
     if (typeof fitStage === 'function') fitStage();
   }
   function setStake(c) {
@@ -184,8 +191,18 @@
     try { faces.godWheel = null; faces.cosmic = null; } catch (e) {}
     paint();
   }
-  $w('wLess').addEventListener('click', () => { const i = STAKES.indexOf(W.stake); if (i > 0) setStake(STAKES[i - 1]); });
-  $w('wMore').addEventListener('click', () => { const i = STAKES.indexOf(W.stake); if (i < STAKES.length - 1) setStake(STAKES[i + 1]); });
+  // 10c steps up to the last listed stake, then €1 steps with no cap beyond what the player holds
+  const TOP = STAKES[STAKES.length - 1];
+  function nextStake() {
+    const i = STAKES.indexOf(W.stake);
+    if (i >= 0 && i < STAKES.length - 1) return STAKES[i + 1];
+    const n = W.stake + 100;
+    return W.me && (W.me.balance || 0) >= n ? n : 0;
+  }
+  function prevStake() { const i = STAKES.indexOf(W.stake); return i > 0 ? STAKES[i - 1] : W.stake > TOP ? W.stake - 100 : 0; }
+  const okStake = c => STAKES.includes(c) || (c > TOP && (c - TOP) % 100 === 0);
+  $w('wLess').addEventListener('click', () => { const c = prevStake(); if (c) setStake(c); });
+  $w('wMore').addEventListener('click', () => { const c = nextStake(); if (c) setStake(c); });
   $w('wTop').addEventListener('click', () => W.me ? topupSheet() : showLogin());
   $w('wWho').addEventListener('click', () => W.me ? accountSheet() : showLogin());
 
@@ -414,6 +431,7 @@
     try {
       const v = await (await fetch(CFG.updateUrl + '?t=' + now(), { cache: 'no-store' })).json();
       const apkHave = app && app.apkVersion ? +app.apkVersion() : 0;
+      if (busy || (W.run && W.run.live) || !sheet.hidden) return; // only between runs; the next check offers it
       if (app && v.apk > apkHave && v.apkUrl) return offer(`New app version${v.notes ? ': ' + v.notes : ''}`, () => { app.installApk(v.apkUrl); banner.innerHTML = '<span>Downloading… Android will ask to install it.</span>'; });
       if (v.game > CFG.gameVersion && v.gameUrl) return offer(`Game update${v.notes ? ': ' + v.notes : ''}`, () => {
         if (busy) return toast('Finish this spin first');
@@ -422,19 +440,24 @@
       });
     } catch (e) {}
   }
+  let offered = '', snooze = 0;
   function offer(text, go) {
-    banner.hidden = false;
-    banner.innerHTML = `<span>${esc(text)}</span><div class="wrow" style="flex:none"><button class="wbtn small gold" id="wUp" type="button">Update</button><button class="wbtn small" id="wLater" type="button">Later</button></div>`;
-    $w('wUp').onclick = go; $w('wLater').onclick = () => { banner.hidden = true; };
+    if (!banner.hidden && offered === text) return;
+    if (now() < snooze) return;
+    banner.hidden = false; offered = text;
+    banner.innerHTML = `<span>⬇ ${esc(text)}</span><div class="wrow"><button class="wbtn gold wbig" id="wUp" type="button">⬇ UPDATE</button><button class="wbtn" id="wLater" type="button">Later</button></div>`;
+    $w('wUp').onclick = go; $w('wLater').onclick = () => { banner.hidden = true; snooze = now() + 10 * 60000; };
   }
   window.wolUpdateFailed = msg => { banner.hidden = false; banner.innerHTML = `<span>Update failed: ${esc(msg || 'no connection')}</span><button class="wbtn small" type="button" onclick="this.parentNode.hidden=true">OK</button>`; };
 
   // ---------- boot ----------
-  const savedStake = +pref.get('wol.stake'); if (STAKES.includes(savedStake)) W.stake = savedStake;
+  const savedStake = +pref.get('wol.stake'); if (okStake(savedStake)) W.stake = savedStake;
   W.user = pref.get('wol.user');
   paint();
   if (W.user) refresh(); else showLogin();
   checkUpdate();
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { refresh(); } });
   setInterval(() => { if (!busy && !document.hidden) refresh(); }, 30000);
+  // version.json is ~200 bytes; once a minute while the app is open is nothing for the phone
+  setInterval(() => { if (!document.hidden) checkUpdate(); }, 60000);
 })();

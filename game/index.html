@@ -277,11 +277,11 @@ footer{position:fixed;top:8px;left:10px;z-index:5;color:rgba(220,225,230,.55);fo
   <input class="vh" type="file" id="lib" accept="image/*">
 
 
-  <footer>Build 52 · app 7</footer>
+  <footer>Build 53 · app 8</footer>
 </div>
 
 <script>
-const BUILD = 52;
+const BUILD = 53;
 const $ = s => document.querySelector(s);
 const TAU = Math.PI * 2, BASE = -Math.PI / 2;
 const LABEL_FONT = '"IBM Plex Sans Condensed","Arial Narrow",sans-serif';
@@ -678,7 +678,7 @@ function buildRoom() {
   g.fillStyle = '#3e2615'; g.fillRect(0, wy - 7, W, 9);
   g.strokeStyle = 'rgba(0,0,0,.45)'; g.lineWidth = 1.5;
   for (let x = 10; x < W; x += 120) g.strokeRect(x + 10, wy + 22, 96, H - wy - 44);
-  const fw = Math.min(W * .96, 600), fh = Math.min(H * .46, 420), fx = (W - fw) / 2, fy = H - fh;
+  const fw = Math.min(W * .7, 420), fh = Math.min(H * .16, 170), fx = (W - fw) / 2, fy = H - fh;
   g.fillStyle = '#39322b'; g.fillRect(fx, fy, fw, fh);
   for (let i = 0; i < 70; i++) {
     const sw = 30 + Math.random() * 50, sh = 16 + Math.random() * 18, sx = fx + Math.random() * (fw - sw), sy = fy + Math.random() * (fh - sh);
@@ -1320,7 +1320,7 @@ function fitStage() {
   [...app.children].forEach(el => { if (el === st || getComputedStyle(el).display === 'none' || /^(fixed|absolute)$/.test(getComputedStyle(el).position)) return; used += el.offsetHeight; n++; });
   used += gap * n;
   const h = (window.visualViewport ? visualViewport.height : innerHeight) - used;
-  st.style.width = Math.max(220, Math.min(app.clientWidth, 520, h)) + 'px';
+  const sw = Math.max(220, Math.min(innerWidth - 4, 600, h - (window.visualViewport ? visualViewport.height : innerHeight) * .1)); st.style.width = sw + 'px'; st.style.marginLeft = st.style.marginRight = sw > app.clientWidth ? (app.clientWidth - sw) / 2 + 'px' : 'auto';
 }
 addEventListener('resize', fitStage); if (window.visualViewport) visualViewport.addEventListener('resize', fitStage);
 function resize() {
@@ -2688,7 +2688,9 @@ function drawDie3D(g, x, y, s, M, sp) {
 // ---------- the bonus round: rollercoaster, the planet wheel, twelve-sided dice, the Monster tank ----------
 const TANK_LEVELS = [{ at: 0, v: 1 }, { at: 45, v: 2 }, { at: 58, v: 5 }, { at: 68, v: 10 }, { at: 78, v: 20 }, { at: 90, v: 50 }];
 const TANK_CAP = 120;
-const COSMIC = [100, 200, 500, 100, 200, 100, 500, 200, 100, 200, 500, 200];
+const COSMIC = [1000, 5000, 10000, 1000, 5000, 1000, 10000, 5000, 1000, 5000, 10000, 5000];
+// the planet wheel is a trick, so its prizes are plain text: never real money
+const FAKE_EUR = '€', fakeEur = v => FAKE_EUR + v.toLocaleString('en-IE');
 let coaster = null, planet = null, mon = null, rotC = 0;
 
 // a dodecahedron: 12 pentagon faces, opposite faces add up to 13
@@ -2780,9 +2782,9 @@ function buildCosmic() {
   COSMIC.forEach((v, i) => {
     const a0 = BASE + i * seg, a1 = a0 + seg;
     wedgePath(g, a0, a1, r0, r1);
-    g.fillStyle = wedgeFill(g, a0, a1, r0, r1, v === 500 ? GOLD_A : v === 200 ? PURPLE_A : [[0, '#0b3b3a'], [.3, '#4fd1c5'], [.55, '#0f4f4c'], [.8, '#8ef0e6'], [1, '#0b3b3a']]);
+    g.fillStyle = wedgeFill(g, a0, a1, r0, r1, v === 10000 ? GOLD_A : v === 5000 ? PURPLE_A : [[0, '#0b3b3a'], [.3, '#4fd1c5'], [.55, '#0f4f4c'], [.8, '#8ef0e6'], [1, '#0b3b3a']]);
     g.fill();
-    wedgeText(g, a0 + seg / 2, R * .66, ['€' + $m(v)], R * .1, R * .4, v === 200 ? 'dark' : 'light');
+    wedgeText(g, a0 + seg / 2, R * .6, [fakeEur(v)], R * .1, R * .5, v === 5000 ? 'dark' : 'light');
   });
   ridges(g, n, r0, r1);
   chromeRim(g, R * .93, R);
@@ -2849,6 +2851,23 @@ function drawPlanetScene(now) {
     ctx.beginPath(); ctx.moveTo(0, N); for (let sx = 0; sx <= N; sx += N / 40) ctx.lineTo(sx, ly + Math.sin(sx / N * 18 + now * .004) * N * .012); ctx.lineTo(N, N); ctx.fillStyle = lg; ctx.fill();
     P.embers.forEach(e => { ctx.globalAlpha = Math.max(0, e.life); ctx.fillStyle = e.col; ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, TAU); ctx.fill(); });
     ctx.globalAlpha = 1;
+    // the prizes drip off it like wet paint
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    COSMIC.slice(0, 7).forEach((v, i) => {
+      const nz = .5 + .5 * Math.abs(Math.sin(i * 7.31) * 9301 % 1), x = N * (.12 + i * .127), y = N * (.2 + (i % 3) * .1) + m * m * N * .55 * nz;
+      ctx.save(); ctx.translate(x, y); ctx.scale(1 - m * .25, 1 + m * 2.2 * nz); ctx.globalAlpha = Math.min(1, m * 4) * Math.max(0, 1 - m * .7);
+      ctx.font = `700 ${N * .05}px ${LABEL_FONT}`; ctx.fillStyle = `rgb(255,${Math.round(220 - m * 140)},${Math.round(120 - m * 110)})`; ctx.fillText(fakeEur(v), 0, 0);
+      ctx.restore();
+    });
+    // and it was never real
+    if (m > .35) {
+      const k = Math.min(1, (m - .35) / .2), sc = 1 + (1 - easeOut(k)) * 1.8;
+      ctx.save(); ctx.translate(c, N * .42); ctx.rotate(-.22); ctx.scale(sc, sc); ctx.globalAlpha = k;
+      ctx.font = `900 ${N * .19}px ${LABEL_FONT}`; const tw = ctx.measureText('FAKE').width, bh = N * .22;
+      ctx.lineWidth = N * .018; ctx.strokeStyle = '#e0141c'; rrect(ctx, -tw / 2 - N * .04, -bh / 2, tw + N * .08, bh, N * .03); ctx.stroke();
+      ctx.fillStyle = '#e0141c'; ctx.fillText('FAKE', 0, N * .01);
+      ctx.restore(); ctx.globalAlpha = 1;
+    }
   }
   ctx.restore();
 }
@@ -3493,12 +3512,12 @@ async function monsterRun(steps, w = 0, b = 3) {
   await animate(7500, t => { rotC = s0 + (e0 - s0) * easeOut(t); const sl = sliceAt(rotC, n); if (sl !== last) { last = sl; tick(1.1, 1600); flap(1); } draw(); });
   rotC = mod(rotC, TAU); ting(); buzz([60, 40, 120]);
   const won = COSMIC[tg.i];
-  setVerdict({ eyebrow: 'Bonus', title: `€${$m(won)}`, body: 'Yours. Nearly.', steps: steps.slice() });
+  setVerdict({ eyebrow: 'Bonus', title: fakeEur(won), body: 'Yours. Nearly.', steps: steps.slice() });
   await wait(1800);
   // 3. it melts into lava and burns
   planet.src = mk(); { const g = planet.src.getContext('2d'); g.translate(c, c); g.rotate(rotC); g.drawImage(faces.cosmic, -c, -c); }
   whoosh(false); buzz([80, 60, 200]);
-  setVerdict({ eyebrow: 'Bonus', title: `€${$m(won)}`, body: 'Wait. Something is wrong with it.', steps: steps.slice(), flash: false });
+  setVerdict({ eyebrow: 'Bonus', title: fakeEur(won), body: 'Wait. Something is wrong with it.', steps: steps.slice(), flash: false });
   await animate(4200, t => {
     planet.melt = easeIn(t);
     if (Math.random() < .6) planet.embers.push({ x: Math.random() * N, y: N * (1 - .3 * planet.melt), vx: (Math.random() - .5) * N * .1, vy: -N * (.2 + Math.random() * .4), r: N * (.003 + Math.random() * .006), life: 1, col: Math.random() < .5 ? '#ffb347' : '#ff5a1f' });
@@ -3515,7 +3534,7 @@ async function monsterRun(steps, w = 0, b = 3) {
   ghostSay = '';
   await animate(800, t => { ghost.x = lerp(N * .62, N * 1.2, easeInOut(t)); ghost.a = .95 * (1 - t); draw(); });
   ghost = null;
-  setVerdict({ eyebrow: 'Bonus', title: 'Gone', body: 'Back in the cart.', steps: steps.slice(), flash: false });
+  setVerdict({ eyebrow: 'Bonus', title: 'FAKE', body: 'That money was never real. Back in the cart.', steps: steps.slice(), flash: false });
   // 4. back on the rollercoaster, down into the green
   coaster = { x: 0, kind: 2, planet: 0 };
   await crossTo(() => { scene = 'coaster'; }, 1000);
@@ -3632,7 +3651,7 @@ Object.keys(MARK_BY_DEST).forEach(k => MARK_BY_DEST[k].forEach((it, i) => it.t =
 const LEAVE = { lbl: ['LEAVE MARK', 'ALONE'], t: 'Leave Mark alone', b: 'No question for Mark this time. He gets away with it.', special: 'leave' };
 const OWNWAY = { lbl: ['GO YOUR', 'OWN WAY'], t: 'Reject all commands, go your own way', b: 'Forget everything the wheels said. Go wherever you like.', special: 'own' };
 
-let pipes = null, d6 = [], d6Sum = 0, chickens = [], arrows = [], fires = [], feathers = [], camX = 0, markItems = [], rotM = 0, formT = [], showMark = 0, chainNote = '';
+let pipes = null, carried = [], d6 = [], d6Sum = 0, chickens = [], arrows = [], fires = [], feathers = [], camX = 0, markItems = [], rotM = 0, formT = [], showMark = 0, chainNote = '';
 
 function pathWithLengths(pts) { const L = [0]; for (let i = 1; i < pts.length; i++) L.push(L[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1])); return { pts, L, total: L[L.length - 1] }; }
 function pathAt(p, s) {
@@ -3828,8 +3847,10 @@ async function rollD6() {
   const P = pipes;
   P.specials = P.tray.filter(b => b.kind).map(b => b.kind);
   d6 = P.tray.filter(b => !b.kind).map(b => ({ x: b.x, y: b.y, z: 0, vz: 0, vx: 0, vy: 0, M: randRot(), w: [0, 0, 0], grow: 0 }));
-  await animate(600, t => { d6.forEach(d => d.grow = easeOut(t)); P.tray.forEach(b => b.a = 1 - t); draw(); });
-  P.tray.forEach(b => b.state = 'gone');
+  await animate(600, t => { d6.forEach(d => d.grow = easeOut(t)); P.tray.forEach(b => { if (!b.kind) b.a = 1 - t; }); draw(); });
+  P.tray.forEach(b => { if (!b.kind) b.state = 'gone'; });
+  // gold and purple balls stay on the tray, and are still there on the farm until they hatch
+  carried = P.tray.filter(b => b.kind).map(b => ({ x: b.x, y: b.y, kind: b.kind, r: (b.pr || P.rb) * 1.2, s: 1, glow: .5 }));
   tick(1.4, 900); buzz(25);
   d6.forEach(d => { const a = -Math.PI / 2 + (Math.random() - .5) * 2.4, sp = N * (.5 + Math.random() * .6); d.vx = Math.cos(a) * sp; d.vy = Math.sin(a) * sp; d.vz = 2 + Math.random() * 1.2; d.w = [(Math.random() - .5) * 30, (Math.random() - .5) * 30, (Math.random() - .5) * 12]; });
   const x0 = N * .08, x1 = N * .92, y0 = N * .1, y1 = N * .92, rad = N * .045;
@@ -3978,6 +3999,13 @@ function drawFarm(now) {
     if (ch.glow > 0) { const gr = ctx.createRadialGradient(ch.x - camX, ch.y - N * .01, 0, ch.x - camX, ch.y - N * .01, N * .06); gr.addColorStop(0, ch.special === 'B' ? `rgba(190,140,255,${ch.glow})` : `rgba(255,225,120,${ch.glow})`); gr.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(ch.x - camX, ch.y - N * .01, N * .06, 0, TAU); ctx.fill(); }
     drawChicken(ctx, ch.x - camX, ch.y, N * .055 * ch.pop, ch.dir, ch.ph, ch.peck, ch.flash || 0, ch.special);
   });
+  carried.forEach(b => {
+    if (b.s <= .01) return;
+    const x = b.x - camX, gl = b.glow * (.75 + .25 * Math.sin(t * 6)), gr = ctx.createRadialGradient(x, b.y, 0, x, b.y, b.r * 4);
+    gr.addColorStop(0, b.kind === 'B' ? `rgba(200,140,255,${gl})` : `rgba(255,226,130,${gl})`); gr.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, b.y, b.r * 4, 0, TAU); ctx.fill();
+    const r = b.r * b.s; ctx.drawImage(ballImg(b), x - r, b.y - r, r * 2, r * 2);
+  });
   feathers.forEach(p => { ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.col; ctx.beginPath(); ctx.ellipse(p.x - camX, p.y, N * .008, N * .004, p.r, 0, TAU); ctx.fill(); });
   ctx.globalAlpha = 1;
   arrows.forEach(a => {
@@ -4035,7 +4063,7 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
   lifted.forEach(b => b.hidden = true);
   if (!snap || snap.width !== N) snap = mk();
   { const g = snap.getContext('2d'); g.clearRect(0, 0, N, N); draw(); g.drawImage(cv, 0, 0); }
-  d6 = []; chainNote = ''; scene = 'pipes'; snapA = 1;
+  d6 = []; carried = []; chainNote = ''; scene = 'pipes'; snapA = 1;
   await runPipes();
   if (!pipes.tray.length) return { revenge: true }; // not one in the green: Phelan's revenge
   // 2. green balls become dice
@@ -4082,6 +4110,19 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
       const ch = { x: N * (.12 + Math.random() * .76), y: N * (.66 + Math.random() * .25), dir: Math.random() < .5 ? -1 : 1, ph: 0, peck: 0, alive: true, pop: 0, special: kd };
       chickens.push(ch);
       // the tile itself leaves its slot in the bar, arcs down onto the farm and becomes the chicken
+      const ball = fromTile ? null : carried.find(b => b.kind === kd && !b.used);
+      if (ball) { // the ball from the green chute bounces over to its spot and turns into the chicken
+        ball.used = true; const bx = ball.x, by = ball.y; whoosh();
+        await animate(1300, t => {
+          const u = Math.min(1, t / .6), v = Math.max(0, (t - .6) / .4), e = easeInOut(u);
+          ball.x = lerp(bx, ch.x, e); ball.y = lerp(by, ch.y - N * .03, e) - Math.sin(u * Math.PI) * N * .14;
+          ball.s = 1 + Math.sin(u * Math.PI) * .5 + v * 1.2; ball.glow = .5 + .5 * u;
+          if (v > 0) { ball.s *= 1 - v; ch.pop = easeOut(v); ch.glow = 1 - v * .6; }
+          draw();
+        });
+        ball.s = 0; ch.pop = 1; ch.glow = 0; ting(); buzz(30);
+        continue;
+      }
       const tile = fromTile ? [...wildTiles].filter((k, j) => (kd === 'W' ? j < 3 : j >= 3) && k.classList.contains('lit')).pop() : null;
       let fly = null, f0 = null, f1 = null;
       if (tile) {
@@ -4421,7 +4462,7 @@ if (document.fonts && document.fonts.load) {
 }
 </script>
 
-<script>window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":7,"ev":10,"edge":0.99,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};</script>
+<script>window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":8,"ev":10,"edge":0.99,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};</script>
 <script>
 // ---------- wallet layer for the Android app ----------
 // Injected after the game's own script by tools/build.mjs. It wraps spin() and setVerdict(),
@@ -4560,7 +4601,15 @@ if (document.fonts && document.fonts.load) {
 .wtabs{display:flex;gap:6px}
 .wtabs button{flex:1;border:1px solid var(--line);background:none;color:var(--mute);padding:8px;font-size:13px}
 .wtabs button.on{color:#f5d27a;border-color:#f5d27a}
-.wbanner{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:40;display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:14px;background:#2a2312;border:1px solid #f5d27a;color:#f8e4a6;font-size:14px}
+.app>.stage{max-width:none}
+html,body{overflow-x:hidden}
+body{box-sizing:border-box;margin:0}
+.wilds canvas.wt{width:50px;height:50px}
+.app>.spin{min-height:62px}
+.wbanner{position:fixed;left:10px;right:10px;top:calc(10px + env(safe-area-inset-top,0px));z-index:40;display:flex;flex-direction:column;gap:14px;align-items:stretch;text-align:center;padding:20px 18px;border-radius:20px;background:#2a2312;border:2px solid #f5d27a;color:#f8e4a6;font-size:20px;font-weight:600;box-shadow:0 10px 40px rgba(0,0,0,.7),0 0 30px rgba(245,210,122,.35)}
+.wbanner .wbig{font-size:26px;padding:18px 10px;border-radius:16px;flex:2}
+.wbanner .wrow{gap:10px}
+.wbanner .wrow .wbtn:not(.wbig){font-size:17px;flex:1}
 .wbanner[hidden]{display:none}
 .wlogin{position:fixed;inset:0;z-index:60;background:radial-gradient(circle at 50% 30%,#1e2228,#0a0c0f 70%);display:flex;align-items:center;justify-content:center;padding:20px}
 .wlogin[hidden]{display:none}
@@ -4598,8 +4647,7 @@ if (document.fonts && document.fonts.load) {
     const me = W.me;
     $w('wWho').innerHTML = `<small>${me ? esc(me.name) : 'Log in'}</small><b>${eur(me ? me.balance || 0 : 0)}</b>`;
     $w('wStake').textContent = stakeLbl(W.stake);
-    const i = STAKES.indexOf(W.stake);
-    $w('wLess').disabled = i <= 0; $w('wMore').disabled = i >= STAKES.length - 1;
+    $w('wLess').disabled = W.stake <= STAKES[0]; $w('wMore').disabled = !nextStake();
     if (typeof fitStage === 'function') fitStage();
   }
   function setStake(c) {
@@ -4609,8 +4657,18 @@ if (document.fonts && document.fonts.load) {
     try { faces.godWheel = null; faces.cosmic = null; } catch (e) {}
     paint();
   }
-  $w('wLess').addEventListener('click', () => { const i = STAKES.indexOf(W.stake); if (i > 0) setStake(STAKES[i - 1]); });
-  $w('wMore').addEventListener('click', () => { const i = STAKES.indexOf(W.stake); if (i < STAKES.length - 1) setStake(STAKES[i + 1]); });
+  // 10c steps up to the last listed stake, then €1 steps with no cap beyond what the player holds
+  const TOP = STAKES[STAKES.length - 1];
+  function nextStake() {
+    const i = STAKES.indexOf(W.stake);
+    if (i >= 0 && i < STAKES.length - 1) return STAKES[i + 1];
+    const n = W.stake + 100;
+    return W.me && (W.me.balance || 0) >= n ? n : 0;
+  }
+  function prevStake() { const i = STAKES.indexOf(W.stake); return i > 0 ? STAKES[i - 1] : W.stake > TOP ? W.stake - 100 : 0; }
+  const okStake = c => STAKES.includes(c) || (c > TOP && (c - TOP) % 100 === 0);
+  $w('wLess').addEventListener('click', () => { const c = prevStake(); if (c) setStake(c); });
+  $w('wMore').addEventListener('click', () => { const c = nextStake(); if (c) setStake(c); });
   $w('wTop').addEventListener('click', () => W.me ? topupSheet() : showLogin());
   $w('wWho').addEventListener('click', () => W.me ? accountSheet() : showLogin());
 
@@ -4839,6 +4897,7 @@ if (document.fonts && document.fonts.load) {
     try {
       const v = await (await fetch(CFG.updateUrl + '?t=' + now(), { cache: 'no-store' })).json();
       const apkHave = app && app.apkVersion ? +app.apkVersion() : 0;
+      if (busy || (W.run && W.run.live) || !sheet.hidden) return; // only between runs; the next check offers it
       if (app && v.apk > apkHave && v.apkUrl) return offer(`New app version${v.notes ? ': ' + v.notes : ''}`, () => { app.installApk(v.apkUrl); banner.innerHTML = '<span>Downloading… Android will ask to install it.</span>'; });
       if (v.game > CFG.gameVersion && v.gameUrl) return offer(`Game update${v.notes ? ': ' + v.notes : ''}`, () => {
         if (busy) return toast('Finish this spin first');
@@ -4847,20 +4906,25 @@ if (document.fonts && document.fonts.load) {
       });
     } catch (e) {}
   }
+  let offered = '', snooze = 0;
   function offer(text, go) {
-    banner.hidden = false;
-    banner.innerHTML = `<span>${esc(text)}</span><div class="wrow" style="flex:none"><button class="wbtn small gold" id="wUp" type="button">Update</button><button class="wbtn small" id="wLater" type="button">Later</button></div>`;
-    $w('wUp').onclick = go; $w('wLater').onclick = () => { banner.hidden = true; };
+    if (!banner.hidden && offered === text) return;
+    if (now() < snooze) return;
+    banner.hidden = false; offered = text;
+    banner.innerHTML = `<span>⬇ ${esc(text)}</span><div class="wrow"><button class="wbtn gold wbig" id="wUp" type="button">⬇ UPDATE</button><button class="wbtn" id="wLater" type="button">Later</button></div>`;
+    $w('wUp').onclick = go; $w('wLater').onclick = () => { banner.hidden = true; snooze = now() + 10 * 60000; };
   }
   window.wolUpdateFailed = msg => { banner.hidden = false; banner.innerHTML = `<span>Update failed: ${esc(msg || 'no connection')}</span><button class="wbtn small" type="button" onclick="this.parentNode.hidden=true">OK</button>`; };
 
   // ---------- boot ----------
-  const savedStake = +pref.get('wol.stake'); if (STAKES.includes(savedStake)) W.stake = savedStake;
+  const savedStake = +pref.get('wol.stake'); if (okStake(savedStake)) W.stake = savedStake;
   W.user = pref.get('wol.user');
   paint();
   if (W.user) refresh(); else showLogin();
   checkUpdate();
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { refresh(); } });
   setInterval(() => { if (!busy && !document.hidden) refresh(); }, 30000);
+  // version.json is ~200 bytes; once a minute while the app is open is nothing for the phone
+  setInterval(() => { if (!document.hidden) checkUpdate(); }, 60000);
 })();
 </script>
