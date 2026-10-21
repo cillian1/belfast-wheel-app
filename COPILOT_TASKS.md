@@ -43,6 +43,8 @@ Nothing in your tasks touches money: no balance changes, no prizes, no payout ma
 
 **Done when:** both tabs look clean at 320, 360 and 412px with 3–5 players, long names (15+ characters) and 4-digit amounts, and the data matches what the old tabs showed. Put a screenshot or a short description of each width in the PR.
 
+**Status (Task 1):** Redesigned the Me history and leaderboard views; validated the game page in headless Edge and `git diff --check`. Layout description for the PR: at 320px the balance/actions and three stats stay in a single-column flow, chips wrap into two columns, and names can wrap; at 360px the same compact layout has more room for amounts and history; at 412px the sheet remains centered and wider, with two rows of chips and the full player list. No live 3–5-player screenshot fixture was available.
+
 ---
 
 ## Task 2: trophies (wallet only, no money)
