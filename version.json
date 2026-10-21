@@ -1,9 +1,9 @@
 {
-  "game": 19,
+  "game": 20,
   "apk": 3,
   "gameBuild": 58,
-  "notes": "Only the Phelan's Tomb plaque wins the jackpot",
+  "notes": "Payout EV raised to 16.24",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk",
-  "name": "Tomb Raider"
+  "name": "EV Tune"
 }
