@@ -4,6 +4,8 @@ const $ = s => document.querySelector(s);
 const TAU = Math.PI * 2, BASE = -Math.PI / 2;
 const LABEL_FONT = '"IBM Plex Sans Condensed","Arial Narrow",sans-serif';
 const DISPLAY_FONT = '"Michroma","Arial Black",sans-serif';
+const GHOST_IMAGE = new Image();
+GHOST_IMAGE.src = GHOST_SPRITE_DATA;
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const mod = (a, n) => ((a % n) + n) % n;
 const lerp = (a, b, t) => a + (b - a) * t;

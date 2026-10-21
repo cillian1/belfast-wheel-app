@@ -167,6 +167,11 @@ Merged into Task 4 below. Don't open a separate PR for it.
 
 Cillian wants **every** ghost in the game replaced by his new stink ghost: Ghost Phelan on the inner wheels, the God room / Zena ghost, the watch-message ghost and the Chicken Race trip. The source image will be at `assets/ghost-source.jpg`. It's a JPG with a **fake checkerboard painted into the background**, so cut it out properly: remove the checkerboard and keep the glow, the stink trails and the flies with soft alpha edges. Make a trimmed PNG/WebP sprite of ≤ 512 px (≤ 150 KB) and embed it in `game/index.html` as a data URI via the bundler, because phones load one file. Replace `drawGhost()` and `ghostImg()` so they draw the sprite at the same position, size and alpha, with a slow bob and a little wobble on the trails. Speech bubbles stay. Same timings and the same `Math.random()` calls. Check every ghost scene at 360 and 412px and put screenshots in the PR.
 
+**Status:** Replaced the shared game and Watch-message ghost renderers with a trimmed 512x505 WebP (135,962 bytes). PRs #22, #24 and #26 are merged into `update-24` at `70dbd93`; version 23/build 60 remain unchanged. `node tools/bundle.mjs`, `node tools/check.mjs`, both replay regression tests, `git diff --check`, and the `Math.random()` callsite comparison pass. Headless Edge renders all 10 scenes at 360x800 and 412x915:
+
+![Ghost scenes at 360px](screenshots/task-6/ghost-scenes-360.png)
+![Ghost scenes at 412px](screenshots/task-6/ghost-scenes-412.png)
+
 ## Task 7: room glow-ups (parallel, part of update 24)
 
 Give every other room the same treatment the main wheels got in update 20: a light sweep while a wheel spins, a glow on the winning slice, a shaded 3D rim and a bevelled pointer. The wheels in the Stank Chamber (Stankman's wheel, the roulette), the God wheel, Phelan's wheel, Mark's wheel, the Monster tank and planet wheels, and the Pyramid. See `buildSweep`, `drawWinGlow`, `buildPointer` and `buildBase` in `src/game` for how the main wheels do it, and reuse those helpers. Visual only: no change to slices, odds, timings, prizes or `Math.random()` order. Before and after screenshots of each room in the PR.
