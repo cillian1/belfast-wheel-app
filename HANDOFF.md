@@ -2,11 +2,11 @@
 
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
-- **Task:** Task 5: every replay saved, Watch tabs, host page watching (`COPILOT_TASKS.md`, issue #12)
-- **Owner:** Copilot
-- **Status:** implementation complete and self-reviewed; PR #16 ready for Cillian's review, unmerged.
-- **Next:** Cillian reviews and merges PR #16.
-- **Last updated:** 2026-10-21 22:06 by Copilot
+- **Task:** Task 5 (replays, PR #16, issue #12), then Tasks 6 → 7 → 8 (issues #17, #18, #19)
+- **Owner:** Copilot runs the whole queue from here (Cillian, 2026-10-21). Claude has stepped back.
+- **Status:** Task 5 is implemented and self-reviewed; latest main is merged. Cillian reviews and merges PR #16.
+- **Next:** After PR #16 merges, Copilot starts Task 6 (#17), self-reviews, and posts `DONE: Task 6`; **Cillian merges**.
+- **Last updated:** 2026-10-21 22:10 by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
