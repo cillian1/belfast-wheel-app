@@ -136,6 +136,8 @@ Merged into Task 4 below. Don't open a separate PR for it.
 
 **Status (Task 4, Stage 2):** Removed the unused `buildFinal`, `pathWithLengths`, and `pathAt` functions after whole-repo identifier and string-lookup searches, including wallet `MIRROR`; removed the unused local `targets` array. Extracted deterministic final-speech and Mark-wheel-flight planning helpers, and added ownership headers to source modules. `node tools/check.mjs` passes; the bundle has the same 120 `Math.random()` callsite lines as `main`, in the same order. No prize/payout, wallet, version, or watched-global changes. The dormant `godBurst` helper remains because it contains random callsites; deleting it would violate the no-random-call-change criterion.
 
+**Status (Task 4, Stage 3):** Consolidated the wallet into `db.js`, `ui.js`, `watch.js`, `notes.js`, and `money.js`. `node tools/check.mjs` passes; `money.js` matches the original payout, jackpot, and spin source lines exactly (SHA-256 `30bee6aa4a8a1625a2c997c02f04a0a5a35f53298891ec77e74a9aca1f77dc06`, line endings normalized). Versions unchanged; Stage 4 not started.
+
 ### What Claude checks before merging each stage
 
 - Screenshots of the main wheel, inner wheels, each room, the farm and Chicken Race, and the account sheet, before and after, at 360 and 412px.

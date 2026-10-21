@@ -31,23 +31,10 @@ const gameModules = [
   'src/game/boot.js',
 ];
 const walletModules = [
-  'src/wallet/core.js',
-  'src/wallet/helpers.js',
-  'src/wallet/firebase.js',
-  'src/wallet/payouts.js',
-  'src/wallet/styles.js',
-  'src/wallet/top-bar.js',
-  'src/wallet/accounts.js',
-  'src/wallet/spins.js',
-  'src/wallet/top-up.js',
-  'src/wallet/account-stats.js',
-  'src/wallet/withdraw.js',
-  'src/wallet/live-watch.js',
-  'src/wallet/big-wins.js',
-  'src/wallet/messages.js',
-  'src/wallet/live-feed.js',
-  'src/wallet/updates.js',
-  'src/wallet/boot.js',
+  'src/wallet/db.js',
+  'src/wallet/ui.js',
+  'src/wallet/money.js',
+  'src/wallet/watch.js',
   'src/wallet/notes.js',
 ];
 
