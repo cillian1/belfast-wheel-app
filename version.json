@@ -1,8 +1,8 @@
 {
-  "game": 12,
+  "game": 13,
   "apk": 2,
   "gameBuild": 54,
-  "notes": "Every bonus room ends with a real activity",
+  "notes": "Watch players live as a full replay, send Ghost Phelan messages, live feed and big-win replays",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk"
 }
