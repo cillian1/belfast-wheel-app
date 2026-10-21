@@ -1,9 +1,9 @@
 {
-  "game": 17,
-  "apk": 2,
+  "game": 18,
+  "apk": 3,
   "gameBuild": 58,
-  "notes": "Gifts from the host come with a message, plus Auto spin",
+  "notes": "Phone notifications when the host sends you a gift or a message",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk",
-  "name": "The Host With the Most"
+  "name": "The Ping of the North"
 }
