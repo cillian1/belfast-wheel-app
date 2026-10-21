@@ -2,11 +2,11 @@
 
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
-- **Task:** Tasks 6, 7, 8 in parallel (issues #17, #18, #19; PRs #21, #20, #22). Task 5 merged as update 23.
+- **Task:** Task 7 (issue #18, PR #20); Tasks 6 and 8 continue in parallel.
 - **Owner:** Copilot builds; Claude does a quick check and merges.
-- **Status:** Tasks 6–8 run IN PARALLEL (Cillian, 2026-10-21): each issue has its own Copilot PR. Before DONE, merge main in, fix conflicts yourself, take the next free version number (main is now on 23).
-- **Next:** Copilot self-reviews each PR and posts `DONE: Task N` on its issue; Claude does a quick check and merges.
-- **Last updated:** 2026-10-21 22:20 by Claude
+- **Status:** Task 7 complete as update 24, after merging latest main (update 23); visual-only changes with no `Math.random()` callsite changes.
+- **Next:** Copilot posts `DONE: Task 7` on issue #18; Tasks 6 and 8 continue independently.
+- **Last updated:** 2026-10-21 21:23 by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
@@ -65,6 +65,7 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 
 ## Done log (history only, newest first; nothing here is current)
 
+- 2026-10-21: Task 7 room glow-ups ready in PR #20 as update 24 "Room Glow-ups"; visual-only wheel, tank and Pyramid polish.
 - 2026-10-21: Task 5 replays + Watch tabs + host watching (PR #16), merged as update 23.
 - 2026-10-21: Task 5 replay saving, pruning, player/host watching and legacy request fixes are ready for review in PR #16 as update 23 "Replay Night".
 - 2026-10-21: Task 4 Stage 4, performance (PR #14), merged as update 22 "Smoother Wheels". Task 4 is complete.
