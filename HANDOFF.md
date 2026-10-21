@@ -3,10 +3,10 @@
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
 - **Task:** Task 8: sound pack and mute (PR #22, issue #19)
-- **Owner:** Copilot
-- **Status:** In progress; issue #19's latest comment directs this task to run in parallel with the earlier tasks.
-- **Next:** Implement room themes, milestone sound effects and a remembered master mute; merge latest `main`, rebuild, check and prepare PR #22 for review.
-- **Last updated:** 2026-10-21 22:16 by Copilot
+- **Owner:** Copilot builds; parent session reviews and merges after validation.
+- **Status:** Ready for review; issue #19's latest comment directs this task to run in parallel with earlier tasks. Main is on update 23; this PR takes update 24.
+- **Next:** Parent session validates and merges PR #22.
+- **Last updated:** 2026-10-21 22:22 by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
@@ -49,7 +49,7 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 
 - **The win wording.** The wallet pays by reading the end-of-run verdict, `Final answer · €X`. Changing that text, or showing it twice in one run, changes what gets paid. Any change to prizes, payout maths (`ev`, `edge`, `$m`), stakes, the jackpot or the wallet's credit and charge code is a real-money change. Cillian has to approve it explicitly, and it should say so in the PR title.
 - **App signing.** The APK must be signed with Cillian's private key (not in this repo), or Android refuses it as an update. Don't commit keys, and don't replace `app/WheelOfLife.apk` with an unsigned or differently signed build.
-- **The database layout** (Firebase): `users`, `tx`, `reqs`, `stats`, `config`, `jackpot`, `live`, `livef`, `feed`, `hlm`, `hld`, `notes`. Don't rename or delete paths that phones already read.
+- **The database layout** (Firebase): `users`, `tx`, `reqs`, `stats`, `config`, `jackpot`, `live`, `livef`, `feed`, `hlm`, `hld`, `rpm`, `rpd`, `notes`. Don't rename or delete paths that phones already read.
 - **Watch mirroring** reads game globals by name (the `MIRROR` list in the wallet). Renaming a game variable can break Watch for viewers.
 - **Secrets:** none in the repo, ever. It's public.
 
@@ -65,6 +65,9 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 
 ## Done log (history only, newest first; nothing here is current)
 
+- 2026-10-21: Task 8 added room themes, synthesized milestone effects and a remembered master mute (PR #22), update 24 "Room tones".
+- 2026-10-21: Task 5 replays + Watch tabs + host watching (PR #16), merged as update 23.
+- 2026-10-21: Task 5 replay saving, pruning, player/host watching and legacy request fixes are ready for review in PR #16 as update 23 "Replay Night".
 - 2026-10-21: Task 4 Stage 4, performance (PR #14), merged as update 22 "Smoother Wheels". Task 4 is complete.
 - 2026-10-21: Task 4 Stage 4 performance pass (PR #14), with a size-keyed Pyramid cache, allocation reductions, and hidden-tab animation pausing.
 - 2026-10-21: Task 4 Stage 3, the wallet split into db/ui/money/watch/notes (PR #11), merged. Wallet lines unchanged, and an end-to-end charge and payout passed.

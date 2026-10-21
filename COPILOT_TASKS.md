@@ -159,6 +159,8 @@ Merged into Task 4 below. Don't open a separate PR for it.
 
 **Done when:** runs save and play back, the tabs work at 320–412px, the host iframe works for live and replays, and pruning is shown in the PR to delete exactly the oldest entries. Bump to the next version with an update name.
 
+**Status (Task 5):** Implemented every non-test replay, 3,000-card oldest-first pruning, app Watch tabs, host Live/Replays viewers, and dismiss-only legacy top-ups; Me counts pending withdrawals only. Version 23 is “Replay Night”. `node tools/bundle.mjs`, `node tools/check.mjs`, host script parsing, and `git diff --check` pass. Edge mock-database tests cover save/playback, pruning, Mine/Everyone, test exclusion, and dismiss-without-credit; wallet, Watch sheet, and host layouts passed at 320, 360, and 412px. A sampled 10-second replay was 41 frames / 2,530 packed bytes. Live Firebase gameplay remains untested.
+
 ---
 
 ## Task 6: the new ghost (after Task 5 merges)

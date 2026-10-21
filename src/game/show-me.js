@@ -146,7 +146,12 @@ const musicBtn = $('#musicBtn');
 musicBtn.textContent = Music.on ? 'Music on' : 'Music off';
 musicBtn.addEventListener('click', () => { audio(); musicBtn.textContent = Music.toggle() ? 'Music on' : 'Music off'; });
 const muteBtn = $('#muteBtn');
-function updateMuteButton() { const muted = soundMuted; muteBtn.textContent = muted ? 'Unmute' : 'Mute'; muteBtn.setAttribute('aria-pressed', muted ? 'true' : 'false'); }
+function updateMuteButton() {
+  const muted = soundMuted;
+  muteBtn.textContent = muted ? 'Unmute' : 'Mute';
+  muteBtn.setAttribute('aria-label', muted ? 'Unmute music and sound effects' : 'Mute music and sound effects');
+  muteBtn.setAttribute('aria-pressed', muted ? 'true' : 'false');
+}
 updateMuteButton();
 muteBtn.addEventListener('click', () => {
   audio();
