@@ -7,7 +7,7 @@
 <style>
 :root{--ink:#0a0c0f;--plate:#15181c;--line:#2c333b;--chrome:#e3e8ed;--mute:#8e99a5;--gold:#f5d27a;--claude:#d97757;--copilot:#7aa7f5}
 *{box-sizing:border-box}
-body{margin:0;background:var(--ink);color:var(--chrome);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+body{margin:0;background:var(--ink);color:var(--chrome);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 header{position:sticky;top:0;z-index:2;background:var(--ink);border-bottom:1px solid var(--line);padding:12px 16px}
 header h1{font-size:17px;margin:0}
 #status{color:var(--mute);font-size:12px}
@@ -17,10 +17,9 @@ main{max-width:640px;margin:0 auto;padding:8px 16px 40px}
 .msg.copilot{align-items:flex-end}
 .who{font-size:12px;color:var(--mute);margin:0 8px 2px}
 .claude .who b{color:var(--claude)}.copilot .who b{color:var(--copilot)}
-.bubble{max-width:85%;background:var(--plate);border:1px solid var(--line);border-radius:16px;padding:9px 13px}
+.bubble,.bubble:link,.bubble:visited{display:block;color:var(--chrome);text-decoration:none;font-size:16px;max-width:85%;background:var(--plate);border:1px solid var(--line);border-radius:16px;padding:9px 13px}
 .claude .bubble{border-color:var(--claude);border-bottom-left-radius:4px}
 .copilot .bubble{border-color:var(--copilot);border-bottom-right-radius:4px}
-.bubble a{color:var(--gold);text-decoration:none}
 </style>
 </head>
 <body>
@@ -62,7 +61,9 @@ const L={
 };
 
 function hash(s){let h=7;for(const ch of String(s))h=(h*31+ch.charCodeAt(0))>>>0;return h}
-function pick(arr,seed){return arr[hash(seed)%arr.length]}
+// Never say the same line twice in a row (per speaker).
+let said={};
+function pick(arr,seed,who){let i=hash(seed)%arr.length;if(arr.length>1&&arr[i]===said[who])i=(i+1)%arr.length;return said[who]=arr[i]}
 function esc(s){return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
 function short(t){
   t=t.replace(/^\[[^\]]*\]\s*/,'').replace(/^(copilot task|task|stage)\s*\d*\s*[:—-]\s*/i,'').replace(/^(task|stage)\s*\d+\s*[:—-]\s*/i,'').split(/[,(;]| — | - | with | and global/i)[0].trim();
@@ -88,8 +89,8 @@ function kind(c){
 function lines(ev){
   // ev: {who:'c'|'p', type, t, at, id, url}
   const pool=L[ev.type], other=ev.who==='c'?'p':'c', out=[];
-  out.push({who:ev.who,text:pick(pool[ev.who],ev.id).replace('{t}',ev.t),at:ev.at,url:ev.url});
-  if(pool[other]&&hash(ev.id+'r')%3)out.push({who:other,text:pick(pool[other],ev.id+'r').replace('{t}',ev.t),at:ev.at,url:ev.url});
+  out.push({who:ev.who,text:pick(pool[ev.who],ev.id,ev.who).replace('{t}',ev.t),at:ev.at,url:ev.url});
+  if(pool[other]&&hash(ev.id+'r')%3)out.push({who:other,text:pick(pool[other],ev.id+'r',other).replace('{t}',ev.t),at:ev.at,url:ev.url});
   return out;
 }
 
@@ -113,7 +114,7 @@ async function load(){
       if(i.pull_request.merged_at)evs.push({who:'c',type:'merged',t,at:i.pull_request.merged_at,id:'m'+i.id,url:i.html_url});
     }
     evs.sort((a,b)=>new Date(a.at)-new Date(b.at));
-    render(evs.flatMap(lines));
+    said={};render(evs.flatMap(lines));
     document.getElementById('status').textContent='Live · updated '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
   }catch(e){document.getElementById('status').textContent=e.message}
 }
