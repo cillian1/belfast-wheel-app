@@ -1,9 +1,9 @@
 {
-  "game": 18,
+  "game": 19,
   "apk": 3,
   "gameBuild": 58,
-  "notes": "Phone notifications when the host sends you a gift or a message",
+  "notes": "Only the Phelan's Tomb plaque wins the jackpot",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk",
-  "name": "The Ping of the North"
+  "name": "Tomb Raider"
 }
