@@ -1,9 +1,9 @@
 {
-  "game": 24,
+  "game": 25,
   "apk": 3,
-  "gameBuild": 61,
-  "notes": "New ghost, room visuals, music and replay fixes",
+  "gameBuild": 62,
+  "notes": "Smoother on low-end phones (Auto/High/Low quality), faster taps, Phelan's squeaky voice, wheat pointer on Mark's farm",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk",
-  "name": "Room to Grow"
+  "name": "Smooth Operator"
 }

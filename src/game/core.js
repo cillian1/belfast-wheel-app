@@ -1,5 +1,5 @@
 // Owns shared game constants, geometry, and utility functions.
-const BUILD = 61;
+const BUILD = 62;
 const $ = s => document.querySelector(s);
 const TAU = Math.PI * 2, BASE = -Math.PI / 2;
 const LABEL_FONT = '"IBM Plex Sans Condensed","Arial Narrow",sans-serif';
