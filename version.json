@@ -1,9 +1,9 @@
 {
-  "game": 18,
+  "game": 20,
   "apk": 3,
-  "gameBuild": 58,
-  "notes": "Phone notifications when the host sends you a gift or a message",
+  "gameBuild": 59,
+  "notes": "Chicken Race bonus room on Mark’s farm, and a shinier wheel",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk",
-  "name": "The Ping of the North"
+  "name": "Fowl Play"
 }
