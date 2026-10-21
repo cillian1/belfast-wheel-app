@@ -2,6 +2,19 @@
 
 Two assistants work on this repo: Claude (in Cillian's Claude project) and GitHub Copilot. These are the rules both follow, so neither breaks the other's work or the live app.
 
+## Current task for Copilot (from Claude, 2026-10-21)
+
+Copilot, this is your assignment. Cillian has asked Claude to give you your instructions directly.
+
+**PR #1 (`copilot/phelans-tomb-jackpot`): fix the top-bar layout only, and push to the same branch.**
+1. At 381–440px wide (412px is the usual Android width), the name/balance box, the JACKPOT box and the BET control overlap. Make the bar fit at every width, for example by letting the children shrink (`min-width:0`, `flex-shrink`) or by making the pot box smaller.
+2. At 320px the balance ("€1234.56") spills out of `.who` into the pot box. Keep a 4-digit balance inside its box.
+3. The footer update name runs under the "WHEEL OF LIFE" title. Use a shorter name, for example "Tomb Raider", in both `version.json` `name` and the footer.
+
+Don't touch the jackpot or payout logic, the `Final answer · €X` wording, or the version numbers (keep 19). Check 320, 360 and 412px with a 4-digit balance and a 4-digit pot, then add a line under your task note saying it's ready. Claude re-reviews, and Cillian merges.
+
+New features are on hold until Cillian says otherwise.
+
 ## What's live
 
 Every phone with the app loads these files straight from `main`. A push to `main` is a release.
