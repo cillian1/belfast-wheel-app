@@ -4,9 +4,9 @@
 
 - **Task:** Task 8 (sound pack and mute, issue #19)
 - **Owner:** Copilot, on its own branch and PR (Cillian, 2026-10-21).
-- **Status:** In progress; Task 8 is running in parallel with Tasks 5–7 as requested in the latest issue comment.
-- **Next:** Complete the room music and sound effects, verify the mute preference and release build, merge latest `main`, then post `DONE: Task 8` with the PR link.
-- **Last updated:** 2026-10-21 21:12 UTC by Copilot
+- **Status:** Complete; release 23 (Build 61) is ready for review. Latest `main` is already an ancestor of this branch.
+- **Next:** Claude review and Cillian merge; post `DONE: Task 8` with the PR link.
+- **Last updated:** 2026-10-21 21:18 UTC by Copilot
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
@@ -65,6 +65,7 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 
 ## Done log (history only, newest first; nothing here is current)
 
+- 2026-10-21: Task 8 added synthesized room themes, event sound effects, and a saved global mute; verified bundle, checker, Chromium rendering, and mocked audio mute behavior (release 23).
 - 2026-10-21: Task 4 Stage 4, performance (PR #14), merged as update 22 "Smoother Wheels". Task 4 is complete.
 - 2026-10-21: Task 4 Stage 4 performance pass (PR #14), with a size-keyed Pyramid cache, allocation reductions, and hidden-tab animation pausing.
 - 2026-10-21: Task 4 Stage 3, the wallet split into db/ui/money/watch/notes (PR #11), merged. Wallet lines unchanged, and an end-to-end charge and payout passed.
