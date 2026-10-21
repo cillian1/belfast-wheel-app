@@ -5,7 +5,7 @@
 - **Task:** Update 25 (Task 9 smoothness PR #34 + Task 10 Phelan voice PR #35, into `update-25`), then update 26 (Task 11, sub-tasks #39–#43).
 - **Owner:** Copilot builds overnight while Cillian sleeps. Copilot opens each PR and posts `DONE: Task …`, and **Claude does a quick check and merges**, then starts the next wave. Copilot does not merge. Anything that changes money, odds, prizes or payouts waits for Cillian.
 - **Status / order (in sequence):**
-  1. ~~Update 25~~ shipped as "Smooth Operator" (game 25, build 62). PR #34 remains open and unmerged after its branch sync to the latest `update-25`.
+  1. ~~Update 25~~ shipped as "Smooth Operator" (game 25, build 62). Cillian merged the Task 9 changes by hand into `update-25` and shipped them; PR #34 itself is closed without a PR merge. Its branch was synced to the latest `update-25` afterward.
   2. Create branch `update-26` from main. **Wave 1 in parallel:** #39 (CI, goes first), #40, #41. Claude labels and starts them. Each gets a PR into `update-26`, no version bump.
   3. When #39, #40 and #41 are all merged into `update-26`, Claude starts **wave 2:** #42 and #43.
   4. When wave 2 is merged, Claude starts **wave 3:** #45 (frame-rate-independent RNG + shorter waits; odds check, any odds change waits for Cillian).
