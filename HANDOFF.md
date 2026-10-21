@@ -2,11 +2,15 @@
 
 ## NOW (the only current section, rewritten on every task start, finish and merge)
 
-- **Task:** Combined update 24 release, “Room to Grow” (PR #33).
-- **Owner:** Copilot does ALL the work (Cillian, 2026-10-21): building, conflicts, version bumps, release notes, HANDOFF/COPILOT_TASKS updates, and the release PR. Claude only presses merge (GitHub won't let Copilot merge its own PRs). Money/odds/prize changes still go to Cillian.
-- **Status:** Ready for review in PR #33 to `main`; Tasks 6–8 and replay reliability ship together as version 24 / Build 61. Bundle, repository, replay regression and whitespace checks pass; payout, odds, prize and APK values are unchanged.
-- **Next:** Claude reviews; Cillian merges. Do not merge the release PR.
-- **Last updated:** 2026-10-21 23:05 by Copilot
+- **Task:** Update 25 (Task 9 smoothness PR #34 + Task 10 Phelan voice PR #35, into `update-25`), then update 26 (Task 11, sub-tasks #39–#43).
+- **Owner:** Copilot runs the whole chain overnight on its own (Cillian is asleep, and Claude is offline to save usage). Copilot merges PRs that pass its self-check. Anything that changes money, odds, prizes or payouts waits for Cillian.
+- **Status / order (do these in sequence, nothing needs Claude):**
+  1. Finish #34, merge #34 and #35 into `update-25`, then open the release PR `update-25` → `main` (bump to 25, name it) and merge it.
+  2. Create branch `update-26` from main. **Wave 1 in parallel:** #39 (CI, goes first), #40, #41. Label each `copilot-task` and start it. Each gets a PR into `update-26`, no version bump.
+  3. When #39, #40 and #41 are all merged into `update-26`, start **wave 2:** #42 and #43.
+  4. When wave 2 is merged, open the release PR `update-26` → `main` (bump to 26, name it) and merge it.
+- **If stuck:** if a step fails twice (CI red you can't fix, a conflict you can't resolve, or anything touching money), stop. Post one note on that issue saying what's blocked and move on to the next independent step. Don't wait on Claude or retry forever. Cillian checks in the morning.
+- **Last updated:** 2026-10-21 23:00 by Claude
 
 **Rules for this section:**
 1. Only NOW is current. Everything below it is reference (rules, layout) or history (Done log). Never act on a status line anywhere else in this file.
