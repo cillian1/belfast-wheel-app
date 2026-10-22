@@ -1,5 +1,5 @@
 // Generates tracker.json and preserves the previous update's final snapshot in tracker-history.json.
-// The workflow publishes these files on the banter branch for GitHub Pages.
+// The workflow publishes these files on the tracker branch for GitHub Pages.
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 
 const repo = process.env.GITHUB_REPOSITORY || 'cillian1/belfast-wheel-app';
