@@ -6,7 +6,7 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 | Issue | Task | Status | PRs |
 |---|---|---|---|
-| #98 | Task: game sound not working on Cillian's phone | In review | #112 → update-30 |
+| #98 | Task: game sound not working on Cillian's phone | In review | #112 → update-31 |
 
 **Other open PRs**
 
