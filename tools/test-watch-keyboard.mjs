@@ -1,0 +1,84 @@
+// Live Watch keeps the board, labels, message box and Stop watching on screen when the keyboard opens (issue #97).
+// Usage: node tools/test-watch-keyboard.mjs [game.html] [screenshot-prefix]   (needs @playwright/test, like test-ci-browser.mjs)
+import assert from 'node:assert/strict';
+import { createServer } from 'node:http';
+import { readFileSync } from 'node:fs';
+import { chromium } from '@playwright/test';
+
+const root = new URL('../', import.meta.url);
+const html = readFileSync(process.argv[2] || new URL('game/index.html', root), 'utf8').replace(/@font-face\s*\{[^}]*file:\/\/\/android_asset[^}]*\}\s*/g, '');
+const shots = process.argv[3];
+const server = createServer((request, response) => { response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); response.end(html); });
+await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+const origin = `http://127.0.0.1:${server.address().port}`;
+const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
+const data = new Map(); // one shared fake Firebase for both phones
+const tree = path => {
+  if (data.has(path)) return data.get(path);
+  const out = {}; let any = false;
+  for (const [k, v] of data) if (k.startsWith(path + '/') && v !== null) { const rest = k.slice(path.length + 1).split('/'); let o = out; rest.slice(0, -1).forEach(p => o = o[p] = o[p] || {}); o[rest.at(-1)] = v; any = true; }
+  return any ? out : null;
+};
+async function phone(path) {
+  const context = await browser.newContext({ viewport: { width: 360, height: 780 } });
+  const page = await context.newPage(), errors = [];
+  await page.route('https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app/**', async route => {
+    const request = route.request(), p = new URL(request.url()).pathname.replace(/\.json$/, '').replace(/^\/+/, '');
+    if (request.method() === 'GET') return route.fulfill({ json: tree(p) });
+    const body = request.postDataJSON();
+    if (request.method() === 'POST') { const id = `ci-${data.size}`; data.set(`${p}/${id}`, body); return route.fulfill({ json: { name: id } }); }
+    for (const k of [...data.keys()]) if (k.startsWith(p + '/')) data.delete(k);
+    if (request.method() === 'PATCH') Object.entries(body || {}).forEach(([k, v]) => data.set(`${p}/${k}`, v)); else data.set(p, body);
+    return route.fulfill({ json: body ?? null });
+  });
+  await page.route('https://raw.githubusercontent.com/**', route => route.fulfill({ json: { game: 29, gameBuild: 66 } }));
+  page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+  page.on('pageerror', e => errors.push(e.message));
+  await page.goto(origin + path);
+  return { page, errors };
+}
+// every row of the viewer sits inside the visible height, the board is square and unclipped, and there's no empty band at the bottom
+async function layout(page, height, keyboard) {
+  await page.waitForTimeout(300);
+  const box = await page.evaluate(() => {
+    const r = id => { const b = document.querySelector(id).getBoundingClientRect(); return { top: b.top, bottom: b.bottom, width: b.width, height: b.height }; };
+    return { scr: r('.wwatch .wscr'), cv: r('#wwCv'), head: r('.wwatch .wwh'), tiles: r('#wwTiles'), say: r('#wwSay'), stop: r('#wwX'), scroll: document.querySelector('.wwatch').scrollTop };
+  });
+  for (const [name, b] of Object.entries(box)) if (b.top !== undefined) assert.ok(b.top >= 0 && b.bottom <= height + 0.5, `${name} is on screen at ${height}px: ${JSON.stringify(b)}`);
+  assert.ok(Math.abs(box.scr.width - box.scr.height) < 1 && box.scr.height >= 120, `board is square and visible: ${JSON.stringify(box.scr)}`);
+  assert.ok(box.scr.height - box.cv.height <= 2, `board canvas isn't clipped: ${JSON.stringify(box)}`);
+  if (keyboard) assert.ok(height - box.stop.bottom < 40, `no empty band under Stop watching: ${JSON.stringify(box.stop)}`);
+  assert.equal(box.scroll, 0, 'the viewer did not scroll');
+  return box;
+}
+
+try {
+  const A = await phone('/');
+  await A.page.locator('#wName').fill('kbfan');
+  await A.page.locator('#wPass').fill('ci-test');
+  await A.page.locator('#wNew').click();
+  await A.page.locator('.wlogin').waitFor({ state: 'hidden' });
+  await A.page.evaluate(() => { busy = true; setVerdict({ eyebrow: 'Spinning', title: 'Rooftop bar', body: 'and find a bar with a roof terrace' }); document.querySelector('#caption').textContent = 'Round and round'; });
+  await A.page.waitForFunction(() => W.user);
+  const key = await A.page.evaluate(() => W.user);
+  const B = await phone(`/?watch=${encodeURIComponent(key)}&name=Kbfan`);
+  await B.page.locator('#wwMode').click(); // Go live: no three-second delay in the test
+  await B.page.waitForFunction(() => document.querySelector('#wwT').textContent === 'Rooftop bar', null, { timeout: 15000 });
+  const open = await layout(B.page, 780);
+  if (shots) await B.page.screenshot({ path: `${shots}-780.png` });
+  // the keyboard opens: the visible height drops to 430px
+  await B.page.locator('#wwSay').focus();
+  await B.page.setViewportSize({ width: 360, height: 430 });
+  const kb = await layout(B.page, 430, true);
+  if (shots) await B.page.screenshot({ path: `${shots}-430.png` });
+  assert.ok(kb.scr.height < open.scr.height, 'the board shrinks to fit above the keyboard');
+  // and closes again: back to normal
+  await B.page.setViewportSize({ width: 360, height: 780 });
+  const back = await layout(B.page, 780);
+  assert.equal(back.scr.height, open.scr.height, 'the board goes back to its size when the keyboard closes');
+  assert.deepEqual(B.errors.filter(e => !/favicon/.test(e)), [], 'viewer console errors');
+  console.log('Live Watch fits the board, message box and Stop watching on screen with the keyboard open and closed.');
+} finally {
+  await browser.close();
+  await new Promise(resolve => server.close(resolve));
+}

@@ -248,6 +248,19 @@
   }
   const view = el('div', 'wwatch'); view.hidden = true; document.body.appendChild(view);
   let viewing = null;
+  // the viewer fills the visible screen (above the keyboard when it's open) and the board takes whatever height the other rows leave
+  function fitWatch() {
+    const scr = view.querySelector('.wscr'); if (view.hidden || !scr) return;
+    const vv = window.visualViewport, vh = vv ? vv.height : innerHeight;
+    view.style.top = (vv ? vv.offsetTop : 0) + 'px'; view.style.bottom = 'auto'; view.style.height = vh + 'px';
+    const cs = getComputedStyle(view), gap = parseFloat(cs.rowGap) || 0;
+    let used = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom), n = 0;
+    [...view.children].forEach(k => { if (k === scr || getComputedStyle(k).display === 'none') return; used += k.offsetHeight; n++; });
+    const w = Math.floor(Math.max(120, Math.min(view.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), 560, vh - used - gap * n)) - (scr.offsetWidth - scr.clientWidth));
+    if (scr.style.width !== w + 'px') scr.style.width = w + 'px';
+    view.scrollTop = 0;
+  }
+  addEventListener('resize', fitWatch); if (window.visualViewport) { visualViewport.addEventListener('resize', fitWatch); visualViewport.addEventListener('scroll', fitWatch); }
   // the watcher's own game sits idle underneath; it borrows its canvas to draw the other phone's state, then reloads
   const lerpAng = (a, b, t) => { const d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + d * t; };
   function mirApply(st, prev, t) {
@@ -298,7 +311,7 @@
   }
   // one screen for both live watching and replays: push() states in, it draws them smoothly
   function mirrorScreen(title, sub, live) {
-    view.hidden = false;
+    view.hidden = false; view.classList.remove('wkb');
     view.innerHTML = `<div class="wwh"><div><b>${esc(title)}</b><small id="wwSub">${esc(sub)}</small></div>${live ? '<div><button class="wbtn small" id="wwMode" type="button" aria-pressed="false">Go live</button> <span class="wlive" id="wwModeBadge" style="margin:0"><i></i><span id="wwModeLabel">DELAYED</span></span></div>' : '<span class="wlive" style="margin:0"><i></i>REPLAY</span>'}</div>
       <div class="wscr"><canvas id="wwCv"></canvas><ol id="wwFin" hidden></ol><p id="wwMsg">${live ? 'Connecting…' : 'Loading…'}</p></div>
       <div class="wwt" id="wwTiles"></div>
@@ -306,6 +319,9 @@
       ${live ? '<div class="wsay"><input id="wwSay" maxlength="60" placeholder="Send a message with Ghost Phelan"><button class="wbtn gold small" type="button" id="wwSend">Send</button></div>' : ''}
       <button class="wbtn" type="button" id="wwX" style="width:100%;max-width:560px">${live ? 'Stop watching' : 'Close'}</button>`;
     $w('wwX').onclick = stopWatch;
+    const kb = on => () => { view.classList.toggle('wkb', on); fitWatch(); }; // typing: the verdict rows step aside so the board keeps its room
+    if (live) { $w('wwSay').onfocus = kb(true); $w('wwSay').onblur = kb(false); }
+    fitWatch();
     const vc = $w('wwCv'), vg = vc.getContext('2d');
     const S = { cur: null, prev: null, tCur: 0, span: 120, fresh: false, alive: true, failed: false };
     const frame = () => {
@@ -338,6 +354,7 @@
       const fin = $w('wwFin'), fl = st.fin; fin.hidden = !fl; if (fl) fin.innerHTML = fl.map(x => `<li>${esc(x)}</li>`).join('');
       const tw = +st.tw || 0, tb = +st.tb || 0;
       $w('wwTiles').innerHTML = `<span class="g">${'●'.repeat(Math.min(tw, 9))}${'○'.repeat(Math.max(0, 3 - tw))} WILDS</span><span class="p">${'●'.repeat(Math.min(tb, 9))}${'○'.repeat(Math.max(0, 3 - tb))} BONUS</span>`;
+      fitWatch();
     };
     S.say = text => { const m = $w('wwMsg'); if (m) { m.hidden = !text; m.textContent = text || ''; } };
     return S;
