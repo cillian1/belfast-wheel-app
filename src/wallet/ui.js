@@ -160,8 +160,43 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
   .wstake span{min-width:32px}
   .wtop{padding:6px}
 }
+.whow{box-sizing:border-box;min-width:0;padding:14px;border:1px solid var(--line);border-radius:14px;background:#1c1f24;color:var(--chrome);font-size:14px;line-height:1.45;overflow-wrap:anywhere}
+.whow[hidden]{display:none}
+.whow h2{margin:0 0 8px;font-size:18px}
+.whow ul{margin:0 0 12px;padding-left:18px}
+.whow li+li{margin-top:5px}
+header>span{flex-wrap:wrap}
 `;
   document.head.appendChild(el('style', null, css));
+  // ---------- how to play ----------
+  const howTo = document.getElementById('howToPlay');
+  const helpButton = document.getElementById('helpBtn');
+  function closeHowTo() {
+    if (howTo.hidden) return;
+    howTo.hidden = true;
+    helpButton.setAttribute('aria-expanded', 'false');
+    if (typeof fitStage === 'function') fitStage();
+    try { localStorage.setItem('wol.howToSeen', '1'); }
+    catch (e) { console.warn('Could not save how-to preference.', e); }
+  }
+  function openHowTo() {
+    howTo.hidden = false;
+    howToSeen = true;
+    helpButton.setAttribute('aria-expanded', 'true');
+    if (typeof fitStage === 'function') fitStage();
+    try { localStorage.setItem('wol.howToSeen', '1'); }
+    catch (e) { console.warn('Could not save how-to preference.', e); }
+  }
+  helpButton.addEventListener('click', openHowTo);
+  document.addEventListener('click', e => {
+    if (!helpButton.contains(e.target)) closeHowTo();
+  }, true);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeHowTo();
+  });
+  let howToSeen = false;
+  try { howToSeen = localStorage.getItem('wol.howToSeen') === '1'; }
+  catch (e) { console.warn('Could not read how-to preference.', e); }
   // ---------- top bar ----------
   // Owns the wallet header, stake controls, and toast UI.
   const bar = el('div', 'wbar');
@@ -190,7 +225,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     t.textContent = msg; t.className = 'wtoast' + (gold ? ' gold' : ''); t.style.opacity = 1;
     clearTimeout(toastT); toastT = setTimeout(() => { t.style.opacity = 0; }, 2600);
   }
-  const spinButton = document.getElementById('spinBtn');
+  const spinButton = $w('spinBtn');
   if (spinButton) spinButton.addEventListener('click', e => {
     if (W.connected !== false || (scene === 'photo' && !photoDone)) return;
     e.preventDefault(); e.stopImmediatePropagation(); toast('No connection, reconnecting…');
@@ -240,6 +275,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     $w('wLess').disabled = W.stake <= STAKES[0]; $w('wMore').disabled = !nextStake();
     const pot = $w('wPot'); if (pot) pot.textContent = eur(W.jackpot || JACKPOT_START);
     paintFree();
+    if (me && !howToSeen) openHowTo();
     if (typeof fitStage === 'function') fitStage();
   }
   // free daily spins counter, in the row under Spin
@@ -248,7 +284,7 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     const row = document.getElementById('resetRow'); if (row && freeTag.parentNode !== row) row.prepend(freeTag);
     const n = W.me && W.freeLeft ? W.freeLeft(W.me) : 0;
     freeTag.hidden = !W.me; freeTag.classList.toggle('none', !n);
-    freeTag.textContent = n ? `${n} free spin${n === 1 ? '' : 's'} today` : 'Free spins back tomorrow';
+    freeTag.textContent = n ? `${n} of 5 free spins left today` : 'Free spins back at midnight';
   }
   setInterval(() => { if (W.me) paintFree(); }, 60000); // ticks over at midnight
   function setStake(c) {

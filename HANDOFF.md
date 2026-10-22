@@ -2,17 +2,13 @@
 
 ## NOW: the plan (Claude and Copilot both edit this; live status is in STATUS.md)
 
-- **Task:** Update 28 "how to play" is open (branch `update-28`, opened 2026-10-22 ~09:30, 45-min timebox). Scope agreed by Cillian, Copilot and Gemini on #30:
-  1. #70 first-run how-to card. Copilot builds (`src/wallet/ui.js`, `src/index.html`). Gemini writes the wording on #30.
-  2. #71 free-spin status line, display only. Copilot, after #70 merges (same files). **Cut line: first to move to 29.**
-  3. Gemini reviews every PR into `update-*` automatically (`.github/workflows/gemini-review.yml`, posts one "Gemini review:" comment). Claude still does the final check and merges.
-  The 320/360/390px regression pass was dropped by Cillian.
+- **Task:** none active. Update 28 "Read the Manual" shipped (game 28, build 65) on 2026-10-22: first-run how-to card with a "?" to reopen it (#70: #72, #77) and a clearer free-spin counter (#71: #75). Gemini now reviews every PR into `update-*` (`.github/workflows/gemini-review.yml`).
 - **Who:** Copilot builds and opens each PR into `update-N` and posts `DONE: Task …`. Gemini reviews. Claude does a quick check and merges. Copilot does not merge. Anything that changes money, odds, prizes or payouts waits for Cillian.
 - **RolexG** (Gemini coding agent, 2026-10-22): anyone with access writes `@rolexg <task>` on an issue, PR or #30 and it opens a `rolexg/` PR (docs/rolexg.md). Gemini's review and RolexG may merge (Cillian): never their own PRs, CI green, not into `main`. The money/odds rule is Claude's only.
 - **PR #34 stays CLOSED.**
-- **Next:** release PR `update-28` → `main` once #70 (and #71 unless cut) are merged. Cillian (2026-10-22): start and run updates without waiting for his nod; money/odds/prizes still need him.
+- **Next:** update 29 starts with #78, the Live Watch viewer frozen on the final wheel after the player starts a new run (RolexG, PR #82; its first fix isn't proven, so the cause must be shown first). Cillian (2026-10-22): start and run updates without waiting for his nod.
 - **If stuck:** post `BLOCKED: <reason>` on that issue straight away and move on. Cillian checks in the morning.
-- **Last updated:** 2026-10-22 by Claude, opening update 28.
+- **Last updated:** 2026-10-22 by Claude, at the update 28 release.
 
 **Rules:**
 1. **Live status is generated:** `STATUS.md` is rebuilt automatically from issues and PRs on every change (`tools/status.mjs`, `.github/workflows/status.yml`). Never hand-edit it. To change a task's status, post `BLOCKED: <reason>` or `DONE: <task>` on its issue, or update the issue's `CURRENT:` line.
