@@ -51,6 +51,10 @@ assert.deepEqual(orders.map(order => order.length), [44, 22, 22, 23, 28],
   'double arrows replace existing wedges without changing wheel sizes');
 assert.ok(orders.every(order => order.filter(move => move === 'D2').length === 1 &&
   order.filter(move => move === 'U2').length === 1), 'each inner wheel has exactly one of each double arrow');
+assert.deepEqual(orders.map(order => order.indexOf('D2') + 1), [5, 9, 16, 2, 2],
+  'the tested D2 placement is on wheel 3 wedge 16');
+assert.deepEqual(orders.map(order => order.indexOf('U2') + 1), [7, 13, 20, 21, 12],
+  'U2 uses the tested placement on all five inner wheels');
 console.log(`D2 seed ${seedD2}, U2 seed ${seedU2}; top clamp ${seedTop}, deepest clamps ${seedBottom}/${seedHiddenBottom}.`);
 const run = (workers, tip) => {
   const args = [simFile('./run.mjs'), '--engine', 'node', '--spins', '200', '--workers', String(workers)];

@@ -51,8 +51,8 @@ const MOVE_DEFS = {
 const LAYER_ORDERS = [
   ['BN', 'B', 'MW', 'F', 'D2', 'WD', 'U2', 'X', 'BN', 'NR', 'F', 'WD', 'C', 'R', 'BN', 'X', 'L', 'WD', 'F', 'B', 'BN', 'R', 'NL', 'MB', 'L', 'BN', 'L', 'NR', 'WD', 'B', 'C', 'BN', 'NL', 'X', 'WD', 'NR', 'F', 'BN', 'C', 'R', 'WD', 'X', 'BN', 'NR'],
   ['BN', 'NL', 'X', 'WD', 'NR', 'MW', 'F', 'BN', 'D2', 'R', 'WD', 'X', 'U2', 'BN', 'F', 'B', 'WD', 'R', 'MB', 'NL', 'BN', 'L'],
-  ['BN', 'NR', 'F', 'WD', 'D2', 'R', 'BN', 'U2', 'L', 'WD', 'F', 'B', 'BN', 'R', 'X', 'C', 'NL', 'WD', 'L', 'UP', 'BN', 'B'],
-  ['BN', 'D2', 'ED', 'R', 'WD', 'X', 'U2', 'BN', 'F', 'B', 'WD', 'R', 'UP', 'BN', 'L', 'GD', 'F', 'NR', 'WD', 'B', 'UP', 'BN', 'NL'],
+  ['BN', 'NR', 'F', 'WD', 'C', 'R', 'BN', 'UP', 'L', 'WD', 'F', 'B', 'BN', 'R', 'X', 'D2', 'NL', 'WD', 'L', 'U2', 'BN', 'B'],
+  ['BN', 'D2', 'ED', 'R', 'WD', 'X', 'UP', 'BN', 'F', 'B', 'WD', 'R', 'UP', 'BN', 'L', 'GD', 'F', 'NR', 'WD', 'B', 'U2', 'BN', 'NL'],
   // the hidden fifth wheel, only reached through Go even deeper on the last wheel: more Wilds and ankhs than any other wheel
   ['BN', 'D2', 'WD', 'R', 'BN', 'X', 'WD', 'F', 'BN', 'B', 'GD', 'U2', 'WD', 'L', 'BN', 'NR', 'WD', 'F', 'BN', 'X', 'WD', 'R', 'BN', 'C', 'WD', 'L', 'BN', 'B'],
 ];
