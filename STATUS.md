@@ -10,5 +10,7 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
-- #85 New team workflow: everyone can approve and merge → main
+- #92 RolexG: please take this issue: speed up the fast odds sim as described above, → main
+- #91 [WIP] Update stacked special chickens for top race prize → main (draft)
+- #90 [WIP] Update ticker teasing and tipping probabilities → main (draft)
 - #82 RolexG: second try (the first run failed on a setup bug, now fixed): find why  → update-28
