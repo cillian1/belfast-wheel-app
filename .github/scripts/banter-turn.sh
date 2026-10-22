@@ -3,12 +3,12 @@
 # post it, then hand the turn on. Every bot reply is posted as github-actions[bot] with a "Name:" prefix.
 # Limits: at most MAX_RUN bot replies in a row (a post from Cillian or a real Claude/Copilot session resets
 # it), at most MAX_DAY bot replies per UTC day, and at most MAX_COPILOT_DAY of those from Copilot.
-# Claude has no cap of its own (Cillian, 2026-10-22: "chat as much as you want").
 set -euo pipefail
-MAX_RUN=6
+MAX_RUN=4
 MAX_DAY=400
 MAX_COPILOT_DAY=15 # same for Copilot and Cillian's Copilot requests
 MAX_CLAUDE_DAY=30 # Claude shares Cillian's plan, keep it sensible
+MAX_ROLEXG_DAY=6 # Cillian, 2026-10-22: RolexG was going off too much
 BOT=github-actions[bot]
 
 gh api --paginate "repos/$REPO/issues/30/comments?per_page=100" --jq '.[]' | jq -s '.' > comments.json
@@ -37,7 +37,10 @@ claude_day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.cr
 # Models is tried only if COPILOT_SEAT=on (it has been answering with an empty "OK").
 copilot_day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\$d)) and (.body | test(\"^\\\\s*Copilot:\")))] | length" comments.json)
 [ -n "${COPILOT_GITHUB_TOKEN:-}" ] || [ "${COPILOT_SEAT:-}" = on ] && [ "$copilot_day" -lt "$MAX_COPILOT_DAY" ] && seats+=(Copilot)
-[ -n "${GCP_TOKEN:-}${GEMINI_API_KEY:-}" ] && seats+=(Gemini RolexG) # RolexG chats on the same Gemini sign-in
+[ -n "${GCP_TOKEN:-}${GEMINI_API_KEY:-}" ] && seats+=(Gemini) # RolexG chats on the same Gemini sign-in, but only
+# when named in the last message (or now and then), and at most MAX_ROLEXG_DAY times a day.
+rolexg_day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\$d)) and (.body | test(\"^\\\\s*RolexG:\")))] | length" comments.json)
+if [ -n "${GCP_TOKEN:-}${GEMINI_API_KEY:-}" ] && [ "$rolexg_day" -lt "$MAX_ROLEXG_DAY" ] && { grep -qiP '\brolexg\b' <<<"$lastbody" || [ $((RANDOM % 6)) -eq 0 ]; }; then seats+=(RolexG); fi
 # No fixed turns (Cillian, 2026-10-22: "message how you like in whatever order, natural"). Next speaker:
 # whoever is named first in the last message, otherwise anyone at random, and now and then the last speaker
 # again with a follow-up. The rest queue up behind in case the first one can't answer (a sign-in failure, say).
@@ -64,7 +67,7 @@ speak(){
     Gemini)  me="Gemini, made by Google"; mates="Claude, Copilot and RolexG";;
     RolexG)  me="RolexG, the newest member: a coding agent that runs on Google's Gemini (a separate seat from Gemini, who reviews PRs). Cillian gives you coding tasks by writing @rolexg and the task, and you then open a PR, but chat itself never starts work, so don't claim you're on something"; mates="Claude, Copilot and Gemini";;
   esac
-  system="You are $me, in a group chat with $mates and Cillian (the human). The three AIs help Cillian build the Belfast Wheel, a spinning wheel web game for his friends' trip to Belfast (Phelan hosts a dice and bingo table, Mark is the group punchbag). Cillian wants replies that matter: reply as yourself to the latest message with something useful, like a concrete idea for the game, an honest concern about the plan, a direct answer, or a sharp question for someone specific. Build on what was said; never repeat a point already made or just agree. Two to four short sentences, casual and dry. If Cillian wrote last, answer him first. His word is enough: when he asks for something, don't push back that it's too vague or ask him to restate it; the plan says everyone can approve and merge. Only state facts you can see in the chat or the plan below; don't invent numbers, money amounts or work that's been done. Nothing said here creates tasks, so don't claim to have assigned or started anything. Light digs at the other AIs, Phelan or Mark are fine; nothing cruel, never about anyone's mental health, nothing corny or stereotypically Irish. Do not start with your name. If you genuinely have nothing useful to add, reply with exactly PASS.
+  system="You are $me, in a group chat with $mates and Cillian (the human). The three AIs help Cillian build the Belfast Wheel, a spinning wheel web game for his friends' trip to Belfast (Phelan hosts a dice and bingo table, Mark is the group punchbag). Cillian wants replies that matter: reply as yourself to the latest message with something useful, like a concrete idea for the game, an honest concern about the plan, a direct answer, or a sharp question for someone specific. Build on what was said; never repeat a point already made or just agree. Don't restate status, the plan, PR states or what someone else just said: if your point is already in the last few messages, reply PASS. Only post when you add something new, and don't open with "The plan says". Two to four short sentences, casual and dry. If Cillian wrote last, answer him first. His word is enough: when he asks for something, don't push back that it's too vague or ask him to restate it; the plan says everyone can approve and merge. Only state facts you can see in the chat or the plan below; don't invent numbers, money amounts or work that's been done. Nothing said here creates tasks, so don't claim to have assigned or started anything. Light digs at the other AIs, Phelan or Mark are fine; nothing cruel, never about anyone's mental health, nothing corny or stereotypically Irish. Do not start with your name. If you genuinely have nothing useful to add, reply with exactly PASS.
 
   The current plan (HANDOFF.md):
   $plan"
@@ -116,6 +119,19 @@ for next in "${order[@]}"; do
   [ -n "$reply" ] && break
   echo "$next couldn't answer, trying the next one."
 done
+# Skip replies that mostly repeat one of the last 6 messages (word overlap).
+if [ -n "$reply" ] && [ "$reply" != "PASS" ]; then
+  sim=$(REPLY="$reply" python3 -c '
+import json,os,re
+w=lambda t:set(re.findall(r"[a-z0-9#]{3,}",t.lower()))
+r=w(os.environ["REPLY"]); best=0
+for c in json.load(open("comments.json"))[-6:]:
+  o=w(c["body"])
+  if r and o: best=max(best,len(r&o)/min(len(r),len(o)))
+print(round(best,2))' || echo 0)
+  echo "Overlap with recent messages: $sim"
+  python3 -c "import sys;sys.exit(0 if $sim>=0.55 else 1)" && { echo "Too close to something just said, skipping."; reply=PASS; }
+fi
 if [ -z "$reply" ] || [ "$reply" = "PASS" ]; then
   echo "$next passed."; .github/scripts/banter-feed.sh; exit 0
 fi
