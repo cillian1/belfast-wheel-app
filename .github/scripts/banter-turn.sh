@@ -8,6 +8,7 @@ set -euo pipefail
 MAX_RUN=6
 MAX_DAY=200
 MAX_COPILOT_DAY=15 # same for Copilot and Cillian's Copilot requests
+MAX_CLAUDE_DAY=3 # Claude shares Cillian's plan, keep it light
 BOT=github-actions[bot]
 
 gh api --paginate "repos/$REPO/issues/30/comments?per_page=100" --jq '.[]' | jq -s '.' > comments.json
@@ -30,7 +31,8 @@ lastbody=$(jq -r '.[-1].body' comments.json)
 
 # Who can talk: only the bots that are set up.
 seats=()
-[ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}${ANTHROPIC_API_KEY:-}" ] && seats+=(Claude)
+claude_day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\$d)) and (.body | test(\"^\\\\s*Claude:\")))] | length" comments.json)
+[ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}${ANTHROPIC_API_KEY:-}" ] && [ "$claude_day" -lt "$MAX_CLAUDE_DAY" ] && seats+=(Claude)
 # Copilot talks through the Copilot CLI with Cillian's token (COPILOT_GITHUB_TOKEN). Without it, GitHub
 # Models is tried only if COPILOT_SEAT=on (it has been answering with an empty "OK").
 copilot_day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\$d)) and (.body | test(\"^\\\\s*Copilot:\")))] | length" comments.json)

@@ -3,9 +3,9 @@
 ## NOW: the plan (everyone edits this; live status is in STATUS.md)
 
 - **Task:** none active. Update 28 "Read the Manual" shipped (game 28, build 65) on 2026-10-22.
-- **Next:** update 29 starts with #78, the Live Watch viewer frozen on the final wheel after the player starts a new run (RolexG, PR #82; show the cause before the fix). Then the ticker and Chicken Run ideas (Cillian on Banter, 2026-10-22), which change payouts, so they follow rule 2.
+- **Next:** update 29 "odds ideas" (Cillian's Banter ideas, 2026-10-22; he said no sign-off needed, Claude picked the numbers with the fast sim so total payback stays the same): (1) the ticker only teases 1 in 3 near misses, and a tease tips onto the special 30% of the time (was every near miss at 10%, so the same 10% overall); (2) one special chicken always carries the race's top tag (80/100/120) times its multiplier; (3) Wilds/ankhs of the same kind going into the farm make ONE special chicken of that colour, and each extra one doubles its size and multiplier (1.5x, 3x, 6x), Mark's-wheel prize slice too; (4) to pay for it, `RACE_CHANCE` .25 -> .16. Plus #78 Live Watch freeze (RolexG, PR #82; cause must be shown first). The fast sim now lives in `tools/sim/`.
 - **PR #34 stays CLOSED.**
-- **Last updated:** 2026-10-22 by Claude, team workflow rewrite.
+- **Last updated:** 2026-10-22 by Claude, team workflow rewrite (update 29 odds settings kept).
 
 **Authority (Cillian, 2026-10-22: "anyone can approve and merge", "full authority", "odds-math to be everyone"):**
 1. Claude, Copilot, Gemini and RolexG can all plan, start, build, review, approve and merge, including money, odds and prize changes. Nobody waits for Cillian's nod or asks him about approvals or merges.
@@ -19,7 +19,7 @@
 - **Copilot** builds: features, fixes, refactors, version bumps and release PRs. It picks up `copilot-task` issues in number order, and starts the next one when its PR merges.
 - **RolexG** takes whatever anyone writes `@rolexg <task>` for, on an issue, a PR or Banter, and opens a `rolexg/` PR (docs/rolexg.md). Good for small fixes and second opinions.
 - **Gemini** reviews every PR into `update-*` (`gemini-review.yml`), posts `Verdict: merge` or `Verdict: changes needed`, and merges on `merge` with green CI.
-- **Claude** coordinates: turns Cillian's asks (on Banter or in his Claude project) into issues, runs the fast odds sim, does a quick check of PRs nobody else has merged, merges release PRs it didn't write, and keeps this NOW plan current.
+- **Claude** coordinates: turns Cillian's asks (on Banter or in his Claude project) into issues, runs the fast odds sim by default, does a quick check of PRs nobody else has merged, merges release PRs it didn't write, and keeps this NOW plan current.
 
 **The dev loop: quick and simple** (Cillian, 2026-10-22; from the update 25 retro):
 1. **Pick** the next item in NOW. One goal per issue, about 20 minutes, with the cut written in. Feel bugs need a repro (device, steps, what you see); done = gone on that repro.
@@ -28,7 +28,7 @@
 4. **Release** when the update's tasks are in (aim for about 45 minutes per update): one release PR `update-N` → `main` with version bump, name, notes, footer and `Closes #…`; check each task commit is in `update-N` by ancestry and diff `main...update-N` for stale non-game files. Anyone but its author merges it (the bot merge script stays out of `main` unless repo variable `BOT_MERGE_MAIN` is `on`, so for now Claude or Copilot).
 5. **Stuck?** Post `BLOCKED: <reason>` on the issue straight away and move on. Over time? Cut scope, never the checks.
 
-Checks that stay: timing, animation or random-draw changes need a seeded equivalence test (same seeds, same outcomes) plus the seeded-spin CI (#39). Payout changes follow Authority rule 2; Claude runs the fast sim (it lives outside the repo) and posts the result on the PR. Phone checks are a last step that never blocks a PR. One update at a time; new ideas go on a one-line list.
+Checks that stay: timing, animation or random-draw changes need a seeded equivalence test (same seeds, same outcomes) plus the seeded-spin CI (#39). Payout changes follow Authority rule 2; the fast sim is in `tools/sim/` (anyone can run it; Claude does by default) and its result goes on the PR. Phone checks are a last step that never blocks a PR. One update at a time; new ideas go on a one-line list.
 
 **Where things live.**
 - `STATUS.md` is rebuilt automatically from issues and PRs (`tools/status.mjs`). Never hand-edit it. Status goes on the issue: `BLOCKED:`, `DONE:` or the `CURRENT:` line at the top of the issue body.

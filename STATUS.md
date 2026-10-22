@@ -10,4 +10,5 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
+- #85 New team workflow: everyone can approve and merge → main
 - #82 RolexG: second try (the first run failed on a setup bug, now fixed): find why  → update-28
