@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Lets Gemini (the reviewer) and RolexG merge pull requests (Cillian, 2026-10-22), with three rules:
+#  1. No bot merges its own PR: RolexG never merges a rolexg/ branch, and neither does Gemini's review,
+#     since RolexG runs on Gemini too. Those wait for Claude or Cillian.
+#  2. CI ("ci") must be green on the PR's latest commit.
+#  3. Not into main, because a push to main is a release to every phone. Set the repo variable
+#     BOT_MERGE_MAIN=on to allow it.
+# Usage: bot-merge.sh <pr> Gemini   called after CI or a Gemini review; merges only if the latest Gemini
+#                                    review of the current commit says "Verdict: merge". Quiet otherwise,
+#                                    because whichever of CI and the review finishes last does the merge.
+#        bot-merge.sh <pr> RolexG   "@rolexg merge" from Cillian's account; says why if it can't.
+set -euo pipefail
+PR=$1; AS=$2; BOT=github-actions[bot]
+say(){ gh api "repos/$REPO/issues/$PR/comments" -f body="$AS: $1" > /dev/null; }
+no(){ echo "Not merging #$PR: $1"; [ "$AS" = RolexG ] && say "I can't merge this one: $1"; exit 0; }
+
+pr=$(gh api "repos/$REPO/pulls/$PR")
+[ "$(jq -r .state <<<"$pr")" = open ] || no "it isn't open."
+[ "$(jq -r .draft <<<"$pr")" = false ] || no "it's still a draft."
+[ "$(jq -r '.head.repo.full_name' <<<"$pr")" = "$REPO" ] || no "it comes from a fork."
+head=$(jq -r .head.ref <<<"$pr"); base=$(jq -r .base.ref <<<"$pr"); sha=$(jq -r .head.sha <<<"$pr")
+[[ $head == rolexg/* ]] && no "it's RolexG's own PR, so Claude or Cillian merges it."
+default=$(gh api "repos/$REPO" --jq .default_branch)
+[ "$base" != "$default" ] || [ "${BOT_MERGE_MAIN:-}" = on ] || no "it goes into \`$default\`, which is a release. Claude or Cillian merges those."
+
+ci=$(gh api "repos/$REPO/commits/$sha/check-runs?check_name=ci&per_page=20" \
+  --jq '[.check_runs[] | {status, conclusion, started_at}] | sort_by(.started_at) | last // empty')
+[ -n "$ci" ] || no "CI hasn't run on the latest commit yet."
+[ "$(jq -r .status <<<"$ci")" = completed ] || no "CI is still running."
+[ "$(jq -r .conclusion <<<"$ci")" = success ] || no "CI is red on the latest commit."
+
+if [ "$AS" = Gemini ]; then
+  since=$(gh api "repos/$REPO/commits/$sha" --jq .commit.committer.date)
+  verdict=$(gh api --paginate "repos/$REPO/issues/$PR/comments?per_page=100" --jq \
+    ".[] | select(.user.login == \"$BOT\" and (.body | startswith(\"Gemini review:\")) and .created_at >= \"$since\") | .body" \
+    | grep -oiP '^\s*\**verdict:?\**\s*\K\w+' | tail -n1 || true)
+  [ "${verdict,,}" = merge ] || no "no 'Verdict: merge' from Gemini on the latest commit (got '${verdict:-nothing}')."
+fi
+
+gh api -X PUT "repos/$REPO/pulls/$PR/merge" -f merge_method=merge -f sha="$sha" > /dev/null || no "GitHub refused the merge (conflict, or the branch moved)."
+say "merged into \`$base\` (CI green$( [ "$AS" = Gemini ] && echo ", reviewed"))."
+# Merges made with the workflow token don't start other workflows, so refresh the status board by hand.
+gh workflow run status.yml -R "$REPO" || true

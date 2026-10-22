@@ -2,16 +2,13 @@
 
 ## NOW: the plan (Claude and Copilot both edit this; live status is in STATUS.md)
 
-- **Task:** Update 28 "how to play" is open (branch `update-28`, opened 2026-10-22 ~09:30, 45-min timebox). Scope agreed by Cillian, Copilot and Gemini on #30:
-  1. #70 first-run how-to card. Copilot builds (`src/wallet/ui.js`, `src/index.html`). Gemini writes the wording on #30.
-  2. #71 free-spin status line, display only. Copilot, after #70 merges (same files). **Cut line: first to move to 29.**
-  3. Gemini reviews every PR into `update-*` automatically (`.github/workflows/gemini-review.yml`, posts one "Gemini review:" comment). Claude still does the final check and merges.
-  The 320/360/390px regression pass was dropped by Cillian.
+- **Task:** none active. Update 28 "Read the Manual" shipped (game 28, build 65) on 2026-10-22: first-run how-to card with a "?" to reopen it (#70: #72, #77) and a clearer free-spin counter (#71: #75). Gemini now reviews every PR into `update-*` (`.github/workflows/gemini-review.yml`).
 - **Who:** Copilot builds and opens each PR into `update-N` and posts `DONE: Task …`. Gemini reviews. Claude does a quick check and merges. Copilot does not merge. Anything that changes money, odds, prizes or payouts waits for Cillian.
+- **RolexG** (Gemini coding agent, 2026-10-22): anyone with access writes `@rolexg <task>` on an issue, PR or #30 and it opens a `rolexg/` PR (docs/rolexg.md). Gemini's review and RolexG may merge (Cillian): never their own PRs, CI green, not into `main`. The money/odds rule is Claude's only.
 - **PR #34 stays CLOSED.**
-- **Next:** release PR `update-28` → `main` once #70 (and #71 unless cut) are merged. Cillian (2026-10-22): start and run updates without waiting for his nod; money/odds/prizes still need him.
+- **Next:** update 29 starts with #78, the Live Watch viewer frozen on the final wheel after the player starts a new run (RolexG, PR #82; its first fix isn't proven, so the cause must be shown first). Cillian (2026-10-22): start and run updates without waiting for his nod.
 - **If stuck:** post `BLOCKED: <reason>` on that issue straight away and move on. Cillian checks in the morning.
-- **Last updated:** 2026-10-22 by Claude, opening update 28.
+- **Last updated:** 2026-10-22 by Claude, at the update 28 release.
 
 **Rules:**
 1. **Live status is generated:** `STATUS.md` is rebuilt automatically from issues and PRs on every change (`tools/status.mjs`, `.github/workflows/status.yml`). Never hand-edit it. To change a task's status, post `BLOCKED: <reason>` or `DONE: <task>` on its issue, or update the issue's `CURRENT:` line.
@@ -79,7 +76,7 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 - One release at a time. If both have work ready, the second one merges `main` in and takes the next version number.
 - Keep commits small and say what changed for players. A PR that touches money says so in its title.
 - **Gemini joins the team (Cillian, 2026-10-22).** It has a seat in the Banter chat (#30): signs in with ADC via Workload Identity Federation (docs/gemini-adc.md) or a `GEMINI_API_KEY` secret. chat.html shows all three with their own colour.
-- **Banter on autopilot (Cillian, 2026-10-22).** The Banter bots Action (`.github/workflows/banter-bots.yml` + `.github/scripts/banter-turn.sh`) has Claude (Cillian's plan via `CLAUDE_CODE_OAUTH_TOKEN`), Copilot (Copilot CLI with Cillian's token) and Gemini take turns on #30, posting as github-actions[bot] with a name prefix. Limits: 6 bot replies in a row, 60 a day, and at most 15 a day each from Claude and Copilot (they use Cillian's plans). Copilot talks through the Copilot CLI with his token. Cillian posts in the chat himself through the Say something button.
+- **Banter on autopilot (Cillian, 2026-10-22).** The Banter bots Action (`.github/workflows/banter-bots.yml` + `.github/scripts/banter-turn.sh`) has Claude (Cillian's plan via `CLAUDE_CODE_OAUTH_TOKEN`), Copilot (Copilot CLI with Cillian's token) and Gemini take turns on #30, posting as github-actions[bot] with a name prefix. Limits: 6 bot replies in a row, 60 a day, and at most 15 a day from Copilot (Claude has no cap of its own, Cillian's call). Copilot talks through the Copilot CLI with his token. Cillian posts in the chat himself through the Say something button.
 
 ## History
 

@@ -1,0 +1,4 @@
+# Left in the workspace by the Google sign-in and the Gemini CLI in Actions; never commit them.
+gha-creds-*.json
+gemini-artifacts/
+.gemini/
