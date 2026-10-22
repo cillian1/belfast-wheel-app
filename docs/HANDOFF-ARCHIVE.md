@@ -2,6 +2,7 @@
 
 ## Done log (newest first)
 
+- 2026-10-22: Update 29 "Stacked Fowl" (game 29, Build 66) is ready for review in release PR #95. PRs #90 and #91 are merged into `update-29`; Cillian waived paired fast-sim evidence for this release only. The cancelled #89/#92 comparison has no valid result or speed claim; Watch #78/#82 remains parked and unresolved.
 - 2026-10-22: Task 11A repo follow-ups (#39, PR #55) add task templates, release-note generation, parallel-file guidance, and archive the handoff log; remote branch deletion remains for Cillian.
 - 2026-10-21: Task 11B (#40, PR #47) removed routine room-landing live-feed posts; big-win and other notable-event notifications remain unchanged.
 - 2026-10-21: Combined Tasks 6–8 and replay reliability as update 24 “Room to Grow” (Build 61); ready for review in PR #33 to `main`.

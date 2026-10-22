@@ -2,13 +2,13 @@
 
 ## NOW: the plan (Claude, Copilot, Gemini and RolexG all edit this; live status is in STATUS.md)
 
-- **Task:** none active. Update 28 "Read the Manual" shipped (game 28, build 65) on 2026-10-22: first-run how-to card with a "?" to reopen it (#70: #72, #77) and a clearer free-spin counter (#71: #75). Gemini now reviews every PR into `update-*` (`.github/workflows/gemini-review.yml`).
+- **Task:** Release Update 29 "Stacked Fowl" (game 29, build 66), ready for review in PR #95. PR #90 (merge commit `757676e`) and PR #91 (merge commit `1895451`) are merged into `update-29`. Cillian waived paired fast-sim evidence for this release only; the cancelled comparison produced no valid result, and no payback or speed claim is made.
 - **Who:** Copilot builds and opens each PR into `update-N` and posts `DONE: Task …`. Gemini reviews. Claude does a quick check and merges. Copilot does not merge.
 - **RolexG** (Gemini coding agent, 2026-10-22): anyone with access writes `@rolexg <task>` on an issue, PR or #30 and it opens a `rolexg/` PR (docs/rolexg.md). Gemini's review and RolexG may merge (Cillian): never their own PRs, CI green, not into `main`. 
 - **PR #34 stays CLOSED.**
-- **Next:** update 29 "odds ideas" (Cillian's Banter ideas, 2026-10-22; he said no sign-off needed, Claude picked the numbers with the fast sim so total payback stays the same): (1) the ticker only teases 1 in 3 near misses, and a tease tips onto the special 30% of the time (was every near miss at 10%, so the same 10% overall); (2) one special chicken always carries the race's top tag (80/100/120) times its multiplier; (3) Wilds/ankhs of the same kind going into the farm make ONE special chicken of that colour, and each extra one doubles its size and multiplier (1.5x, 3x, 6x), Mark's-wheel prize slice too; (4) to pay for it, `RACE_CHANCE` .25 -> .16. Plus #78 Live Watch freeze (RolexG, PR #82; cause must be shown first). The fast sim now lives in `tools/sim/`.
+- **Next:** no additional task starts before the release is reviewed. Fast-sim work #89/PR #92 is parked with no valid paired result or speed claim. Watch #78/PR #82 is also parked and unresolved; neither is part of Update 29. After #95 is merged, take the next non-completed open `copilot-task` issue in number order.
 - **If stuck:** post `BLOCKED: <reason>` on that issue straight away and move on. Cillian checks in the morning.
-- **Last updated:** 2026-10-22 by Claude, update 29 odds settings.
+- **Last updated:** 2026-10-22 by Copilot, Update 29 release metadata and parked-task status.
 
 **Rules:**
 1. **Live status is generated:** `STATUS.md` is rebuilt automatically from issues and PRs on every change (`tools/status.mjs`, `.github/workflows/status.yml`). Never hand-edit it. To change a task's status, post `BLOCKED: <reason>` or `DONE: <task>` on its issue, or update the issue's `CURRENT:` line.
@@ -29,7 +29,7 @@ Claude gives Copilot its work directly. Cillian isn't in the loop for routine wo
 5. **Odds pre-check** for anything touching timing, animation or random draws: a seeded equivalence test (same seeds on base and branch give identical outcomes) plus the seeded-spin CI (#39). If outcomes must change, the fast sim (outside the repo) is run in a separate odds thread. Any odds change stops and waits for Cillian.
 6. **Blocked = say so now.** Copilot posts `BLOCKED: <reason>` on the issue the moment it's stuck. Claude's watcher also nudges once if an active PR gets no push or comment for 15 minutes.
 7. **Holding branch `update-N`.** Sub-task PRs target it, with no version bump. Parallel tasks never edit the same files.
-8. **Release only through the release PR** `update-N` → `main`. Checklist: version bump + name + notes + footer; every sub-task PR merged, verified by commit ancestry (not just "closed"); `Closes #…` for every sub-task; Copilot told on #30.
+8. **Release only through the release PR** `update-N` → `main`. Checklist: version bump + name + notes + footer; every sub-task PR merged, verified by commit ancestry (not just "closed"); `Closes #…` for every sub-task; record any Cillian-approved, release-only evidence waiver; Copilot told on #30.
 9. **Status is generated, the plan is shared.** STATUS.md is built by an Action from issues and PRs. The NOW plan in HANDOFF is edited by both Claude and Copilot when a decision is made. Progress lives on the issues.
 
 ## What's live
