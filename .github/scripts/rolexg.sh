@@ -58,7 +58,10 @@ $(jq -r '.body // ""' <<<"$issue")";;
     where="issue #$NUM \"$title\""
   fi
   gh api "repos/$REPO/branches/$base" > /dev/null 2>&1 || { say "$NUM" "I can't find a branch called \`$base\` to work from."; echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0; }
-  if gh api "repos/$REPO/branches/$branch" > /dev/null 2>&1; then from=$branch; else from=$base; fi
+  # Carry on from the branch only while its PR is open; otherwise start fresh from the base (the push
+  # then overwrites whatever an earlier, failed run left there).
+  open=$(gh api "repos/$REPO/pulls?head=${REPO%%/*}:$branch&state=open" --jq 'length')
+  if [ "$open" -gt 0 ]; then from=$branch; else from=$base; fi
 
   # The thread so far, newest last, so RolexG knows what was already said.
   thread=$(gh api --paginate "repos/$REPO/issues/$NUM/comments?per_page=100" --jq '.[] | "[" + .user.login + "] " + .body' \
@@ -82,7 +85,7 @@ Do the task by editing files in the working tree. Don't run git commit, git push
 
 When you're done, end with a short summary for the humans: what you changed and why, in plain words, 3 to 6 lines, no headings."
   out prompt "$prompt"
-  out title "$(head -n1 <<<"$task" | sed -E 's/@rolexg//Ig; s/\bbase:\s*\S+//Ig; s/^[[:space:],:.-]+//' | cut -c1-70)"
+  out title "$(head -n1 <<<"$task" | sed -E 's/@rolexg//Ig; s/\bbase:\s*\S+//Ig; s/^[[:space:],:.—–-]+//' | cut -c1-70)"
   echo "branch=$branch" >> "$GITHUB_OUTPUT"; echo "base=$base" >> "$GITHUB_OUTPUT"; echo "from=$from" >> "$GITHUB_OUTPUT"
   echo "skip=false" >> "$GITHUB_OUTPUT"
   say "$NUM" "on it. Working on \`$branch\` from \`$from\` ($RUN_URL)."
@@ -91,12 +94,12 @@ When you're done, end with a short summary for the humans: what you changed and 
 finish(){
   # The CLI's settings file and anything under .github never go in RolexG's commits
   # (the workflow token can't push workflow changes anyway).
-  rm -rf .gemini; git checkout -- .github 2>/dev/null || true; git clean -fdq -- .github
+  rm -rf .gemini gemini-artifacts gha-creds-*.json; git checkout -- .github 2>/dev/null || true; git clean -fdq -- .github
+  if [ "$GEMINI_OK" != success ]; then
+    say "$NUM" "I got stuck before finishing, so I've changed nothing. The run log has the details: $RUN_URL"; exit 1; fi
   node tools/bundle.mjs
   summary=${SUMMARY:-}
   [ -n "${summary// }" ] || summary="(Gemini didn't send a summary.)"
-  if [ -n "${ERRORS// }" ] && [ -z "$(git status --porcelain)" ]; then
-    say "$NUM" "I got stuck and changed nothing. The run log has the details: $RUN_URL"; exit 1; fi
   if [ -z "$(git status --porcelain)" ]; then say "$NUM" "$summary"; exit 0; fi
 
   checks="passed"; node tools/check.mjs > check.log 2>&1 || checks="FAILED (see the run log)"
@@ -105,7 +108,7 @@ finish(){
   git config user.email 41898282+github-actions[bot]@users.noreply.github.com
   git add -A
   git commit -q -m "RolexG: ${TITLE:-task from #$NUM}" -m "Asked for on #$NUM. $RUN_URL"
-  git push -q "https://x-access-token:$GH_TOKEN@github.com/$REPO.git" "HEAD:refs/heads/$BRANCH"
+  git push -q -f "https://x-access-token:$GH_TOKEN@github.com/$REPO.git" "HEAD:refs/heads/$BRANCH"
 
   pr=$(gh api "repos/$REPO/pulls?head=${REPO%%/*}:$BRANCH&state=open" --jq '.[0].number // empty')
   if [ -z "$pr" ]; then
@@ -116,7 +119,9 @@ $summary
 Checks (tools/check.mjs): $checks.
 
 RolexG doesn't merge its own PRs: Claude, Gemini's review or Cillian does.
-Run: $RUN_URL" --jq .number)
+Run: $RUN_URL" --jq .number) || {
+      say "$NUM" "I pushed my work to \`$BRANCH\` but GitHub wouldn't let me open the PR. Cillian: tick \"Allow GitHub Actions to create and approve pull requests\" under Settings → Actions → General, then ask me again. $RUN_URL"
+      exit 1; }
     gh api "repos/$REPO/issues/$pr/labels" -f "labels[]=rolexg" > /dev/null || true
     msg="opened #$pr into \`$BASE\`."
   else msg="pushed to #$pr."; fi
