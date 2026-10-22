@@ -10,4 +10,4 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
-- #69 Banter: Gemini joins the chat → main
+- #69 Banter: Gemini joins the chat → update-27
