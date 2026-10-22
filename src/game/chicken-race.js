@@ -1,8 +1,16 @@
-// ---------- Chicken Race: 1 in 4 farm runs, the survivors dance, then race for the prizes on their tags ----------
+// ---------- Chicken Race: 16% of farm runs, the survivors dance, then race for the prizes on their tags ----------
 // Owns Chicken Race drawing, timing, and winner selection.
-const RACE_CHANCE = .25, RACE_MAX = 8, RACE_T = 6;
+const RACE_CHANCE = .16, RACE_MAX = 8, RACE_T = 6;
 const RACE_NAMES = ['Clucky', 'Nugget', 'Henrietta', 'Peggy', 'Drumstick', 'Eggbert', 'Feathers', 'Big Bertha', 'Colonel', 'Scrambles', 'Goldie', 'Penny'];
 const racePay = v => typeof $m === 'function' ? $m(v) : v;
+function raceBigAt(racers, randomAt) {
+  const special = racers.reduce((best, ch) => {
+    const mult = ch.mult || 1.5, bestMult = best && (best.mult || 1.5);
+    return ch.special && (!best || mult > bestMult || (mult === bestMult && ch.special === 'W' && best.special !== 'W')) ? ch : best;
+  }, null);
+  return special ? racers.indexOf(special) : randomAt;
+}
+function raceTagValue(base, ch) { return ch.special ? Math.round(base * (ch.mult || 1.5)) : base; }
 function drawRaceLine() {
   const x = raceLine - camX, sq = N * .018, y0 = N * .58, y1 = N * .97;
   for (let y = y0, j = 0; y < y1; y += sq, j++) for (let q = 0; q < 2; q++) { ctx.fillStyle = (j + q) % 2 ? '#111' : '#f4f0e4'; ctx.fillRect(x + q * sq - sq, y, sq, Math.min(sq, y1 - y)); }
@@ -23,7 +31,7 @@ function drawRaceTag(ch) {
   const txt = `€${racePay(tg.v)}`;
   if (tg.special) {
     ctx.textAlign = 'left'; ctx.fillStyle = tg.big ? '#2a1a05' : '#fff3d0'; ctx.fillText(txt, -w / 2 + N * .01, D);
-    ctx.font = `800 ${N * .016}px ${LABEL_FONT}`; ctx.textAlign = 'right'; ctx.fillStyle = tg.big ? '#2a1a05' : spc; ctx.fillText('1.5×', w / 2 - N * .01, D);
+    ctx.font = `800 ${N * .016}px ${LABEL_FONT}`; ctx.textAlign = 'right'; ctx.fillStyle = tg.big ? '#2a1a05' : spc; ctx.fillText(`${tg.mult}×`, w / 2 - N * .01, D);
   } else { ctx.textAlign = 'center'; ctx.fillStyle = tg.big ? '#2a1a05' : '#fff3d0'; ctx.fillText(txt, 0, D); }
   ctx.restore();
 }
@@ -31,11 +39,11 @@ async function chickenRace(steps, alive) {
   Music.setMode('race');
   const racers = [...alive.filter(ch => ch.special), ...alive.filter(ch => !ch.special)].slice(0, RACE_MAX), rest = alive.filter(ch => !racers.includes(ch));
   const names = [...RACE_NAMES].sort(() => Math.random() - .5);
-  const vals = [5, 8, 10, 12, 15, 20, 25, 30].sort(() => Math.random() - .5), bigAt = Math.floor(Math.random() * racers.length);
+  const vals = [5, 8, 10, 12, 15, 20, 25, 30].sort(() => Math.random() - .5), randomBigAt = Math.floor(Math.random() * racers.length), bigAt = raceBigAt(racers, randomBigAt);
   racers.forEach((ch, i) => {
     const base = i === bigAt ? pick([80, 100, 120]) : vals[i % vals.length];
     ch.name = names[i % names.length];
-    ch.tag = { v: ch.special ? Math.round(base * 1.5) : base, big: i === bigAt, special: ch.special || null, a: 0 };
+    ch.tag = { v: raceTagValue(base, ch), mult: ch.special ? (ch.mult || 1.5) : null, big: i === bigAt, special: ch.special || null, a: 0 };
   });
   setVerdict({ eyebrow: 'Something’s up', title: 'Chicken Race', body: 'The chickens won’t sit still.', steps: steps.slice(), flash: true });
   $('#caption').textContent = 'Chicken Race';
@@ -113,7 +121,7 @@ async function chickenRace(steps, alive) {
   const v = win.tag.v;
   return {
     t: `Chicken Race: ${win.name} wins`,
-    b: `${win.special ? (win.special === 'W' ? 'A gold' : 'A purple') + ' chicken, 1.5× on the tag. ' : ''}${decoy ? `Ghost Phelan tripped ${decoy.name} at the line. ` : ''}${win.name} carried €${racePay(v)}.`,
+    b: `${win.special ? (win.special === 'W' ? 'A gold' : 'A purple') + ` chicken, ${win.mult || 1.5}× on the tag. ` : ''}${decoy ? `Ghost Phelan tripped ${decoy.name} at the line. ` : ''}${win.name} carried €${racePay(v)}.`,
     prize: v, race: true, name: win.name,
   };
 }
