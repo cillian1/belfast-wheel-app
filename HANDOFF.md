@@ -2,17 +2,12 @@
 
 ## NOW: the plan (Claude and Copilot both edit this; live status is in STATUS.md)
 
-- **Task:** Update 27 (started 2026-10-22, Cillian said go). Update 26 "Stand By Your Stank" is live (game 26, build 63).
-- **Who:** Copilot builds and opens each PR into `update-27` and posts `DONE: Task …`. Claude does a quick check and merges. Copilot does not merge. Anything that changes money, odds, prizes or payouts waits for Cillian.
+- **Task:** none active. Update 27 "Free Wheelin'" shipped (game 27, build 64) on 2026-10-22: frame-rate-independent spins (#61), edge-to-edge wheel layout (#65), 5 free daily 10c spins that can win but don't feed the jackpot (#68), and halved, tap-to-skip waits (#67).
+- **Who:** Copilot builds and opens each PR into `update-N` and posts `DONE: Task …`. Claude does a quick check and merges. Copilot does not merge. Anything that changes money, odds, prizes or payouts waits for Cillian.
 - **PR #34 stays CLOSED.**
-- **Order:**
-  1. **DONE 07:45:** #45 (Task 12A), PR #61 merged into update-27 (fast-sim odds check: no move beyond noise, total 101.3% vs 102.0%, SE 3.6). Was: draft PR #61 → `update-27`: cosmetics on their own RNG, plus fixed-timestep ball/slot physics. Done when the same seeds give identical outcomes at 10/30/60/120 fps (CI test). Claude then runs the fast-sim odds check, and any ev/edge/prize change stops for Cillian.
-  1b. **DONE:** PR #65 merged. #63 (Task 12B) main-screen layout: full-width wheel, WATCH row and empty band under Auto/Reset removed, one screen with no scroll. Layout only, and it stays out of #61's files.
-  1c. **5 free daily spins + counter:** Cillian picked real 10c spins that can win the jackpot but don't feed it. Claude's PR #68 merges when CI is green.
-  1d. **Copilot:** #66 (Task 12C) shorter time-based waits, PR → update-27.
-  3. **Release:** PR `update-27` → `main` with the version bump, name, notes and `Closes #…`, then tell Copilot on #30.
+- **Next:** Cillian checks 27 on a low-end phone (240Hz physics costs more CPU). PR #69 (Banter, from another thread) still targets `update-27`; retarget it to main or the next update branch. Don't start new work until Cillian opens the next update.
 - **If stuck:** post `BLOCKED: <reason>` on that issue straight away and move on. Cillian checks in the morning.
-- **Last updated:** 2026-10-22 by Claude, when update 27 started.
+- **Last updated:** 2026-10-22 by Claude, at the update 27 release.
 
 **Rules:**
 1. **Live status is generated:** `STATUS.md` is rebuilt automatically from issues and PRs on every change (`tools/status.mjs`, `.github/workflows/status.yml`). Never hand-edit it. To change a task's status, post `BLOCKED: <reason>` or `DONE: <task>` on its issue, or update the issue's `CURRENT:` line.
