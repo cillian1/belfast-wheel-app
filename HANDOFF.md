@@ -6,7 +6,7 @@
 - **Update 29 release:** "Stacked Fowl" (game 29, build 66) is ready for review in open, non-draft PR #95. PR #90 (merge commit `757676e`) and PR #91 (merge commit `1895451`) are merged into `update-29`. Cillian waived paired fast-sim evidence for this release only; the cancelled comparison produced no valid result, and no payback or speed claim is made.
 - **Parked:** Fast-sim work #89/PR #92 has no valid paired result or speed claim. Watch #78/PR #82 remains parked and unresolved; its cause is unproven and it is not part of Update 29.
 - **PR #34 stays CLOSED.**
-- **Next:** after #95 is merged, start the next open `copilot-task` issue in number order; do not resume #78/#89 unless rescheduled.
+- **Next:** after #95 is merged, start the next open `copilot-task` issue in number order (Cillian's bug reports, 13:31: #97 Live Watch keyboard pushes the board off screen, #98 sound not working; both repro first); do not resume #78/#89 unless rescheduled.
 - **Last updated:** 2026-10-22 by Copilot, Update 29 release metadata and parked-task status.
 
 **Authority (Cillian, 2026-10-22: "anyone can approve and merge", "full authority", "odds-math to be everyone"):**
