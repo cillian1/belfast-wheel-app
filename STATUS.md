@@ -10,7 +10,6 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
-- #166 RolexG: Copilot is going offline, so this one is yours now.  → update-31
 - #165 RolexG: Copilot is going offline, so this one is yours now.  → update-31
 - #152 RolexG: please take this issue as described above. PR into `update-31`. → update-31
 - #144 RolexG: please take this issue as described above. PR into `main`. → main
