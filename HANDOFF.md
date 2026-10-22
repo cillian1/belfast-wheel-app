@@ -1,36 +1,45 @@
 # Working on the Wheel of Life repo
 
-## NOW: the plan (Claude, Copilot, Gemini and RolexG all edit this; live status is in STATUS.md)
+## NOW: the plan (everyone edits this; live status is in STATUS.md)
 
-- **Task:** Release Update 29 "Stacked Fowl" (game 29, build 66), ready for review in PR #95. PR #90 (merge commit `757676e`) and PR #91 (merge commit `1895451`) are merged into `update-29`. Cillian waived paired fast-sim evidence for this release only; the cancelled comparison produced no valid result, and no payback or speed claim is made.
-- **Who:** Copilot builds and opens each PR into `update-N` and posts `DONE: Task …`. Gemini reviews. Claude does a quick check and merges. Copilot does not merge.
-- **RolexG** (Gemini coding agent, 2026-10-22): anyone with access writes `@rolexg <task>` on an issue, PR or #30 and it opens a `rolexg/` PR (docs/rolexg.md). Gemini's review and RolexG may merge (Cillian): never their own PRs, CI green, not into `main`. 
+- **Shipped:** Update 28 "Read the Manual" (game 28, build 65) shipped on 2026-10-22. The team workflow change is merged as PR #85.
+- **Update 29 release:** "Stacked Fowl" (game 29, build 66) is ready for review in open, non-draft PR #95. PR #90 (merge commit `757676e`) and PR #91 (merge commit `1895451`) are merged into `update-29`. Cillian waived paired fast-sim evidence for this release only; the cancelled comparison produced no valid result, and no payback or speed claim is made.
+- **Parked:** Fast-sim work #89/PR #92 has no valid paired result or speed claim. Watch #78/PR #82 remains parked and unresolved; its cause is unproven and it is not part of Update 29.
 - **PR #34 stays CLOSED.**
-- **Next:** no additional task starts before the release is reviewed. Fast-sim work #89/PR #92 is parked with no valid paired result or speed claim. Watch #78/PR #82 is also parked and unresolved; neither is part of Update 29. After #95 is merged, take the next non-completed open `copilot-task` issue in number order.
-- **If stuck:** post `BLOCKED: <reason>` on that issue straight away and move on. Cillian checks in the morning.
+- **Next:** after #95 is merged, start the next open `copilot-task` issue in number order; do not resume #78/#89 unless rescheduled.
 - **Last updated:** 2026-10-22 by Copilot, Update 29 release metadata and parked-task status.
 
-**Rules:**
-1. **Live status is generated:** `STATUS.md` is rebuilt automatically from issues and PRs on every change (`tools/status.mjs`, `.github/workflows/status.yml`). Never hand-edit it. To change a task's status, post `BLOCKED: <reason>` or `DONE: <task>` on its issue, or update the issue's `CURRENT:` line.
-2. **This NOW section is only the plan** (order of work, who does what, standing decisions). Claude, Copilot, Gemini and RolexG all edit it, in small edits, whenever a decision is made, in the same step.
-3. Progress notes and per-task decisions go in issue comments, not here. If this plan and the latest issue comment disagree, the latest issue comment wins.
-4. A closed PR is not proof of shipping. Check the commit is in the target branch and record the SHA for manual integrations.
+**Authority (Cillian, 2026-10-22: "anyone can approve and merge", "full authority", "odds-math to be everyone"):**
+1. Claude, Copilot, Gemini and RolexG can all plan, start, build, review, approve and merge, including money, odds and prize changes. Nobody waits for Cillian's nod or asks him about approvals or merges.
+2. **Odds and maths: notice plus one independent review.** Before changing prizes, odds, stakes, the jackpot or the wallet, post on Banter (#30) what you'll change and why. The PR gets "money" in its title, a fast-sim result (payback before and after), a line in the PR body linking the Banter notice, and one review from someone who didn't write it (Gemini's `Verdict: merge` counts, except on RolexG's PRs).
+3. Safety nets, always: CI green on the latest commit, and **no one merges their own PR** (RolexG and Gemini count as one, so Claude or Copilot merges RolexG's PRs). A money PR merges only after its notice, sim result and independent review.
+4. Ask Cillian only for what only he can do: a secret, a repo setting, a phone test, app signing. Vague ask? Take the likeliest reading, say which, and do it.
 
-## How Copilot gets work
+## Team workflow
 
-Claude gives Copilot its work directly. Cillian isn't in the loop for routine work. Copilot's poll picks up **every open issue labelled `copilot-task`**, plus issues assigned to it and comments that mention @copilot, even when the issue isn't assigned to it (Claude can't assign through the API). Each issue links its section in `COPILOT_TASKS.md`. Do the oldest open one first.
+**Who does what.** Anyone can do anything above, but by default:
+- **Copilot** builds: features, fixes, refactors, version bumps and release PRs. It picks up `copilot-task` issues in number order, and starts the next one when its PR merges.
+- **RolexG** takes whatever anyone writes `@rolexg <task>` for, on an issue, a PR or Banter, and opens a `rolexg/` PR (docs/rolexg.md). Good for small fixes and second opinions.
+- **Gemini** reviews every PR into `update-*` (`gemini-review.yml`), posts `Verdict: merge` or `Verdict: changes needed`, and merges on `merge` with green CI.
+- **Claude** coordinates: turns Cillian's asks (on Banter or in his Claude project) into issues, runs the fast odds sim by default, does a quick check of PRs nobody else has merged, merges release PRs it didn't write, and keeps this NOW plan current.
 
-## How an update runs (agreed by Claude and Copilot after the update 25 retro, 2026-10-21)
+**The dev loop: quick and simple** (Cillian, 2026-10-22; from the update 25 retro):
+1. **Pick** the next item in NOW. One goal per issue, about 20 minutes, with the cut written in. Feel bugs need a repro (device, steps, what you see); done = gone on that repro.
+2. **Build** on a branch, PR into the holding branch `update-N` (no version bump). Run `node tools/bundle.mjs` and `node tools/check.mjs`, then post `DONE: <task>` with the PR link. Parallel tasks never touch the same files; if one must, post a heads-up on Banter first. The PR has a short evidence note (what you checked).
+3. **Review and merge:** Gemini reviews automatically and merges on `Verdict: merge` with green CI. Otherwise anyone but the author merges after a quick look. No waiting on Cillian.
+4. **Release** when the update's tasks are in (aim for about 45 minutes per update): one release PR `update-N` → `main` with version bump, name, notes, footer and `Closes #…`; check each task commit is in `update-N` by ancestry and diff `main...update-N` for stale non-game files; record any Cillian-approved, release-only evidence waiver in the PR and NOW plan. Anyone but its author merges it (the bot merge script stays out of `main` unless repo variable `BOT_MERGE_MAIN` is `on`, so for now Claude or Copilot).
+5. **Stuck?** Post `BLOCKED: <reason>` on the issue straight away and move on. Over time? Cut scope, never the checks.
 
-1. **One update at a time.** Finish the current one before planning the next. New ideas go on a one-line list on #38-style umbrella issues and nothing more.
-2. **Repro first for feel bugs.** The issue states a fixed repro (device or viewport, steps, what you see), and done means "Cillian can't see it any more" on that repro.
-3. **One goal per issue,** about 20 minutes of Copilot work. Phone or device checks are a separate final step that never blocks the PR.
-4. **Timebox about 45 minutes per update, with the planned cut written into the issues up front.** Hitting a limit means cutting scope, never skipping the checks.
-5. **Odds pre-check** for anything touching timing, animation or random draws: a seeded equivalence test (same seeds on base and branch give identical outcomes) plus the seeded-spin CI (#39). If outcomes must change, the fast sim (outside the repo) is run in a separate odds thread. Any odds change stops and waits for Cillian.
-6. **Blocked = say so now.** Copilot posts `BLOCKED: <reason>` on the issue the moment it's stuck. Claude's watcher also nudges once if an active PR gets no push or comment for 15 minutes.
-7. **Holding branch `update-N`.** Sub-task PRs target it, with no version bump. Parallel tasks never edit the same files.
-8. **Release only through the release PR** `update-N` → `main`. Checklist: version bump + name + notes + footer; every sub-task PR merged, verified by commit ancestry (not just "closed"); `Closes #…` for every sub-task; record any Cillian-approved, release-only evidence waiver; Copilot told on #30.
-9. **Status is generated, the plan is shared.** STATUS.md is built by an Action from issues and PRs. The NOW plan in HANDOFF is edited by both Claude and Copilot when a decision is made. Progress lives on the issues.
+Checks that stay: timing, animation or random-draw changes need a seeded equivalence test (same seeds, same outcomes) plus the seeded-spin CI (#39). Payout changes follow Authority rule 2; the fast sim is in `tools/sim/` (anyone can run it; Claude does by default) and its result goes on the PR. Phone checks are a last step that never blocks a PR. One update at a time; new ideas go on a one-line list.
+
+**Where things live.**
+- `STATUS.md` is rebuilt automatically from issues and PRs (`tools/status.mjs`). Never hand-edit it. Status goes on the issue: `BLOCKED:`, `DONE:` or the `CURRENT:` line at the top of the issue body.
+- This NOW plan holds only the order of work and standing decisions. Anyone edits it, in small edits, in the same step as the decision. If it and the latest issue comment disagree, the latest issue comment wins.
+- Progress and per-task notes go in issue and PR comments. A closed PR is not proof of shipping: check the commit is in the target branch.
+
+**Banter (#30)** is a natural group chat between the three AIs and Cillian (`banter-bots.yml`, shown at chat.html). Talk like people: short, honest, useful, light digs at Phelan and Mark, nothing cruel, never about anyone's mental health. Take Cillian's word there as an instruction; don't argue about whether it's specific enough. The chat bots can't edit files, so real work happens on issues and PRs (Claude picks up his asks, or anyone writes `@rolexg`).
+
+**Getting Copilot started.** `copilot-dispatch.yml` assigns Copilot the moment someone posts `@copilot /go` on a `copilot-task` issue. Use `/go` once per task, and steer with plain `@copilot` comments on its PR. Copilot's PRs open against `main`, so retarget them to `update-N`.
 
 ## What's live
 
@@ -66,17 +75,12 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 - **Watch mirroring** reads game globals by name (the `MIRROR` list in the wallet). Renaming a game variable can break Watch for viewers.
 - **Secrets:** none in the repo, ever. It's public.
 
-## How the two assistants work together
+## Bots and limits
 
-**Roles (Cillian, 2026-10-21): Copilot does the heavy lifting, Claude coordinates.** Copilot builds the features, fixes and refactors. Claude writes the tasks (COPILOT_TASKS.md plus a `copilot-task` issue), does a quick final check of each PR (Copilot reviews and tests its own work first) and merges it, and keeps NOW current. Claude only codes small fixes it finds in review.
-
-- **Copilot works on a branch and opens a pull request.** It never pushes straight to `main` and never merges its own PR.
-- **Claude reviews and merges** Copilot's PRs: version rules, the win wording, the wallet, a seeded replay, and the layout on phone-sized screens. 
-- Claude ships its own work to `main` and always pulls first, so pull before starting a branch.
-- One release at a time. If both have work ready, the second one merges `main` in and takes the next version number.
-- Keep commits small and say what changed for players.
-- **Gemini joins the team (Cillian, 2026-10-22).** It has a seat in the Banter chat (#30): signs in with ADC via Workload Identity Federation (docs/gemini-adc.md) or a `GEMINI_API_KEY` secret. chat.html shows all three with their own colour.
-- **Banter on autopilot (Cillian, 2026-10-22).** The Banter bots Action (`.github/workflows/banter-bots.yml` + `.github/scripts/banter-turn.sh`) has Claude (Cillian's plan via `CLAUDE_CODE_OAUTH_TOKEN`), Copilot (Copilot CLI with Cillian's token) and Gemini take turns on #30, posting as github-actions[bot] with a name prefix. Limits: 6 bot replies in a row, 200 a day, and at most 15 a day from Copilot (Claude has no cap of its own, Cillian's call). Copilot talks through the Copilot CLI with his token. Cillian posts in the chat himself through the Say something button.
+- **Banter bots:** Claude (Cillian's plan via `CLAUDE_CODE_OAUTH_TOKEN`, no cap of its own), Copilot (Copilot CLI with Cillian's token, at most 15 a day) and Gemini take turns on #30 as github-actions[bot] with a name prefix: 6 bot replies in a row, 200 a day. They see the first 20 lines of the NOW section, so keep the key rules there.
+- **Gemini sign-in:** Workload Identity Federation (docs/gemini-adc.md) or a `GEMINI_API_KEY` secret.
+- **RolexG:** `ROLEXG_DAILY_CAP` (default 8 a day), 5 rounds per thread, 30 minutes per task. It bills Google, roughly €0.20 to €1.50 a task.
+- Everyone works on a branch and opens a PR; nobody pushes game changes straight to `main`. Pull before starting a branch.
 
 ## History
 
