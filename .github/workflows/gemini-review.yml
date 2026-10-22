@@ -1,4 +1,4 @@
-# Gemini reviews every PR (Cillian, update 28; all branches incl. main since Oct 22): when a PR is opened or marked
+# Gemini reviews update PRs (Cillian, update 28): when a PR into an update-N branch is opened or marked
 # ready (or gets new commits), Gemini reads the diff and posts one review comment starting "Verdict: merge"
 # or "Verdict: changes needed". Gemini may merge (Cillian, 2026-10-22): on "merge" with green CI it merges
 # through .github/scripts/bot-merge.sh, which never merges RolexG's own PRs or anything into main. If CI is
@@ -10,6 +10,7 @@ name: Gemini review
 on:
   pull_request_target:
     types: [opened, ready_for_review, synchronize]
+    branches: ['update-*']
   workflow_dispatch:
     inputs:
       pr:
@@ -29,7 +30,6 @@ jobs:
   review:
     if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
         with:
@@ -74,8 +74,7 @@ jobs:
           $(cat diff.txt)"
           jq -n --arg s "$system" --arg p "$prompt" '{systemInstruction: {parts: [{text: $s}]}, contents: [{role: "user", parts: [{text: $p}]}],
             generationConfig: {temperature: 0.2, maxOutputTokens: 2000, thinkingConfig: {thinkingBudget: 0}}}' > req.json
-          # Google sometimes errors for a few minutes (curl exit 22 on Oct 22), so retry before giving up
-          curl -sS -f --retry 3 --retry-all-errors --retry-delay 5 --max-time 90 "$url" -H "$auth" -H 'Content-Type: application/json' -d @req.json > res.json
+          curl -sS -f "$url" -H "$auth" -H 'Content-Type: application/json' -d @req.json > res.json
           review=$(jq -r '[.candidates[0].content.parts[]?.text] | join("")' res.json)
           # A 200 with no text is a failure, not a pass, so it shows up red instead of looking like a clean review.
           [ -n "${review// }" ] || { echo "Gemini sent no review: $(head -c 600 res.json)" >&2; exit 1; }

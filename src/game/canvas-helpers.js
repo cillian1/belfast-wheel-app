@@ -8,6 +8,16 @@ function mk(w = N, h = N) { const k = document.createElement('canvas'); k.width 
 function grad(g, x0, y0, x1, y1, stops) { const gr = g.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, col]) => gr.addColorStop(o, col)); return gr; }
 function rrect(g, x, y, w, h, r) { r = Math.max(0, Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2)); g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
 
+const specialMarks = {};
+function specialMark(kind) {
+  if (specialMarks[kind]) return specialMarks[kind];
+  const k = mk(64, 64), g = k.getContext('2d');
+  g.fillStyle = kind === 'W' ? '#3d2706' : '#fff2ff';
+  g.font = '900 52px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(kind, 32, 35);
+  return specialMarks[kind] = k;
+}
+
 const CHROME_LIGHT = [[0, '#59616a'], [.28, '#eef2f5'], [.45, '#a7b0b9'], [.62, '#fafcfd'], [1, '#666f79']];
 const CHROME_DARK = [[0, '#0d1013'], [.34, '#47505a'], [.5, '#181c21'], [.76, '#323941'], [1, '#0b0d10']];
 const TITANIUM = [[0, '#263b78'], [.28, '#5a88e2'], [.5, '#a47ee0'], [.72, '#ecc46c'], [1, '#7d4f27']];
@@ -104,10 +114,10 @@ function wedgeText(g, ang, rm, lines, fs, maxLen, tone) {
   });
   g.restore();
 }
-function ridges(g, n, r0, r1, angles = null) {
+function ridges(g, n, r0, r1) {
   const seg = TAU / n;
   for (let i = 0; i < n; i++) {
-    const a = angles ? angles[i] : BASE + i * seg, cs = Math.cos(a), sn = Math.sin(a), px = -sn * 1.6 * D, py = cs * 1.6 * D;
+    const a = BASE + i * seg, cs = Math.cos(a), sn = Math.sin(a), px = -sn * 1.6 * D, py = cs * 1.6 * D;
     g.beginPath(); g.moveTo(c + cs * r0 + px, c + sn * r0 + py); g.lineTo(c + cs * r1 + px, c + sn * r1 + py);
     g.strokeStyle = 'rgba(0,0,0,.6)'; g.lineWidth = 2.6 * D; g.stroke();
     g.beginPath(); g.moveTo(c + cs * r0, c + sn * r0); g.lineTo(c + cs * r1, c + sn * r1);

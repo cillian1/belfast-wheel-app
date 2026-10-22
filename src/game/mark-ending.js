@@ -332,6 +332,7 @@ function drawChicken(g, x, y, s, dir, ph, peck, flash, kind) {
   if (kind) g.restore();
   g.beginPath(); g.moveTo(-.26, -.1); g.lineTo(-.44, -.36); g.lineTo(-.2, -.24); g.fill();
   g.fillStyle = wing; g.beginPath(); g.ellipse(-.04, -.04, .17, .1, -.2, 0, TAU); g.fill();
+  if (kind) { g.save(); g.scale(dir, 1); g.drawImage(specialMark(kind), -.18, -.22, .36, .36); g.restore(); }
   const hx = .24 + peck * .1, hy = -.3 + peck * .3;
   g.fillStyle = body; g.beginPath(); g.arc(hx, hy, .13, 0, TAU); g.fill();
   g.fillStyle = '#d62a20'; [[-.04, -.13], [.03, -.15], [.09, -.12]].forEach(([a, b]) => { g.beginPath(); g.arc(hx + a, hy + b, .05, 0, TAU); g.fill(); });
@@ -357,43 +358,23 @@ function addSpecialChicken(specialChickens, kind, candidate) {
 }
 function chickenDrawSize(ch) { return Math.min(ch.size || 1, 2.2); }
 function markSpecialPrize(kind, mult) { return (kind === 'W' ? 10 : 5) * mult / 1.5; }
-function chickenPickIndex(items, roll) {
-  let at = roll * items.reduce((sum, it) => sum + (it.count || 1), 0);
-  for (let i = 0; i < items.length; i++) {
-    at -= items[i].count || 1;
-    if (at < 0) return i;
-  }
-  return items.length - 1;
-}
-function markWedge(items, i) {
-  const total = items.reduce((sum, it) => sum + (it.count || 1), 0);
-  const before = items.slice(0, i).reduce((sum, it) => sum + (it.count || 1), 0);
-  return { a0: BASE + TAU * before / total, seg: TAU * (items[i].count || 1) / total };
-}
-function markTarget(items) {
-  const i = chickenPickIndex(items, Math.random()), { a0, seg } = markWedge(items, i);
-  return { i, a: a0 - BASE + (.15 + Math.random() * .7) * seg };
-}
-function markSliceAt(rotation, items) {
-  return chickenPickIndex(items, mod(-rotation, TAU) / TAU);
-}
 const MARK_COLS = i => i % 2 ? ['#8e2a20', 'dark'] : ['#efe4c8', 'light'];
 function markWedgeStyle(it, i) { return it.kind === 'W' ? ['#d9a628', 'light'] : it.kind === 'B' ? ['#7b3fc4', 'dark'] : it.special === 'leave' ? ['#2f7a3b', 'dark'] : it.special === 'own' ? ['#141414', 'dark'] : MARK_COLS(i); }
 const chickenDrawOrder = [];
 function compareChickenY(a, b) { return a.y - b.y; }
 function buildMarkWheel(items) {
-  const k = mk(), g = k.getContext('2d'), n = items.length, r0 = R * .16, r1 = R * .93;
+  const k = mk(), g = k.getContext('2d'), n = items.length, seg = TAU / n, r0 = R * .16, r1 = R * .93;
   g.save(); g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = R * .08; g.shadowOffsetY = R * .04;
   g.beginPath(); g.arc(c, c, R, 0, TAU); g.fillStyle = '#2a1a0e'; g.fill(); g.restore();
   chromeRim(g, r1, R); weather(g, r1, R, .6);
   items.forEach((it, i) => {
-    const { a0, seg } = markWedge(items, i), a1 = a0 + seg, [col] = markWedgeStyle(it, i);
+    const a0 = BASE + i * seg, a1 = a0 + seg, [col] = markWedgeStyle(it, i);
     wedgePath(g, a0, a1, r0, r1); g.fillStyle = col; g.fill();
     // painted-wood grain
     g.save(); g.clip(); for (let j = 0; j < 30; j++) { g.beginPath(); g.arc(c, c, lerp(r0, r1, Math.random()), a0, a1); g.strokeStyle = `rgba(0,0,0,${.05 + Math.random() * .07})`; g.lineWidth = D; g.stroke(); } g.restore();
   });
-  ridges(g, n, r0, r1, items.map((it, i) => markWedge(items, i).a0));
-  items.forEach((it, i) => { const { a0, seg } = markWedge(items, i); wedgeText(g, a0 + .5 * seg, R * .56, it.lbl, R * (n > 10 ? .045 : .055), R * .62, markWedgeStyle(it, i)[1]); });
+  ridges(g, n, r0, r1);
+  items.forEach((it, i) => wedgeText(g, BASE + (i + .5) * seg, R * .56, it.lbl, R * (n > 10 ? .045 : .055), R * .62, markWedgeStyle(it, i)[1]));
   const dome = g.createRadialGradient(c - R * .04, c - R * .05, 0, c, c, R * .16);
   dome.addColorStop(0, '#f6e7c4'); dome.addColorStop(1, '#8a6a3a');
   g.beginPath(); g.arc(c, c, R * .16, 0, TAU); g.fillStyle = dome; g.fill();
@@ -401,7 +382,7 @@ function buildMarkWheel(items) {
   return k;
 }
 function drawMarkWedge(i, n, x, y, sc) {
-  const { a0, seg } = markWedge(markItems, i), it = markItems[i], [col] = markWedgeStyle(it, i);
+  const seg = TAU / n, a0 = BASE + i * seg, it = markItems[i], [col] = markWedgeStyle(it, i);
   ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
   ctx.beginPath(); ctx.arc(0, 0, R * .93, a0, a0 + seg); ctx.arc(0, 0, R * .16, a0 + seg, a0, true); ctx.closePath();
   if (it.kind) { ctx.shadowColor = it.kind === 'W' ? 'rgba(255,215,90,1)' : 'rgba(190,130,255,1)'; ctx.shadowBlur = R * .12 * sc; }
@@ -410,11 +391,11 @@ function drawMarkWedge(i, n, x, y, sc) {
 }
 // prize slices on the finished wheel pulse with their own light
 function drawMarkGlow(now) {
-  const pulse = .55 + .45 * Math.sin(now / 260);
+  const n = markItems.length, seg = TAU / n, pulse = .55 + .45 * Math.sin(now / 260);
   ctx.save(); ctx.translate(c, c); ctx.rotate(rotM); ctx.globalCompositeOperation = 'lighter';
   markItems.forEach((it, i) => {
     if (!it.kind) return;
-    const { a0, seg } = markWedge(markItems, i), rgb = it.kind === 'W' ? '255,205,80' : '180,110,255';
+    const a0 = BASE + i * seg, rgb = it.kind === 'W' ? '255,205,80' : '180,110,255';
     ctx.beginPath(); ctx.arc(0, 0, R * .93, a0, a0 + seg); ctx.arc(0, 0, R * .16, a0 + seg, a0, true); ctx.closePath();
     const g = ctx.createRadialGradient(0, 0, R * .16, 0, 0, R * .93);
     g.addColorStop(0, `rgba(${rgb},0)`); g.addColorStop(.6, `rgba(${rgb},${.18 * pulse})`); g.addColorStop(1, `rgba(${rgb},${.45 * pulse})`);
@@ -472,7 +453,7 @@ function drawFarm(now) {
     if (showMark > 0) {
       ctx.globalAlpha = showMark; drawScaled(faces.mark, rotM, 1); drawWheelRim(1); drawMarkGlow(now);
       drawWheelSweep(markSpinning, 1);
-      if (markWin) drawWheelSliceGlow(rotM, markItems.length, markWin.i, markWin.t0, 1, .55, .93, markWedge(markItems, markWin.i));
+      if (markWin) drawWheelSliceGlow(rotM, markItems.length, markWin.i, markWin.t0);
       ctx.globalAlpha = 1; drawPointer(faces.wheat, 1);
     }
   }
@@ -672,7 +653,7 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
   const pool = [...(MARK_BY_DEST[dest.t] || []).sort(() => Math.random() - .5), ...[...MARK_QS].sort(() => Math.random() - .5)];
   const specials = alive.filter(ch => ch.special).slice(0, n);
   const base = n - specials.length >= 2 ? [LEAVE, OWNWAY] : n - specials.length === 1 ? [pick([LEAVE, OWNWAY])] : [];
-  const prizes = specials.map(ch => { const k = ch.special, q = pool.shift(), v = markSpecialPrize(k, ch.mult || 1.5); return { lbl: [`€${$m(v)}`, ...q.lbl.slice(0, 2)].slice(0, 3), t: q.t, b: `${k === 'W' ? 'A gold' : 'A purple'} chicken made it: €${$m(v)} if Mark answers properly.`, prize: v, kind: k, count: ch.count || 1 }; });
+  const prizes = specials.map(ch => { const k = ch.special, q = pool.shift(), v = markSpecialPrize(k, ch.mult || 1.5); return { lbl: [`€${$m(v)}`, ...q.lbl.slice(0, 2)].slice(0, 3), t: q.t, b: `${k === 'W' ? 'A gold' : 'A purple'} chicken made it: €${$m(v)} if Mark answers properly.`, prize: v, kind: k }; });
   let items = [...prizes, ...base];
   while (items.length < n) items.push(pool.shift());
   if (!items.length) items = [pick([LEAVE, OWNWAY, pool[0]])];
@@ -698,12 +679,12 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
   ting(); Music.sting(2);
   await wait(700);
   // 6. spin it
-  const tg = markTarget(markItems), s0 = rotM, e0 = rotM + 6 * TAU + mod(-tg.a - rotM, TAU);
-  let lastS = markSliceAt(s0, markItems);
+  const tg = target(markItems.length), s0 = rotM, e0 = rotM + 6 * TAU + mod(-tg.a - rotM, TAU);
+  let lastS = sliceAt(s0, markItems.length);
   markSpinning = true;
   await farmLoop(8, (dt, el) => {
     const p = Math.min(1, el / 7.5); rotM = s0 + (e0 - s0) * easeOut(p);
-    const sl = markSliceAt(rotM, markItems); if (sl !== lastS) { lastS = sl; tick(1, 1500); flap(1); }
+    const sl = sliceAt(rotM, markItems.length); if (sl !== lastS) { lastS = sl; tick(1, 1500); flap(1); }
     return p >= 1;
   });
   rotM = mod(rotM, TAU); markSpinning = false; markWin = { i: tg.i, t0: performance.now() }; ting(); buzz([40, 50, 80]);

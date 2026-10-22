@@ -52,9 +52,9 @@ function drawWheelSweep(spinning, sc = 1) {
   drawScaled(faces.sweep, performance.now() / 420, sc);
   ctx.restore();
 }
-function drawWheelSliceGlow(rotation, n, i, t0, sc = 1, inner = .55, outer = .93, wedge = null) {
+function drawWheelSliceGlow(rotation, n, i, t0, sc = 1, inner = .55, outer = .93) {
   if (i == null) return;
-  const seg = wedge ? wedge.seg : TAU / n, a0 = wedge ? wedge.a0 : BASE + i * seg, t = Math.max(0, (performance.now() - t0) / 1000);
+  const seg = TAU / n, a0 = BASE + i * seg, t = Math.max(0, (performance.now() - t0) / 1000);
   const a = Math.min(1, t * 3) * (t < 2.4 ? .55 + .3 * Math.sin(t * 7) : .35);
   ctx.save(); ctx.translate(c, c); ctx.rotate(rotation); ctx.globalCompositeOperation = 'lighter';
   ctx.beginPath(); ctx.arc(0, 0, R * outer * sc, a0, a0 + seg); ctx.arc(0, 0, R * inner * sc, a0 + seg, a0, true); ctx.closePath();
@@ -243,7 +243,12 @@ async function boostRun(kind, fromK) {
   const img = mk(96, 96); paintTile(img, kind);
   for (let j = fromK + 1; j <= DEPTH; j++) { boostNew[j] = boostedOrder(runOrders[j - 1], kind, 4, j); faces['boost' + j] = ringFor(j, boostNew[j]); }
   Music.sting(3); buzz([40, 30, 40, 30, 120]); whoosh(true);
-  setVerdict({ eyebrow: 'Going deeper', title: kind === 'W' ? 'More Wilds' : 'More Bonus', body: 'The wheels below are changing.', flash: true });
+  let body = 'The wheels below are changing.';
+  if (!store.get('wildHint')) {
+    body = (kind === 'W' ? 'Gold Cleopatra = WILD. ' : 'Purple ankh = BONUS. ') + 'Collect 3 of a kind. ' + body;
+    store.set('wildHint', true);
+  }
+  setVerdict({ eyebrow: 'Going deeper', title: kind === 'W' ? 'More Wilds' : 'More Bonus', body, flash: true });
   godParts = [];
   for (let i = 0; i < 36; i++) {
     const j = fromK + 1 + (i % (DEPTH - fromK)), sc = Math.pow(S, j - fromK), a = Math.random() * TAU, rr = R * (.6 + Math.random() * .3) * sc;

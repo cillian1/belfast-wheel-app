@@ -216,11 +216,11 @@ button,.btn,label,a{touch-action:manipulation}
   box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 6px 18px rgba(0,0,0,.45);
 }
 [hidden]{display:none!important}
-.wilds{display:flex;justify-content:center;gap:8px;margin-top:-6px}
-#wilds canvas.wt{min-width:0;height:auto;aspect-ratio:1}
+.wilds{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) 10px repeat(3,minmax(0,1fr));gap:8px;width:100%;max-width:298px;margin:-6px auto 0}
+#wilds canvas.wt{width:100%;min-width:0;height:auto;aspect-ratio:1}
 .wilds .wgap{width:10px}
-.wlab{display:flex;justify-content:center;gap:26px;margin-top:-9px;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--mute);font-weight:600}
-.wlab span{width:136px;height:18px;display:flex;align-items:center;justify-content:center;gap:5px}
+.wlab{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:298px;margin:-6px auto 0;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);font-weight:700}
+.wlab span{min-width:0;min-height:18px;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:5px}
 .wlab .wx{display:flex;gap:3px;align-items:center}
 .wlab .wx canvas{width:16px;height:16px;border-radius:4px;box-shadow:0 0 8px rgba(240,190,90,.75);animation:wpop .6s ease-out}
 .wlab .wx.b canvas{box-shadow:0 0 8px rgba(170,110,255,.85)}
@@ -272,6 +272,7 @@ footer{position:fixed;top:8px;left:10px;z-index:5;color:rgba(220,225,230,.55);fo
       <li><b>Auto spin</b> keeps spinning for you; tap again to stop.</li>
       <li><b>Reset spin</b> starts the wheel over.</li>
       <li>Tap to skip the waits.</li>
+      <li>Gold Cleopatra = <b>WILD</b>. Purple ankh = <b>BONUS</b>. Collect 3 of a kind.</li>
       <li>Tap your <b>name / balance</b> for top up, withdraw and leaderboards.</li>
       <li><b>Music / Quality / Mute</b> control sound and graphics.</li>
     </ul>
@@ -280,7 +281,7 @@ footer{position:fixed;top:8px;left:10px;z-index:5;color:rgba(220,225,230,.55);fo
 
   <div class="stage"><canvas id="wheel" aria-label="The Wheel of Life. Tap to spin."></canvas><div class="final" id="finalCard" aria-live="polite"><span class="eyebrow">Final answer</span><ol id="finalList"></ol><p class="fquote" id="finalQuote"></p></div></div>
   <div class="wilds" id="wilds" aria-label="Wilds and Bonuses collected"><canvas class="wt" width="96" height="96"></canvas><canvas class="wt" width="96" height="96"></canvas><canvas class="wt" width="96" height="96"></canvas><span class="wgap"></span><canvas class="wt" width="96" height="96"></canvas><canvas class="wt" width="96" height="96"></canvas><canvas class="wt" width="96" height="96"></canvas></div>
-  <div class="wlab" aria-hidden="true"><span>Wilds<i class="wx" id="wxW"></i></span><span>Bonus<i class="wx b" id="wxB"></i></span></div>
+  <div class="wlab"><span>Gold · WILD<i class="wx" id="wxW"></i></span><span>Purple · BONUS<i class="wx b" id="wxB"></i></span></div>
   <p class="caption" id="caption">Land on Go deeper and you fall through the wheels.</p>
 
   <button class="spin" id="spinBtn" type="button">Spin</button>
@@ -653,6 +654,16 @@ function mk(w = N, h = N) { const k = document.createElement('canvas'); k.width 
 function grad(g, x0, y0, x1, y1, stops) { const gr = g.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, col]) => gr.addColorStop(o, col)); return gr; }
 function rrect(g, x, y, w, h, r) { r = Math.max(0, Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2)); g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
 
+const specialMarks = {};
+function specialMark(kind) {
+  if (specialMarks[kind]) return specialMarks[kind];
+  const k = mk(64, 64), g = k.getContext('2d');
+  g.fillStyle = kind === 'W' ? '#3d2706' : '#fff2ff';
+  g.font = '900 52px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(kind, 32, 35);
+  return specialMarks[kind] = k;
+}
+
 const CHROME_LIGHT = [[0, '#59616a'], [.28, '#eef2f5'], [.45, '#a7b0b9'], [.62, '#fafcfd'], [1, '#666f79']];
 const CHROME_DARK = [[0, '#0d1013'], [.34, '#47505a'], [.5, '#181c21'], [.76, '#323941'], [1, '#0b0d10']];
 const TITANIUM = [[0, '#263b78'], [.28, '#5a88e2'], [.5, '#a47ee0'], [.72, '#ecc46c'], [1, '#7d4f27']];
@@ -749,10 +760,10 @@ function wedgeText(g, ang, rm, lines, fs, maxLen, tone) {
   });
   g.restore();
 }
-function ridges(g, n, r0, r1, angles = null) {
+function ridges(g, n, r0, r1) {
   const seg = TAU / n;
   for (let i = 0; i < n; i++) {
-    const a = angles ? angles[i] : BASE + i * seg, cs = Math.cos(a), sn = Math.sin(a), px = -sn * 1.6 * D, py = cs * 1.6 * D;
+    const a = BASE + i * seg, cs = Math.cos(a), sn = Math.sin(a), px = -sn * 1.6 * D, py = cs * 1.6 * D;
     g.beginPath(); g.moveTo(c + cs * r0 + px, c + sn * r0 + py); g.lineTo(c + cs * r1 + px, c + sn * r1 + py);
     g.strokeStyle = 'rgba(0,0,0,.6)'; g.lineWidth = 2.6 * D; g.stroke();
     g.beginPath(); g.moveTo(c + cs * r0, c + sn * r0); g.lineTo(c + cs * r1, c + sn * r1);
@@ -1012,10 +1023,10 @@ function buildRing(items, pal) {
       wedgeText(g, am, R * .725, s.lbl, fsFor(s.lbl, R * .725), R * .27, 'dark');
       return;
     }
-    if (s.boost) { // More Wilds / More Bonus: copper or orchid, a stack of three small emblems and chevrons pouring inward
+    if (s.boost) { // More Wilds / More Bonus: copper or orchid, an emblem and chevrons pouring inward
       const am = BASE + (i + .5) * seg, tx = -Math.sin(am), ty = Math.cos(am), sz = R * .072 * Math.min(1, icon * 1.3);
       const at = (r, t) => [c + Math.cos(am) * r + tx * t, c + Math.sin(am) * r + ty * t];
-      [R * .85, R * .755, R * .66].forEach(r => {
+      [R * .69].forEach(r => {
         const [x, y] = at(r, 0);
         if (s.boost === 'W') cleopatra(g, x, y, am, sz * 1.15); else ankh(g, x, y, am, sz);
       });
@@ -1025,12 +1036,17 @@ function buildRing(items, pal) {
         g.beginPath(); g.moveTo(lx, ly); g.lineTo(mx, my); g.lineTo(rx, ry); g.stroke();
       });
       g.restore();
+      const label = ['MORE', s.boost === 'W' ? 'WILD' : 'BONUS'];
+      wedgeText(g, am, R * .83, label, fsFor(label, R * .83), R * .17, 'dark');
       return;
     }
     if (s.up && (s.wild || s.bonus)) { // half Wild or ankh, half Go back up
       const am = BASE + (i + .5) * seg;
       if (s.wild) cleopatra(g, c + Math.cos(am) * R * .8, c + Math.sin(am) * R * .8, am, R * .15 * icon); else ankh(g, c + Math.cos(am) * R * .8, c + Math.sin(am) * R * .8, am, R * .13 * icon);
-      upChevrons(g, am, .55, -1, [R * .6, R * .67]); return;
+      upChevrons(g, am, .55, -1, [R * .6, R * .67]);
+      const label = [s.wild ? 'WILD' : 'BONUS'];
+      wedgeText(g, am, R * .88, label, fsFor(label, R * .88) * .8, R * .1, s.wild ? 'light' : 'dark');
+      return;
     }
     if (s.up) { upChevrons(g, BASE + (i + .5) * seg, .55); return; }
     if (s.god) {
@@ -1041,12 +1057,14 @@ function buildRing(items, pal) {
     }
     if (s.bonus) {
       const am = BASE + (i + .5) * seg;
-      ankh(g, c + Math.cos(am) * R * .72, c + Math.sin(am) * R * .72, am, R * .19 * icon);
+      ankh(g, c + Math.cos(am) * R * .65, c + Math.sin(am) * R * .65, am, R * .15 * icon);
+      wedgeText(g, am, R * .83, ['BONUS'], fsFor(['BONUS'], R * .83), R * .18, 'dark');
       return;
     }
     if (s.wild) {
       const am = BASE + (i + .5) * seg;
-      cleopatra(g, c + Math.cos(am) * R * .72, c + Math.sin(am) * R * .72, am, R * .22 * icon);
+      cleopatra(g, c + Math.cos(am) * R * .65, c + Math.sin(am) * R * .65, am, R * .17 * icon);
+      wedgeText(g, am, R * .83, ['WILD'], fsFor(['WILD'], R * .83), R * .18, 'light');
       return;
     }
     wedgeText(g, BASE + (i + .5) * seg, s.deep ? R * .76 : R * .725, s.lbl, fsFor(s.lbl, R * .725), s.deep ? R * .2 : R * .27, s.show || s.deep ? 'dark' : (i % 2 ? 'dark' : 'light'));
@@ -1160,6 +1178,7 @@ function buildBall(gold) {
   else if (gold) { gr.addColorStop(0, '#fffbe8'); gr.addColorStop(.3, '#f3cf6e'); gr.addColorStop(.8, '#8a5a12'); gr.addColorStop(1, '#3e2806'); }
   else { gr.addColorStop(0, '#ffffff'); gr.addColorStop(.3, '#d5dce2'); gr.addColorStop(.75, '#5a626b'); gr.addColorStop(1, '#1d2126'); }
   g.beginPath(); g.arc(r, r, r - .5, 0, TAU); g.fillStyle = gr; g.fill();
+  if (gold === 'W' || gold === 'B') g.drawImage(specialMark(gold), s * .12, s * .12, s * .76, s * .76);
   return k;
 }
 
@@ -1829,7 +1848,6 @@ const Music = (() => {
     try { muted = !!(window.wolPref && window.wolPref.get('wol-audio-muted') === 'on'); } catch (e) {}
   }
   function applyGain() { if (master) master.gain.setTargetAtTime(on && !muted && !document.hidden ? VOL * duckV : 0, AC.currentTime, .25); }
-
   return {
     get on() { return on; },
     get muted() { loadMute(); return muted; },
@@ -1847,10 +1865,7 @@ const Music = (() => {
     },
     countrySong,
     stopCountrySong,
-    vis() {
-      if (AC && !document.hidden) AC.resume().catch(() => {});
-      applyGain();
-    },
+    vis() { applyGain(); },
   };
 })();
 document.addEventListener('visibilitychange', () => Music.vis());
@@ -1912,9 +1927,9 @@ function drawWheelSweep(spinning, sc = 1) {
   drawScaled(faces.sweep, performance.now() / 420, sc);
   ctx.restore();
 }
-function drawWheelSliceGlow(rotation, n, i, t0, sc = 1, inner = .55, outer = .93, wedge = null) {
+function drawWheelSliceGlow(rotation, n, i, t0, sc = 1, inner = .55, outer = .93) {
   if (i == null) return;
-  const seg = wedge ? wedge.seg : TAU / n, a0 = wedge ? wedge.a0 : BASE + i * seg, t = Math.max(0, (performance.now() - t0) / 1000);
+  const seg = TAU / n, a0 = BASE + i * seg, t = Math.max(0, (performance.now() - t0) / 1000);
   const a = Math.min(1, t * 3) * (t < 2.4 ? .55 + .3 * Math.sin(t * 7) : .35);
   ctx.save(); ctx.translate(c, c); ctx.rotate(rotation); ctx.globalCompositeOperation = 'lighter';
   ctx.beginPath(); ctx.arc(0, 0, R * outer * sc, a0, a0 + seg); ctx.arc(0, 0, R * inner * sc, a0 + seg, a0, true); ctx.closePath();
@@ -2103,7 +2118,12 @@ async function boostRun(kind, fromK) {
   const img = mk(96, 96); paintTile(img, kind);
   for (let j = fromK + 1; j <= DEPTH; j++) { boostNew[j] = boostedOrder(runOrders[j - 1], kind, 4, j); faces['boost' + j] = ringFor(j, boostNew[j]); }
   Music.sting(3); buzz([40, 30, 40, 30, 120]); whoosh(true);
-  setVerdict({ eyebrow: 'Going deeper', title: kind === 'W' ? 'More Wilds' : 'More Bonus', body: 'The wheels below are changing.', flash: true });
+  let body = 'The wheels below are changing.';
+  if (!store.get('wildHint')) {
+    body = (kind === 'W' ? 'Gold Cleopatra = WILD. ' : 'Purple ankh = BONUS. ') + 'Collect 3 of a kind. ' + body;
+    store.set('wildHint', true);
+  }
+  setVerdict({ eyebrow: 'Going deeper', title: kind === 'W' ? 'More Wilds' : 'More Bonus', body, flash: true });
   godParts = [];
   for (let i = 0; i < 36; i++) {
     const j = fromK + 1 + (i % (DEPTH - fromK)), sc = Math.pow(S, j - fromK), a = Math.random() * TAU, rr = R * (.6 + Math.random() * .3) * sc;
@@ -2441,7 +2461,12 @@ async function runMain() {
         steps.push({ text: cap(it.go()) }); setTiles(wilds, bonus);
       }
       if (ups++ < 3) {
-        setVerdict({ eyebrow: 'Going deeper', title: it.wild ? 'Wild, go back up' : it.bonus ? 'Bonus, go back up' : 'Go back up', body: '', steps: steps.slice(), flash: true });
+        let body = '';
+        if ((it.wild || it.bonus) && !store.get('wildHint')) {
+          body = (it.wild ? 'Gold Cleopatra = WILD. ' : 'Purple ankh = BONUS. ') + 'Collect 3 of a kind.';
+          store.set('wildHint', true);
+        }
+        setVerdict({ eyebrow: 'Going deeper', title: it.wild ? 'Wild, go back up' : it.bonus ? 'Bonus, go back up' : 'Go back up', body, steps: steps.slice(), flash: true });
         playSfx('back');
         Music.sting(1); buzz([30, 30, 30]); await wait(500);
         await dive(1 / Math.pow(S, k - 1));
@@ -2489,7 +2514,12 @@ async function runMain() {
       continue;
     }
     // Wilds and ankhs never grey out: any you collect without reaching three become special chickens
-    setVerdict({ eyebrow: 'Going deeper', title: it.wild ? 'Wild' : it.bonus ? 'Bonus' : steps[steps.length - 1].text, body: k < DEPTH ? '' : 'Something is waking up underneath.', steps: steps.slice(), flash: it.wild || it.bonus });
+    let body = k < DEPTH ? '' : 'Something is waking up underneath.';
+    if ((it.wild || it.bonus) && !store.get('wildHint')) {
+      body = (it.wild ? 'Gold Cleopatra = WILD. ' : 'Purple ankh = BONUS. ') + 'Collect 3 of a kind.';
+      store.set('wildHint', true);
+    }
+    setVerdict({ eyebrow: 'Going deeper', title: it.wild ? 'Wild' : it.bonus ? 'Bonus' : steps[steps.length - 1].text, body, steps: steps.slice(), flash: it.wild || it.bonus });
   }
   if (wilds >= 3 && bonus >= 3) { await pyramidRun(steps); return; }
   if (godHit) {
@@ -2528,7 +2558,12 @@ async function runMain() {
   for (const d of hits) {
     if (d.sp === 'W') wilds++; else bonus++;
     setTiles(wilds, bonus); Music.sting(Math.max(wilds, bonus)); buzz([20, 30, 20, 30, 80]);
-    setVerdict({ eyebrow: 'Going deeper', title: d.sp === 'W' ? 'The gold die' : 'The purple die', body: '', steps: steps.slice(), flash: true });
+    let body = '';
+    if (!store.get('wildHint')) {
+      body = (d.sp === 'W' ? 'Gold Cleopatra = WILD. ' : 'Purple ankh = BONUS. ') + 'Collect 3 of a kind.';
+      store.set('wildHint', true);
+    }
+    setVerdict({ eyebrow: 'Going deeper', title: d.sp === 'W' ? 'The gold die' : 'The purple die', body, steps: steps.slice(), flash: true });
     $('#caption').textContent = d.sp === 'W' ? 'A Wild from the dice' : 'An ankh from the dice';
     await animate(900, t => { d.glow = Math.sin(t * Math.PI) * .6 + .4; draw(); });
   }
@@ -3187,13 +3222,14 @@ function drawDie3D(g, x, y, s, M, sp) {
       g.fillStyle = `rgb(${Math.round(col[0] * lit)},${Math.round(col[1] * lit)},${Math.round(col[2] * lit)})`; g.fill();
       g.strokeStyle = `rgba(30,20,40,${.4 + (1 - n[2]) * .3})`; g.lineWidth = Math.max(1, s * .02); g.stroke();
       g.globalAlpha = Math.min(1, n[2] * 2.2);
-      if (special) { // a diamond instead of pips
-        g.fillStyle = sp === 'W' ? '#8a5a08' : '#fff2ff'; g.beginPath();
-        [[0, -.5], [.36, 0], [0, .5], [-.36, 0]].forEach(([a, b], k) => { const p = P(a, b); k ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); }); g.closePath(); g.fill();
-      } else {
+      if (!special) {
         g.fillStyle = sp === 'W' ? '#3a2406' : '#fff6dc';
         PIPS[f.val].forEach(([a, b]) => { g.beginPath(); for (let k = 0; k <= 10; k++) { const t = k / 10 * TAU, p = P(a * .5 + Math.cos(t) * .17, b * .5 + Math.sin(t) * .17); k ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); } g.fill(); });
       }
+      g.save(); g.transform(U[0], U[1], V[0], V[1], x + C[0], y + C[1]);
+      if (special) g.drawImage(specialMark(sp), -.65, -.65, 1.3, 1.3);
+      else g.drawImage(specialMark(sp), -.28, -.98, .56, .56);
+      g.restore();
       g.globalAlpha = 1;
       return;
     }
@@ -4491,6 +4527,7 @@ function drawChicken(g, x, y, s, dir, ph, peck, flash, kind) {
   if (kind) g.restore();
   g.beginPath(); g.moveTo(-.26, -.1); g.lineTo(-.44, -.36); g.lineTo(-.2, -.24); g.fill();
   g.fillStyle = wing; g.beginPath(); g.ellipse(-.04, -.04, .17, .1, -.2, 0, TAU); g.fill();
+  if (kind) { g.save(); g.scale(dir, 1); g.drawImage(specialMark(kind), -.18, -.22, .36, .36); g.restore(); }
   const hx = .24 + peck * .1, hy = -.3 + peck * .3;
   g.fillStyle = body; g.beginPath(); g.arc(hx, hy, .13, 0, TAU); g.fill();
   g.fillStyle = '#d62a20'; [[-.04, -.13], [.03, -.15], [.09, -.12]].forEach(([a, b]) => { g.beginPath(); g.arc(hx + a, hy + b, .05, 0, TAU); g.fill(); });
@@ -4516,43 +4553,23 @@ function addSpecialChicken(specialChickens, kind, candidate) {
 }
 function chickenDrawSize(ch) { return Math.min(ch.size || 1, 2.2); }
 function markSpecialPrize(kind, mult) { return (kind === 'W' ? 10 : 5) * mult / 1.5; }
-function chickenPickIndex(items, roll) {
-  let at = roll * items.reduce((sum, it) => sum + (it.count || 1), 0);
-  for (let i = 0; i < items.length; i++) {
-    at -= items[i].count || 1;
-    if (at < 0) return i;
-  }
-  return items.length - 1;
-}
-function markWedge(items, i) {
-  const total = items.reduce((sum, it) => sum + (it.count || 1), 0);
-  const before = items.slice(0, i).reduce((sum, it) => sum + (it.count || 1), 0);
-  return { a0: BASE + TAU * before / total, seg: TAU * (items[i].count || 1) / total };
-}
-function markTarget(items) {
-  const i = chickenPickIndex(items, Math.random()), { a0, seg } = markWedge(items, i);
-  return { i, a: a0 - BASE + (.15 + Math.random() * .7) * seg };
-}
-function markSliceAt(rotation, items) {
-  return chickenPickIndex(items, mod(-rotation, TAU) / TAU);
-}
 const MARK_COLS = i => i % 2 ? ['#8e2a20', 'dark'] : ['#efe4c8', 'light'];
 function markWedgeStyle(it, i) { return it.kind === 'W' ? ['#d9a628', 'light'] : it.kind === 'B' ? ['#7b3fc4', 'dark'] : it.special === 'leave' ? ['#2f7a3b', 'dark'] : it.special === 'own' ? ['#141414', 'dark'] : MARK_COLS(i); }
 const chickenDrawOrder = [];
 function compareChickenY(a, b) { return a.y - b.y; }
 function buildMarkWheel(items) {
-  const k = mk(), g = k.getContext('2d'), n = items.length, r0 = R * .16, r1 = R * .93;
+  const k = mk(), g = k.getContext('2d'), n = items.length, seg = TAU / n, r0 = R * .16, r1 = R * .93;
   g.save(); g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = R * .08; g.shadowOffsetY = R * .04;
   g.beginPath(); g.arc(c, c, R, 0, TAU); g.fillStyle = '#2a1a0e'; g.fill(); g.restore();
   chromeRim(g, r1, R); weather(g, r1, R, .6);
   items.forEach((it, i) => {
-    const { a0, seg } = markWedge(items, i), a1 = a0 + seg, [col] = markWedgeStyle(it, i);
+    const a0 = BASE + i * seg, a1 = a0 + seg, [col] = markWedgeStyle(it, i);
     wedgePath(g, a0, a1, r0, r1); g.fillStyle = col; g.fill();
     // painted-wood grain
     g.save(); g.clip(); for (let j = 0; j < 30; j++) { g.beginPath(); g.arc(c, c, lerp(r0, r1, Math.random()), a0, a1); g.strokeStyle = `rgba(0,0,0,${.05 + Math.random() * .07})`; g.lineWidth = D; g.stroke(); } g.restore();
   });
-  ridges(g, n, r0, r1, items.map((it, i) => markWedge(items, i).a0));
-  items.forEach((it, i) => { const { a0, seg } = markWedge(items, i); wedgeText(g, a0 + .5 * seg, R * .56, it.lbl, R * (n > 10 ? .045 : .055), R * .62, markWedgeStyle(it, i)[1]); });
+  ridges(g, n, r0, r1);
+  items.forEach((it, i) => wedgeText(g, BASE + (i + .5) * seg, R * .56, it.lbl, R * (n > 10 ? .045 : .055), R * .62, markWedgeStyle(it, i)[1]));
   const dome = g.createRadialGradient(c - R * .04, c - R * .05, 0, c, c, R * .16);
   dome.addColorStop(0, '#f6e7c4'); dome.addColorStop(1, '#8a6a3a');
   g.beginPath(); g.arc(c, c, R * .16, 0, TAU); g.fillStyle = dome; g.fill();
@@ -4560,7 +4577,7 @@ function buildMarkWheel(items) {
   return k;
 }
 function drawMarkWedge(i, n, x, y, sc) {
-  const { a0, seg } = markWedge(markItems, i), it = markItems[i], [col] = markWedgeStyle(it, i);
+  const seg = TAU / n, a0 = BASE + i * seg, it = markItems[i], [col] = markWedgeStyle(it, i);
   ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
   ctx.beginPath(); ctx.arc(0, 0, R * .93, a0, a0 + seg); ctx.arc(0, 0, R * .16, a0 + seg, a0, true); ctx.closePath();
   if (it.kind) { ctx.shadowColor = it.kind === 'W' ? 'rgba(255,215,90,1)' : 'rgba(190,130,255,1)'; ctx.shadowBlur = R * .12 * sc; }
@@ -4569,11 +4586,11 @@ function drawMarkWedge(i, n, x, y, sc) {
 }
 // prize slices on the finished wheel pulse with their own light
 function drawMarkGlow(now) {
-  const pulse = .55 + .45 * Math.sin(now / 260);
+  const n = markItems.length, seg = TAU / n, pulse = .55 + .45 * Math.sin(now / 260);
   ctx.save(); ctx.translate(c, c); ctx.rotate(rotM); ctx.globalCompositeOperation = 'lighter';
   markItems.forEach((it, i) => {
     if (!it.kind) return;
-    const { a0, seg } = markWedge(markItems, i), rgb = it.kind === 'W' ? '255,205,80' : '180,110,255';
+    const a0 = BASE + i * seg, rgb = it.kind === 'W' ? '255,205,80' : '180,110,255';
     ctx.beginPath(); ctx.arc(0, 0, R * .93, a0, a0 + seg); ctx.arc(0, 0, R * .16, a0 + seg, a0, true); ctx.closePath();
     const g = ctx.createRadialGradient(0, 0, R * .16, 0, 0, R * .93);
     g.addColorStop(0, `rgba(${rgb},0)`); g.addColorStop(.6, `rgba(${rgb},${.18 * pulse})`); g.addColorStop(1, `rgba(${rgb},${.45 * pulse})`);
@@ -4631,7 +4648,7 @@ function drawFarm(now) {
     if (showMark > 0) {
       ctx.globalAlpha = showMark; drawScaled(faces.mark, rotM, 1); drawWheelRim(1); drawMarkGlow(now);
       drawWheelSweep(markSpinning, 1);
-      if (markWin) drawWheelSliceGlow(rotM, markItems.length, markWin.i, markWin.t0, 1, .55, .93, markWedge(markItems, markWin.i));
+      if (markWin) drawWheelSliceGlow(rotM, markItems.length, markWin.i, markWin.t0);
       ctx.globalAlpha = 1; drawPointer(faces.wheat, 1);
     }
   }
@@ -4831,7 +4848,7 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
   const pool = [...(MARK_BY_DEST[dest.t] || []).sort(() => Math.random() - .5), ...[...MARK_QS].sort(() => Math.random() - .5)];
   const specials = alive.filter(ch => ch.special).slice(0, n);
   const base = n - specials.length >= 2 ? [LEAVE, OWNWAY] : n - specials.length === 1 ? [pick([LEAVE, OWNWAY])] : [];
-  const prizes = specials.map(ch => { const k = ch.special, q = pool.shift(), v = markSpecialPrize(k, ch.mult || 1.5); return { lbl: [`€${$m(v)}`, ...q.lbl.slice(0, 2)].slice(0, 3), t: q.t, b: `${k === 'W' ? 'A gold' : 'A purple'} chicken made it: €${$m(v)} if Mark answers properly.`, prize: v, kind: k, count: ch.count || 1 }; });
+  const prizes = specials.map(ch => { const k = ch.special, q = pool.shift(), v = markSpecialPrize(k, ch.mult || 1.5); return { lbl: [`€${$m(v)}`, ...q.lbl.slice(0, 2)].slice(0, 3), t: q.t, b: `${k === 'W' ? 'A gold' : 'A purple'} chicken made it: €${$m(v)} if Mark answers properly.`, prize: v, kind: k }; });
   let items = [...prizes, ...base];
   while (items.length < n) items.push(pool.shift());
   if (!items.length) items = [pick([LEAVE, OWNWAY, pool[0]])];
@@ -4857,12 +4874,12 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
   ting(); Music.sting(2);
   await wait(700);
   // 6. spin it
-  const tg = markTarget(markItems), s0 = rotM, e0 = rotM + 6 * TAU + mod(-tg.a - rotM, TAU);
-  let lastS = markSliceAt(s0, markItems);
+  const tg = target(markItems.length), s0 = rotM, e0 = rotM + 6 * TAU + mod(-tg.a - rotM, TAU);
+  let lastS = sliceAt(s0, markItems.length);
   markSpinning = true;
   await farmLoop(8, (dt, el) => {
     const p = Math.min(1, el / 7.5); rotM = s0 + (e0 - s0) * easeOut(p);
-    const sl = markSliceAt(rotM, markItems); if (sl !== lastS) { lastS = sl; tick(1, 1500); flap(1); }
+    const sl = sliceAt(rotM, markItems.length); if (sl !== lastS) { lastS = sl; tick(1, 1500); flap(1); }
     return p >= 1;
   });
   rotM = mod(rotM, TAU); markSpinning = false; markWin = { i: tg.i, t0: performance.now() }; ting(); buzz([40, 50, 80]);

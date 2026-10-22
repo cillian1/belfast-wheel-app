@@ -115,7 +115,6 @@ const Music = (() => {
     try { muted = !!(window.wolPref && window.wolPref.get('wol-audio-muted') === 'on'); } catch (e) {}
   }
   function applyGain() { if (master) master.gain.setTargetAtTime(on && !muted && !document.hidden ? VOL * duckV : 0, AC.currentTime, .25); }
-
   return {
     get on() { return on; },
     get muted() { loadMute(); return muted; },
@@ -133,10 +132,7 @@ const Music = (() => {
     },
     countrySong,
     stopCountrySong,
-    vis() {
-      if (AC && !document.hidden) AC.resume().catch(() => {});
-      applyGain();
-    },
+    vis() { applyGain(); },
   };
 })();
 document.addEventListener('visibilitychange', () => Music.vis());

@@ -82,7 +82,12 @@ async function runMain() {
         steps.push({ text: cap(it.go()) }); setTiles(wilds, bonus);
       }
       if (ups++ < 3) {
-        setVerdict({ eyebrow: 'Going deeper', title: it.wild ? 'Wild, go back up' : it.bonus ? 'Bonus, go back up' : 'Go back up', body: '', steps: steps.slice(), flash: true });
+        let body = '';
+        if ((it.wild || it.bonus) && !store.get('wildHint')) {
+          body = (it.wild ? 'Gold Cleopatra = WILD. ' : 'Purple ankh = BONUS. ') + 'Collect 3 of a kind.';
+          store.set('wildHint', true);
+        }
+        setVerdict({ eyebrow: 'Going deeper', title: it.wild ? 'Wild, go back up' : it.bonus ? 'Bonus, go back up' : 'Go back up', body, steps: steps.slice(), flash: true });
         playSfx('back');
         Music.sting(1); buzz([30, 30, 30]); await wait(500);
         await dive(1 / Math.pow(S, k - 1));
@@ -130,7 +135,12 @@ async function runMain() {
       continue;
     }
     // Wilds and ankhs never grey out: any you collect without reaching three become special chickens
-    setVerdict({ eyebrow: 'Going deeper', title: it.wild ? 'Wild' : it.bonus ? 'Bonus' : steps[steps.length - 1].text, body: k < DEPTH ? '' : 'Something is waking up underneath.', steps: steps.slice(), flash: it.wild || it.bonus });
+    let body = k < DEPTH ? '' : 'Something is waking up underneath.';
+    if ((it.wild || it.bonus) && !store.get('wildHint')) {
+      body = (it.wild ? 'Gold Cleopatra = WILD. ' : 'Purple ankh = BONUS. ') + 'Collect 3 of a kind.';
+      store.set('wildHint', true);
+    }
+    setVerdict({ eyebrow: 'Going deeper', title: it.wild ? 'Wild' : it.bonus ? 'Bonus' : steps[steps.length - 1].text, body, steps: steps.slice(), flash: it.wild || it.bonus });
   }
   if (wilds >= 3 && bonus >= 3) { await pyramidRun(steps); return; }
   if (godHit) {
@@ -169,7 +179,12 @@ async function runMain() {
   for (const d of hits) {
     if (d.sp === 'W') wilds++; else bonus++;
     setTiles(wilds, bonus); Music.sting(Math.max(wilds, bonus)); buzz([20, 30, 20, 30, 80]);
-    setVerdict({ eyebrow: 'Going deeper', title: d.sp === 'W' ? 'The gold die' : 'The purple die', body: '', steps: steps.slice(), flash: true });
+    let body = '';
+    if (!store.get('wildHint')) {
+      body = (d.sp === 'W' ? 'Gold Cleopatra = WILD. ' : 'Purple ankh = BONUS. ') + 'Collect 3 of a kind.';
+      store.set('wildHint', true);
+    }
+    setVerdict({ eyebrow: 'Going deeper', title: d.sp === 'W' ? 'The gold die' : 'The purple die', body, steps: steps.slice(), flash: true });
     $('#caption').textContent = d.sp === 'W' ? 'A Wild from the dice' : 'An ankh from the dice';
     await animate(900, t => { d.glow = Math.sin(t * Math.PI) * .6 + .4; draw(); });
   }
