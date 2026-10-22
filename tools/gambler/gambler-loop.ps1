@@ -128,7 +128,10 @@ function Invoke-GamblerTaskQueue {
       return
     }
     try {
-      $TaskIssues = @(ConvertFrom-Json -InputObject ($IssueListLines -join "`n") | Sort-Object { [DateTimeOffset]::Parse([string]$_.createdAt) })
+      # Windows PowerShell passes a parsed JSON array down the pipe as one item, so store it first.
+      # Issue numbers rise with creation time, so sorting by number is oldest first.
+      $ParsedIssues = ConvertFrom-Json -InputObject ($IssueListLines -join "`n")
+      $TaskIssues = @($ParsedIssues | Sort-Object { [int]$_.number })
     } catch {
       Write-Warning 'Could not parse gambler-task issues; will retry next poll.'
       return
