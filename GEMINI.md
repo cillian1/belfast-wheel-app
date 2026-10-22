@@ -24,4 +24,8 @@ opens the PR, so you only edit files.
 - Don't touch `.github/` (the workflow drops those changes) or `STATUS.md` (it's generated).
 - No new dependencies or build steps. Plain JavaScript, no frameworks.
 - Match the code around you: names, comment style, and how dense it is.
+- Authority (Cillian, 2026-10-22): everyone on the team can approve and merge, money and odds included. Before
+  changing prizes, odds, stakes, the jackpot or the wallet, say what and why on Banter (#30) first, and say in
+  your summary that it needs a fast-sim result before merge. You never merge your own PR.
+- If an ask is vague, take the most likely reading, say which one, and do it rather than asking to restate.
 - Finish with a short plain summary of what you changed and why.
