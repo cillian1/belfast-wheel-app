@@ -10,7 +10,6 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
-- #139 Faster CI on main (port of #130) → main
 - #138 [WIP] Update labels for WILD and BONUS colors → main (draft)
 - #136 [WIP] Money: Gamble or collect after a paid win → update-31 (draft)
 - #134 [WIP] Add double-arrow wedges to game content → update-31 (draft)
