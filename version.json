@@ -1,9 +1,9 @@
 {
-  "game": 27,
+  "game": 28,
   "apk": 3,
-  "gameBuild": 64,
-  "notes": "5 free spins a day with a counter, bigger edge-to-edge wheel and no wasted space, shorter waits you can tap to skip, and spins now land the same on every phone",
+  "gameBuild": 65,
+  "notes": "First-run how-to card with a ? to reopen it; clearer free-spin counter",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk",
-  "name": "Free Wheelin'"
+  "name": "Read the Manual"
 }
