@@ -11,8 +11,8 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 | #41 | Task 11C: offline banner and loading states | Started, no PR yet |  |
 | #42 | Task 11D: tidy history | Done, waiting to merge |  |
 | #43 | Task 11E: stink ghost reactions, drop Phelan voice toggle | Done, waiting to merge |  |
-| #45 | Task 11F: frame-rate-independent outcomes and shorter waits | Started, no PR yet |  |
+| #45 | Task 11F: frame-rate-independent outcomes and shorter waits | In progress | #61 (draft) → main |
 | #49 | Task 11G (TOP PRIORITY): main wheel freezes between wheels | BLOCKED: Seeded equivalence differed first at spin 2 (seed 774553914). In the 5-seed headless Edge comparison at 360x800, reduced |  |
 | #52 | Task 11H: slightly bigger buttons | Done, waiting to merge |  |
-| #53 | Task 11I: Phelan's country song | Started, no PR yet |  |
+| #53 | Task 11I: Phelan's country song | In progress | #60 (draft) → main |
 
