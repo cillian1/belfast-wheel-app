@@ -80,7 +80,7 @@
   // ---------- big wins are saved as their state frames, so anyone can rewatch them later ----------
   // Owns highlight recording, compression, and live-feed publishing.
   // hlm/{id} is the small card for the list, hld/{id} the frames (gzipped where the phone can)
-  let rec = null, wasBusy = false, feedRoom = '';
+  let rec = null, wasBusy = false;
   async function pack(text) {
     try {
       if (typeof CompressionStream === 'undefined') return { z: 0, s: text };
@@ -99,12 +99,12 @@
   // runs on every phone a few times a second: records the run, spots the big moments for the live feed
   setInterval(() => {
     const playing = typeof busy !== 'undefined' && busy;
-    if (playing && !wasBusy) { rec = { t0: now(), last: null, frames: [], room: '', win: null, stake: W.run && W.run.live ? W.run.stake : W.stake, user: W.user, name: W.me && W.me.name, test: isTest() || W.user === TEST_KEY }; feedRoom = ''; }
+    if (playing && !wasBusy) { rec = { t0: now(), last: null, frames: [], room: '', win: null, stake: W.run && W.run.live ? W.run.stake : W.stake, user: W.user, name: W.me && W.me.name, test: isTest() || W.user === TEST_KEY }; }
     wasBusy = playing;
     if (!rec) return;
     try {
       const st = capture(), sc = JSON.parse(st.scene || '""');
-      if (ROOMS[sc] && !rec.room) { rec.room = ROOMS[sc]; if (feedRoom !== rec.room) { feedRoom = rec.room; feed(`${W.me ? W.me.name : 'Someone'} just hit ${rec.room} 🔥`); } }
+      if (ROOMS[sc] && !rec.room) rec.room = ROOMS[sc];
       if (sc === 'stank' || sc === 'roul') awardTrophy('stank');
       if (sc === 'monster') awardTrophy('monster');
       if (sc === 'god' || sc === 'zena') awardTrophy('god');
@@ -201,6 +201,10 @@
   document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#wLive')) watchList(); });
   async function watchList() {
     let tab = 'live', scope = 'mine', player = 'all', limit = 20;
+    const showLoadError = (body, retry) => {
+      body.innerHTML = '<button class="wlink" type="button">Couldn\'t load, tap to retry</button>';
+      body.firstElementChild.onclick = retry;
+    };
     const render = async () => {
       const p = openSheet(`<h3>Watch</h3>
         <div class="wtabs">${[['live', 'Live'], ['wins', 'Big wins'], ['replays', 'Replays']].map(([key, label]) => `<button data-tab="${key}" type="button">${label}</button>`).join('')}</div>
@@ -208,15 +212,16 @@
       p.querySelectorAll('[data-tab]').forEach(b => { b.classList.toggle('on', b.dataset.tab === tab); b.onclick = () => { tab = b.dataset.tab; render(); }; });
       $w('wClose').onclick = closeSheet;
       const body = $w('wBody');
+      const timer = setTimeout(() => showLoadError(body, render), 10000);
       try {
         if (tab === 'live') {
           await heartbeat();
           body.innerHTML = others.length ? others.slice().sort((a, b) => (b.play ? 1 : 0) - (a.play ? 1 : 0)).map(o => `<div class="wpl"><div><b>${esc(o.name)}</b><small class="${o.play ? 'on' : ''}">${o.play ? '● Spinning now' : 'Online'}</small></div><button class="wbtn gold small" type="button" data-watch="${esc(o.key)}">Watch</button></div>`).join('')
-            : '<p>Nobody else has the wheel open right now. Check back in a minute.</p>';
+            : '<p>Nothing here yet</p>';
           body.querySelectorAll('[data-watch]').forEach(b => b.onclick = () => { const o = others.find(x => x.key === b.dataset.watch); if (o) { closeSheet(); watch(o.key, o.name); } });
         } else if (tab === 'wins') {
           const hl = Object.entries(await db.get('hlm', '?orderBy="$key"&limitToLast=20') || {}).sort((a, b) => b[1].at - a[1].at);
-          body.innerHTML = hl.map(([id, h]) => `<div class="wpl"><div><b>${esc(h.name)}</b> <span class="amt">${esc(h.amt)}</span><small>${esc(h.room)} · ${when(h.at)}</small></div><button class="wbtn small" type="button" data-h="${esc(id)}">Replay</button></div>`).join('') || '<p>No big wins to rewatch yet.</p>';
+          body.innerHTML = hl.map(([id, h]) => `<div class="wpl"><div><b>${esc(h.name)}</b> <span class="amt">${esc(h.amt)}</span><small>${esc(h.room)} · ${when(h.at)}</small></div><button class="wbtn small" type="button" data-h="${esc(id)}">Replay</button></div>`).join('') || '<p>Nothing here yet</p>';
           body.querySelectorAll('[data-h]').forEach(b => b.onclick = () => { const item = hl.find(x => x[0] === b.dataset.h); if (item) replay(item[0], item[1], 'hld'); });
         } else {
           const users = Object.entries(await db.get('users') || {}).filter(([key, user]) => key !== TEST_KEY && !user.test);
@@ -229,14 +234,15 @@
           const cards = (await Promise.all(owners.map(async ([key, user]) => Object.entries(await db.get('rpm/' + key, `?orderBy="$key"&limitToLast=${limit}`) || {}).map(([id, card]) => ({ id, by: key, name: user.name, ...card })))))
             .flat().sort((a, b) => b.at - a.at || b.id.localeCompare(a.id)).slice(0, limit);
           const rows = $w('wReplayRows');
-          rows.innerHTML = cards.map(card => `<div class="wpl"><div><b>${esc(card.name)}</b> <span class="amt">${card.amt ? esc(card.amt) : 'no win'}</span><small>${esc(card.room || 'Main wheel')} · ${when(card.at)}</small></div><button class="wbtn small" type="button" data-replay="${esc(card.id)}">Replay</button></div>`).join('') || '<p>No replays yet.</p>';
+          rows.innerHTML = cards.map(card => `<div class="wpl"><div><b>${esc(card.name)}</b> <span class="amt">${card.amt ? esc(card.amt) : 'no win'}</span><small>${esc(card.room || 'Main wheel')} · ${when(card.at)}</small></div><button class="wbtn small" type="button" data-replay="${esc(card.id)}">Replay</button></div>`).join('') || '<p>Nothing here yet</p>';
           rows.querySelectorAll('[data-replay]').forEach(b => b.onclick = () => { const card = cards.find(x => x.id === b.dataset.replay); if (card) replay(card.id, card, 'rpd'); });
           if (cards.length === limit) {
             const more = el('button', 'wbtn'); more.type = 'button'; more.textContent = 'Show more';
             more.onclick = () => { limit += 20; render(); }; rows.appendChild(more);
           }
         }
-      } catch (e) { body.innerHTML = '<p class="err">Could not load watch data. Try again.</p>'; }
+      } catch (e) { showLoadError(body, render); }
+      finally { clearTimeout(timer); }
     };
     await render();
   }

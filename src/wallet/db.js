@@ -9,7 +9,15 @@
   const STAKES = CFG.stakes, MIN_TOPUP = 100;
   const app = window.Android && Android.isApp ? Android : null;
   const JACKPOT_START = 5000;
-  const W = window.W = { user: null, me: null, stake: STAKES[0], run: null, jackpot: JACKPOT_START, cfg: { edge: CFG.edge, ev: CFG.ev, pin: null } };
+  const W = window.W = { user: null, me: null, stake: STAKES[0], run: null, jackpot: JACKPOT_START, connected: navigator.onLine !== false, cfg: { edge: CFG.edge, ev: CFG.ev, pin: null } };
+  function setConnected(connected) {
+    connected = connected && navigator.onLine !== false;
+    if (W.connected === connected) return;
+    W.connected = connected;
+    window.dispatchEvent(new Event('wol-connectivity'));
+  }
+  window.addEventListener('online', () => setConnected(true));
+  window.addEventListener('offline', () => setConnected(false));
 
   // <shared> (also used by host.html, see tools/build.mjs)
   // ---------- small helpers ----------
@@ -72,11 +80,15 @@
     if (!status) return w.no(new TypeError('offline'));
     w.ok({ ok: status >= 200 && status < 300, status, headers: { get: k => /etag/i.test(k) ? tag || null : null }, json: async () => JSON.parse(body || 'null') });
   };
-  const fetch = (app && app.http) ? (url, o = {}) => new Promise((ok, no) => {
+  const rawFetch = (app && app.http) ? (url, o = {}) => new Promise((ok, no) => {
     const id = 'r' + (++reqN), h = o.headers || {};
     waiting[id] = { ok, no };
     app.http(id, o.method || 'GET', url, h['if-match'] || '', !!h['X-Firebase-ETag'], o.body == null ? null : o.body);
   }) : window.fetch.bind(window);
+  const fetch = async (...args) => {
+    try { const response = await rawFetch(...args); setConnected(true); return response; }
+    catch (e) { setConnected(false); throw e; }
+  };
   const db = {
     url: p => CFG.db.replace(/\/$/, '') + '/' + p + '.json',
     async get(p, q = '') { const r = await fetch(db.url(p) + q, { cache: 'no-store' }); if (!r.ok) throw new Error('db ' + r.status); return r.json(); },
