@@ -84,7 +84,7 @@ speak(){
 
   case $next in
     Claude)
-      reply=$(claude -p "$prompt" --append-system-prompt "$system" --model "${CLAUDE_MODEL:-haiku}" --max-turns 1 --disallowedTools "Bash Edit Write Read WebFetch WebSearch" || true);;
+      reply=$(claude -p "$prompt" --append-system-prompt "$system" --model "${CLAUDE_MODEL:-haiku}" --max-turns 3 --disallowedTools "Bash Edit Write MultiEdit NotebookEdit Read Glob Grep LS WebFetch WebSearch Task TodoWrite" 2>cli.err || true);;
     Copilot)
       if [ -n "${COPILOT_GITHUB_TOKEN:-}" ]; then
         reply=$(env -u GH_TOKEN -u GITHUB_TOKEN copilot -p "$system
@@ -125,6 +125,8 @@ for next in "${order[@]}"; do
   .github/scripts/banter-feed.sh "$(tr A-Z a-z <<<"$next")"
   speak
   # Tidy: trim, and drop a "Name:" the model added itself.
+  # A CLI error message ("Error: Reached max turns", "Execution error", ...) is never a reply: skip to the next bot.
+  grep -qiE '^\s*(Error:|Execution error|API Error|Reached max turns|Credit balance|Invalid API key)' <<<"$reply" && { echo "$next returned an error, not a reply: $(head -c 200 <<<"$reply")"; reply=""; }
   reply=$(sed -E '1s/^\s*(Claude|Copilot|Gemini|RolexG|Jimini)\s*:\s*//' <<<"$reply" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
   # Cillian always gets an answer: if this bot passes on his message, the next one tries.
   [ -n "$reply" ] && { [ "$reply" != PASS ] || [ "$last" != Cillian ]; } && break
