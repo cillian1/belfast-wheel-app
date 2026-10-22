@@ -611,7 +611,7 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
   }
   // 4. march to the farm, then peck about
   $('#caption').textContent = 'Off to the farm';
-  alive.forEach((ch, i) => { ch.tx = N * (1.08 + Math.random() * .84); ch.ty = N * (.66 + Math.random() * .27); });
+  alive.forEach((ch, i) => { ch.tx = N * (1.08 + cosmeticRandom() * .84); ch.ty = N * (.66 + cosmeticRandom() * .27); });
   const cam0 = camX;
   await farmLoop(5.5, (dt, el) => {
     camX = lerp(cam0, N, easeInOut(Math.min(1, el / 3.6)));
@@ -620,11 +620,11 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
     return all && el > 3.6;
   });
   $('#caption').textContent = 'Pecking';
-  alive.forEach(ch => { ch.tx = ch.x; ch.ty = ch.y; ch.wait = Math.random(); });
+  alive.forEach(ch => { ch.tx = ch.x; ch.ty = ch.y; ch.wait = cosmeticRandom(); });
   await farmLoop(4.5, (dt, el) => {
     alive.forEach(ch => {
       if (ch.wait > 0) { ch.wait -= dt; ch.peck = Math.abs(Math.sin(el * 14 + ch.x)) ; return; }
-      if (walkChicken(ch, dt, N * .12)) { ch.wait = .4 + Math.random() * .9; ch.tx = Math.max(N * 1.06, Math.min(N * 1.94, ch.x + (Math.random() - .5) * N * .3)); ch.ty = Math.max(N * .65, Math.min(N * .94, ch.y + (Math.random() - .5) * N * .15)); }
+      if (walkChicken(ch, dt, N * .12)) { ch.wait = .4 + cosmeticRandom() * .9; ch.tx = Math.max(N * 1.06, Math.min(N * 1.94, ch.x + (cosmeticRandom() - .5) * N * .3)); ch.ty = Math.max(N * .65, Math.min(N * .94, ch.y + (cosmeticRandom() - .5) * N * .15)); }
     });
   });
   if (Math.random() < RACE_CHANCE) return await chickenRace(steps, alive);

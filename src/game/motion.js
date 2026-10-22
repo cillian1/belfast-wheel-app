@@ -17,7 +17,20 @@ function animate(dur, step) {
     requestAnimationFrame(f);
   });
 }
-const wait = ms => new Promise(r => setTimeout(r, reduce ? Math.min(ms, 300) : ms));
+const pendingWaits = new Set();
+const wait = ms => new Promise(r => {
+  if (reduce) ms = Math.min(ms, 300);
+  else if (ms >= 600) ms = Math.round(ms * .75);
+  let timer;
+  const done = () => { clearTimeout(timer); pendingWaits.delete(done); r(); };
+  timer = setTimeout(done, ms);
+  if (ms >= 400) pendingWaits.add(done);
+});
+document.addEventListener('pointerdown', e => {
+  if (!pendingWaits.size) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  [...pendingWaits].forEach(done => done());
+}, true);
 const sliceAt = (r, n) => Math.floor(mod(-r, TAU) / (TAU / n)) % n;
 function target(n) { const i = Math.floor(Math.random() * n); return { i, a: (i + .15 + Math.random() * .7) * TAU / n }; }
 
