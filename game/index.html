@@ -145,7 +145,10 @@ body{
 }
 .app{position:relative;z-index:1;max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
 header{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center}
-header>span{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+header>span{display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:nowrap;white-space:nowrap;max-width:100%}
+header>span>*{flex:none}
+header>span .link{font-size:12px}
+@media (max-width:370px){header>span{gap:5px}header>span .link{font-size:11px}}
 .eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--mute);font-weight:600}
 h1{
   margin:0;font-family:var(--display);font-weight:400;
@@ -1589,7 +1592,7 @@ function fitStage() {
   [...app.children].forEach(el => { if (el === st || getComputedStyle(el).display === 'none' || /^(fixed|absolute)$/.test(getComputedStyle(el).position)) return; used += el.offsetHeight; n++; });
   used += gap * n;
   const h = (window.visualViewport ? visualViewport.height : innerHeight) - used;
-  const sw = Math.max(220, Math.min(innerWidth - 4, 600, h - (window.visualViewport ? visualViewport.height : innerHeight) * .1)); st.style.width = sw + 'px'; st.style.marginLeft = st.style.marginRight = sw > app.clientWidth ? (app.clientWidth - sw) / 2 + 'px' : 'auto';
+  const sw = Math.max(220, Math.min(innerWidth - 4, 600, h)); st.style.width = sw + 'px'; st.style.marginLeft = st.style.marginRight = sw > app.clientWidth ? (app.clientWidth - sw) / 2 + 'px' : 'auto';
 }
 addEventListener('resize', fitStage); if (window.visualViewport) visualViewport.addEventListener('resize', fitStage);
 function syncCanvasQuality(preserve = true) {
@@ -5130,12 +5133,12 @@ function speak(lines) {
   sayLast = lines;
   sayBtn.hidden = false; sayBtn.textContent = 'Read it out';
   try {
-    if (!window.speechSynthesis) { sayBtn.textContent = 'No voice on this browser'; return; }
+    if (!window.speechSynthesis) { sayBtn.textContent = 'No voice'; return; }
     setTimeout(() => {
       if (sayLast !== lines) return;
       const ok = sayNow(lines);
       // if nothing has started after a moment, the phone blocked it: the button replays it from a tap, which always works
-      setTimeout(() => { if (!ok()) { sayBtn.textContent = 'Tap to hear it'; sayBtn.classList.add('pulse'); } }, 1800);
+      setTimeout(() => { if (!ok()) { sayBtn.textContent = 'Hear it'; sayBtn.classList.add('pulse'); } }, 1800);
     }, 1300);
   } catch (e) {}
 }
@@ -5488,7 +5491,7 @@ body{box-sizing:border-box;margin:0}
 .wtoast.gold{border-color:#f5d27a;color:#f8e4a6}
 .wbar .who.test{border:2px dashed #4fd1c5;background:rgba(20,70,68,.5)}.wbar .who.test small{color:#8ef0e6}.wbar .who.test b{color:#8ef0e6}
 body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;right:0;bottom:0;z-index:30;text-align:center;font:700 11px/1 var(--body);letter-spacing:.2em;padding:6px 0 calc(6px + env(safe-area-inset-bottom,0px));background:#0f4f4c;color:#c8fff8;pointer-events:none}
-.wlive{display:inline-flex;vertical-align:middle;margin-left:12px;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1.5px solid #ff4d4d;background:rgba(60,8,8,.85);color:#fff;font:700 13px/1 var(--body);letter-spacing:.12em;box-shadow:0 0 14px rgba(255,60,60,.35)}
+.wlive{display:inline-flex;vertical-align:middle;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;border:1.5px solid #ff4d4d;background:rgba(60,8,8,.85);color:#fff;font:700 12px/1 var(--body);letter-spacing:.06em;box-shadow:0 0 14px rgba(255,60,60,.35)}
 .wlive i{width:9px;height:9px;border-radius:50%;background:#9b5de5;box-shadow:0 0 6px #9b5de5}
 .wlive.on i{background:#ff3b3b;box-shadow:0 0 8px #ff3b3b;animation:wblink 1.2s ease-in-out infinite}
 .wlive em{font-style:normal;background:#ff3b3b;border-radius:999px;padding:2px 7px;letter-spacing:0;font-size:12px}
