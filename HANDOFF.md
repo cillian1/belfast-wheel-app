@@ -15,6 +15,13 @@
   - Jimini checks the rest of #108 (only real, reproducible findings become tasks) and lists what that smoke test should cover.
   - Claude does the update-30 release check and keeps this plan current.
   - Low-end phone check: Cillian won't test it (15:16). Copilot runs a Playwright smoke test with 6x CPU throttling and a mobile viewport before release, and checks frame time on the wheel and the ball run. Skip it if it blocks the release.
+- **Update 31 (coordinator: Claude, Cillian's vote 20:53-20:58 Oct 22). Branch `update-31`, cut from main. All PRs go there.**
+  - Copilot: #119/PR #120, URGENT money fix. Mark's farm stacked gold chicken must keep 2:1 landing odds (Austin's bug). Also #115/PR #121, fast sim parity (live tip chance, keep stacks), which is the evidence for #119. Then #98 sound.
+  - Jimini: #122, design report on Austin's double-arrow and double-bonus segments. Cillian picks a version, then it gets built.
+  - Gemini: reviews Copilot's PRs. #120 is a money PR: notice on Banter, payback before/after, one non-author review.
+  - RolexG: picks up #98 sound if Copilot hasn't started it once RolexG's daily cap resets. Claude or Copilot merge RolexG's PRs.
+  - The Gambler: second opinion on #120's odds numbers when Cillian runs him.
+  - Claude: coordinates, merges, release check.
 - **Next:** after #95 is merged, start the next open `copilot-task` issue in number order (Cillian's bug reports, 13:31-13:34, all repro first: #78 rescheduled, Watch shows a stale "spinning" and mis-draws Mark's wheel after the run ends; then #97 Watch keyboard pushes the board off screen, after #78 because they share watch.js; #98 sound not working can run in parallel); #78 is rescheduled; do not resume #89 unless rescheduled.
 - **Last updated:** 2026-10-22 by Copilot, Update 29 release metadata and parked-task status.
 
