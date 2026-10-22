@@ -10,6 +10,7 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
+- #127 Limit Gambler Banter replies to six per hour → main
 - #121 [WIP] Fix fast sim to match live tip chance and keep special-chicken stacks → update-31 (draft)
 - #120 [WIP] Fix landing odds for combined gold chicken on Mark's farm → update-31 (draft)
 - #94 Park Watch task for future update → main
