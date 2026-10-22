@@ -32,6 +32,17 @@
 .wbtn.gold{border:0;color:#0d1013;background:linear-gradient(180deg,#f8e4a6,#d7a944)}
 .wbtn.red{border-color:#6b2a22;background:#2a1512;color:#ffb3a6}
 .wbtn.sel{border-color:#f5d27a;color:#f5d27a}
+.wgamble{margin-top:12px;text-align:center}
+.wgamble[hidden]{display:none}
+.stage:not(.done) .wgamble{display:none}
+.final.wgambling{max-height:100%;overflow-y:auto;box-sizing:border-box;pointer-events:auto;padding:12px}
+.wgamble p{margin:6px 0}
+.wgamble .wdealer{display:flex;align-items:center;justify-content:center;gap:12px}
+.wgamble .wdealer[hidden]{display:none}
+.wgamble img{width:64px;height:auto;opacity:.65}
+.wgamble canvas{width:90px;height:126px;transition:transform .35s ease}
+.wgamble.flipping canvas{transform:scaleX(0)}
+.wgamble .wrow{justify-content:center}
 .wbtn.small{padding:7px 10px;font-size:13px;flex:none}
 .wlink{background:none;border:0;color:var(--mute);text-decoration:underline;padding:6px 0;font-size:14px}
 .wgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -205,6 +216,36 @@ header>span{flex-wrap:wrap}
     <div class="wright"><div class="wstake" aria-label="Bet per spin"><button type="button" id="wLess" aria-label="Lower bet">−</button><span><small>BET</small><b id="wStake">10c</b></span><button type="button" id="wMore" aria-label="Raise bet">+</button></div>
     <button class="wtop" type="button" id="wTop">Top up</button></div>`;
   const appEl = document.querySelector('.app');
+  const gambleBox = el('div', 'wgamble'); gambleBox.hidden = true;
+  gambleBox.setAttribute('aria-live', 'polite'); document.getElementById('finalCard').insertBefore(gambleBox, document.getElementById('finalList'));
+  function renderGamble(box, g, spectator = false) {
+    box.hidden = !g;
+    if (box === gambleBox) document.getElementById('finalCard').classList.toggle('wgambling', !!g);
+    if (!g) { box.innerHTML = ''; return; }
+    box.classList.toggle('flipping', g.phase === 'flipping');
+    const offering = g.phase === 'offer', choosing = g.phase === 'pick';
+    const locked = ['settling', 'flipping', 'reveal'].includes(g.phase);
+    const message = g.phase === 'settling' || g.phase === 'flipping' ? 'Card coming…'
+      : g.phase === 'pick' ? 'Pick RED or BLACK · 50/50'
+      : g.won === false ? 'Phelan laughs. Gamble lost.'
+      : g.won ? `Gamble won! ${eur(g.amount)} banked.` : `${eur(g.amount)} banked. Gamble or collect?`;
+    if (!box.querySelector('canvas')) box.innerHTML = `<b></b>
+      <div class="wdealer"><img alt="Ghost Phelan"><canvas width="180" height="252"></canvas></div>
+      <p class="gmessage"></p><p class="gpick"></p><div class="gactions"></div>`;
+    box.querySelector('b').textContent = `Ghost Phelan’s gamble · ${g.count}/5`;
+    box.querySelector('.gmessage').textContent = message;
+    box.querySelector('.gpick').textContent = g.pick ? `Picked ${g.pick.toUpperCase()}${g.colour ? ` · ${g.colour.toUpperCase()}` : ''}` : '';
+    box.querySelector('.gactions').innerHTML = spectator ? '' : `<div class="wrow">${offering ? '<button type="button" class="wbtn gold" data-gamble="deal">GAMBLE</button>' : ''}
+      ${choosing ? '<button type="button" class="wbtn red" data-gamble="red">RED</button><button type="button" class="wbtn" data-gamble="black">BLACK</button>' : ''}
+      ${!locked ? '<button type="button" class="wbtn" data-gamble="collect">COLLECT</button>' : ''}</div>
+      ${!locked ? '<p><small>Already banked · collects automatically in 15s · max €20 at risk</small></p>' : ''}`;
+    box.querySelector('img').src = GHOST_IMAGE.src;
+    box.querySelector('.wdealer').hidden = !g.pick && g.phase === 'offer';
+    const canvas = box.querySelector('canvas'), ctx = canvas.getContext('2d');
+    canvas.setAttribute('aria-label', g.colour ? g.colour + ' card' : 'Face-down card');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawCard(ctx, 90, 126, 140, g.card || { r: 14, s: '♥' }, !!g.colour, '#4a2a6b');
+  }
   appEl.insertBefore(bar, appEl.querySelector('.stage'));
   const $w = id => document.getElementById(id);
 
@@ -351,7 +392,7 @@ header>span{flex-wrap:wrap}
       paint();
     } catch (e) {}
   }
-  function logout() { W.user = W.me = null; pref.set('wol.user', null); pref.set('wol.pass', null); paint(); closeSheet(); showLogin(); }
+  function logout() { if (gambleBusy) return toast('Wait for the card.'); collectGamble(); if (W.run) W.run.gambleClosed = true; W.user = W.me = null; pref.set('wol.user', null); pref.set('wol.pass', null); paint(); closeSheet(); showLogin(); }
   // ---------- top up (player pays Cillian on Revolut and confirms; the host page can reverse) ----------
   // Owns the top-up confirmation sheets.
   function topupSheet(msg) {
@@ -409,7 +450,7 @@ header>span{flex-wrap:wrap}
   async function accountSheet(tab = 'me', selectedBoard) {
     await refresh();
     const me = W.me; if (!me) return;
-    const board = ['won', 'biggest', 'spins', 'net', 'trophies'].includes(selectedBoard) ? selectedBoard : (pref.get('wol.lbBoard') || 'won');
+    const board = ['won', 'biggest', 'spins', 'net', 'trophies', 'gambleWon', 'gambleLost'].includes(selectedBoard) ? selectedBoard : (pref.get('wol.lbBoard') || 'won');
     const p = openSheet(`<h3>${esc(me.name)}</h3>
       <div class="wtabs"><button data-t="me" type="button">Me</button><button data-t="lb" type="button">Leaderboards</button></div>
       <div id="wBody"><p>Loading…</p></div>
@@ -431,9 +472,9 @@ header>span{flex-wrap:wrap}
   async function meTab(body, me) {
     const tx = await db.get('tx/' + W.user, '?orderBy="$key"&limitToLast=40') || {};
     const reqs = Object.entries(await db.get('reqs').catch(() => null) || {}).filter(([, r]) => r.user === W.user && r.kind === 'withdraw' && r.status === 'pending');
-    const net = (me.won || 0) - (me.staked || 0);
+    const net = (me.won || 0) - (me.staked || 0) + (me.gambleWon || 0) - (me.gambleLost || 0);
     const rows = Object.values(tx).sort((a, b) => b.at - a.at);
-    const name = { spin: 'Spin', win: 'Win', topup: 'Top-up', gift: 'Gift', withdraw: 'Withdrawal', refund: 'Refund', adjust: 'Adjustment', payout: 'Paid out' };
+    const name = { spin: 'Spin', win: 'Win', gamble: 'Gamble', topup: 'Top-up', gift: 'Gift', withdraw: 'Withdrawal', refund: 'Refund', adjust: 'Adjustment', payout: 'Paid out' };
     const icon = { spin: '🎡', win: '🏆', topup: '➕', gift: '🎁', withdraw: '↗', refund: '↩', adjust: '⚙', payout: '✓' };
     const history = [];
     rows.slice().reverse().forEach(t => {
@@ -474,6 +515,7 @@ header>span{flex-wrap:wrap}
         <div class="wstats">
           <div><small>Spins</small><b>${me.spins || 0}</b></div><div><small>Biggest win</small><b>${eur(me.biggest || 0)}</b></div>
           <div><small>Up / down</small><b class="${net >= 0 ? 'plus' : 'minus'}">${eur(net)}</b></div>
+          <div><small>Gamble won</small><b>${eur(me.gambleWon || 0)}</b></div><div><small>Gamble lost</small><b>${eur(me.gambleLost || 0)}</b></div>
         </div>
         ${reqs.length ? `<div class="wpending">Pending withdrawals (${reqs.length}) · ${eur(pending)}</div>` : ''}
         <h4>History</h4><ul class="wlist" id="wHistory"></ul>
@@ -503,11 +545,13 @@ header>span{flex-wrap:wrap}
       won: { title: 'Most won', value: u => u.won || 0, format: eur },
       biggest: { title: 'Biggest win', value: u => u.biggest || 0, format: eur },
       spins: { title: 'Most spins', value: u => u.spins || 0, format: n => n },
-      net: { title: 'Best up/down', value: u => (u.won || 0) - (u.staked || 0), format: eur },
+      net: { title: 'Best up/down', value: u => (u.won || 0) - (u.staked || 0) + (u.gambleWon || 0) - (u.gambleLost || 0), format: eur },
+      gambleWon: { title: 'Gamble won', value: u => u.gambleWon || 0, format: eur },
+      gambleLost: { title: 'Gamble lost', value: u => u.gambleLost || 0, format: eur },
       trophies: { title: 'Most trophies', value: u => Object.keys(u.trophies || {}).length, format: n => n },
     };
     let boardKey = boards[selectedBoard] ? selectedBoard : 'won';
-    body.innerHTML = `<div class="wboard-stats">Everyone: <b>${s.spins || 0} spins</b> · Biggest ever win: <b>${eur(s.biggest || 0)}${s.biggestBy ? ` by ${esc(s.biggestBy)}` : ''}</b></div>
+    body.innerHTML = `<div class="wboard-stats">Everyone: <b>${s.spins || 0} spins</b> · Biggest ever win: <b>${eur(s.biggest || 0)}${s.biggestBy ? ` by ${esc(s.biggestBy)}` : ''}</b> · Gamble won: <b>${eur(s.gambleWon || 0)}</b> · Gamble lost: <b>${eur(s.gambleLost || 0)}</b></div>
       <div class="wboard-pick">${Object.entries(boards).map(([key, b]) => `<button class="wbtn${key === boardKey ? ' sel' : ''}" data-board="${key}" type="button">${b.title}</button>`).join('')}</div>
       <h4 id="wBoardTitle"></h4><ul class="wlist wboard" id="wBoardRows"></ul>`;
     const renderBoard = () => {
