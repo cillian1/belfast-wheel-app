@@ -91,7 +91,7 @@ When you're done, end with a short summary for the humans: what you changed and 
   say "$NUM" "on it. Working on \`$branch\` from \`$from\` ($RUN_URL)."
   # Progress in Banter too (Cillian, 2026-10-22), unless the task came from there.
   if [ "$NUM" != 30 ]; then
-    say 30 "starting on #$NUM: $(head -n1 <<<"$task" | sed -E 's/@rolexg//Ig; s/^[[:space:],:.-]+//' | cut -c1-80)"
+    say 30 "starting on #$NUM: $(head -n1 <<<"$task" | sed -E 's/@rolexg//Ig; s/^[[:space:],:.—–-]+//' | cut -c1-80)"
     gh workflow run banter-feed.yml -R "$REPO" || true
   fi
 }
