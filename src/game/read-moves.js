@@ -54,12 +54,12 @@ function speak(lines) {
   sayLast = lines;
   sayBtn.hidden = false; sayBtn.textContent = 'Read it out';
   try {
-    if (!window.speechSynthesis) { sayBtn.textContent = 'No voice on this browser'; return; }
+    if (!window.speechSynthesis) { sayBtn.textContent = 'No voice'; return; }
     setTimeout(() => {
       if (sayLast !== lines) return;
       const ok = sayNow(lines);
       // if nothing has started after a moment, the phone blocked it: the button replays it from a tap, which always works
-      setTimeout(() => { if (!ok()) { sayBtn.textContent = 'Tap to hear it'; sayBtn.classList.add('pulse'); } }, 1800);
+      setTimeout(() => { if (!ok()) { sayBtn.textContent = 'Hear it'; sayBtn.classList.add('pulse'); } }, 1800);
     }, 1300);
   } catch (e) {}
 }
