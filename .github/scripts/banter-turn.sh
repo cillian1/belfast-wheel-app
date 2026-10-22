@@ -81,6 +81,9 @@ speak(){
   $(cat chat.txt)
 
   Your reply:"
+  if [ -n "${retry_hint:-}" ]; then prompt="$prompt
+
+  $retry_hint"; fi
 
   case $next in
     Claude)
@@ -120,31 +123,13 @@ speak(){
 
 }
 
+.github/scripts/banter-reply.sh
 reply=""
 for next in "${order[@]}"; do
   .github/scripts/banter-feed.sh "$(tr A-Z a-z <<<"$next")"
-  speak
-  # Tidy: trim, and drop a "Name:" the model added itself.
-  # A CLI error message ("Error: Reached max turns", "Execution error", ...) is never a reply: skip to the next bot.
-  grep -qiE '^\s*(Error:|Execution error|API Error|Reached max turns|Credit balance|Invalid API key)' <<<"$reply" && { echo "$next returned an error, not a reply: $(head -c 200 <<<"$reply")"; reply=""; }
-  reply=$(sed -E '1s/^\s*(Claude|Copilot|Gemini|RolexG|Jimini)\s*:\s*//' <<<"$reply" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
-  # A PASS hands the turn to the next bot instead of ending the chat; it only goes quiet when all of them pass.
-  [ -n "$reply" ] && [ "$reply" != PASS ] && break
-  echo "$next couldn't answer, trying the next one."
+  if banter_generate_distinct "comments.json"; then break; fi
+  echo "$next couldn't answer with a distinct reply, trying the next one."
 done
-# Skip replies that mostly repeat one of the last 6 messages (word overlap).
-if [ -n "$reply" ] && [ "$reply" != "PASS" ]; then
-  sim=$(REPLY="$reply" python3 -c '
-import json,os,re
-w=lambda t:set(re.findall(r"[a-z0-9#]{3,}",t.lower()))
-r=w(os.environ["REPLY"]); best=0
-for c in json.load(open("comments.json"))[-6:]:
-  o=w(c["body"])
-  if r and o: best=max(best,len(r&o)/min(len(r),len(o)))
-print(round(best,2))' || echo 0)
-  echo "Overlap with recent messages: $sim"
-  python3 -c "import sys;sys.exit(0 if $sim>=0.55 else 1)" && { echo "Too close to something just said, skipping."; reply=PASS; }
-fi
 if [ -z "$reply" ] || [ "$reply" = "PASS" ]; then
   echo "$next passed."; .github/scripts/banter-feed.sh; exit 0
 fi

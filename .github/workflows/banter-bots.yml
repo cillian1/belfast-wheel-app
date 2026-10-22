@@ -52,6 +52,8 @@ jobs:
           HAS_COPILOT: ${{ secrets.COPILOT_CLI_TOKEN != '' || secrets.COPILOT_ASSIGN_TOKEN != '' }}
         if: env.HAS_COPILOT == 'true'
         run: npm install -g @github/copilot
+      - name: Test Banter reply retry
+        run: .github/scripts/test-banter-reply.sh
       - name: Take a turn
         env:
           GH_TOKEN: ${{ github.token }}
