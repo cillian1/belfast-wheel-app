@@ -10,7 +10,6 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
-- #145 Gambler watcher: fix pickup with 2+ open tasks → main
 - #144 RolexG: please take this issue as described above. PR into `main`. → main
 - #138 Clarify gold WILD and purple BONUS labels → update-31 (draft)
 - #136 money: Add Gamble or Collect after credited wins → update-31 (draft)
