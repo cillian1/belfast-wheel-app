@@ -271,7 +271,7 @@ header>span{flex-wrap:wrap}
     const me = W.me;
     $w('wWho').innerHTML = `<small>${me ? (me.test ? 'TEST' : esc(me.name)) : 'Log in'}</small><b>${eur(me ? me.balance || 0 : 0)}</b>`;
     $w('wWho').classList.toggle('test', isTest()); document.body.classList.toggle('wtest', isTest());
-    $w('wStake').textContent = stakeLbl(W.stake);
+    $w('wStake').textContent = W.run && W.run.live && W.run.free ? 'FREE 10c' : stakeLbl(W.stake);
     $w('wLess').disabled = W.stake <= STAKES[0]; $w('wMore').disabled = !nextStake();
     const pot = $w('wPot'); if (pot) pot.textContent = eur(W.jackpot || JACKPOT_START);
     paintFree();
@@ -284,7 +284,7 @@ header>span{flex-wrap:wrap}
     const row = document.getElementById('resetRow'); if (row && freeTag.parentNode !== row) row.prepend(freeTag);
     const n = W.me && W.freeLeft ? W.freeLeft(W.me) : 0;
     freeTag.hidden = !W.me; freeTag.classList.toggle('none', !n);
-    freeTag.textContent = n ? `${n} of 5 free spins left today` : 'Free spins back at midnight';
+    freeTag.textContent = !n ? 'Free spins back at midnight' : W.stake === W.freeStake ? `${n} of 5 free spins left today` : `${n} free 10c spins: set bet to 10c`;
   }
   setInterval(() => { if (W.me) paintFree(); }, 60000); // ticks over at midnight
   function setStake(c) {
