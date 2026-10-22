@@ -16,3 +16,6 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 | #52 | Task 11H: slightly bigger buttons | Done, waiting to merge |  |
 | #53 | Task 11I: Phelan's country song | In progress | #60 (draft) → main |
 
+**Other open PRs**
+
+- #62 Match near-miss wince to Phelan → update-26
