@@ -1,18 +1,17 @@
 # Fast odds sim
 
-Runs the real game code headless with fake time (no waiting, no drawing) and records where each spin ends.
-Use this for every odds or prize check. Never time real-game runs.
+Run the real game headlessly with fake time and drawing disabled. The browser still samples every spin's path; room prizes and the race/Mark payouts are averaged analytically from each recorded path.
 
     node tools/sim/run.mjs game/index.html
 
-The new `run.mjs` script is a complete replacement for the older `fastsim.mjs`, `rooms.js`, and `race.py` scripts. It performs the simulation and payback calculations in a single, much faster step.
+The default is 10,000 spins, a `.10` tip chance, three parallel pages, and seed `1`. Options can be set with `--spins N`, `--pages N`, `--seed N`, and `--tip P`. The output lists rooms, Chicken Race, Mark's wheel, total payback, and a normal-approximation 95% confidence interval. Room prizes use `tables.json`; keep it in step with `src/game/wild-room.js`, `src/game/pyramid.js`, and `src/game/god-room.js`. Race chance is read from each game's `RACE_CHANCE` and the fast sampler forces races on so the analysis can weight them back to their real chance.
 
-A 10,000-spin simulation now takes about 2 minutes, down from ~19 minutes with the old scripts. The new script also provides more accurate results by using analytic expected values for room prizes, which reduces the noise from rare, high-payout events like the Pyramid.
+Compare two files with common random numbers, resetting the same seeded random stream at the start of every spin:
 
-When comparing two versions of the game, `run.mjs` can take two file paths as arguments:
+    node tools/sim/run.mjs --spins 10000 --seed 1 game/index.html game-v2.html
 
-    node tools/sim/run.mjs game/index.html game-v2.html
+The paired result is the second file minus the first and includes a 95% interval. The confidence intervals describe variation in sampled game paths after integrating out prize/winner draws; they do not claim an exact confidence bound for all possible behavior changes between different game builds. The `fastsim.mjs`, `rooms.js`, and `race.py` scripts remain available as the original sampled method and fallback.
 
-The script will then run a comparative simulation, using common random numbers to reduce the number of spins required for a good comparison, and output the difference in payback between the two versions.
+**Game 28 baseline:** the previous 10,000-spin method reported about 12.9 room, 2.5 race, and 0.4 Mark base/spin at `.10` tip. Compare that result to the new total interval; this environment could not run the browser sampler, so equivalence has not yet been demonstrated here.
 
-- Needs Playwright + Chromium at /opt/node-tools and /opt/pw-browsers (preinstalled in Claude cloud sessions).
+**Timing:** the previous 10,000-spin, three-page run was reported at about 19 minutes on four cores. A comparable end-to-end timing for this runner is not yet available: this checkout does not have the documented Playwright/Chromium installation (`/opt/node-tools` and `/opt/pw-browsers`). Do not claim a speed-up until the new command is timed in that environment.
