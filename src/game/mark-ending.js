@@ -341,6 +341,12 @@ function drawChicken(g, x, y, s, dir, ph, peck, flash, kind) {
   if (flash) { g.globalAlpha = flash; g.fillStyle = '#fff6d0'; g.beginPath(); g.arc(0, -.1, .55, 0, TAU); g.fill(); g.globalAlpha = 1; }
   g.restore();
 }
+function specialChickenStats(count) {
+  const size = 2 ** Math.max(0, count - 1);
+  return { mult: 1.5 * size, size };
+}
+function chickenDrawSize(ch) { return Math.min(ch.size || 1, 2.2); }
+function markSpecialPrize(kind, mult) { return (kind === 'W' ? 10 : 5) * mult / 1.5; }
 const MARK_COLS = i => i % 2 ? ['#8e2a20', 'dark'] : ['#efe4c8', 'light'];
 function markWedgeStyle(it, i) { return it.kind === 'W' ? ['#d9a628', 'light'] : it.kind === 'B' ? ['#7b3fc4', 'dark'] : it.special === 'leave' ? ['#2f7a3b', 'dark'] : it.special === 'own' ? ['#141414', 'dark'] : MARK_COLS(i); }
 const chickenDrawOrder = [];
@@ -406,7 +412,7 @@ function drawFarm(now) {
     const ch = chickenDrawOrder[i];
     if (!ch.alive || ch.slice || ch.pop <= .01) continue;
     if (ch.glow > 0) { const gr = ctx.createRadialGradient(ch.x - camX, ch.y - N * .01, 0, ch.x - camX, ch.y - N * .01, N * .06); gr.addColorStop(0, ch.special === 'B' ? `rgba(190,140,255,${ch.glow})` : `rgba(255,225,120,${ch.glow})`); gr.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(ch.x - camX, ch.y - N * .01, N * .06, 0, TAU); ctx.fill(); }
-    drawChicken(ctx, ch.x - camX, ch.y, N * .055 * ch.pop, ch.dir, ch.ph, ch.peck, ch.flash || 0, ch.special);
+    drawChicken(ctx, ch.x - camX, ch.y, N * .055 * ch.pop * chickenDrawSize(ch), ch.dir, ch.ph, ch.peck, ch.flash || 0, ch.special);
     if (ch.tag) drawRaceTag(ch);
   }
   carried.forEach(b => {
@@ -431,7 +437,7 @@ function drawFarm(now) {
   if (markItems.length && formT.length) {
     if (showMark < 1) formT.forEach((ft, i) => {
       if (ft.t <= 0) return; const e = easeInOut(Math.min(1, ft.t));
-      drawMarkWedge(ft.idx ?? i, markItems.length, lerp(ft.x - camX, c, e), lerp(ft.y, c, e), lerp(.1, 1, e));
+      drawMarkWedge(ft.idx ?? i, markItems.length, lerp(ft.x - camX, c, e), lerp(ft.y, c, e), lerp(.1, ft.size || 1, e));
     });
     if (showMark > 0) {
       ctx.globalAlpha = showMark; drawScaled(faces.mark, rotM, 1); drawWheelRim(1); drawMarkGlow(now);
@@ -474,7 +480,7 @@ function planMarkFlights(markItems, alive, n, wheelSize) {
   spc.forEach(ch => { const j = markItems.findIndex((it, q) => it.kind === ch.special && ![...sliceOf.values()].includes(q)); sliceOf.set(ch, j); });
   plain.forEach((ch, q) => sliceOf.set(ch, free[q]));
   const fliers = [...plain, ...spc];
-  const formT = fliers.map(ch => ({ x: ch.x, y: ch.y - wheelSize * .02, t: 0, idx: sliceOf.get(ch), kind: ch.special || null }));
+  const formT = fliers.map(ch => ({ x: ch.x, y: ch.y - wheelSize * .02, t: 0, idx: sliceOf.get(ch), kind: ch.special || null, size: chickenDrawSize(ch) }));
   const startAt = fliers.map((ch, i) => i < plain.length ? i * .18 : plain.length * .18 + .6 + (i - plain.length) * 1.1);
   return { spc, fliers, formT, startAt };
 }
@@ -531,11 +537,18 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
   const tokens = [...Array(held.W).fill('W'), ...Array(held.B).fill('B'), ...((pipes && pipes.specials) || []).map(k => k.toLowerCase())];
   if (tokens.length) { // the Wilds and ankhs you carried down here turn chickens gold and purple
     await wait(500);
-    for (let i = 0; i < tokens.length; i++) { // each one hatches a brand-new chicken
+    const specialChickens = {}, specialCounts = { W: 0, B: 0 };
+    for (let i = 0; i < tokens.length; i++) {
       const kd = tokens[i].toUpperCase(), fromTile = tokens[i] === kd;
-      const ch = { x: N * (.12 + Math.random() * .76), y: N * (.66 + Math.random() * .25), dir: Math.random() < .5 ? -1 : 1, ph: 0, peck: 0, alive: true, pop: 0, special: kd };
-      chickens.push(ch);
-      // the tile itself leaves its slot in the bar, arcs down onto the farm and becomes the chicken
+      const count = ++specialCounts[kd], stats = specialChickenStats(count);
+      const x = N * (.12 + Math.random() * .76), y = N * (.66 + Math.random() * .25), dir = Math.random() < .5 ? -1 : 1;
+      let ch = specialChickens[kd];
+      const growing = !!ch, oldSize = ch ? ch.size : stats.size;
+      if (!ch) {
+        ch = { x, y, dir, ph: 0, peck: 0, alive: true, pop: 0, special: kd, ...stats };
+        specialChickens[kd] = ch; chickens.push(ch);
+      }
+      // Each tile or ball arcs into its colour's chicken; extra tokens make it grow.
       const ball = fromTile ? null : carried.find(b => b.kind === kd && !b.used);
       if (ball) { // the ball from the green chute bounces over to its spot and turns into the chicken
         ball.used = true; const bx = ball.x, by = ball.y; whoosh();
@@ -543,10 +556,10 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
           const u = Math.min(1, t / .6), v = Math.max(0, (t - .6) / .4), e = easeInOut(u);
           ball.x = lerp(bx, ch.x, e); ball.y = lerp(by, ch.y - N * .03, e) - Math.sin(u * Math.PI) * N * .14;
           ball.s = 1 + Math.sin(u * Math.PI) * .5 + v * 1.2; ball.glow = .5 + .5 * u;
-          if (v > 0) { ball.s *= 1 - v; ch.pop = easeOut(v); ch.glow = 1 - v * .6; }
+          if (v > 0) { ball.s *= 1 - v; if (growing) ch.size = lerp(oldSize, stats.size, easeOut(v)); else ch.pop = easeOut(v); ch.glow = 1 - v * .6; }
           draw();
         });
-        ball.s = 0; ch.pop = 1; ch.glow = 0; ting(); buzz(30);
+        ball.s = 0; ch.pop = 1; ch.size = stats.size; ch.mult = stats.mult; ch.glow = 0; ting(); buzz(30);
         continue;
       }
       const tile = fromTile ? [...wildTiles].filter((k, j) => (kd === 'W' ? j < 3 : j >= 3) && k.classList.contains('lit')).pop() : null;
@@ -568,11 +581,11 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
           fly.style.opacity = String(1 - v);
           if (u >= 1 && !ch.landed) { ch.landed = true; ch.glow = 1; }
         }
-        if (!fly || u >= 1) { ch.pop = easeOut(v); ch.glow = 1 - v; }
+        if (!fly || u >= 1) { if (growing) ch.size = lerp(oldSize, stats.size, easeOut(v)); else ch.pop = easeOut(v); ch.glow = 1 - v; }
         draw();
       });
       if (fly) fly.remove();
-      ch.pop = 1; ch.glow = 0; ting(); buzz(30);
+      ch.pop = 1; ch.size = stats.size; ch.mult = stats.mult; ch.glow = 0; ting(); buzz(30);
     }
     setVerdict({ eyebrow: 'Going deeper', title: 'Special chickens', body: 'Gold and purple ones can’t be touched.', steps: steps.slice(), flash: false });
     await wait(700);
@@ -632,9 +645,9 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
   const n = Math.min(alive.length, 16);
   // questions about where the chart sent you come first, then the general ones
   const pool = [...(MARK_BY_DEST[dest.t] || []).sort(() => Math.random() - .5), ...[...MARK_QS].sort(() => Math.random() - .5)];
-  const specials = alive.filter(ch => ch.special).slice(0, n).map(ch => ch.special);
+  const specials = alive.filter(ch => ch.special).slice(0, n);
   const base = n - specials.length >= 2 ? [LEAVE, OWNWAY] : n - specials.length === 1 ? [pick([LEAVE, OWNWAY])] : [];
-  const prizes = specials.map(k => { const q = pool.shift(), v = k === 'W' ? 10 : 5; return { lbl: [`€${$m(v)}`, ...q.lbl.slice(0, 2)].slice(0, 3), t: q.t, b: `${k === 'W' ? 'A gold' : 'A purple'} chicken made it: €${$m(v)} if Mark answers properly.`, prize: v, kind: k }; });
+  const prizes = specials.map(ch => { const k = ch.special, q = pool.shift(), v = markSpecialPrize(k, ch.mult || 1.5); return { lbl: [`€${$m(v)}`, ...q.lbl.slice(0, 2)].slice(0, 3), t: q.t, b: `${k === 'W' ? 'A gold' : 'A purple'} chicken made it: €${$m(v)} if Mark answers properly.`, prize: v, kind: k }; });
   let items = [...prizes, ...base];
   while (items.length < n) items.push(pool.shift());
   if (!items.length) items = [pick([LEAVE, OWNWAY, pool[0]])];
