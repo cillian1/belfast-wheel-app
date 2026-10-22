@@ -147,17 +147,10 @@ function drawGhost() {
   const reaction = ghost.reaction, age = (performance.now() - (ghost.reactionAt || 0)) / 1000;
   g.save(); g.globalAlpha = ghost.a * .85;
   g.translate(ghost.x + Math.sin(t * 1.8) * s * .015, ghost.y + Math.sin(t * 1.4) * s * .035 - (reaction === 'cheer' ? Math.abs(Math.sin(age * 7)) * R * .09 : 0));
-  g.rotate(Math.sin(t * 2) * .012 + (reaction === 'cheer' ? age * TAU * 1.5 : reaction === 'wince' ? -.12 : 0));
+  g.rotate(Math.sin(t * 2) * .012 + (reaction === 'cheer' ? age * TAU * 1.5 : 0));
   g.transform(1, 0, Math.sin(t * 2.4) * .018, 1, 0, 0);
-  if (reaction === 'wince') g.scale(1 + Math.sin(age * 12) * .08, .78);
   g.drawImage(GHOST_IMAGE, -w / 2, -h / 2, w, h);
-  if (reaction === 'wince') {
-    g.globalCompositeOperation = 'source-atop'; g.fillStyle = 'rgba(85,210,90,.42)'; g.fillRect(-w / 2, -h / 2, w, h); g.globalCompositeOperation = 'source-over';
-    if (!Perf.low) {
-      g.fillStyle = `rgba(105,190,75,${Math.max(0, .65 - age * .5)})`;
-      for (let i = 0; i < 3; i++) { g.beginPath(); g.arc(w * (.4 + i * .1), h * (.18 + i % 2 * .1), s * (.08 + i * .015), 0, TAU); g.fill(); }
-    }
-  } else if (reaction === 'cheer' && !Perf.low) {
+  if (reaction === 'cheer' && !Perf.low) {
     g.fillStyle = `rgba(255,230,130,${Math.max(0, .9 - age * .55)})`;
     for (let i = 0; i < 6; i++) { const a = i * TAU / 6 + age * 2, x = Math.cos(a) * w * .62, y = Math.sin(a) * h * .62; g.beginPath(); g.arc(x, y, D * 2.2, 0, TAU); g.fill(); }
   }
