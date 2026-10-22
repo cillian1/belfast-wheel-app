@@ -2,10 +2,11 @@
 
 ## NOW: the plan (everyone edits this; live status is in STATUS.md)
 
-- **Task:** none active. Update 28 "Read the Manual" shipped (game 28, build 65) on 2026-10-22.
-- **Next:** update 29 "odds ideas" (Cillian's Banter ideas, 2026-10-22; he said no sign-off needed, Claude picked the numbers with the fast sim so total payback stays the same): (1) the ticker only teases 1 in 3 near misses, and a tease tips onto the special 30% of the time (was every near miss at 10%, so the same 10% overall); (2) one special chicken always carries the race's top tag (80/100/120) times its multiplier; (3) Wilds/ankhs of the same kind going into the farm make ONE special chicken of that colour, and each extra one doubles its size and multiplier (1.5x, 3x, 6x), Mark's-wheel prize slice too; (4) to pay for it, `RACE_CHANCE` .25 -> .16. Plus #78 Live Watch freeze (RolexG, PR #82; cause must be shown first). The fast sim now lives in `tools/sim/`.
+- **Shipped:** Update 28 "Read the Manual" (game 28, build 65) shipped on 2026-10-22. The team workflow change is merged as PR #85.
+- **Update 29:** Tasks 1 and 2 are represented by open PRs #90 and #91 into `update-29`; neither has shipped, and both have Gemini changes-needed reviews. The #78 Live Watch task also belongs in Update 29: issue #78 and PR #82 remain open. Cillian's latest direction is a small recovery guard for a viewer that stops drawing while the feed advances, retaining the logging; the cause is not yet proven, and #82 must not be merged as-is.
+- **Separate main-target work:** Issue #89 and PR #92 remain open. Gemini found that `tools/sim/run.mjs` is only a stub that logs "Starting simulation..." and exits; the promised simulator is still pending.
 - **PR #34 stays CLOSED.**
-- **Last updated:** 2026-10-22 by Claude, team workflow rewrite (update 29 odds settings kept).
+- **Last updated:** 2026-10-22 by Copilot, status and ordering refresh.
 
 **Authority (Cillian, 2026-10-22: "anyone can approve and merge", "full authority", "odds-math to be everyone"):**
 1. Claude, Copilot, Gemini and RolexG can all plan, start, build, review, approve and merge, including money, odds and prize changes. Nobody waits for Cillian's nod or asks him about approvals or merges.
