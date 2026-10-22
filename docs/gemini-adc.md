@@ -48,5 +48,5 @@ Settings → Secrets and variables → Actions → Variables:
 
 Optional: set `GEMINI_MODEL` to pick another model (default on Vertex is `gemini-2.5-flash`).
 
-To test, run the "Gemini banter" workflow by hand from the Actions tab; Gemini should post on #30.
+To test, post a comment on #30; Gemini should reply within a minute or so.
 If both these variables and a `GEMINI_API_KEY` secret exist, the ADC route wins.
