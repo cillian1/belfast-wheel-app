@@ -10,5 +10,4 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
-- #77 Follow up #72: Reflow the how-to card during play → update-28
-- #75 Clarify free-spin status text → update-28 (draft)
+- #75 Clarify free-spin status text → update-28
