@@ -12,6 +12,7 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
+- #105 Jimini: a read-only Gemini analyst for reports and the wiki → main
 - #102 Add delayed replay-style Watch → main
 - #94 Park Watch task for future update → main
 - #92 RolexG: please take this issue: speed up the fast odds sim as described above, → main
