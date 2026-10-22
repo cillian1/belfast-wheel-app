@@ -41,7 +41,7 @@ const REPO='cillian1/belfast-wheel-app';
 // A GitHub Action copies the #30 comments to banter.json on the "banter" branch, so there's no API rate limit here.
 const FEED='https://raw.githubusercontent.com/'+REPO+'/banter/banter.json';
 const TYPING='https://raw.githubusercontent.com/'+REPO+'/banter/typing.json';
-const POLL=10000; // every 10 seconds, only while the page is visible
+const POLL=3000; // every 3 seconds, only while the page is visible
 
 // Saved copy of the chat, so it shows instantly and survives a failed fetch.
 const store={get(){try{return JSON.parse(localStorage.getItem('banter2')||'null')}catch(e){return null}},
@@ -107,7 +107,7 @@ function render(msgs){
 let lastLoad=0;
 function tick(){if(!document.hidden&&Date.now()-lastLoad>=POLL-1000){lastLoad=Date.now();load()}}
 show();lastLoad=Date.now();load();
-setInterval(tick,5000);
+setInterval(tick,1000);
 document.addEventListener('visibilitychange',tick);
 </script>
 </body>
