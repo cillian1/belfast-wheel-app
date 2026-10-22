@@ -10,5 +10,6 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
+- #77 Follow up #72: Reflow the how-to card during play → update-28
 - #76 RolexG: a Gemini coding agent, and Gemini/RolexG can merge → main
 - #75 [WIP] Update free-spin status line to show spins left → update-28 (draft)
