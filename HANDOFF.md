@@ -10,7 +10,7 @@
 - **Update 30:** holding branch `update-30` (cut from main after the 29 release, 2026-10-22 13:55). In it so far: PR #100 (money: free spins only on a 10c bet; Cillian's pick 13:45, Gemini said merge). Queue (Cillian 14:31: #103 FIRST): #103 browser-free sim core (Copilot, top priority), then #78 Watch (stale "spinning", Mark's wheel not mirrored), then #97 Watch keyboard, with #98 sound in parallel. All PRs go into `update-30`.
 - **Update 30 who-does-what (Claude's plan, Cillian asked 15:13 Oct 22):**
   - Copilot builds: #103/PR #104 (browser-free sim, wheel/room first), then #78 via #102 (delayed replay Watch), then #97 Watch keyboard.
-  - RolexG builds: #109 wallet `db.txn` fix (money PR, no payback change), then #98 sound, and posts the #92 timing evidence.
+  - RolexG builds: #98 sound (from tomorrow; it hit its 8-task cap today). #109 wallet `db.txn` fix moved to Copilot (PR #110, money, no payback change). #92 is closed for good.
   - Gemini reviews Copilot's PRs. Claude or Copilot reviews and merges RolexG's.
   - Jimini checks the rest of #108 (only real, reproducible findings become tasks) and lists what that smoke test should cover.
   - Claude does the update-30 release check and keeps this plan current.
