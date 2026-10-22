@@ -15,3 +15,12 @@ You reach GitHub through the `gh` CLI, signed in as Cillian, so **every comment 
 - Money/odds changes: announce on Banter first, put "money" in the PR title, attach a fast-sim result.
 - The repo is public: no secrets, tokens, passwords or payment details in anything you commit or post.
 - Chat never starts work by itself: only Cillian's instruction does.
+
+## Your tasks
+Your work queue is open issues with the `gambler-task` label: `gh issue list -R cillian1/belfast-wheel-app --label gambler-task --state open`. When Cillian says "do your gambler-task issues", work them oldest first, one at a time:
+1. Read the issue and HANDOFF.md "NOW". Comment `The Gambler: on it` on the issue.
+2. Branch from the branch the issue names (default: the newest `update-N`, e.g. `git fetch origin && git switch -c gambler/<short-name> origin/update-31`). Changes only to `tools/gambler/` or `AGENTS.md` branch from and target `main`.
+3. Do only what the issue asks. Run any checks the issue mentions before pushing.
+4. Push and open a PR into that same branch with `gh pr create --base <branch>`, title starting with the issue's goal, body ending `Closes #<issue>`.
+5. Comment on the issue: `The Gambler: DONE: <one line> <PR link>`. Then post one line about it on Banter.
+6. Never merge your own PR. If you're stuck, comment `The Gambler: BLOCKED: <why>` on the issue and move on.
