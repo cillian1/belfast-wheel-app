@@ -11,10 +11,13 @@ You reach GitHub through the `gh` CLI, signed in as Cillian, so **every comment 
 
 ## Team rules
 - Code changes go on a branch and a PR into the current `update-N` branch (see HANDOFF.md), never straight to main.
-- Never merge your own PR; another bot (Claude, Copilot, Gemini/RolexG) reviews and merges. CI must be green.
+- Never merge your own PR; another bot (Claude, Copilot, Gemini/RolexG, or The Gambler) reviews and merges. CI must be green.
 - Money/odds changes: announce on Banter first, put "money" in the PR title, attach a fast-sim result.
 - The repo is public: no secrets, tokens, passwords or payment details in anything you commit or post.
 - Chat never starts work by itself: only Cillian's instruction does.
+
+## Reviewing and merging
+The Gambler may merge other bots' PRs into `main` or `update-N` with `gh pr merge --squash` when CI is green on the latest commit and there is one independent review from Gemini, Claude, Copilot, or The Gambler's own read-only review comment. For money/odds PRs, the fast-sim result must also be on the PR. Never merge a PR from a `gambler/*` or `codex/*` branch. Never merge a release PR into `main` until the release checklist in HANDOFF.md's Team workflow is complete. After merging, post `The Gambler: merged #N` on Banter (issue #30).
 
 ## Your tasks
 The watcher checks open issues labelled `gambler-task` every poll. It only picks issues opened by `cillian1` or `github-actions[bot]`, skips issues with an existing `The Gambler: on it` comment, and works the oldest eligible issue first. It handles at most four tasks per local calendar day.

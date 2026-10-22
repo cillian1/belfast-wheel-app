@@ -27,9 +27,9 @@
 - **Last updated:** 2026-10-22 by Copilot, Update 29 release metadata and parked-task status.
 
 **Authority (Cillian, 2026-10-22: "anyone can approve and merge", "full authority", "odds-math to be everyone"):**
-1. Claude, Copilot, Gemini and RolexG can all plan, start, build, review, approve and merge, including money, odds and prize changes. Nobody waits for Cillian's nod or asks him about approvals or merges.
+1. Claude, Copilot, Gemini, RolexG and The Gambler can all plan, start, build, review, approve and merge, including money, odds and prize changes. Nobody waits for Cillian's nod or asks him about approvals or merges.
 2. **Odds and maths: notice plus one independent review.** Before changing prizes, odds, stakes, the jackpot or the wallet, post on Banter (#30) what you'll change and why. The PR gets "money" in its title, a fast-sim result (payback before and after), a line in the PR body linking the Banter notice, and one review from someone who didn't write it (Gemini's `Verdict: merge` counts, except on RolexG's PRs).
-3. Safety nets, always: CI green on the latest commit, and **no one merges their own PR** (RolexG and Gemini count as one, so Claude or Copilot merges RolexG's PRs). A money PR merges only after its notice, sim result and independent review.
+3. Safety nets, always: CI green on the latest commit, and **no one merges their own PR** (RolexG and Gemini count as one, so Claude or Copilot merges RolexG's PRs; The Gambler never merges PRs from `gambler/*` or `codex/*` branches). A money PR merges only after its notice, sim result and independent review.
 4. Ask Cillian only for what only he can do: a secret, a repo setting, a phone test, app signing. Vague ask? Take the likeliest reading, say which, and do it.
 
 ## Team workflow
