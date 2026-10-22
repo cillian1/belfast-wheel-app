@@ -8,7 +8,7 @@
 - **Order:**
   1. **Now, in parallel:** #49 main-wheel freezes between wheels (**TOP PRIORITY**; main wheel only, rooms later), plus wave 1: #39 → PR #46 (CI/template/release notes), #40 → PR #47 (notifications), #41 → PR #48 (offline + loading). All PRs target `update-26`, with no version bump.
   2. **Wave 2:** #42 (history) and #52 (bigger buttons) STARTED 00:20 (wave 1 #46/#47/#48 merged). #43 (ghost reactions + drop voice toggle) STARTED 00:30 (#50 freeze fix merged). Then #53 ("Stand By Your Stank") after #43.
-  3. **Wave 3, alone:** #45 (frame-rate-independent results + shorter waits; fast-sim odds check, and any odds change waits for Cillian).
+  3. **Wave 3, alone, REQUIRED before release:** #45 (also fixes the frame-dependence PR #50 introduced) (frame-rate-independent results + shorter waits; fast-sim odds check, and any odds change waits for Cillian).
   4. **Release:** a PR `update-26` → `main` bumping to 26 with a name, notes and `Closes #…` for every sub-task, then post DONE.
 - **If stuck:** post `BLOCKED: <reason>` on that issue straight away and move on to the next independent step. Don't retry forever. Cillian checks in the morning.
 - **Last updated:** 2026-10-21 23:52 by Claude. Update 26 now runs under "How an update runs": every open issue has a cut line, #49 has a repro, #45/#49 need the odds pre-check, and there is one goal per issue (#42/#43 split into #52/#53).
