@@ -6,10 +6,14 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 | Issue | Task | Status | PRs |
 |---|---|---|---|
-| #98 | Task: game sound not working on Cillian's phone | In review | #112 → update-30 |
+| #98 | Task: game sound not working on Cillian's phone | In review | #112 → update-31 |
 
 **Other open PRs**
 
+- #138 Clarify gold WILD and purple BONUS labels → main (draft)
+- #136 [WIP] Money: Gamble or collect after a paid win → update-31 (draft)
+- #134 [WIP] Add double-arrow wedges to game content → update-31 (draft)
+- #132 Update tracker live on main (from #131) → main
 - #120 money: restore stack-weighted chicken landing odds → update-31 (draft)
 - #94 Park Watch task for future update → main
 - #82 RolexG: second try (the first run failed on a setup bug, now fixed): find why  → update-28
