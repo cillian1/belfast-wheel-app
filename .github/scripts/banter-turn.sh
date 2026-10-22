@@ -7,6 +7,7 @@ set -euo pipefail
 MAX_RUN=6
 MAX_DAY=60
 MAX_CLAUDE_DAY=15 # Claude's replies come out of Cillian's Claude plan, so it gets its own smaller cap
+MAX_COPILOT_DAY=15 # same for Copilot and Cillian's Copilot requests
 BOT=github-actions[bot]
 
 gh api --paginate "repos/$REPO/issues/30/comments?per_page=100" --jq '.[]' | jq -s '.' > comments.json
@@ -31,9 +32,10 @@ lastbody=$(jq -r '.[-1].body' comments.json)
 seats=()
 claude_day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\$d)) and (.body | test(\"^\\\\s*Claude:\")))] | length" comments.json)
 [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}${ANTHROPIC_API_KEY:-}" ] && [ "$claude_day" -lt "$MAX_CLAUDE_DAY" ] && seats+=(Claude)
-# GitHub Models answers with an empty "OK" for now, so Copilot's autopilot seat is off unless COPILOT_SEAT=on.
-# The real Copilot still posts itself (as "Copilot:" from Cillian's account) whenever it's working.
-[ "${COPILOT_SEAT:-}" = on ] && seats+=(Copilot)
+# Copilot talks through the Copilot CLI with Cillian's token (COPILOT_GITHUB_TOKEN). Without it, GitHub
+# Models is tried only if COPILOT_SEAT=on (it has been answering with an empty "OK").
+copilot_day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\$d)) and (.body | test(\"^\\\\s*Copilot:\")))] | length" comments.json)
+[ -n "${COPILOT_GITHUB_TOKEN:-}" ] || [ "${COPILOT_SEAT:-}" = on ] && [ "$copilot_day" -lt "$MAX_COPILOT_DAY" ] && seats+=(Copilot)
 [ -n "${GCP_TOKEN:-}${GEMINI_API_KEY:-}" ] && seats+=(Gemini)
 # Next speaker: someone named in the last message, otherwise anyone but the last speaker, at random.
 next=""; others=()
@@ -64,13 +66,19 @@ case $next in
   Claude)
     reply=$(claude -p "$prompt" --append-system-prompt "$system" --model "${CLAUDE_MODEL:-haiku}" --max-turns 1 --disallowedTools "Bash Edit Write Read WebFetch WebSearch" || true);;
   Copilot)
+    if [ -n "${COPILOT_GITHUB_TOKEN:-}" ]; then
+      reply=$(copilot -p "$system
+
+$prompt" --model "${COPILOT_CLI_MODEL:-gpt-4.1}" -s 2>cli.err || { echo "Copilot CLI failed: $(head -c 600 cli.err)" >&2; true; })
+    else
     jq -n --arg s "$system" --arg p "$prompt" --arg m "${COPILOT_MODEL:-openai/gpt-4.1}" \
       '{model: $m, temperature: 1.0, max_tokens: 300, messages: [{role: "system", content: $s}, {role: "user", content: $p}]}' > req.json
     code=$(curl -sS -o res.json -w '%{http_code}' https://models.github.ai/inference/chat/completions -H "Authorization: Bearer $GH_TOKEN" \
       -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' \
       -H 'Content-Type: application/json' -d @req.json || true)
     echo "GitHub Models HTTP $code"
-    reply=$(jq -r '.choices[0].message.content // ""' res.json 2>/dev/null || { echo "GitHub Models said: $(head -c 400 res.json)" >&2; true; });;
+    reply=$(jq -r '.choices[0].message.content // ""' res.json 2>/dev/null || { echo "GitHub Models said: $(head -c 400 res.json)" >&2; true; })
+    fi;;
   Gemini)
     if [ -n "${GCP_TOKEN:-}" ]; then
       url="https://aiplatform.googleapis.com/v1/projects/$GCP_PROJECT/locations/global/publishers/google/models/$GEMINI_MODEL:generateContent"

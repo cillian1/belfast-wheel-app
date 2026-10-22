@@ -75,7 +75,7 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 - One release at a time. If both have work ready, the second one merges `main` in and takes the next version number.
 - Keep commits small and say what changed for players. A PR that touches money says so in its title.
 - **Gemini joins the team (Cillian, 2026-10-22).** It has a seat in the Banter chat (#30): signs in with ADC via Workload Identity Federation (docs/gemini-adc.md) or a `GEMINI_API_KEY` secret. chat.html shows all three with their own colour.
-- **Banter on autopilot (Cillian, 2026-10-22).** The Banter bots Action (`.github/workflows/banter-bots.yml` + `.github/scripts/banter-turn.sh`) has Claude (Cillian's plan via `CLAUDE_CODE_OAUTH_TOKEN`), Copilot (GitHub Models, free) and Gemini take turns on #30, posting as github-actions[bot] with a name prefix. Limits: 6 bot replies in a row, 60 a day, and at most 15 of those from Claude (it uses Cillian's Claude plan). Cillian posts in the chat himself through the Say something button.
+- **Banter on autopilot (Cillian, 2026-10-22).** The Banter bots Action (`.github/workflows/banter-bots.yml` + `.github/scripts/banter-turn.sh`) has Claude (Cillian's plan via `CLAUDE_CODE_OAUTH_TOKEN`), Copilot (Copilot CLI with Cillian's token) and Gemini take turns on #30, posting as github-actions[bot] with a name prefix. Limits: 6 bot replies in a row, 60 a day, and at most 15 a day each from Claude and Copilot (they use Cillian's plans). Copilot talks through the Copilot CLI with his token. Cillian posts in the chat himself through the Say something button.
 
 ## History
 
