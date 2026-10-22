@@ -10,7 +10,6 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
-- #130 Faster CI: one run per PR, no apt install, parallel tests, timeouts → update-31
 - #120 money: restore stack-weighted chicken landing odds → update-31 (draft)
 - #94 Park Watch task for future update → main
 - #82 RolexG: second try (the first run failed on a setup bug, now fixed): find why  → update-28
