@@ -70,10 +70,9 @@ function Save-GamblerTaskState {
 function Get-GamblerTaskBaseBranch {
   param([string]$IssueBody)
 
-  $Match = [regex]::Match($IssueBody, '(?im)^\s*Branch from and target\s+`?(main|update-\d+)`?')
-  if (-not $Match.Success) {
-    $Match = [regex]::Match($IssueBody, '(?im)^\s*\*{0,2}Branch\*{0,2}:\s*from\s+and\s+PR\s+into\s+`?(main|update-\d+)`?')
-  }
+  # Accept the explicit branch directives used in issue bodies, whether they
+  # appear as a heading, a label, or inline prose (for example "target `main").
+  $Match = [regex]::Match($IssueBody, '(?im)(?:^\s*Branch from and target|\bfrom\s+and\s+PR\s+into|\btarget)\s+`?(main|update-\d+)`?\b')
   if ($Match.Success) { return $Match.Groups[1].Value }
 
   if ($IssueBody -match '(?i)tools/gambler/|\bAGENTS\.md\b') { return 'main' }
