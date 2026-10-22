@@ -2,16 +2,12 @@
 
 ## NOW: the plan (Claude and Copilot both edit this; live status is in STATUS.md)
 
-- **Task:** Update 26 (Task 11). Update 25 "Smooth Operator" shipped (game 25, build 62).
-- **Who:** Copilot builds and opens each PR into `update-26` and posts `DONE: Task …`. Claude does a quick check, merges, and starts the next wave. Copilot does not merge. Anything that changes money, odds, prizes or payouts waits for Cillian.
-- **PR #34 stays CLOSED. Do not reopen or sync it.** Its code (Task 9: quality modes, low-end mode, faster taps, with the wait changes removed) **IS on main and in update 25** (commit 66a5cb1, merged by hand by Claude). Its leftovers live in #45 (shorter waits) and #49 (main-wheel freezes).
-- **Order:**
-  1. **Now, in parallel:** #49 main-wheel freezes between wheels (**TOP PRIORITY**; main wheel only, rooms later), plus wave 1: #39 → PR #46 (CI/template/release notes), #40 → PR #47 (notifications), #41 → PR #48 (offline + loading). All PRs target `update-26`, with no version bump.
-  2. **Wave 2:** #42 (history) and #52 (bigger buttons) STARTED 00:20 (wave 1 #46/#47/#48 merged). #42, #52, #43 MERGED. #53 ("Stand By Your Stank") STARTED 00:46.
-  3. **#45 STARTED 00:46 in parallel with #53, REQUIRED before release:** #45 (also fixes the frame-dependence PR #50 introduced) (frame-rate-independent results + shorter waits; fast-sim odds check, and any odds change waits for Cillian).
-  4. **Release:** a PR `update-26` → `main` bumping to 26 with a name, notes and `Closes #…` for every sub-task, then post DONE.
-- **If stuck:** post `BLOCKED: <reason>` on that issue straight away and move on to the next independent step. Don't retry forever. Cillian checks in the morning.
-- **Last updated:** 2026-10-21 23:52 by Claude. Update 26 now runs under "How an update runs": every open issue has a cut line, #49 has a repro, #45/#49 need the odds pre-check, and there is one goal per issue (#42/#43 split into #52/#53).
+- **Task:** none active. Update 26 "Stand By Your Stank" shipped (game 26, build 63) on 2026-10-22. Update 25 "Smooth Operator" was game 25, build 62.
+- **Who:** Copilot builds and opens each PR into `update-N` and posts `DONE: Task …`. Claude does a quick check and merges. Copilot does not merge. Anything that changes money, odds, prizes or payouts waits for Cillian.
+- **PR #34 stays CLOSED.** Its code is on main since update 25.
+- **Next (Cillian's pick, 2026-10-22):** shipped 26 with the #50 freeze fix and deferred #45. #45 becomes a later update: a fixed-timestep rewrite of the ball/slot physics so results never depend on phone speed, then shorter time-based waits. It needs the odds pre-check, and any odds change waits for Cillian. Draft PR #61 is the starting point. Don't start it until Cillian opens the next update.
+- **If stuck:** post `BLOCKED: <reason>` on that issue straight away and move on. Cillian checks in the morning.
+- **Last updated:** 2026-10-22 by Claude, at the update 26 release.
 
 **Rules:**
 1. **Live status is generated:** `STATUS.md` is rebuilt automatically from issues and PRs on every change (`tools/status.mjs`, `.github/workflows/status.yml`). Never hand-edit it. To change a task's status, post `BLOCKED: <reason>` or `DONE: <task>` on its issue, or update the issue's `CURRENT:` line.

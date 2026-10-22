@@ -1,9 +1,9 @@
 {
-  "game": 25,
+  "game": 26,
   "apk": 3,
-  "gameBuild": 62,
-  "notes": "Smoother on low-end phones (Auto/High/Low quality), faster taps, Phelan's squeaky voice, wheat pointer on Mark's farm",
+  "gameBuild": 63,
+  "notes": "Main wheel no longer pauses between wheels, no-connection banner and loading screens, tidier history, bigger buttons, stink ghost reactions, Phelan's country song, alerts only for races, jackpots, big wins and trophies",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk",
-  "name": "Smooth Operator"
+  "name": "Stand By Your Stank"
 }
