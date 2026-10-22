@@ -13,6 +13,7 @@ const extract = (source, name) => {
 };
 
 const stats = new Function(`${extract(mark, 'specialChickenStats')}; return specialChickenStats;`)();
+const addSpecialChicken = new Function(`${extract(mark, 'specialChickenStats')}; ${extract(mark, 'addSpecialChicken')}; return addSpecialChicken;`)();
 const drawSize = new Function(`${extract(mark, 'chickenDrawSize')}; return chickenDrawSize;`)();
 const markPrize = new Function(`${extract(mark, 'markSpecialPrize')}; return markSpecialPrize;`)();
 const raceHelpers = new Function(`${extract(race, 'raceBigAt')}; ${extract(race, 'raceTagValue')}; return { raceBigAt, raceTagValue };`)();
@@ -22,6 +23,14 @@ assert.deepEqual([1, 2, 3].map(stats), [
   { mult: 3, size: 2 },
   { mult: 6, size: 4 },
 ]);
+const stacks = {};
+const firstGold = addSpecialChicken(stacks, 'W', { special: 'W' });
+const secondGold = addSpecialChicken(stacks, 'W', { special: 'W' });
+const firstPurple = addSpecialChicken(stacks, 'B', { special: 'B' });
+assert.equal(secondGold.ch, firstGold.ch, 'a second gold token joins the existing gold chicken');
+assert.deepEqual(Object.keys(stacks).sort(), ['B', 'W'], 'each special kind has one chicken');
+assert.deepEqual([secondGold.ch.count, secondGold.ch.mult, secondGold.stats.size], [2, 3, 2]);
+assert.deepEqual([firstPurple.ch.count, firstPurple.ch.mult], [1, 1.5]);
 assert.equal(drawSize({ size: 4 }), 2.2, 'drawn chicken size is capped');
 assert.deepEqual([1.5, 3, 6].map(mult => markPrize('W', mult)), [10, 20, 40]);
 assert.deepEqual([1.5, 3, 6].map(mult => markPrize('B', mult)), [5, 10, 20]);
@@ -33,8 +42,8 @@ assert.equal(raceHelpers.raceBigAt([plain, {}], 1), 1, 'races without specials k
 assert.equal(raceHelpers.raceTagValue(100, gold), 300);
 assert.equal(raceHelpers.raceTagValue(100, plain), 100);
 
-assert.match(mark, /const specialChickens = \{\}, specialCounts = \{ W: 0, B: 0 \};/);
-assert.match(mark, /if \(!ch\) \{[\s\S]*?specialChickens\[kd\] = ch; chickens\.push\(ch\);/);
+assert.match(mark, /const specialChickens = \{\};/);
+assert.match(mark, /if \(!growing\) chickens\.push\(ch\);/);
 assert.match(race, /const RACE_CHANCE = \.16/);
 
 console.log('Stacked chicken multipliers, size cap, Mark prizes, and race big-tag selection are correct.');
