@@ -112,7 +112,7 @@ speak(){
           auth="x-goog-api-key: $GEMINI_API_KEY"
         fi
         code=$(curl -sS -o gem.json -w '%{http_code}' "$url" -H "$auth" -H 'Content-Type: application/json' -d @req.json || echo 000)
-        if [ "$code" = 200 ]; then reply=$(jq -r '[.candidates[0].content.parts[]?.text] | join("")' gem.json); echo "Gemini model: $model"; break; fi
+        if [ "$code" = 200 ]; then reply=$(jq -r '[.candidates[0].content.parts[]? | select(.thought != true) | .text // empty] | join("")' gem.json | sed -E '1s/^\s*\**\s*(Draft|Final|Reply|Response)\s*:?\s*\**\s*//I'); echo "Gemini model: $model"; break; fi
         echo "Gemini $model: HTTP $code $(jq -r '.error.message // empty' gem.json 2>/dev/null | head -c 300)"
         [ "$code" = 404 ] || break # only a missing model is worth trying another name for
       done;;
