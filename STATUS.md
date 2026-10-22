@@ -10,6 +10,7 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
+- #150 [WIP] Add The Gambler bot merging capabilities → main (draft)
 - #146 Gambler watcher: honour the base branch an issue names → main
 - #144 RolexG: please take this issue as described above. PR into `main`. → main
 - #138 Clarify gold WILD and purple BONUS labels → update-31 (draft)
