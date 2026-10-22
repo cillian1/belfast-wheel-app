@@ -7,7 +7,7 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 | Issue | Task | Status | PRs |
 |---|---|---|---|
 | #38 | Task 11: update 26 housekeeping (on hold) | On hold |  |
-| #39 | Task 11A: CI test, task template, branch cleanup | In progress | #46 (draft) → update-26 |
+| #39 | Task 11A: CI test, task template, branch cleanup | In progress | #55 (draft) → copilot/task-11a-ci-test-template-branch-cleanup, #46 (draft) → update-26 |
 | #40 | Task 11B: fewer live notifications | In progress | #47 (draft) → update-26 |
 | #41 | Task 11C: offline banner and loading states | In progress | #48 (draft) → update-26 |
 | #42 | Task 11D: tidy history | On hold |  |
