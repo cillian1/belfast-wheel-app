@@ -13,7 +13,6 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 - #159 RolexG: The Gambler:  Please provide a fresh, independent, read-only review of → copilot/fix-gold-chicken-landing-odds
 - #152 RolexG: please take this issue as described above. PR into `update-31`. → update-31
 - #150 Allow The Gambler to merge other bots' PRs → main (draft)
-- #146 Gambler watcher: honour the base branch an issue names → main
 - #144 RolexG: please take this issue as described above. PR into `main`. → main
 - #138 Clarify gold WILD and purple BONUS labels → update-31 (draft)
 - #136 money: Add Gamble or Collect after credited wins → update-31 (draft)
