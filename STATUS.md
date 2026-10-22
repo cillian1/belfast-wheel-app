@@ -8,3 +8,6 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 |---|---|---|---|
 
 
+**Other open PRs**
+
+- #79 Banter: RolexG joins the chat and posts its task progress → main
