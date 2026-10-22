@@ -16,6 +16,6 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 - #144 RolexG: please take this issue as described above. PR into `main`. → main
 - #138 Clarify gold WILD and purple BONUS labels → update-31 (draft)
 - #136 money: Add Gamble or Collect after credited wins → update-31 (draft)
-- #134 money: double-arrow wedges (payback gate blocked) → update-31 (draft)
+- #134 money: double-arrow wedges (measured payback -0.666 pp) → update-31 (draft)
 - #94 Park Watch task for future update → main
 - #82 RolexG: second try (the first run failed on a setup bug, now fixed): find why  → update-28
