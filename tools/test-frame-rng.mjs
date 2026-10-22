@@ -7,10 +7,13 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const core = readFileSync(resolve(root, 'src/game/core.js'), 'utf8');
 const room = readFileSync(resolve(root, 'src/game/room.js'), 'utf8');
 const pyramid = readFileSync(resolve(root, 'src/game/pyramid.js'), 'utf8');
+const motion = readFileSync(resolve(root, 'src/game/motion.js'), 'utf8');
 const factoryMatch = core.match(/function makeCosmeticRandom\(seed\) \{[\s\S]*?\n\}/);
 const roomFrameMatch = room.match(/function drawRoomFrame\(now\) \{[\s\S]*?\n\}/);
 const sandStepMatch = pyramid.match(/function sandStep\(dt, rate\) \{[\s\S]*?\n\}/);
-if (!factoryMatch || !roomFrameMatch || !sandStepMatch) throw new Error('Could not find the cosmetic RNG or frame effect functions');
+const spinMatch = motion.match(/async function spinLayerRun\(k, dur, dir\) \{[\s\S]*?\n\}/);
+const targetMatch = motion.match(/function target\(n\) \{[\s\S]*?\n\}/);
+if (!factoryMatch || !roomFrameMatch || !sandStepMatch || !spinMatch || !targetMatch) throw new Error('Could not find the RNG, frame effect, or wheel-spin functions');
 
 const makeCosmeticRandom = new Function(`${factoryMatch[0]}; return makeCosmeticRandom;`)();
 assert.doesNotMatch(roomFrameMatch[0], /Math\.random\(/, 'fireplace frames must not advance the gameplay RNG');
@@ -23,7 +26,7 @@ function seededRandom(seed) {
     return seed / 4294967296;
   };
 }
-function outcomes(fps) {
+async function outcomes(fps) {
   const gameMath = Object.create(Math);
   gameMath.random = seededRandom(0x12345678);
   const cosmeticRandom = makeCosmeticRandom(0x87654321);
@@ -31,10 +34,26 @@ function outcomes(fps) {
   const drawRoomFrame = new Function('Math', 'RW', 'RH', 'RDp', 'roomBg', 'fireBox', 'EMBERS', 'rctx', 'Perf', 'cosmeticRandom', 'TAU', 'mod', `${roomFrameMatch[0]}; return drawRoomFrame;`)(
     gameMath, 360, 800, 1, {}, { x: 100, y: 300, w: 180, base: 780 }, Array.from({ length: 26 }, (_, i) => ({ x: i / 26, y: i / 26, v: .2, s: 1 })), ctx, { low: false }, cosmeticRandom, Math.PI * 2, (a, n) => ((a % n) + n) % n,
   );
-  for (let frame = 0; frame < Math.min(fps, 15) * 5; frame++) drawRoomFrame(frame * 1000 / fps);
-  return Array.from({ length: 20 }, () => gameMath.random());
+  const layerAngles = [0, 0], layers = [Array.from({ length: 8 }, () => ({})), Array.from({ length: 8 }, () => ({}))];
+  const animate = async (dur, step) => {
+    const frameCount = Math.max(1, Math.round(fps * dur / 1000)), roomFrames = Math.max(1, Math.round(Math.min(fps, 15) * dur / 1000));
+    for (let frame = 0; frame <= frameCount; frame++) {
+      for (let i = 0; i < roomFrames; i++) drawRoomFrame((i + 1) * dur / roomFrames);
+      step(frame / frameCount);
+    }
+  };
+  const spinLayerRun = new Function('Math', 'LAYERS', 'rot', 'TAU', 'GHOST_CHANCE', 'TIP_CHANCE', 'target', 'easeOut', 'easeInOut', 'sliceAt', 'mod', 'hotSlice', 'animate', 'ghostPhelan', 'tick', 'flap', 'pegBuzz', 'draw', 'ting', 'buzz', `${spinMatch[0]}; return spinLayerRun;`)(
+    gameMath, layers, layerAngles, Math.PI * 2, .05, .1, new Function('Math', 'TAU', `${targetMatch[0]}; return target;`)(gameMath, Math.PI * 2), t => 1 - (1 - t) ** 4,
+    t => t < .5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2,
+    (r, n) => Math.floor((((-r % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2 / n)) % n,
+    (a, n) => ((a % n) + n) % n, it => !!(it && (it.wild || it.bonus || it.god)), animate,
+    async (k, i) => i, () => {}, () => {}, () => {}, () => {}, () => {}, () => {},
+  );
+  const results = [];
+  for (let i = 0; i < 6; i++) results.push(await spinLayerRun(i % 2, 1000, 1));
+  return results;
 }
 
-assert.deepEqual(outcomes(10), outcomes(30));
-assert.deepEqual(outcomes(30), outcomes(60));
-console.log('Independent cosmetic frame draws leave seeded gameplay outcomes unchanged at 10, 30, and 60 fps.');
+assert.deepEqual(await outcomes(10), await outcomes(30));
+assert.deepEqual(await outcomes(30), await outcomes(60));
+console.log('Seeded wheel-spin outcomes match at 10, 30, and 60 fps with fireplace frames interleaved.');
