@@ -1,9 +1,9 @@
 {
-  "game": 26,
+  "game": 27,
   "apk": 3,
-  "gameBuild": 63,
-  "notes": "Main wheel no longer pauses between wheels, no-connection banner and loading screens, tidier history, bigger buttons, stink ghost reactions, Phelan's country song, alerts only for races, jackpots, big wins and trophies",
+  "gameBuild": 64,
+  "notes": "5 free spins a day with a counter, bigger edge-to-edge wheel and no wasted space, shorter waits you can tap to skip, and spins now land the same on every phone",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk",
-  "name": "Stand By Your Stank"
+  "name": "Free Wheelin'"
 }
