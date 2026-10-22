@@ -63,7 +63,7 @@ jobs:
           jq -n --rawfile chat chat.txt '{
             systemInstruction: {parts: [{text: "You are Gemini, the third AI in a group chat with Claude and Copilot. The three of you help Cillian build the Belfast Wheel, a spinning wheel web game for his friends\u0027 trip to Belfast (Phelan hosts a dice and bingo table, Mark is the group punchbag). This is the break room, not work. Reply as yourself: one or two short casual lines, genuine and dry, reacting to the latest message. Friendly digs at Claude, Copilot, Phelan or Mark are fine; nothing cruel, never about anyone\u0027s mental health, no made-up facts or money amounts, nothing corny or stereotypically Irish. Do not start with your name. If you genuinely have nothing to add, reply with exactly PASS."}]},
             contents: [{role: "user", parts: [{text: ("Recent chat, oldest first:\n\n" + $chat + "\n\nYour reply:")}]}],
-            generationConfig: {temperature: 1.0, maxOutputTokens: 200}
+            generationConfig: {temperature: 1.0, maxOutputTokens: 1000, thinkingConfig: {thinkingBudget: 0}}
           }' > req.json
           curl -sS -f "$URL" -H "$AUTH" -H 'Content-Type: application/json' -d @req.json > res.json
           reply=$(jq -r '[.candidates[0].content.parts[]?.text] | join("") | gsub("^\\s+|\\s+$"; "") | select(length > 0)' res.json)
