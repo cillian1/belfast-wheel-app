@@ -73,31 +73,43 @@ function parse(c){
   return{who:'you',name:'Cillian',text:b.trim()};
 }
 
-let typing={},lastRef='',limitedUntil=0;
+let typing={},lastRef='',limitedUntil=0,seqN=0,lastMeta=0;
 async function load(){
   const status=document.getElementById('status');
+  const t=d=>d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
   try{
-    // Which commit is the feed on? Unchanged answers are 304s, which don't count against GitHub's 60-an-hour
-    // limit; only real changes do. (Polling the comments API as well used up the limit twice as fast, and
-    // then the page fell back to the raw branch file, which can be minutes stale.)
-    let ref='banter';
+    // Normal path: ask the API which commit the feed is on (unchanged answers are free 304s) and read the
+    // files at that exact commit, which is never stale.
     if(Date.now()>limitedUntil){
+      let ref='';
       try{const h=await fetch(HEAD,{cache:'no-cache'});
         if(h.ok)ref=(await h.json()).object.sha;
         else if(h.status===403||h.status===429)limitedUntil=(+h.headers.get('X-RateLimit-Reset')||Date.now()/1000+600)*1000;
       }catch(e){}
+      if(ref){
+        if(ref!==lastRef){
+          const r=await fetch(RAW+ref+'/banter.json');if(!r.ok)throw new Error('banter.json failed');
+          saved=await r.json();store.set(saved);
+          typing=await fetch(RAW+ref+'/typing.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
+          seqN=await fetch(RAW+ref+'/meta.json').then(r=>r.ok?r.json():{}).then(m=>m.n||seqN).catch(()=>seqN);
+          lastRef=ref;show();
+        }
+        status.textContent='Live · updated '+t(new Date());return;
+      }
     }
-    if(ref!==lastRef||ref==='banter'){
-      const r=await fetch(RAW+ref+'/banter.json'+(ref==='banter'?'?t='+Date.now():''));
-      if(!r.ok)throw new Error('banter.json failed');
-      saved=await r.json();store.set(saved);
-      typing=await fetch(RAW+ref+'/typing.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
-      lastRef=ref;show();
+    // Over GitHub's hourly limit: no API at all. seq/<n+1>.json only exists once a new message lands, and a
+    // new path isn't stale on raw.githubusercontent.com, so this stays close to live.
+    if(!seqN||Date.now()-lastMeta>120000){
+      lastMeta=Date.now();
+      const m=await fetch(RAW+'banter/meta.json?t='+Date.now()).then(r=>r.ok?r.json():null).catch(()=>null);
+      if(m&&m.n>seqN){seqN=m.n-1}
     }
-    const t=d=>d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-    status.textContent=Date.now()<limitedUntil
-      ?'GitHub\'s hourly limit hit, so new messages can lag a few minutes until '+t(new Date(limitedUntil))
-      :'Live · updated '+t(new Date());
+    for(let i=0;i<5;i++){
+      const r=await fetch(RAW+'banter/seq/'+(seqN+1)+'.json').catch(()=>null);
+      if(!r||!r.ok)break;
+      saved=await r.json();store.set(saved);seqN++;typing={};show();
+    }
+    status.textContent='Live · updated '+t(new Date());
   }catch(e){show();status.textContent='Couldn\'t reach the chat, trying again shortly.'}
 }
 const NAMES={claude:'Claude',copilot:'Copilot',gemini:'Gemini',rolexg:'RolexG',jimini:'Jimini'};
