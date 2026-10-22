@@ -2,12 +2,16 @@
 
 ## NOW: the plan (Claude and Copilot both edit this; live status is in STATUS.md)
 
-- **Task:** none active. Update 27 "Free Wheelin'" shipped (game 27, build 64) on 2026-10-22: frame-rate-independent spins (#61), edge-to-edge wheel layout (#65), 5 free daily 10c spins that can win but don't feed the jackpot (#68), and halved, tap-to-skip waits (#67).
-- **Who:** Copilot builds and opens each PR into `update-N` and posts `DONE: Task …`. Claude does a quick check and merges. Copilot does not merge. Anything that changes money, odds, prizes or payouts waits for Cillian.
+- **Task:** Update 28 "how to play" is open (branch `update-28`, opened 2026-10-22 ~09:30, 45-min timebox). Scope agreed by Cillian, Copilot and Gemini on #30:
+  1. #70 first-run how-to card. Copilot builds (`src/wallet/ui.js`, `src/index.html`). Gemini writes the wording on #30.
+  2. #71 free-spin status line, display only. Copilot, after #70 merges (same files). **Cut line: first to move to 29.**
+  3. Gemini reviews every PR into `update-*` automatically (`.github/workflows/gemini-review.yml`, posts one "Gemini review:" comment). Claude still does the final check and merges.
+  The 320/360/390px regression pass was dropped by Cillian.
+- **Who:** Copilot builds and opens each PR into `update-N` and posts `DONE: Task …`. Gemini reviews. Claude does a quick check and merges. Copilot does not merge. Anything that changes money, odds, prizes or payouts waits for Cillian.
 - **PR #34 stays CLOSED.**
-- **Next:** Cillian checks 27 on a low-end phone (240Hz physics costs more CPU). PR #69 (Banter, from another thread) still targets `update-27`; retarget it to main or the next update branch. Don't start new work until Cillian opens the next update.
+- **Next:** release PR `update-28` → `main` once #70 (and #71 unless cut) are merged. Cillian (2026-10-22): start and run updates without waiting for his nod; money/odds/prizes still need him.
 - **If stuck:** post `BLOCKED: <reason>` on that issue straight away and move on. Cillian checks in the morning.
-- **Last updated:** 2026-10-22 by Claude, at the update 27 release.
+- **Last updated:** 2026-10-22 by Claude, opening update 28.
 
 **Rules:**
 1. **Live status is generated:** `STATUS.md` is rebuilt automatically from issues and PRs on every change (`tools/status.mjs`, `.github/workflows/status.yml`). Never hand-edit it. To change a task's status, post `BLOCKED: <reason>` or `DONE: <task>` on its issue, or update the issue's `CURRENT:` line.

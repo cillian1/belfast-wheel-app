@@ -1,0 +1,73 @@
+# Gemini reviews update PRs (Cillian, update 28): when a PR into an update-N branch is opened or marked
+# ready, Gemini reads the diff and posts one review comment. It never approves, pushes or merges.
+# Runs as pull_request_target so it gets the Google sign-in on Copilot's PRs too. It only reads the diff
+# through the API and never checks out or runs the PR's code.
+# Sign-in is the same as the Banter bots: GCP_* variables (docs/gemini-adc.md) or a GEMINI_API_KEY secret.
+name: Gemini review
+on:
+  pull_request_target:
+    types: [opened, ready_for_review]
+    branches: ['update-*']
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: PR number to review
+        required: true
+permissions:
+  pull-requests: write
+  issues: write
+  id-token: write
+concurrency:
+  group: gemini-review-${{ github.event.pull_request.number || inputs.pr }}
+  cancel-in-progress: true
+jobs:
+  review:
+    if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sign in to Google (Workload Identity Federation)
+        id: gcp
+        if: vars.GCP_WIF_PROVIDER != ''
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+          token_format: access_token
+          create_credentials_file: false
+      - name: Ask Gemini to review the diff
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number || inputs.pr }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GCP_TOKEN: ${{ steps.gcp.outputs.access_token }}
+          GCP_PROJECT: ${{ vars.GCP_PROJECT }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || (vars.GCP_WIF_PROVIDER != '' && 'gemini-2.5-flash') || 'gemini-flash-latest' }}
+        run: |
+          if [ -n "$GCP_TOKEN" ]; then
+            url="https://aiplatform.googleapis.com/v1/projects/$GCP_PROJECT/locations/global/publishers/google/models/$GEMINI_MODEL:generateContent"
+            auth="Authorization: Bearer $GCP_TOKEN"
+          elif [ -n "$GEMINI_API_KEY" ]; then
+            url="https://generativelanguage.googleapis.com/v1beta/models/$GEMINI_MODEL:generateContent"
+            auth="x-goog-api-key: $GEMINI_API_KEY"
+          else echo "No Google sign-in set up, skipping."; exit 0; fi
+          gh api "repos/$REPO/pulls/$PR" --jq '"Title: " + .title + "\n\n" + (.body // "")' | head -c 4000 > pr.txt
+          # The bundle and the APK are generated, so review the source files only.
+          gh api --paginate "repos/$REPO/pulls/$PR/files?per_page=100" --jq '.[] |
+            select(.filename != "game/index.html" and (.filename | endswith(".apk") | not)) |
+            "--- " + .filename + " (" + .status + ")\n" + (.patch // "(no text diff)") + "\n"' | head -c 80000 > diff.txt
+          [ -s diff.txt ] || { echo "No source changes to review."; exit 0; }
+          system="You are Gemini, reviewing a pull request for the Belfast Wheel, a spinning wheel web game for a group of friends. Source lives in src/ and is bundled into game/index.html. Real money moves through it: anything that changes prizes, odds, stakes, the jackpot, the wallet's credit or charge code (src/wallet/money.js) or the 'Final answer · €X' win wording must be flagged as a money change that needs Cillian's sign-off. Review the diff for real bugs, broken behaviour on phones 320-440px wide, and money changes. Only comment on what is in the diff; don't invent files or behaviour. Reply in Markdown: a one-line verdict, then at most 5 bullets, each naming the file and what's wrong and why. If it looks fine, say so in one line. No praise, no filler."
+          prompt="$(cat pr.txt)
+
+          Diff:
+          $(cat diff.txt)"
+          jq -n --arg s "$system" --arg p "$prompt" '{systemInstruction: {parts: [{text: $s}]}, contents: [{role: "user", parts: [{text: $p}]}],
+            generationConfig: {temperature: 0.2, maxOutputTokens: 2000, thinkingConfig: {thinkingBudget: 0}}}' > req.json
+          curl -sS -f "$url" -H "$auth" -H 'Content-Type: application/json' -d @req.json > res.json
+          review=$(jq -r '[.candidates[0].content.parts[]?.text] | join("")' res.json)
+          # A 200 with no text is a failure, not a pass, so it shows up red instead of looking like a clean review.
+          [ -n "${review// }" ] || { echo "Gemini sent no review: $(head -c 600 res.json)" >&2; exit 1; }
+          gh api "repos/$REPO/issues/$PR/comments" -f body="Gemini review:
+
+          $review" > /dev/null
