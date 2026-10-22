@@ -268,7 +268,7 @@ footer{position:fixed;top:8px;left:10px;z-index:5;color:rgba(220,225,230,.55);fo
   <p class="caption" id="caption">Land on Go deeper and you fall through the wheels.</p>
 
   <button class="spin" id="spinBtn" type="button">Spin</button>
-  <div class="reset" id="resetRow"><button type="button" id="autoBtn">Auto spin</button><button type="button" id="phelanBtn" aria-pressed="true">Phelan voice on</button><button type="button" id="resetBtn">Reset spin</button><span id="resetAsk" hidden>Are you sure? <button type="button" id="resetYes">Yes</button><button type="button" id="resetNo">No</button></span></div>
+  <div class="reset" id="resetRow"><button type="button" id="autoBtn">Auto spin</button><button type="button" id="resetBtn">Reset spin</button><span id="resetAsk" hidden>Are you sure? <button type="button" id="resetYes">Yes</button><button type="button" id="resetNo">No</button></span></div>
 
   <section class="plate" id="verdict" aria-live="polite">
     <span class="eyebrow" id="vEyebrow">The wheel says</span>
@@ -1910,7 +1910,7 @@ async function spinLayerRun(k, dur, dir) {
       draw();
     });
     rot[k] = r0; draw();
-    if (ghostNear) phelanSay(phelanLine('near'));
+    if (ghostNear) ghostReact('wince');
   }
   ting(); buzz([30, 40, 60]);
   return t.i;
@@ -1935,15 +1935,37 @@ async function ghostPhelan(k, i, near) {
   ghost = null; ghostSay = ''; draw();
   return dest;
 }
+function ghostReact(kind) {
+  if (Perf.low) return;
+  const reaction = { x: c, y: c - R * .56, a: .95, side: 1, reaction: kind, reactionAt: performance.now() };
+  ghost = reaction;
+  ghostSay = phelanLine(kind);
+  phelanSay(ghostSay);
+  animate(1200, () => draw()).then(() => {
+    if (ghost === reaction) { ghost = null; ghostSay = ''; draw(); }
+  });
+}
 function drawGhost() {
   const g = ctx, s = R * .26, t = performance.now() / 1000, w = s * 1.8;
   if (!GHOST_IMAGE.complete || !GHOST_IMAGE.naturalWidth) return;
   const h = w * GHOST_IMAGE.naturalHeight / GHOST_IMAGE.naturalWidth;
+  const reaction = ghost.reaction, age = (performance.now() - (ghost.reactionAt || 0)) / 1000;
   g.save(); g.globalAlpha = ghost.a * .85;
-  g.translate(ghost.x + Math.sin(t * 1.8) * s * .015, ghost.y + Math.sin(t * 1.4) * s * .035);
-  g.rotate(Math.sin(t * 2) * .012);
+  g.translate(ghost.x + Math.sin(t * 1.8) * s * .015, ghost.y + Math.sin(t * 1.4) * s * .035 - (reaction === 'cheer' ? Math.abs(Math.sin(age * 7)) * R * .09 : 0));
+  g.rotate(Math.sin(t * 2) * .012 + (reaction === 'cheer' ? age * TAU * 1.5 : reaction === 'wince' ? -.12 : 0));
   g.transform(1, 0, Math.sin(t * 2.4) * .018, 1, 0, 0);
+  if (reaction === 'wince') g.scale(1 + Math.sin(age * 12) * .08, .78);
   g.drawImage(GHOST_IMAGE, -w / 2, -h / 2, w, h);
+  if (reaction === 'wince') {
+    g.globalCompositeOperation = 'source-atop'; g.fillStyle = 'rgba(85,210,90,.42)'; g.fillRect(-w / 2, -h / 2, w, h); g.globalCompositeOperation = 'source-over';
+    if (!Perf.low) {
+      g.fillStyle = `rgba(105,190,75,${Math.max(0, .65 - age * .5)})`;
+      for (let i = 0; i < 3; i++) { g.beginPath(); g.arc(w * (.4 + i * .1), h * (.18 + i % 2 * .1), s * (.08 + i * .015), 0, TAU); g.fill(); }
+    }
+  } else if (reaction === 'cheer' && !Perf.low) {
+    g.fillStyle = `rgba(255,230,130,${Math.max(0, .9 - age * .55)})`;
+    for (let i = 0; i < 6; i++) { const a = i * TAU / 6 + age * 2, x = Math.cos(a) * w * .62, y = Math.sin(a) * h * .62; g.beginPath(); g.arc(x, y, D * 2.2, 0, TAU); g.fill(); }
+  }
   g.restore();
 }
 // the dive between wheels: a wind-up, a drum roll that speeds up, speed lines, a little overshoot and a crash
@@ -2277,6 +2299,8 @@ function setVerdict({ eyebrow = 'The wheel says', title, body = '', steps = null
   $('#showActions').hidden = !show; $('#photoActions').hidden = !photo;
   if (plate.classList.contains('need') !== (show || photo)) { plate.classList.toggle('need', show || photo); fitStage(); }
   if (flash) { plate.classList.remove('landed'); void plate.offsetWidth; plate.classList.add('landed'); }
+  const win = /^Final answer · €([\d.]+)/.exec(eyebrow), stake = window.W && (W.run ? W.run.stake : W.stake);
+  if (win && stake && parseFloat(win[1]) >= Math.max(1, stake / 10)) ghostReact('cheer');
 }
 function setBtn(text, disabled) { spinBtn.textContent = text; spinBtn.disabled = disabled; }
 
@@ -5101,9 +5125,11 @@ sayBtn.addEventListener('click', () => { if (!sayLast) return; sayBtn.classList.
 const PHELAN_LINES = {
   cameo: ['Hahah not so easy!', 'Whoops.', 'Welcome to the shop, lads.', 'Not one in the green. My turn.', 'Enjoy that, lads.', 'Revenge is sweet.', "That's for the room.", 'Zena says hi.', "Don't tell Mark.", 'Better than a toaster.', 'Boo. Did I scare you?', 'Mine now, thanks.', 'Ah here, who left that lying about?', 'I was only passing.'],
   near: ['So close. Not that close.', 'Ah, the edge of it. Cruel.', 'One slice. One. Sure look at you.', 'You could nearly smell it.', 'The wheel says no.', 'Mark would have got that.', 'Another inch and I would have cried.', 'Do you want a tissue or a hug?', 'Almost. Almost is not money.', 'Next time, maybe. Maybe not.', "That's a lovely wee near miss.", 'Phelan saw that.', 'The pointer got cold feet.', 'Even the wheel feels sorry for you.'],
+  wince: ['Ugh.', 'Ah, no.', 'That stinks.'],
+  cheer: ['WAHEY!', 'Get in!', 'Now that is a result!'],
 };
 // a tiny seeded generator of its own, so picking a heckle never touches Math.random() and the game's random order stays put
-let phelanSeed = (Date.now() ^ 0x9e3779b9) >>> 0, phelanLastAt = -1e9, phelanOn = null, phelanDone = [], phelanSpeaking = false;
+let phelanSeed = (Date.now() ^ 0x9e3779b9) >>> 0, phelanLastAt = -1e9, phelanDone = [], phelanSpeaking = false;
 function phelanRand() {
   phelanSeed = (phelanSeed + 0x6d2b79f5) >>> 0; let t = phelanSeed;
   t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61);
@@ -5115,10 +5141,6 @@ function phelanLine(kind) {
   phelanDone = phelanDone.concat(l).slice(-Math.floor(all.length / 2));
   return l;
 }
-function phelanVoiceOn() {
-  if (phelanOn === null) { try { if (!window.wolPref) return true; phelanOn = window.wolPref.get('wol-phelan-voice') !== 'off'; } catch (e) { return true; } }
-  return phelanOn;
-}
 function phelanStop() {
   if (!phelanSpeaking) return;
   phelanSpeaking = false;
@@ -5129,7 +5151,7 @@ function phelanStop() {
 function phelanSay(text) {
   try {
     const sy = window.speechSynthesis, now = performance.now();
-    if (!sy || !text || !phelanVoiceOn() || Music.muted || now - phelanLastAt < 8000) return false;
+    if (!sy || !text || Music.muted || now - phelanLastAt < 8000) return false;
     if (sy.speaking || sy.pending || $('.stage').classList.contains('done') || /^Final answer/.test($('#vEyebrow').textContent)) return false;
     if (!sayVoice) pickVoice();
     const u = new SpeechSynthesisUtterance(text);
@@ -5141,15 +5163,8 @@ function phelanSay(text) {
     return true;
   } catch (e) { phelanSpeaking = false; return false; }
 }
-const phelanBtn = $('#phelanBtn');
-function paintPhelanButton() { const on = phelanVoiceOn(); phelanBtn.textContent = on ? 'Phelan voice on' : 'Phelan voice off'; phelanBtn.setAttribute('aria-pressed', on ? 'true' : 'false'); }
-paintPhelanButton();
-window.addEventListener('wol-audio-preference-ready', () => { phelanOn = null; paintPhelanButton(); });
-phelanBtn.addEventListener('click', () => {
-  phelanOn = !phelanVoiceOn();
-  try { window.wolPref && window.wolPref.set('wol-phelan-voice', phelanOn ? 'on' : 'off'); } catch (e) {}
-  if (!phelanOn) phelanStop();
-  paintPhelanButton();
+window.addEventListener('wol-audio-preference-ready', () => {
+  try { window.wolPref && window.wolPref.set('wol-phelan-voice', null); } catch (e) {}
 });
 // ---------- boot ----------
 // Owns initial canvas sizing, input handlers, and game startup.
