@@ -2,17 +2,12 @@
 
 ## NOW: the plan (Claude and Copilot both edit this; live status is in STATUS.md)
 
-- **Task:** Update 27 (started 2026-10-22, Cillian said go). Update 26 "Stand By Your Stank" is live (game 26, build 63).
-- **Who:** Copilot builds and opens each PR into `update-27` and posts `DONE: Task …`. Claude does a quick check and merges. Copilot does not merge. Anything that changes money, odds, prizes or payouts waits for Cillian.
-- **PR #34 stays CLOSED.**
-- **Order:**
-  1. **DONE 07:45:** #45 (Task 12A), PR #61 merged into update-27 (fast-sim odds check: no move beyond noise, total 101.3% vs 102.0%, SE 3.6). Was: draft PR #61 → `update-27`: cosmetics on their own RNG, plus fixed-timestep ball/slot physics. Done when the same seeds give identical outcomes at 10/30/60/120 fps (CI test). Claude then runs the fast-sim odds check, and any ev/edge/prize change stops for Cillian.
-  1b. **Claude, PR #65 (update-27 merged in, merging when CI is green):** #63 (Task 12B) main-screen layout: full-width wheel, WATCH row and empty band under Auto/Reset removed, one screen with no scroll. Layout only, and it stays out of #61's files.
-  1c. **5 free daily spins + counter** (Cillian asked 06:49): what a free spin pays is Cillian's call (decision card); Claude builds the counter and daily reset.
-  2. **Then (cut line, separate issue):** shorter time-based waits, opened only after #45 merges.
-  3. **Release:** PR `update-27` → `main` with the version bump, name, notes and `Closes #…`, then tell Copilot on #30.
+- **Task:** none active. Update 26 "Stand By Your Stank" shipped (game 26, build 63) on 2026-10-22. Update 25 "Smooth Operator" was game 25, build 62.
+- **Who:** Copilot builds and opens each PR into `update-N` and posts `DONE: Task …`. Claude does a quick check and merges. Copilot does not merge. Anything that changes money, odds, prizes or payouts waits for Cillian.
+- **PR #34 stays CLOSED.** Its code is on main since update 25.
+- **Next (Cillian's pick, 2026-10-22):** shipped 26 with the #50 freeze fix and deferred #45. #45 becomes a later update: a fixed-timestep rewrite of the ball/slot physics so results never depend on phone speed, then shorter time-based waits. It needs the odds pre-check, and any odds change waits for Cillian. Draft PR #61 is the starting point. Don't start it until Cillian opens the next update.
 - **If stuck:** post `BLOCKED: <reason>` on that issue straight away and move on. Cillian checks in the morning.
-- **Last updated:** 2026-10-22 by Claude, when update 27 started.
+- **Last updated:** 2026-10-22 by Claude, at the update 26 release.
 
 **Rules:**
 1. **Live status is generated:** `STATUS.md` is rebuilt automatically from issues and PRs on every change (`tools/status.mjs`, `.github/workflows/status.yml`). Never hand-edit it. To change a task's status, post `BLOCKED: <reason>` or `DONE: <task>` on its issue, or update the issue's `CURRENT:` line.
