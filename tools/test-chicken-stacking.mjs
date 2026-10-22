@@ -84,7 +84,6 @@ assert.match(mark, /const specialChickens = \{\};/);
 assert.match(mark, /if \(!growing\) chickens\.push\(ch\);/);
 assert.match(race, /const RACE_CHANCE = \.16/);
 assert.match(race, /big: i === bigAt/);
-assert.match(race, /const w = chickenPickIndex\(racers, Math\.random\(\)\)/);
 assert.match(mark, /kind: k, count: ch\.count \|\| 1/);
 assert.match(mark, /const tg = markTarget\(markItems\)/);
 
@@ -117,12 +116,6 @@ for (const items of [stacked, [...stacked].reverse(), [{}, stacked[0], stacked[1
     console.log(`Conditional prize-tag EV (before Mark's answer/stake scaling): before ${before.toFixed(4)}, after ${after.toFixed(4)}; exact 12.5 -> 15.`);
   }
 }
-gameMath.random = seededRandom(0x119);
-const raceCounts = [0, 0];
-for (let j = 0; j < 30000; j++) raceCounts[wheel.chickenPickIndex([secondGold.ch, firstPurple.ch], gameMath.random())]++;
-assert.ok(Math.abs(raceCounts[0] / 30000 - 2 / 3) < .01);
-console.log(`30,000 seeded race picks by racer index: ${raceCounts}.`);
-
 for (const items of [[{}], [{}, {}], [{ count: 1 }, {}, { count: 1 }, {}]]) {
   const beforeRandom = seededRandom(0x119), afterRandom = seededRandom(0x119);
   for (let j = 0; j < 1000; j++) {
@@ -133,9 +126,6 @@ for (const items of [[{}], [{}, {}], [{ count: 1 }, {}, { count: 1 }, {}]]) {
     assert.equal(after.i, before.i, 'unstacked seeded winners are unchanged');
     assert.ok(Math.abs(after.a - before.a) < 1e-14, 'unstacked target angles are unchanged');
     assert.equal(afterRandom(), beforeRandom(), 'wheel consumes the same RNG calls');
-    const roll = afterRandom();
-    assert.equal(wheel.chickenPickIndex(items, roll), Math.floor(roll * items.length), 'unstacked race picks are unchanged');
-    beforeRandom();
   }
 }
 

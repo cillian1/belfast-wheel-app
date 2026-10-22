@@ -4941,7 +4941,7 @@ async function chickenRace(steps, alive) {
   for (const n of ['3', '2', '1']) { chainNote = n; playSfx('countdown'); tick(1, 900); buzz(20); await farmLoop(.7, () => {}); }
   chainNote = 'Go!'; playSfx('go'); ting(); buzz(50);
   // 3. the race: the winner's finish time is fixed; Ghost Phelan sometimes trips a faster chicken near the line
-  const w = chickenPickIndex(racers, Math.random()), win = racers[w];
+  const w = Math.floor(Math.random() * racers.length), win = racers[w];
   const others = racers.filter(ch => ch !== win), decoy = others.length && Math.random() < .35 ? pick(others) : null;
   racers.forEach(ch => { ch.T = ch === win ? RACE_T : ch === decoy ? RACE_T - .55 : RACE_T + .25 + Math.random() * 1.1; ch.wob = Math.random() * TAU; ch.p = 0; ch.done = false; });
   const tripP = .88, tripAt = decoy ? tripP * decoy.T : 99, STUN = 1.3;
