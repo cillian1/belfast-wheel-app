@@ -1,7 +1,7 @@
   // ---------- live: who is on now, and watching them play ----------
   // Owns watcher heartbeats and the live game-state stream.
   // live/{key} = { name, at, play } is a heartbeat. A watcher writes live/{key}/w/{them} = time every few seconds;
-  // only then does the player's phone send small JPEG frames of the wheel to livef/{key}. No watchers, no frames.
+  // only then does the player's phone send small game-state updates to livef/{key}. No watchers, no updates.
   const ONLINE_MS = 90000, WATCH_MS = 20000, me4 = () => W.user || 'guest';
   const liveBtn = el('button', 'wlive'); liveBtn.type = 'button'; liveBtn.innerHTML = '<i></i>WATCH<em></em>';
   const hdr = document.querySelector('.app header > span'); if (hdr) hdr.appendChild(liveBtn); else appEl.prepend(liveBtn);
@@ -27,7 +27,7 @@
     'rotP', 'hi', 'hiA', 'domeBulge', 'pAng', 'ghost', 'ghostSay', 'dots', 'boostA', 'boostNew', 'wellBalls', 'introT', 'camT', 'hallZ', 'doorT', 'flash', 'rotS',
     'bingo', 'ballSpeed', 'ballPhase', 'pickIdx', 'handT', 'liftT', 'handClosed', 'prize', 'roul', 'vault', 'coaster', 'planet', 'mon', 'rotC', 'zena', 'god', 'pyr',
     'pipes', 'carried', 'd6', 'd6Sum', 'chickens', 'arrows', 'fires', 'feathers', 'camX', 'markItems', 'rotM', 'formT', 'showMark', 'chainNote', 'raceLine',
-    'rot', 'deadA', 'deadTo', 'deadFrom'];
+    'rot', 'deadA', 'deadTo', 'deadFrom', 'markSpinning', 'markWin'];
   const SLOW = ['N', 'c', 'R', 'D', 'FINAL', 'B', 'ord', 'boostNew', 'markItems'];
   const ANGLES = ['rotF', 'rotP', 'rotS', 'rotC', 'rotM', 'pAng'];
   const ROOMS = { stank: 'the Stank Chamber', roul: 'the Stank Chamber', vault: 'the golden locksafe', pyramid: "Phelan's Pyramid", god: 'the God room', zena: 'the God room', coaster: 'the Monster bonus', planet: 'the Monster bonus', monster: 'the Monster tank', pipes: "Mark's farm", farm: "Mark's farm" };
@@ -53,7 +53,7 @@
   const join = (st, keys) => '{' + keys.map(k => JSON.stringify(k) + ':' + st[k]).join(',') + '}';
   const changed = (a, b) => Object.keys(a).filter(k => a[k] !== (b && b[k]));
   const pause = ms => new Promise(r => setTimeout(r, ms));
-  let liveBase = null, liveBaseId = 0, liveBaseAt = 0, liveI = 0, liveSent = '';
+  let liveBase = null, liveBaseId = 0, liveBaseAt = 0, liveI = 0, liveSent = '', liveSentAt = 0;
   async function sendLive(st, playing) {
     const capEl = document.getElementById('caption');
     if (!liveBase || SLOW.some(k => st[k] !== liveBase[k]) || now() - liveBaseAt > 5000) {
@@ -61,8 +61,8 @@
       await db.put('livef/' + W.user + '/base', { id: liveBaseId, st: join(st, Object.keys(st)) });
     }
     const d = join(st, changed(st, liveBase)), extra = JSON.stringify([lastVerdict, capEl ? capEl.textContent : '', W.run && W.run.live ? W.run.stake : W.stake, W.me ? W.me.balance || 0 : 0, playing]);
-    if (d + extra === liveSent) return; // nothing moved
-    liveSent = d + extra;
+    if (d + extra === liveSent && now() - liveSentAt < 4000) return; // nothing moved (still resent now and then, so watchers know we're here)
+    liveSent = d + extra; liveSentAt = now();
     await db.put('livef/' + W.user + '/d', { i: ++liveI, b: liveBaseId, at: now(), d, v: lastVerdict, cap: capEl ? capEl.textContent : '', s: W.run && W.run.live ? W.run.stake : W.stake, bal: W.me ? W.me.balance || 0 : 0, play: playing });
   }
   async function streamLoop() {
@@ -247,7 +247,25 @@
     await render();
   }
   const view = el('div', 'wwatch'); view.hidden = true; document.body.appendChild(view);
-  let viewing = null;
+  let viewing = null, vhMax = 0, kbShrunk = false;
+  // the viewer fills the visible screen (above the keyboard when it's open) and the board takes whatever height the other rows leave
+  function fitWatch() {
+    const scr = view.querySelector('.wscr'); if (view.hidden || !scr) return;
+    const vv = window.visualViewport, vh = vv ? vv.height : innerHeight;
+    // Android's Back can close the keyboard without blurring the input, so the verdict rows come back once the screen grows again
+    vhMax = Math.max(vhMax, vh); const small = vh < vhMax * .85;
+    const typing = document.activeElement && document.activeElement.id === 'wwSay';
+    if (small && (typing || view.classList.contains('wkb'))) { kbShrunk = true; view.classList.add('wkb'); } // reopened on a still-focused input fires no focus event
+    else if (!small && kbShrunk) { kbShrunk = false; view.classList.remove('wkb'); }
+    view.style.top = (vv ? vv.offsetTop : 0) + 'px'; view.style.bottom = 'auto'; view.style.height = vh + 'px';
+    const cs = getComputedStyle(view), gap = parseFloat(cs.rowGap) || 0;
+    let used = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom), n = 0;
+    [...view.children].forEach(k => { if (k === scr || getComputedStyle(k).display === 'none') return; used += k.offsetHeight; n++; });
+    const w = Math.floor(Math.max(120, Math.min(view.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), 560, vh - used - gap * n)) - (scr.offsetWidth - scr.clientWidth));
+    if (scr.style.width !== w + 'px') scr.style.width = w + 'px';
+    view.scrollTop = 0;
+  }
+  addEventListener('resize', fitWatch); if (window.visualViewport) { visualViewport.addEventListener('resize', fitWatch); visualViewport.addEventListener('scroll', fitWatch); }
   // the watcher's own game sits idle underneath; it borrows its canvas to draw the other phone's state, then reloads
   const lerpAng = (a, b, t) => { const d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + d * t; };
   function mirApply(st, prev, t) {
@@ -282,6 +300,7 @@
       }
       if (s === 'pipes' && (!faces.pipeBg || faces.pipeBg.width !== N)) faces.pipeBg = buildPipeBg();
       if (/farm|pipes/.test(s) && !faces.farm) faces.farm = buildFarm();
+      if (/farm|pipes/.test(s) && markItems && markItems.length && (!faces.mark || faces.mark.width !== N || faces.markFor !== JSON.stringify(markItems))) { faces.mark = buildMarkWheel(markItems); faces.markFor = JSON.stringify(markItems); }
       if (s === 'god' && (!faces.godWheel || faces.godWheel.width !== N)) faces.godWheel = buildGodWheel(GOD_PRIZES);
       if (s === 'zena' && zena && zena.items && (!faces.phelanWheel || faces.phelanWheel.width !== N || faces.phelanFor !== JSON.stringify(zena.items))) { faces.phelanWheel = buildPhelanWheel(zena.items); faces.phelanFor = JSON.stringify(zena.items); }
     } catch (e) {}
@@ -297,19 +316,22 @@
   }
   // one screen for both live watching and replays: push() states in, it draws them smoothly
   function mirrorScreen(title, sub, live) {
-    view.hidden = false;
-    view.innerHTML = `<div class="wwh"><div><b>${esc(title)}</b><small id="wwSub">${esc(sub)}</small></div>${live ? '<span class="wlive on" style="margin:0"><i></i>LIVE</span>' : '<span class="wlive" style="margin:0"><i></i>REPLAY</span>'}</div>
+    view.hidden = false; view.classList.remove('wkb'); vhMax = 0; kbShrunk = false;
+    view.innerHTML = `<div class="wwh"><div><b>${esc(title)}</b><small id="wwSub">${esc(sub)}</small></div>${live ? '<div><button class="wbtn small" id="wwMode" type="button" aria-pressed="false">Go live</button> <span class="wlive" id="wwModeBadge" style="margin:0"><i></i><span id="wwModeLabel">DELAYED</span></span></div>' : '<span class="wlive" style="margin:0"><i></i>REPLAY</span>'}</div>
       <div class="wscr"><canvas id="wwCv"></canvas><ol id="wwFin" hidden></ol><p id="wwMsg">${live ? 'Connecting…' : 'Loading…'}</p></div>
       <div class="wwt" id="wwTiles"></div>
       <div class="wvd"><small id="wwE"></small><h3 id="wwT"></h3><p id="wwB"></p><p id="wwC" style="color:var(--mute);margin-top:6px"></p></div>
       ${live ? '<div class="wsay"><input id="wwSay" maxlength="60" placeholder="Send a message with Ghost Phelan"><button class="wbtn gold small" type="button" id="wwSend">Send</button></div>' : ''}
       <button class="wbtn" type="button" id="wwX" style="width:100%;max-width:560px">${live ? 'Stop watching' : 'Close'}</button>`;
     $w('wwX').onclick = stopWatch;
+    const kb = on => () => { view.classList.toggle('wkb', on); kbShrunk = false; fitWatch(); }; // typing: the verdict rows step aside so the board keeps its room
+    if (live) { $w('wwSay').onfocus = kb(true); $w('wwSay').onblur = kb(false); }
+    fitWatch();
     const vc = $w('wwCv'), vg = vc.getContext('2d');
     const S = { cur: null, prev: null, tCur: 0, span: 120, fresh: false, alive: true, failed: false };
     const frame = () => {
       if (!S.alive || S.failed || view.hidden) return;
-      requestAnimationFrame(frame);
+      S.raf = requestAnimationFrame(frame);
       if (!S.cur) return;
       const p = Math.min(1, (performance.now() - S.tCur) / S.span);
       try {
@@ -322,24 +344,45 @@
       } catch (e) {
         S.failed = true;
         console.error('Watch viewer render failed', e);
+        cv.width = cv.width; // drop any transform or clip the broken draw left behind
         S.say(live ? 'This live view could not be drawn. Close and retry.' : 'This replay could not be drawn. Close it and try another replay.');
       }
     };
-    requestAnimationFrame(frame);
+    S.raf = requestAnimationFrame(frame);
     S.push = (st, info) => {
       const t = performance.now(); S.span = Math.max(60, Math.min(600, t - (S.tCur || t - 120)));
       S.prev = S.cur; S.cur = st; S.tCur = t; S.fresh = true;
+      if (S.failed && live) { S.failed = false; cancelAnimationFrame(S.raf); S.raf = requestAnimationFrame(frame); } // one bad frame doesn't freeze the live view: try again with the next state
       $w('wwMsg').hidden = true;
       if (info && info.sub) $w('wwSub').textContent = info.sub;
       const v = st.v || {}; $w('wwE').textContent = v.e || ''; $w('wwT').textContent = v.t || ''; $w('wwB').textContent = v.b || ''; $w('wwC').textContent = st.cap || '';
       const fin = $w('wwFin'), fl = st.fin; fin.hidden = !fl; if (fl) fin.innerHTML = fl.map(x => `<li>${esc(x)}</li>`).join('');
       const tw = +st.tw || 0, tb = +st.tb || 0;
       $w('wwTiles').innerHTML = `<span class="g">${'●'.repeat(Math.min(tw, 9))}${'○'.repeat(Math.max(0, 3 - tw))} WILDS</span><span class="p">${'●'.repeat(Math.min(tb, 9))}${'○'.repeat(Math.max(0, 3 - tb))} BONUS</span>`;
+      const vk = [v.e, v.t, v.b, st.cap].join('|'); if (vk !== S.vk) { S.vk = vk; fitWatch(); } // refit only when the verdict text changes
     };
     S.say = text => { const m = $w('wwMsg'); if (m) { m.hidden = !text; m.textContent = text || ''; } };
     return S;
   }
   const parse = s => { try { return JSON.parse(s); } catch (e) { return {}; } };
+  const WATCH_DELAY_MS = 3000, WATCH_BUFFER_MS = 8000, WATCH_BUFFER_MAX = 128;
+  function addWatchFrame(buffer, frame) {
+    buffer.push(frame);
+    while (buffer.length > WATCH_BUFFER_MAX) buffer.shift();
+  }
+  function pruneWatchFrames(buffer, at) {
+    while (buffer.length && at - buffer[0].at > WATCH_BUFFER_MS) buffer.shift();
+  }
+  function alignWatchBuffer(buffer, at) {
+    while (buffer.length > 1 && buffer[1].at <= at) buffer.shift();
+  }
+  function takeWatchFrame(buffer, at) {
+    return buffer.length && buffer[0].at <= at ? buffer.shift() : null;
+  }
+  function watchOfflineMessage(name, lastI, got, at) {
+    if (at - got <= 15000) return '';
+    return lastI < 0 ? `Connecting to ${name}'s phone…` : `${name} has stepped away. Waiting…`;
+  }
   function decodeReplayFrames(text) {
     const frames = JSON.parse(text);
     if (!Array.isArray(frames)) throw new Error('Replay frames are not a list.');
@@ -371,6 +414,25 @@
       inp.value = '';
       try { await db.put('live/' + key + '/msg', { id: now().toString(36) + Math.random().toString(36).slice(2, 6), from: W.me ? W.me.name : 'A watcher', text, at: now() }); toast('Ghost Phelan is on his way'); } catch (e) { toast('No connection'); }
     };
+    let delayed = true, latestFrame = null, lastFrameAt = 0, starting = true;
+    const buffer = [], modeButton = $w('wwMode'), modeBadge = $w('wwModeBadge'), modeLabel = $w('wwModeLabel');
+    modeButton.onclick = () => {
+      delayed = !delayed;
+      modeButton.textContent = delayed ? 'Go live' : 'Use delay';
+      modeButton.setAttribute('aria-pressed', String(!delayed));
+      modeLabel.textContent = delayed ? 'DELAYED' : 'LIVE';
+      modeBadge.classList.toggle('on', !delayed);
+      if (delayed) {
+        alignWatchBuffer(buffer, now() - WATCH_DELAY_MS);
+        starting = true; S.say('Starting Watch…');
+      }
+      else if (latestFrame) S.push(latestFrame.state, latestFrame.info);
+    };
+    modeButton.textContent = 'Go live';
+    modeButton.setAttribute('aria-pressed', 'false');
+    modeLabel.textContent = 'DELAYED';
+    modeBadge.classList.remove('on');
+    const renderFrame = frame => { starting = false; S.push(frame.state, frame.info); };
     let lastI = -1, ping = 0, got = now(), base = null, baseId = -1;
     while (viewing === mine) {
       const t0 = now();
@@ -383,11 +445,22 @@
           if (viewing !== mine) break;
           if (base && baseId === f.b) {
             lastI = f.i; got = now();
-            S.push(Object.assign({}, base, parse(f.d)), { v: f.v, cap: f.cap, sub: `Bet ${stakeLbl(f.s || 10)} · balance ${eur(f.bal || 0)}${f.play ? ' · spinning' : ''}` });
+            const state = Object.assign({}, base, parse(f.d));
+            latestFrame = { at: Math.max(now(), lastFrameAt), state, info: { v: f.v, cap: f.cap, sub: `Bet ${stakeLbl(f.s || 10)} · balance ${eur(f.bal || 0)}${f.play ? ' · spinning' : ''}` } };
+            lastFrameAt = latestFrame.at;
+            addWatchFrame(buffer, latestFrame);
+            if (!delayed) renderFrame(latestFrame);
           }
-        } else if (now() - got > 15000) { // nothing new for a while: their app is closed or in the background
-          S.say(lastI < 0 ? `Connecting to ${name}'s phone…` : `${name} has stepped away. Waiting…`);
         }
+        const at = now();
+        pruneWatchFrames(buffer, at);
+        if (delayed) {
+          const ready = takeWatchFrame(buffer, at - WATCH_DELAY_MS);
+          if (ready) renderFrame(ready);
+          else if (starting && lastI >= 0 && at - got <= 15000) S.say('Starting Watch…');
+        }
+        const offline = watchOfflineMessage(name, lastI, got, at);
+        if (offline) S.say(offline);
       } catch (e) { S.say('No connection. Retrying…'); await pause(1500); }
       const gap = 80 - (now() - t0); if (gap > 0) await pause(gap);
     }

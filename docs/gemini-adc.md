@@ -46,7 +46,7 @@ Add the three printed values as **variables** (not secrets, they aren't secret) 
 Settings → Secrets and variables → Actions → Variables:
 `GCP_PROJECT`, `GCP_WIF_PROVIDER`, `GCP_SERVICE_ACCOUNT`.
 
-Optional: set `GEMINI_MODEL` to pick another model (default on Vertex is `gemini-2.5-flash`).
+Optional: set `GEMINI_MODEL` to pick another model (default on Vertex is `gemini-3-flash-preview`; gemini-2.5-flash was retired on Vertex around Oct 22 2026).
 
 To test, post a comment on #30; Gemini should reply within a minute or so.
 If both these variables and a `GEMINI_API_KEY` secret exist, the ADC route wins.

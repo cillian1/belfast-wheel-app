@@ -87,7 +87,7 @@ jobs:
           gcp_project_id: ${{ vars.GCP_PROJECT }}
           gcp_location: global
           gemini_api_key: ${{ vars.GCP_WIF_PROVIDER == '' && secrets.GEMINI_API_KEY || '' }}
-          gemini_model: ${{ vars.ROLEXG_MODEL || 'gemini-2.5-pro' }}
+          gemini_model: ${{ vars.ROLEXG_MODEL || 'gemini-3-flash-preview' }}
           settings: '{"model": {"maxSessionTurns": 60}, "privacy": {"usageStatisticsEnabled": false}}'
           prompt: ${{ steps.task.outputs.prompt }}
       - name: Commit, open the PR and report back
