@@ -50,8 +50,11 @@ li span{color:var(--mute);font-size:13px}
 window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":10,"ev":10,"edge":0.99,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};
 (function () {
   const CFG = window.WALLET_CFG, app = null, MIN_TOPUP = 100;
+  let hostHash = null;
+  const setConnected = () => {};
   // <shared> (also used by host.html, see tools/build.mjs)
   // ---------- small helpers ----------
+  // Owns shared wallet formatting, preferences, and hashing helpers.
   const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const eur = c => { const v = Math.abs(c) / 100, s = Number.isInteger(v) ? String(v) : v.toFixed(2); return (c < 0 ? '−€' : '€') + s; };
@@ -63,6 +66,20 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
     set(k, v) { try { if (app && app.setPref) app.setPref(k, v == null ? '' : v); } catch (e) {} try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} },
   };
   const TEST_KEY = 'test', isTest = () => !!(W.me && W.me.test);
+  const TROPHIES = [
+    { id: 'first', name: 'First spin', icon: '🎡', how: 'Complete your first paid spin.' },
+    { id: 'spins100', name: 'Regular', icon: '🔁', how: 'Complete 100 paid spins.' },
+    { id: 'spins1000', name: 'Lifer', icon: '♾️', how: 'Complete 1,000 paid spins.' },
+    { id: 'stank', name: 'Stank Chamber', icon: '🧪', how: 'Reach the Stank Chamber.' },
+    { id: 'monster', name: 'Monster tank', icon: '🥫', how: 'Reach the Monster tank.' },
+    { id: 'god', name: 'God room', icon: '⚡', how: 'Reach the God room.' },
+    { id: 'pyramid', name: 'Pyramid', icon: '🔺', how: 'Light all six Wild and ankh tiles at once.' },
+    { id: 'tomb', name: "Phelan's Tomb", icon: '🏺', how: "Win the Phelan's Tomb plaque." },
+    { id: 'deep5', name: 'Even deeper', icon: '🌀', how: 'Reach the hidden fifth inner wheel.' },
+    { id: 'golden', name: 'Golden run', icon: '✨', how: 'Trigger a Golden run.' },
+    { id: 'big', name: 'Big winner', icon: '🏆', how: 'Win at least 50× your bet in a single payout.' },
+    { id: 'race', name: 'Chicken Race', icon: '🐔', how: 'Win the Chicken Race.' },
+  ];
   const keyOf = name => name.trim().toLowerCase().replace(/[.#$\[\]\/\s]+/g, '_');
   function sha256(str) { // small pure-JS SHA-256 (crypto.subtle is not always there on file:// pages)
     const K = [], H = [], isP = n => { for (let f = 2; f * f <= n; f++) if (n % f === 0) return false; return true; };
@@ -85,8 +102,8 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
     }
     return H.map(x => (x >>> 0).toString(16).padStart(8, '0')).join('');
   }
-
   // ---------- Firebase REST ----------
+  // Owns database REST requests and transaction logging.
   // in the app, requests go through Java (no CORS from a file:// page); in a browser, plain fetch
   const waiting = {}; let reqN = 0;
   window.__httpDone = id => { const raw = app.httpTake(id), w = waiting[id]; delete waiting[id]; if (!w) return;
@@ -94,11 +111,15 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
     if (!status) return w.no(new TypeError('offline'));
     w.ok({ ok: status >= 200 && status < 300, status, headers: { get: k => /etag/i.test(k) ? tag || null : null }, json: async () => JSON.parse(body || 'null') });
   };
-  const fetch = (app && app.http) ? (url, o = {}) => new Promise((ok, no) => {
+  const rawFetch = (app && app.http) ? (url, o = {}) => new Promise((ok, no) => {
     const id = 'r' + (++reqN), h = o.headers || {};
     waiting[id] = { ok, no };
     app.http(id, o.method || 'GET', url, h['if-match'] || '', !!h['X-Firebase-ETag'], o.body == null ? null : o.body);
   }) : window.fetch.bind(window);
+  const fetch = async (...args) => {
+    try { const response = await rawFetch(...args); setConnected(true); return response; }
+    catch (e) { setConnected(false); throw e; }
+  };
   const db = {
     url: p => CFG.db.replace(/\/$/, '') + '/' + p + '.json',
     async get(p, q = '') { const r = await fetch(db.url(p) + q, { cache: 'no-store' }); if (!r.ok) throw new Error('db ' + r.status); return r.json(); },
@@ -111,12 +132,15 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
       for (let i = 0; i < 8; i++) {
         let r;
         try { r = await fetch(db.url(p), { headers: tags ? { 'X-Firebase-ETag': 'true' } : {}, cache: 'no-store' }); }
-        catch (e) { if (!tags) throw e; db.tags = tags = false; i--; continue; } // the ETag header was refused (CORS): plain read-then-write
+        catch (e) { if (!tags) throw e; if (!db.tagSeen) { db.tags = tags = false; i--; } continue; }
         if (!r.ok) throw new Error('db ' + r.status);
-        const tag = tags && r.headers.get('ETag'), cur = await r.json(), next = fn(cur);
+        const tag = tags && r.headers.get('ETag');
+        if (tag) db.tagSeen = true;
+        if (tags && !tag) db.tags = tags = false;
+        const cur = await r.json(), next = fn(cur);
         if (next === undefined) return cur; // fn said abort
         const w = await fetch(db.url(p), { method: 'PUT', headers: tag ? { 'if-match': tag } : {}, body: JSON.stringify(next) }).catch(() => null);
-        if (!w) { if (!tag) throw new Error('offline'); db.tags = tags = false; continue; }
+        if (!w) { if (!tag) throw new Error('offline'); continue; }
         if (w.ok) return next;
         if (w.status !== 412) throw new Error('db ' + w.status);
       }
@@ -124,8 +148,8 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
     },
   };
   const log = (k, t, a, extra) => db.push('tx/' + k, Object.assign({ t, a, at: now() }, extra || {})).catch(() => {});
+  // </shared>
 
-  
   const main = document.getElementById('main');
   const toast = msg => { const t = document.getElementById('toast'); t.textContent = msg; t.style.opacity = 1; clearTimeout(toast.t); toast.t = setTimeout(() => { t.style.opacity = 0; }, 2600); };
   function showLoadError(target, retry) {
@@ -152,7 +176,7 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
     const timer = setTimeout(() => showLoadError(main, () => gate()), 10000);
     try { cfg = await db.get('config') || {}; } catch (e) { showLoadError(main, () => gate()); return; }
     finally { clearTimeout(timer); }
-    if (sessionStorage.getItem('host') === cfg.pin && cfg.pin) return render();
+    if (hostHash === cfg.pin && cfg.pin) return render();
     const first = !cfg.pin;
     main.innerHTML = `<h1>Wheel Host</h1><p>${first ? 'Set your host PIN (4 to 8 digits). You need it every time you open this page.' : 'Enter your host PIN.'}</p>
       <input id="pin" type="password" inputmode="numeric" maxlength="8" placeholder="PIN" autofocus>
@@ -163,8 +187,7 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
       const h = sha256('host:' + pin);
       if (first) await db.patch('config', { pin: h });
       else if (h !== cfg.pin) return (document.getElementById('err').textContent = 'Wrong PIN.');
-      try { sessionStorage.setItem('host', h); } catch (e) {}
-      cfg.pin = h; render();
+      hostHash = h; render();
     };
     document.getElementById('go').onclick = go;
     document.getElementById('pin').onkeydown = e => { if (e.key === 'Enter') go(); };
@@ -251,9 +274,9 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
       };
       document.getElementById('pinGo').onclick = async () => {
         const pin = document.getElementById('newPin').value; if (pin.length < 4) return toast('Use 4 to 8 digits');
-        const h = sha256('host:' + pin); await db.patch('config', { pin: h }); cfg.pin = h; try { sessionStorage.setItem('host', h); } catch (e) {} toast('PIN changed');
+        const h = sha256('host:' + pin); await db.patch('config', { pin: h }); cfg.pin = h; hostHash = h; toast('PIN changed');
       };
-      document.getElementById('lock').onclick = () => { try { sessionStorage.removeItem('host'); } catch (e) {} gate(); };
+      document.getElementById('lock').onclick = () => { hostHash = null; gate(); };
     }
     const twice = (b, fn) => { if (b.dataset.armed) fn(); else { b.dataset.armed = 1; b.textContent = 'Sure?'; } };
     body.querySelectorAll('[data-rev]').forEach(b => b.onclick = () => window.open('https://revolut.me/' + b.dataset.rev, '_blank'));
@@ -302,6 +325,7 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
     document.getElementById('go').onclick = async () => {
       const a = Math.round((parseFloat(document.getElementById('amt').value.replace(',', '.')) || 0) * 100), msg = document.getElementById('msg').value.trim().slice(0, 140);
       if (!a && !msg) return;
+      if (Math.abs(a) > 50000) return toast('Too much! Max €500 at once.');
       if (a) {
         await db.txn('users/' + k, u => { u.balance = (u.balance || 0) + a; if (a > 0) u.topped = (u.topped || 0) + a; return u; });
         await log(k, a > 0 ? 'topup' : 'adjust', a, { what: 'by host' });
