@@ -78,7 +78,7 @@ speak(){
       if [ -n "${COPILOT_GITHUB_TOKEN:-}" ]; then
         reply=$(env -u GH_TOKEN -u GITHUB_TOKEN copilot -p "$system
 
-  $prompt" --model "${COPILOT_CLI_MODEL:-gpt-4.1}" -s 2>cli.err || { echo "Copilot CLI failed: $(head -c 600 cli.err)" >&2; true; })
+  $prompt" ${COPILOT_CLI_MODEL:+--model "$COPILOT_CLI_MODEL"} -s 2>cli.err || { echo "Copilot CLI failed: $(head -c 600 cli.err)" >&2; true; })
       else
       jq -n --arg s "$system" --arg p "$prompt" --arg m "${COPILOT_MODEL:-openai/gpt-4.1}" \
         '{model: $m, temperature: 1.0, max_tokens: 300, messages: [{role: "system", content: $s}, {role: "user", content: $p}]}' > req.json
