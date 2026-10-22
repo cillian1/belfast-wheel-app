@@ -99,7 +99,7 @@
   // runs on every phone a few times a second: records the run, spots the big moments for the live feed
   setInterval(() => {
     const playing = typeof busy !== 'undefined' && busy;
-    if (playing && !wasBusy) { rec = { t0: now(), last: null, frames: [], room: '', win: null, stake: W.run && W.run.live ? W.run.stake : W.stake, user: W.user, name: W.me && W.me.name, test: isTest() || W.user === TEST_KEY }; }
+    if (playing && !wasBusy) { liveBase = null; rec = { t0: now(), last: null, frames: [], room: '', win: null, stake: W.run && W.run.live ? W.run.stake : W.stake, user: W.user, name: W.me && W.me.name, test: isTest() || W.user === TEST_KEY }; }
     wasBusy = playing;
     if (!rec) return;
     try {
@@ -321,7 +321,7 @@
         vg.clearRect(0, 0, vc.width, vc.height); vg.drawImage(cv, 0, 0, vc.width, vc.height);
       } catch (e) {
         S.failed = true;
-        console.error('Watch viewer render failed', e);
+        console.error('Watch viewer render failed', e, S.cur);
         S.say(live ? 'This live view could not be drawn. Close and retry.' : 'This replay could not be drawn. Close it and try another replay.');
       }
     };
