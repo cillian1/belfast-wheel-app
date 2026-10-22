@@ -16,17 +16,42 @@ for (let i = 0; i < 100; i++) {
 }
 const spin = createCore(sources), kinds = new Set();
 let gold = false, backUp = false, hidden = false;
-for (let seed = 1; seed <= 200; seed++) {
+let landedU2 = false, landedD2 = false, clampedTop = false, clampedBottom = false, clampedHiddenBottom = false;
+let seedU2, seedD2, seedTop, seedBottom, seedHiddenBottom;
+for (let seed = 1; seed <= 10000 && !(landedU2 && landedD2 && clampedTop && clampedBottom && clampedHiddenBottom); seed++) {
   const record = await spin(seed, .10, true);
   assert.deepEqual(await createCore(sources)(seed, .10, true), record, `state leaked into seed ${seed}`);
   kinds.add(record.result.k);
   gold ||= !!record.result.g;
-  const wheels = record.trace.map(t => t[1]);
+  const wheels = record.trace.filter(t => t[0] === 'wheel').map(t => t[1]);
   backUp ||= wheels.some((k, i) => i > 0 && k < wheels[i - 1]);
   hidden ||= wheels.includes(5);
+  record.trace.forEach((event, i) => {
+    if (event[0] !== 'wheel') return;
+    if (event[4] === 'U2' && !landedU2) { landedU2 = true; seedU2 = seed; }
+    if (event[4] === 'D2' && !landedD2) { landedD2 = true; seedD2 = seed; }
+    const move = record.trace[i + 1];
+    if (event[4] === 'U2' && event[1] === 1 && move &&
+        move[1] === 1 && move[2] === -2 && move[3] === 4 && move[4] === 0) { clampedTop = true; seedTop ||= seed; }
+    if (event[4] === 'D2' && event[1] === 4 && move &&
+        move[1] === 4 && move[2] === 2 && move[3] === 4 && move[4] === 4) { clampedBottom = true; seedBottom ||= seed; }
+    if (event[4] === 'D2' && event[1] === 5 && move &&
+        move[1] === 5 && move[2] === 2 && move[3] === 5 && move[4] === 5) { clampedHiddenBottom = true; seedHiddenBottom ||= seed; }
+  });
 }
 assert.ok(kinds.has('D') && kinds.has('-') && kinds.has('W') && kinds.has('B'));
 assert.ok(gold && backUp && hidden, 'seeds must cover golden runs, go back up and the hidden wheel');
+assert.ok(landedU2 && landedD2, 'seeded paths must land on both double-arrow wedges');
+assert.ok(clampedTop && clampedBottom && clampedHiddenBottom, 'seeded paths must cover the top and both deepest-level clamps');
+const orderBlock = sources.content.match(/const LAYER_ORDERS = \[([\s\S]*?)\n\];/);
+assert.ok(orderBlock, 'layer orders must remain available for replacement checks');
+const orders = [...orderBlock[1].matchAll(/\[([^\]]*)\]/g)].map(([, order]) =>
+  [...order.matchAll(/'([^']+)'/g)].map(([, move]) => move));
+assert.deepEqual(orders.map(order => order.length), [44, 22, 22, 23, 28],
+  'double arrows replace existing wedges without changing wheel sizes');
+assert.ok(orders.every(order => order.filter(move => move === 'D2').length === 1 &&
+  order.filter(move => move === 'U2').length === 1), 'each inner wheel has exactly one of each double arrow');
+console.log(`D2 seed ${seedD2}, U2 seed ${seedU2}; top clamp ${seedTop}, deepest clamps ${seedBottom}/${seedHiddenBottom}.`);
 const run = (workers, tip) => {
   const args = [simFile('./run.mjs'), '--engine', 'node', '--spins', '200', '--workers', String(workers)];
   if (tip !== undefined) args.push('--tip', String(tip));

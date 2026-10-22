@@ -71,6 +71,22 @@ assert.equal(playback.states[0].cap, 'First frame');
 assert.equal(playback.states[1].cap, 'Second frame');
 assert.deepEqual(playback.messages, [''], 'successful playback should clear its loading message');
 
+const doubleArrowState = {
+  N: 512,
+  scene: 'nested',
+  DEPTH: 4,
+  zoom: 1 / Math.pow(.56, 3),
+  rot: [0, .4, 1.2, 2.1, 0],
+  ord: [['D2', 'U2']],
+};
+const doubleArrowReplay = createHarness(JSON.stringify([[0, JSON.stringify(doubleArrowState)]]));
+await doubleArrowReplay.runtime.replay('double-arrow', {}, 'rpd');
+assert.equal(doubleArrowReplay.states[0].zoom, doubleArrowState.zoom);
+assert.equal(doubleArrowReplay.states[0].DEPTH, doubleArrowState.DEPTH);
+assert.deepEqual(doubleArrowReplay.states[0].rot, doubleArrowState.rot);
+assert.deepEqual(doubleArrowReplay.states[0].ord, doubleArrowState.ord,
+  'replay playback preserves the wheel order and level state for double-arrow transitions');
+
 const epochFrames = JSON.stringify([
   [1700000000000, frame('First frame')],
   [1700000000350, frame('Second frame')],

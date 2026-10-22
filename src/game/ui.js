@@ -1,6 +1,7 @@
 // ---------- UI ----------
 // Owns verdict presentation and main-run orchestration.
 const spinBtn = $('#spinBtn'), plate = $('#verdict');
+function targetLevel(level, delta, depth) { return Math.max(0, Math.min(depth, level + delta)); }
 function setVerdict({ eyebrow = 'The wheel says', title, body = '', steps = null, q = null, show = false, photo = false, flash = true }) {
   if (/^Final answer/.test(eyebrow)) phelanStop();
   $('#vEyebrow').textContent = eyebrow; $('#vTitle').textContent = title;
@@ -43,6 +44,22 @@ async function backToMain() {
   if (DEPTH !== MAXD - 1) { DEPTH = MAXD - 1; navCache = null; draw(); }
 }
 
+async function handleMainSlice(slice) {
+  if (slice.show) {
+    setVerdict({ eyebrow: 'Show me · just for fun, no prize', title: 'Show me', body: "Face forward and take one picture of what’s in front of you. The wheel decides what happens to it. Wherever it lands, that’s where you’re walking.", q: quote(), show: true });
+    logMove('Show me');
+    return false;
+  }
+  if (!slice.deep) {
+    const r = slice.go();
+    setVerdict({ eyebrow: 'Final answer', title: r.t, body: r.b, q: quote() });
+    speak(['Final answer', r.t, r.b]);
+    logMove(r.t);
+    return false;
+  }
+  return true;
+}
+
 async function runMain() {
   setBtn('Wheels turning', true);
   Music.setLevel(0); Music.setMode('egypt'); Music.duck(1); setWilds(0); clearSpecialDice();
@@ -50,18 +67,7 @@ async function runMain() {
   if (deadA.some(v => v) || deadTo.some(v => v)) { deadA.fill(0); deadTo.fill(''); deadFrom.fill(''); draw(); }
   const i0 = await spinLayer(0, 7500, 1);
   const slice = MAIN[i0];
-  if (slice.show) {
-    setVerdict({ eyebrow: 'Show me · just for fun, no prize', title: 'Show me', body: "Face forward and take one picture of what’s in front of you. The wheel decides what happens to it. Wherever it lands, that’s where you’re walking.", q: quote(), show: true });
-    logMove('Show me');
-    return;
-  }
-  if (!slice.deep) {
-    const r = slice.go();
-    setVerdict({ eyebrow: 'Final answer', title: r.t, body: r.b, q: quote() });
-    speak(['Final answer', r.t, r.b]);
-    logMove(r.t);
-    return;
-  }
+  if (!await handleMainSlice(slice)) return;
   // Go deeper: three move wheels, ten dice, the ball drop
   const steps = []; let wilds = 0, bonus = 0;
   setVerdict({ eyebrow: 'The wheel says', title: 'Go deeper', body: 'Hold on.' });
@@ -73,6 +79,10 @@ async function runMain() {
     $('#caption').textContent = '';
     await dive(1 / Math.pow(S, k));
     const idx = await spinLayer(k, 4300, k % 2 ? -1 : 1);
+    if (k === 0) {
+      if (!await handleMainSlice(MAIN[idx])) return;
+      continue;
+    }
     const it = (deadTo[k] ? DEAD_LAYERS[deadTo[k]] : LAYERS)[k][idx];
     const wildLive = wMiss < 2, bonusLive = bMiss < 2;
     if (it.up) { // back out one wheel and spin that one again; everything collected stays
@@ -82,17 +92,24 @@ async function runMain() {
         steps.push({ text: cap(it.go()) }); setTiles(wilds, bonus);
       }
       if (ups++ < 3) {
+        const target = targetLevel(k, -(it.up === 2 ? 2 : 1), DEPTH);
         let body = '';
         if ((it.wild || it.bonus) && !store.get('wildHint')) {
           body = (it.wild ? 'Gold Cleopatra = WILD. ' : 'Purple ankh = BONUS. ') + 'Collect 3 of a kind.';
           store.set('wildHint', true);
         }
-        setVerdict({ eyebrow: 'Going deeper', title: it.wild ? 'Wild, go back up' : it.bonus ? 'Bonus, go back up' : 'Go back up', body, steps: steps.slice(), flash: true });
+        setVerdict({ eyebrow: 'Going deeper', title: it.wild ? 'Wild, go back up' : it.bonus ? 'Bonus, go back up' : it.up === 2 ? 'Go back up two wheels' : 'Go back up', body, steps: steps.slice(), flash: true });
         playSfx('back');
         Music.sting(1); buzz([30, 30, 30]); await wait(500);
-        await dive(1 / Math.pow(S, k - 1));
-        k -= 2; continue;
+        await dive(1 / Math.pow(S, target));
+        k = target - 1; continue;
       }
+      continue;
+    }
+    if (it.down) {
+      const target = targetLevel(k, it.down, DEPTH);
+      setVerdict({ eyebrow: 'Going deeper', title: target === k ? 'At the deepest wheel' : 'Go two wheels deeper', body: '', steps: steps.slice(), flash: true });
+      if (target > k) k = target - 1;
       continue;
     }
     if (it.even) { // Go even deeper: a fifth wheel rises out of the dice well, and the well sinks into its centre (not a direction, so not a step)

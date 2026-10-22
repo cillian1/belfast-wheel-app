@@ -45,6 +45,23 @@ function upChevrons(g, am, a, ph = -1, rs = [R * .66, R * .75, R * .84]) {
   });
   g.restore();
 }
+function doubleChevrons(g, am, outward) {
+  const tx = -Math.sin(am), ty = Math.cos(am), w = R * .035, dir = outward ? 1 : -1;
+  g.save(); g.lineCap = 'round'; g.lineJoin = 'round';
+  [R * .68, R * .81].forEach(r => {
+    const base = r - dir * R * .025, tip = r + dir * R * .025;
+    const bx = c + Math.cos(am) * base, by = c + Math.sin(am) * base;
+    g.strokeStyle = outward ? 'rgba(150,255,225,.95)' : 'rgba(255,220,145,.98)';
+    g.shadowColor = outward ? 'rgba(80,255,200,.9)' : 'rgba(255,174,60,.9)';
+    g.shadowBlur = R * .025; g.lineWidth = R * .016;
+    g.beginPath();
+    g.moveTo(bx + tx * w, by + ty * w);
+    g.lineTo(c + Math.cos(am) * tip, c + Math.sin(am) * tip);
+    g.lineTo(bx - tx * w, by - ty * w);
+    g.stroke();
+  });
+  g.restore();
+}
 function buildRing(items, pal) {
   const k = mk(), g = k.getContext('2d'), n = items.length, seg = TAU / n, r0 = R * .55, r1 = R * .93;
   // crowded wheels get smaller text and emblems so nothing spills over its slice
@@ -100,6 +117,8 @@ function buildRing(items, pal) {
       wedgeText(g, am, R * .88, label, fsFor(label, R * .88) * .8, R * .1, s.wild ? 'light' : 'dark');
       return;
     }
+    if (s.down) { doubleChevrons(g, BASE + (i + .5) * seg, false); return; }
+    if (s.up === 2) { doubleChevrons(g, BASE + (i + .5) * seg, true); return; }
     if (s.up) { upChevrons(g, BASE + (i + .5) * seg, .55); return; }
     if (s.god) {
       const am = BASE + (i + .5) * seg;

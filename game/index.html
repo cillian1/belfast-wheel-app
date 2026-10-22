@@ -507,6 +507,8 @@ const MOVE_DEFS = {
   BN: { lbl: ['BONUS'], bonus: true, go: () => 'Bonus: no move from this wheel' },
   GD: { lbl: ['GOD'], god: true, go: () => 'The God slice' },
   UP: { lbl: [], up: true, go: () => 'Go back up' },
+  U2: { lbl: [], up: 2, go: () => 'Go back up two wheels' },
+  D2: { lbl: [], down: 2, go: () => 'Go two wheels deeper' },
   UW: { lbl: [], up: true, wild: true, go: () => 'Wild, and go back up' },
   UB: { lbl: [], up: true, bonus: true, go: () => 'Bonus, and go back up' },
   MW: { lbl: ['MORE', 'WILDS'], boost: 'W', go: () => 'More Wilds: no move from this wheel' },
@@ -519,13 +521,14 @@ const MOVE_DEFS = {
 // out at about 1.2% for three Wilds and 2.7% for three Bonuses. The last two wheels each have one God slice (never greyed):
 // it sends you to whichever room you hold two of, else the kind you have more of, else a coin flip. Every Wild and Bonus has a
 // normal slice on both sides, wrap-around included. Miss either kind and that kind goes grey on every wheel further in.
+// Double arrows replace fixed-text moves so landing on them adds no unrelated RNG draw.
 const LAYER_ORDERS = [
-  ['BN', 'B', 'MW', 'F', 'C', 'WD', 'NL', 'X', 'BN', 'NR', 'F', 'WD', 'C', 'R', 'BN', 'X', 'L', 'WD', 'F', 'B', 'BN', 'R', 'NL', 'MB', 'L', 'BN', 'L', 'NR', 'WD', 'B', 'C', 'BN', 'NL', 'X', 'WD', 'NR', 'F', 'BN', 'C', 'R', 'WD', 'X', 'BN', 'NR'],
-  ['BN', 'NL', 'X', 'WD', 'NR', 'MW', 'F', 'BN', 'C', 'R', 'WD', 'X', 'UP', 'BN', 'F', 'B', 'WD', 'R', 'MB', 'NL', 'BN', 'L'],
-  ['BN', 'NR', 'F', 'WD', 'C', 'R', 'BN', 'UP', 'L', 'WD', 'F', 'B', 'BN', 'R', 'X', 'C', 'NL', 'WD', 'L', 'UP', 'BN', 'B'],
-  ['BN', 'C', 'ED', 'R', 'WD', 'X', 'UP', 'BN', 'F', 'B', 'WD', 'R', 'UP', 'BN', 'L', 'GD', 'F', 'NR', 'WD', 'B', 'UP', 'BN', 'NL'],
+  ['BN', 'B', 'MW', 'F', 'D2', 'WD', 'U2', 'X', 'BN', 'NR', 'F', 'WD', 'C', 'R', 'BN', 'X', 'L', 'WD', 'F', 'B', 'BN', 'R', 'NL', 'MB', 'L', 'BN', 'L', 'NR', 'WD', 'B', 'C', 'BN', 'NL', 'X', 'WD', 'NR', 'F', 'BN', 'C', 'R', 'WD', 'X', 'BN', 'NR'],
+  ['BN', 'NL', 'X', 'WD', 'NR', 'MW', 'F', 'BN', 'D2', 'R', 'WD', 'X', 'U2', 'BN', 'F', 'B', 'WD', 'R', 'MB', 'NL', 'BN', 'L'],
+  ['BN', 'NR', 'F', 'WD', 'D2', 'R', 'BN', 'U2', 'L', 'WD', 'F', 'B', 'BN', 'R', 'X', 'C', 'NL', 'WD', 'L', 'UP', 'BN', 'B'],
+  ['BN', 'D2', 'ED', 'R', 'WD', 'X', 'U2', 'BN', 'F', 'B', 'WD', 'R', 'UP', 'BN', 'L', 'GD', 'F', 'NR', 'WD', 'B', 'UP', 'BN', 'NL'],
   // the hidden fifth wheel, only reached through Go even deeper on the last wheel: more Wilds and ankhs than any other wheel
-  ['BN', 'C', 'WD', 'R', 'BN', 'X', 'WD', 'F', 'BN', 'B', 'GD', 'NL', 'WD', 'L', 'BN', 'NR', 'WD', 'F', 'BN', 'X', 'WD', 'R', 'BN', 'C', 'WD', 'L', 'BN', 'B'],
+  ['BN', 'D2', 'WD', 'R', 'BN', 'X', 'WD', 'F', 'BN', 'B', 'GD', 'U2', 'WD', 'L', 'BN', 'NR', 'WD', 'F', 'BN', 'X', 'WD', 'R', 'BN', 'C', 'WD', 'L', 'BN', 'B'],
 ];
 const REPLACE = ['F', 'L', 'R', 'B', 'NL', 'NR', 'X', 'C'];
 // dead variants: 'W' = Wilds greyed, 'B' = Bonus greyed, 'WB' = both
@@ -993,6 +996,23 @@ function upChevrons(g, am, a, ph = -1, rs = [R * .66, R * .75, R * .84]) {
   });
   g.restore();
 }
+function doubleChevrons(g, am, outward) {
+  const tx = -Math.sin(am), ty = Math.cos(am), w = R * .035, dir = outward ? 1 : -1;
+  g.save(); g.lineCap = 'round'; g.lineJoin = 'round';
+  [R * .68, R * .81].forEach(r => {
+    const base = r - dir * R * .025, tip = r + dir * R * .025;
+    const bx = c + Math.cos(am) * base, by = c + Math.sin(am) * base;
+    g.strokeStyle = outward ? 'rgba(150,255,225,.95)' : 'rgba(255,220,145,.98)';
+    g.shadowColor = outward ? 'rgba(80,255,200,.9)' : 'rgba(255,174,60,.9)';
+    g.shadowBlur = R * .025; g.lineWidth = R * .016;
+    g.beginPath();
+    g.moveTo(bx + tx * w, by + ty * w);
+    g.lineTo(c + Math.cos(am) * tip, c + Math.sin(am) * tip);
+    g.lineTo(bx - tx * w, by - ty * w);
+    g.stroke();
+  });
+  g.restore();
+}
 function buildRing(items, pal) {
   const k = mk(), g = k.getContext('2d'), n = items.length, seg = TAU / n, r0 = R * .55, r1 = R * .93;
   // crowded wheels get smaller text and emblems so nothing spills over its slice
@@ -1048,6 +1068,8 @@ function buildRing(items, pal) {
       wedgeText(g, am, R * .88, label, fsFor(label, R * .88) * .8, R * .1, s.wild ? 'light' : 'dark');
       return;
     }
+    if (s.down) { doubleChevrons(g, BASE + (i + .5) * seg, false); return; }
+    if (s.up === 2) { doubleChevrons(g, BASE + (i + .5) * seg, true); return; }
     if (s.up) { upChevrons(g, BASE + (i + .5) * seg, .55); return; }
     if (s.god) {
       const am = BASE + (i + .5) * seg;
@@ -2380,6 +2402,7 @@ function countSlots() {
 // ---------- UI ----------
 // Owns verdict presentation and main-run orchestration.
 const spinBtn = $('#spinBtn'), plate = $('#verdict');
+function targetLevel(level, delta, depth) { return Math.max(0, Math.min(depth, level + delta)); }
 function setVerdict({ eyebrow = 'The wheel says', title, body = '', steps = null, q = null, show = false, photo = false, flash = true }) {
   if (/^Final answer/.test(eyebrow)) phelanStop();
   $('#vEyebrow').textContent = eyebrow; $('#vTitle').textContent = title;
@@ -2422,6 +2445,22 @@ async function backToMain() {
   if (DEPTH !== MAXD - 1) { DEPTH = MAXD - 1; navCache = null; draw(); }
 }
 
+async function handleMainSlice(slice) {
+  if (slice.show) {
+    setVerdict({ eyebrow: 'Show me · just for fun, no prize', title: 'Show me', body: "Face forward and take one picture of what’s in front of you. The wheel decides what happens to it. Wherever it lands, that’s where you’re walking.", q: quote(), show: true });
+    logMove('Show me');
+    return false;
+  }
+  if (!slice.deep) {
+    const r = slice.go();
+    setVerdict({ eyebrow: 'Final answer', title: r.t, body: r.b, q: quote() });
+    speak(['Final answer', r.t, r.b]);
+    logMove(r.t);
+    return false;
+  }
+  return true;
+}
+
 async function runMain() {
   setBtn('Wheels turning', true);
   Music.setLevel(0); Music.setMode('egypt'); Music.duck(1); setWilds(0); clearSpecialDice();
@@ -2429,18 +2468,7 @@ async function runMain() {
   if (deadA.some(v => v) || deadTo.some(v => v)) { deadA.fill(0); deadTo.fill(''); deadFrom.fill(''); draw(); }
   const i0 = await spinLayer(0, 7500, 1);
   const slice = MAIN[i0];
-  if (slice.show) {
-    setVerdict({ eyebrow: 'Show me · just for fun, no prize', title: 'Show me', body: "Face forward and take one picture of what’s in front of you. The wheel decides what happens to it. Wherever it lands, that’s where you’re walking.", q: quote(), show: true });
-    logMove('Show me');
-    return;
-  }
-  if (!slice.deep) {
-    const r = slice.go();
-    setVerdict({ eyebrow: 'Final answer', title: r.t, body: r.b, q: quote() });
-    speak(['Final answer', r.t, r.b]);
-    logMove(r.t);
-    return;
-  }
+  if (!await handleMainSlice(slice)) return;
   // Go deeper: three move wheels, ten dice, the ball drop
   const steps = []; let wilds = 0, bonus = 0;
   setVerdict({ eyebrow: 'The wheel says', title: 'Go deeper', body: 'Hold on.' });
@@ -2452,6 +2480,10 @@ async function runMain() {
     $('#caption').textContent = '';
     await dive(1 / Math.pow(S, k));
     const idx = await spinLayer(k, 4300, k % 2 ? -1 : 1);
+    if (k === 0) {
+      if (!await handleMainSlice(MAIN[idx])) return;
+      continue;
+    }
     const it = (deadTo[k] ? DEAD_LAYERS[deadTo[k]] : LAYERS)[k][idx];
     const wildLive = wMiss < 2, bonusLive = bMiss < 2;
     if (it.up) { // back out one wheel and spin that one again; everything collected stays
@@ -2461,17 +2493,24 @@ async function runMain() {
         steps.push({ text: cap(it.go()) }); setTiles(wilds, bonus);
       }
       if (ups++ < 3) {
+        const target = targetLevel(k, -(it.up === 2 ? 2 : 1), DEPTH);
         let body = '';
         if ((it.wild || it.bonus) && !store.get('wildHint')) {
           body = (it.wild ? 'Gold Cleopatra = WILD. ' : 'Purple ankh = BONUS. ') + 'Collect 3 of a kind.';
           store.set('wildHint', true);
         }
-        setVerdict({ eyebrow: 'Going deeper', title: it.wild ? 'Wild, go back up' : it.bonus ? 'Bonus, go back up' : 'Go back up', body, steps: steps.slice(), flash: true });
+        setVerdict({ eyebrow: 'Going deeper', title: it.wild ? 'Wild, go back up' : it.bonus ? 'Bonus, go back up' : it.up === 2 ? 'Go back up two wheels' : 'Go back up', body, steps: steps.slice(), flash: true });
         playSfx('back');
         Music.sting(1); buzz([30, 30, 30]); await wait(500);
-        await dive(1 / Math.pow(S, k - 1));
-        k -= 2; continue;
+        await dive(1 / Math.pow(S, target));
+        k = target - 1; continue;
       }
+      continue;
+    }
+    if (it.down) {
+      const target = targetLevel(k, it.down, DEPTH);
+      setVerdict({ eyebrow: 'Going deeper', title: target === k ? 'At the deepest wheel' : 'Go two wheels deeper', body: '', steps: steps.slice(), flash: true });
+      if (target > k) k = target - 1;
       continue;
     }
     if (it.even) { // Go even deeper: a fifth wheel rises out of the dice well, and the well sinks into its centre (not a direction, so not a step)

@@ -33,8 +33,21 @@ export function pathHarness(full = false, compute = false) {
   let random = seededRandom(1);
   Math.random = () => { calls++; return random(); };
   let physics = false;
+  const moveLevel = targetLevel;
+  targetLevel = (level, delta, depth) => {
+    const target = moveLevel(level, delta, depth);
+    if (tracing) trace.push(['level', level, delta, depth, target]);
+    return target;
+  };
   const layer = spinLayer;
-  spinLayer = async (...args) => { const result = await layer(...args); if (tracing) trace.push(['wheel', args[0], result, calls]); return result; };
+  spinLayer = async (...args) => {
+    const result = await layer(...args);
+    if (tracing) {
+      const item = LAYERS[args[0]] && LAYERS[args[0]][result];
+      trace.push(['wheel', args[0], result, calls, item && item.up === 2 ? 'U2' : item && item.down === 2 ? 'D2' : '']);
+    }
+    return result;
+  };
   if (full) {
     const roll = rollDice, drop = runDrop, pipesRun = runPipes, d6Run = rollD6, chain = markChain;
     if (compute) {

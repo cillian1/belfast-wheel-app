@@ -33,6 +33,8 @@ const MOVE_DEFS = {
   BN: { lbl: ['BONUS'], bonus: true, go: () => 'Bonus: no move from this wheel' },
   GD: { lbl: ['GOD'], god: true, go: () => 'The God slice' },
   UP: { lbl: [], up: true, go: () => 'Go back up' },
+  U2: { lbl: [], up: 2, go: () => 'Go back up two wheels' },
+  D2: { lbl: [], down: 2, go: () => 'Go two wheels deeper' },
   UW: { lbl: [], up: true, wild: true, go: () => 'Wild, and go back up' },
   UB: { lbl: [], up: true, bonus: true, go: () => 'Bonus, and go back up' },
   MW: { lbl: ['MORE', 'WILDS'], boost: 'W', go: () => 'More Wilds: no move from this wheel' },
@@ -45,13 +47,14 @@ const MOVE_DEFS = {
 // out at about 1.2% for three Wilds and 2.7% for three Bonuses. The last two wheels each have one God slice (never greyed):
 // it sends you to whichever room you hold two of, else the kind you have more of, else a coin flip. Every Wild and Bonus has a
 // normal slice on both sides, wrap-around included. Miss either kind and that kind goes grey on every wheel further in.
+// Double arrows replace fixed-text moves so landing on them adds no unrelated RNG draw.
 const LAYER_ORDERS = [
-  ['BN', 'B', 'MW', 'F', 'C', 'WD', 'NL', 'X', 'BN', 'NR', 'F', 'WD', 'C', 'R', 'BN', 'X', 'L', 'WD', 'F', 'B', 'BN', 'R', 'NL', 'MB', 'L', 'BN', 'L', 'NR', 'WD', 'B', 'C', 'BN', 'NL', 'X', 'WD', 'NR', 'F', 'BN', 'C', 'R', 'WD', 'X', 'BN', 'NR'],
-  ['BN', 'NL', 'X', 'WD', 'NR', 'MW', 'F', 'BN', 'C', 'R', 'WD', 'X', 'UP', 'BN', 'F', 'B', 'WD', 'R', 'MB', 'NL', 'BN', 'L'],
-  ['BN', 'NR', 'F', 'WD', 'C', 'R', 'BN', 'UP', 'L', 'WD', 'F', 'B', 'BN', 'R', 'X', 'C', 'NL', 'WD', 'L', 'UP', 'BN', 'B'],
-  ['BN', 'C', 'ED', 'R', 'WD', 'X', 'UP', 'BN', 'F', 'B', 'WD', 'R', 'UP', 'BN', 'L', 'GD', 'F', 'NR', 'WD', 'B', 'UP', 'BN', 'NL'],
+  ['BN', 'B', 'MW', 'F', 'D2', 'WD', 'U2', 'X', 'BN', 'NR', 'F', 'WD', 'C', 'R', 'BN', 'X', 'L', 'WD', 'F', 'B', 'BN', 'R', 'NL', 'MB', 'L', 'BN', 'L', 'NR', 'WD', 'B', 'C', 'BN', 'NL', 'X', 'WD', 'NR', 'F', 'BN', 'C', 'R', 'WD', 'X', 'BN', 'NR'],
+  ['BN', 'NL', 'X', 'WD', 'NR', 'MW', 'F', 'BN', 'D2', 'R', 'WD', 'X', 'U2', 'BN', 'F', 'B', 'WD', 'R', 'MB', 'NL', 'BN', 'L'],
+  ['BN', 'NR', 'F', 'WD', 'D2', 'R', 'BN', 'U2', 'L', 'WD', 'F', 'B', 'BN', 'R', 'X', 'C', 'NL', 'WD', 'L', 'UP', 'BN', 'B'],
+  ['BN', 'D2', 'ED', 'R', 'WD', 'X', 'U2', 'BN', 'F', 'B', 'WD', 'R', 'UP', 'BN', 'L', 'GD', 'F', 'NR', 'WD', 'B', 'UP', 'BN', 'NL'],
   // the hidden fifth wheel, only reached through Go even deeper on the last wheel: more Wilds and ankhs than any other wheel
-  ['BN', 'C', 'WD', 'R', 'BN', 'X', 'WD', 'F', 'BN', 'B', 'GD', 'NL', 'WD', 'L', 'BN', 'NR', 'WD', 'F', 'BN', 'X', 'WD', 'R', 'BN', 'C', 'WD', 'L', 'BN', 'B'],
+  ['BN', 'D2', 'WD', 'R', 'BN', 'X', 'WD', 'F', 'BN', 'B', 'GD', 'U2', 'WD', 'L', 'BN', 'NR', 'WD', 'F', 'BN', 'X', 'WD', 'R', 'BN', 'C', 'WD', 'L', 'BN', 'B'],
 ];
 const REPLACE = ['F', 'L', 'R', 'B', 'NL', 'NR', 'X', 'C'];
 // dead variants: 'W' = Wilds greyed, 'B' = Bonus greyed, 'WB' = both

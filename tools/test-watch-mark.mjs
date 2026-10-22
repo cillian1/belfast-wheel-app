@@ -73,10 +73,33 @@ try {
   await B.page.waitForFunction(() => scene === 'nested' && document.querySelector('#wwC').textContent === 'Next run' && /spinning/.test(document.querySelector('#wwSub').textContent), null, { timeout: 5000 });
   await B.page.waitForTimeout(500);
   assert.notEqual(await shot(), farmShot, 'the viewer draws the next run');
+  const arrowState = await A.page.evaluate(() => {
+    const order = runOrders[0].slice(), down = order.indexOf('D2'), up = order.indexOf('U2');
+    [order[down], order[up]] = [order[up], order[down]];
+    setLayerOrder(1, order);
+    DEPTH = 4; scene = 'nested'; zoom = 1 / Math.pow(S, 1); rot[1] = .6; draw();
+    return { order, zoom, rotation: rot[1] };
+  });
+  await B.page.waitForFunction(({ order, zoom, rotation }) =>
+    JSON.stringify(runOrders[0]) === JSON.stringify(order) &&
+    Math.abs(zoom - (1 / Math.pow(S, 1))) < .01 && Math.abs(rot[1] - rotation) < .01, arrowState, { timeout: 5000 });
+  const levelOne = await shot();
+  await A.page.evaluate(() => { zoom = 1 / Math.pow(S, 3); rot[3] = 2; draw(); });
+  await B.page.waitForFunction(() => Math.abs(zoom - (1 / Math.pow(S, 3))) < .01 && Math.abs(rot[3] - 2) < .01, null, { timeout: 5000 });
+  await B.page.waitForTimeout(250);
+  assert.notEqual(await shot(), levelOne, 'the viewer follows a two-level transition and changed double-arrow order');
+  const mirroredArrows = await B.page.evaluate(() => ({
+    down: LAYERS[1].filter(move => move.down === 2).length,
+    up: LAYERS[1].filter(move => move.up === 2).length,
+    face: faces.layers[1].width,
+  }));
+  assert.equal(mirroredArrows.down, 1, 'the mirrored wheel keeps its D2 slice');
+  assert.equal(mirroredArrows.up, 1, 'the mirrored wheel keeps its U2 slice');
+  assert.ok(mirroredArrows.face > 0, 'the mirrored wheel face is rebuilt for the changed slice order');
   const frozen = await B.page.evaluate(() => getComputedStyle(document.querySelector('#wwMsg')).display !== 'none' && document.querySelector('#wwMsg').textContent);
   assert.equal(frozen, false, `viewer shows a message over the run: ${frozen}`);
   assert.deepEqual(B.errors.filter(e => !/favicon/.test(e)), [], 'viewer console errors');
-  console.log('Live Watch draws Mark\'s wheel, follows its rotation, drops "spinning" when the run ends, and follows the next run.');
+  console.log('Live Watch mirrors Mark\'s wheel and run, plus double-arrow order and a two-level nested-wheel transition.');
 } finally {
   await browser.close();
   await new Promise(resolve => server.close(resolve));
