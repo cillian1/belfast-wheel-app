@@ -72,8 +72,8 @@ function drawWinGlow() {
 // a Wild, ankh or God slice: the ones worth teasing and the ones Ghost Phelan pushes you onto
 const hotSlice = it => !!(it && (it.wild || it.bonus || it.god));
 let GHOST_CHANCE = 1 / 20; // per inner-wheel spin, so roughly one deep run in five sees him
-// user chose 25% (Oct 21): about 37% of deep runs end in a room, Pyramid about 1 in 72
-let TIP_CHANCE = .10;
+// one in three near misses teases; 30% of teases tip, keeping the overall tip rate at 10%
+let TIP_CHANCE = .30, TEASE_CHANCE = 1 / 3;
 let ghost = null;
 async function spinLayerRun(k, dur, dir) {
   const n = LAYERS[k].length, t = target(n), turns = (k ? 3 : 5) + Math.floor(Math.random() * 2), s = rot[k], seg = TAU / n;
@@ -84,8 +84,9 @@ async function spinLayerRun(k, dur, dir) {
   const near = k && !tease(items[t.i]) ? (tease(at(t.i + 1)) ? 1 : tease(at(t.i - 1)) ? -1 : 0) : 0;
   const ghostNow = k > 0 && Math.random() < GHOST_CHANCE;
   const ghostNear = k && !hotSlice(items[t.i]) ? (hotSlice(at(t.i + 1)) ? 1 : hotSlice(at(t.i - 1)) ? -1 : 0) : 0;
-  // a near miss stops right at the edge of the hot slice, so it hurts
-  if (near && !ghostNow) t.a = (t.i + (near > 0 ? .9 + Math.random() * .05 : .05 + Math.random() * .05)) * seg;
+  const teaseNow = near && !ghostNow && Math.random() < TEASE_CHANCE;
+  // a tease stops right at the edge of the hot slice, so it hurts
+  if (teaseNow) t.a = (t.i + (near > 0 ? .9 + Math.random() * .05 : .05 + Math.random() * .05)) * seg;
   // landing on a special never sits on its edge, so it can't look like it might slip back off onto a normal slice
   else if (k && tease(items[t.i])) t.a = (t.i + .2 + Math.random() * .6) * seg;
   const e = dir > 0 ? s + turns * TAU + mod(-t.a - s, TAU) : s - turns * TAU - mod(s + t.a, TAU);
@@ -97,7 +98,7 @@ async function spinLayerRun(k, dur, dir) {
   });
   rot[k] = mod(rot[k], TAU);
   if (ghostNow) return await ghostPhelan(k, t.i, ghostNear);
-  if (near) { // the pointer leans toward the special and teeters on the edge: TIP_CHANCE of the time it tips over onto it
+  if (teaseNow) { // the pointer leans toward the special and teeters on the edge
     const r0 = rot[k], edge = -(t.i + (near > 0 ? 1 : 0)) * seg, gap = mod(edge - r0 + Math.PI, TAU) - Math.PI;
     let tk = 0;
     if (Math.random() < TIP_CHANCE) {
