@@ -41,7 +41,7 @@ function playSfx(name) {
 }
 function tick(v, f = 2500) {
   if (!AC) return; effectsOutput(); const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
-  o.type = 'sine'; o.frequency.setValueAtTime((f + Math.random() * 120) * .6, t); o.frequency.exponentialRampToValueAtTime((f + 60) * .35, t + .05);
+  o.type = 'sine'; o.frequency.setValueAtTime((f + cosmeticRandom() * 120) * .6, t); o.frequency.exponentialRampToValueAtTime((f + 60) * .35, t + .05);
   g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.075 * v, t + .004); g.gain.exponentialRampToValueAtTime(.0001, t + .07);
   o.connect(g); g.connect(sfxMaster); o.start(t); o.stop(t + .07);
 }

@@ -240,7 +240,7 @@ async function boostRun(kind, fromK) {
     godParts.forEach(p => {
       const u = Math.max(0, Math.min(1, (t - p.d) / .55)), e = easeInOut(u);
       p.x = lerp(p.sx, p.tx, e); p.y = lerp(p.sy, p.ty, e) - Math.sin(u * Math.PI) * N * .15; p.r += p.vr / 60; p.life = u >= 1 ? Math.max(0, p.life - .08) : 1;
-      if (u >= 1 && !p.hit) { p.hit = true; if (hits++ % 3 === 0) tick(.8, 1600 + Math.random() * 800); }
+      if (u >= 1 && !p.hit) { p.hit = true; if (hits++ % 3 === 0) tick(.8, 1600 + cosmeticRandom() * 800); }
     });
     for (let j = fromK + 1; j <= DEPTH; j++) boostA[j] = Math.max(0, Math.min(1, (t - .45) / .45));
     draw();
@@ -312,7 +312,7 @@ async function rollDiceRun() {
             d.vz -= G * h; d.z += d.vz * h; d.x += d.vx * h; d.y += d.vy * h; d.M = spinRot(d.M, d.w, h);
             if (d.z <= 0) {
               d.z = 0;
-              if (d.vz < -.3) { d.vz = -d.vz * .5; d.w = d.w.map(x => x * .75 + (Math.random() - .5) * 10); tick(.9, 1500 + Math.random() * 500); }
+              if (d.vz < -.3) { d.vz = -d.vz * .5; d.w = d.w.map(x => x * .75 + (Math.random() - .5) * 10); tick(.9, 1500 + cosmeticRandom() * 500); }
               else d.vz = 0;
               d.vx *= .93; d.vy *= .93; d.w = d.w.map(x => x * .975);
             }

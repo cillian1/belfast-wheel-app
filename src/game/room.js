@@ -2,7 +2,7 @@
 // Owns the ambient room background and its animation.
 const room = $('#room'), rctx = room.getContext('2d');
 let RW = 0, RH = 0, RDp = 1, roomBg = null, fireBox = null, lastRoom = 0, roomRaf = 0;
-const EMBERS = Array.from({ length: 26 }, () => ({ x: Math.random(), y: Math.random(), v: .15 + Math.random() * .35, s: 1 + Math.random() * 1.5 }));
+const EMBERS = Array.from({ length: 26 }, () => ({ x: cosmeticRandom(), y: cosmeticRandom(), v: .15 + cosmeticRandom() * .35, s: 1 + cosmeticRandom() * 1.5 }));
 function buildRoom() {
   const k = document.createElement('canvas'); k.width = room.width; k.height = room.height;
   const g = k.getContext('2d'); g.scale(RDp, RDp);
@@ -16,8 +16,8 @@ function buildRoom() {
   const fw = Math.min(W * .7, 420), fh = Math.min(H * .16, 170), fx = (W - fw) / 2, fy = H - fh;
   g.fillStyle = '#39322b'; g.fillRect(fx, fy, fw, fh);
   for (let i = 0; i < 70; i++) {
-    const sw = 30 + Math.random() * 50, sh = 16 + Math.random() * 18, sx = fx + Math.random() * (fw - sw), sy = fy + Math.random() * (fh - sh);
-    g.fillStyle = `rgba(${Math.random() < .5 ? '0,0,0' : '180,160,140'},${.06 + Math.random() * .1})`; rrect(g, sx, sy, sw, sh, 4); g.fill();
+    const sw = 30 + cosmeticRandom() * 50, sh = 16 + cosmeticRandom() * 18, sx = fx + cosmeticRandom() * (fw - sw), sy = fy + cosmeticRandom() * (fh - sh);
+    g.fillStyle = `rgba(${cosmeticRandom() < .5 ? '0,0,0' : '180,160,140'},${.06 + cosmeticRandom() * .1})`; rrect(g, sx, sy, sw, sh, 4); g.fill();
   }
   g.save(); g.shadowColor = 'rgba(0,0,0,.8)'; g.shadowBlur = 20; g.shadowOffsetY = 10;
   g.fillStyle = grad(g, 0, fy - 26, 0, fy, [[0, '#5a3a22'], [1, '#2a1a0e']]); g.fillRect(fx - 22, fy - 26, fw + 44, 26); g.restore();
@@ -57,7 +57,7 @@ function drawRoomFrame(now) {
   rctx.save(); rctx.beginPath(); rctx.rect(rx, ry, rw, rh); rctx.clip();
   rctx.globalCompositeOperation = 'lighter';
   for (let i = 0; i < 9; i++) {
-    const x = RW / 2 + (i - 4) * F.w * .085, w = F.w * .075, h = F.w * (.2 + .14 * Math.sin(t * (3.5 + i * .7) + i * 2) + .05 * Math.random()), b = F.base - 12;
+    const x = RW / 2 + (i - 4) * F.w * .085, w = F.w * .075, h = F.w * (.2 + .14 * Math.sin(t * (3.5 + i * .7) + i * 2) + .05 * cosmeticRandom()), b = F.base - 12;
     if (Perf.low) rctx.fillStyle = 'rgba(255,145,45,.72)';
     else {
       const fg = rctx.createLinearGradient(0, b, 0, b - h);

@@ -141,7 +141,7 @@ function drawPyramid(now) {
   g.restore();
 }
 function sandStep(dt, rate) {
-  if (Math.random() < rate) pyr.sand.push({ x: -N * .1, y: N * (.2 + Math.random() * .75), v: N * (1.2 + Math.random()), l: N * (.04 + Math.random() * .08), a: .3 + Math.random() * .4 });
+  if (cosmeticRandom() < rate) pyr.sand.push({ x: -N * .1, y: N * (.2 + cosmeticRandom() * .75), v: N * (1.2 + cosmeticRandom()), l: N * (.04 + cosmeticRandom() * .08), a: .3 + cosmeticRandom() * .4 });
   pyr.sand.forEach(p => p.x += p.v * dt); pyr.sand = pyr.sand.filter(p => p.x < N * 1.2);
 }
 async function pyramidRun(steps) {
@@ -184,13 +184,13 @@ async function pyramidRun(steps) {
     sandStep(dt, .9);
     if (t > .7 && !ghost) { ghost = { x: c + N * .1, y: pyrBase() - N * .07, a: 0, side: 1 }; pyr.wave = true; }
     if (ghost) ghost.a = Math.min(1, (t - .7) / .15);
-    if (Math.random() < .08) tick(.25, 400 + Math.random() * 300);
+    if (cosmeticRandom() < .08) tick(.25, 400 + cosmeticRandom() * 300);
     draw();
   });
   // 3. into the tomb
   await crossTo(() => { pyr.ph = 'tomb'; ghost = null; pyr.wave = false; pyr.scroll = 0; }, 900);
   $('#caption').textContent = '';
-  await animate(6500, t => { pyr.scroll = easeInOut(t) * N * 2.6; if (Math.random() < .05) tick(.3, 300); draw(); });
+  await animate(6500, t => { pyr.scroll = easeInOut(t) * N * 2.6; if (cosmeticRandom() < .05) tick(.3, 300); draw(); });
   // 4. three doors: tap one
   const wildDoor = Math.floor(Math.random() * 3);
   pyr.doors = [0, 1, 2].map(j => ({ open: 0, wild: j === wildDoor, amt: 60 + 10 * Math.floor(Math.random() * 15) }));
@@ -203,7 +203,7 @@ async function pyramidRun(steps) {
   doorPick = null; stage.classList.remove('pick'); pyr.pickable = false; stopPulse();
   const d = pyr.doors[chosen];
   Music.sting(3); buzz([40, 40, 40]);
-  await animate(1400, t => { d.open = easeInOut(t); if (t < .8 && Math.random() < .3) tick(.4, 200 + Math.random() * 100); draw(); });
+  await animate(1400, t => { d.open = easeInOut(t); if (t < .8 && cosmeticRandom() < .3) tick(.4, 200 + cosmeticRandom() * 100); draw(); });
   await wait(600);
   // the other two open as well, so you see what you walked past
   await animate(1000, t => { pyr.doors.forEach(o => { if (o !== d) o.open = easeInOut(t) * .85; }); draw(); });
@@ -225,9 +225,9 @@ async function pyramidRun(steps) {
   last = performance.now();
   await animate(5500, t => {
     const now = performance.now(), dt = Math.max(0, Math.min(.033, (now - last) / 1000)); last = now;
-    if (t < .8) for (let j = 0; j < 3; j++) pyr.coins.push({ x: c + (Math.random() - .5) * N * .5, y: -N * .05, v: N * (.5 + Math.random() * .5), r: Math.random() * TAU });
+    if (t < .8) for (let j = 0; j < 3; j++) pyr.coins.push({ x: c + (cosmeticRandom() - .5) * N * .5, y: -N * .05, v: N * (.5 + cosmeticRandom() * .5), r: cosmeticRandom() * TAU });
     pyr.coins.forEach(k => { k.v += N * 1.6 * dt; k.y += k.v * dt; k.r += dt * 12; });
-    const n0 = pyr.coins.length; pyr.coins = pyr.coins.filter(k => k.y < N * .95 - pyr.pile * N * .12); if (pyr.coins.length < n0 && Math.random() < .4) tick(.3, 2400 + Math.random() * 900);
+    const n0 = pyr.coins.length; pyr.coins = pyr.coins.filter(k => k.y < N * .95 - pyr.pile * N * .12); if (pyr.coins.length < n0 && cosmeticRandom() < .4) tick(.3, 2400 + cosmeticRandom() * 900);
     pyr.pile = Math.min(1, t * 1.4);
     pyr.cleo = easeOut(Math.max(0, (t - .45) / .55));
     draw();
@@ -288,9 +288,9 @@ async function monsterRun(steps, w = 0, b = 3) {
   setVerdict({ eyebrow: 'Bonus', title: fakeEur(won), body: 'Wait. Something is wrong with it.', steps: steps.slice(), flash: false });
   await animate(4200, t => {
     planet.melt = easeIn(t);
-    if (Math.random() < .6) planet.embers.push({ x: Math.random() * N, y: N * (1 - .3 * planet.melt), vx: (Math.random() - .5) * N * .1, vy: -N * (.2 + Math.random() * .4), r: N * (.003 + Math.random() * .006), life: 1, col: Math.random() < .5 ? '#ffb347' : '#ff5a1f' });
+    if (cosmeticRandom() < .6) planet.embers.push({ x: cosmeticRandom() * N, y: N * (1 - .3 * planet.melt), vx: (cosmeticRandom() - .5) * N * .1, vy: -N * (.2 + cosmeticRandom() * .4), r: N * (.003 + cosmeticRandom() * .006), life: 1, col: cosmeticRandom() < .5 ? '#ffb347' : '#ff5a1f' });
     planet.embers.forEach(e => { e.x += e.vx / 60; e.y += e.vy / 60; e.life -= 1 / 70; }); planet.embers = planet.embers.filter(e => e.life > 0);
-    if (Math.random() < .15) tick(.6, 200 + Math.random() * 200);
+    if (cosmeticRandom() < .15) tick(.6, 200 + cosmeticRandom() * 200);
     draw();
   });
   // Ghost Phelan pops up laughing, so you know you've been had

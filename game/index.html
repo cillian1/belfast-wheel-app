@@ -303,6 +303,21 @@ const $ = s => document.querySelector(s);
 const TAU = Math.PI * 2, BASE = -Math.PI / 2;
 const LABEL_FONT = '"IBM Plex Sans Condensed","Arial Narrow",sans-serif';
 const DISPLAY_FONT = '"Michroma","Arial Black",sans-serif';
+function makeCosmeticRandom(seed) {
+  let state = seed >>> 0 || 0x6d2b79f5;
+  return () => {
+    state ^= state << 13;
+    state ^= state >>> 17;
+    state ^= state << 5;
+    return (state >>> 0) / 4294967296;
+  };
+}
+const cosmeticRandom = (() => {
+  const seed = new Uint32Array(1);
+  try { window.crypto.getRandomValues(seed); }
+  catch (e) { seed[0] = (Date.now() ^ Math.floor(performance.now() * 1000)) >>> 0; }
+  return makeCosmeticRandom(seed[0]);
+})();
 const GHOST_IMAGE = new Image();
 GHOST_IMAGE.src = GHOST_SPRITE_DATA;
 const pick = a => a[Math.floor(Math.random() * a.length)];
@@ -816,7 +831,7 @@ function buildDart() {
 // Owns the ambient room background and its animation.
 const room = $('#room'), rctx = room.getContext('2d');
 let RW = 0, RH = 0, RDp = 1, roomBg = null, fireBox = null, lastRoom = 0, roomRaf = 0;
-const EMBERS = Array.from({ length: 26 }, () => ({ x: Math.random(), y: Math.random(), v: .15 + Math.random() * .35, s: 1 + Math.random() * 1.5 }));
+const EMBERS = Array.from({ length: 26 }, () => ({ x: cosmeticRandom(), y: cosmeticRandom(), v: .15 + cosmeticRandom() * .35, s: 1 + cosmeticRandom() * 1.5 }));
 function buildRoom() {
   const k = document.createElement('canvas'); k.width = room.width; k.height = room.height;
   const g = k.getContext('2d'); g.scale(RDp, RDp);
@@ -830,8 +845,8 @@ function buildRoom() {
   const fw = Math.min(W * .7, 420), fh = Math.min(H * .16, 170), fx = (W - fw) / 2, fy = H - fh;
   g.fillStyle = '#39322b'; g.fillRect(fx, fy, fw, fh);
   for (let i = 0; i < 70; i++) {
-    const sw = 30 + Math.random() * 50, sh = 16 + Math.random() * 18, sx = fx + Math.random() * (fw - sw), sy = fy + Math.random() * (fh - sh);
-    g.fillStyle = `rgba(${Math.random() < .5 ? '0,0,0' : '180,160,140'},${.06 + Math.random() * .1})`; rrect(g, sx, sy, sw, sh, 4); g.fill();
+    const sw = 30 + cosmeticRandom() * 50, sh = 16 + cosmeticRandom() * 18, sx = fx + cosmeticRandom() * (fw - sw), sy = fy + cosmeticRandom() * (fh - sh);
+    g.fillStyle = `rgba(${cosmeticRandom() < .5 ? '0,0,0' : '180,160,140'},${.06 + cosmeticRandom() * .1})`; rrect(g, sx, sy, sw, sh, 4); g.fill();
   }
   g.save(); g.shadowColor = 'rgba(0,0,0,.8)'; g.shadowBlur = 20; g.shadowOffsetY = 10;
   g.fillStyle = grad(g, 0, fy - 26, 0, fy, [[0, '#5a3a22'], [1, '#2a1a0e']]); g.fillRect(fx - 22, fy - 26, fw + 44, 26); g.restore();
@@ -871,7 +886,7 @@ function drawRoomFrame(now) {
   rctx.save(); rctx.beginPath(); rctx.rect(rx, ry, rw, rh); rctx.clip();
   rctx.globalCompositeOperation = 'lighter';
   for (let i = 0; i < 9; i++) {
-    const x = RW / 2 + (i - 4) * F.w * .085, w = F.w * .075, h = F.w * (.2 + .14 * Math.sin(t * (3.5 + i * .7) + i * 2) + .05 * Math.random()), b = F.base - 12;
+    const x = RW / 2 + (i - 4) * F.w * .085, w = F.w * .075, h = F.w * (.2 + .14 * Math.sin(t * (3.5 + i * .7) + i * 2) + .05 * cosmeticRandom()), b = F.base - 12;
     if (Perf.low) rctx.fillStyle = 'rgba(255,145,45,.72)';
     else {
       const fg = rctx.createLinearGradient(0, b, 0, b - h);
@@ -1663,7 +1678,7 @@ function playSfx(name) {
 }
 function tick(v, f = 2500) {
   if (!AC) return; effectsOutput(); const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
-  o.type = 'sine'; o.frequency.setValueAtTime((f + Math.random() * 120) * .6, t); o.frequency.exponentialRampToValueAtTime((f + 60) * .35, t + .05);
+  o.type = 'sine'; o.frequency.setValueAtTime((f + cosmeticRandom() * 120) * .6, t); o.frequency.exponentialRampToValueAtTime((f + 60) * .35, t + .05);
   g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.075 * v, t + .004); g.gain.exponentialRampToValueAtTime(.0001, t + .07);
   o.connect(g); g.connect(sfxMaster); o.start(t); o.stop(t + .07);
 }
@@ -2065,7 +2080,7 @@ async function boostRun(kind, fromK) {
     godParts.forEach(p => {
       const u = Math.max(0, Math.min(1, (t - p.d) / .55)), e = easeInOut(u);
       p.x = lerp(p.sx, p.tx, e); p.y = lerp(p.sy, p.ty, e) - Math.sin(u * Math.PI) * N * .15; p.r += p.vr / 60; p.life = u >= 1 ? Math.max(0, p.life - .08) : 1;
-      if (u >= 1 && !p.hit) { p.hit = true; if (hits++ % 3 === 0) tick(.8, 1600 + Math.random() * 800); }
+      if (u >= 1 && !p.hit) { p.hit = true; if (hits++ % 3 === 0) tick(.8, 1600 + cosmeticRandom() * 800); }
     });
     for (let j = fromK + 1; j <= DEPTH; j++) boostA[j] = Math.max(0, Math.min(1, (t - .45) / .45));
     draw();
@@ -2137,7 +2152,7 @@ async function rollDiceRun() {
             d.vz -= G * h; d.z += d.vz * h; d.x += d.vx * h; d.y += d.vy * h; d.M = spinRot(d.M, d.w, h);
             if (d.z <= 0) {
               d.z = 0;
-              if (d.vz < -.3) { d.vz = -d.vz * .5; d.w = d.w.map(x => x * .75 + (Math.random() - .5) * 10); tick(.9, 1500 + Math.random() * 500); }
+              if (d.vz < -.3) { d.vz = -d.vz * .5; d.w = d.w.map(x => x * .75 + (Math.random() - .5) * 10); tick(.9, 1500 + cosmeticRandom() * 500); }
               else d.vz = 0;
               d.vx *= .93; d.vy *= .93; d.w = d.w.map(x => x * .975);
             }
@@ -2224,6 +2239,7 @@ async function burstDiceRun() {
 // ---------- ball physics ----------
 // Owns ball-drop simulation and final-slot counting.
 let lastPeg = 0;
+const DROP_HZ = 240, DROP_DT = 1 / DROP_HZ, DROP_SETTLE_STEPS = Math.ceil(DROP_HZ * 50 / 60);
 function physicsStep(dt) {
   const g = N * 1.7, r = ballR, free = balls.filter(b => b.free);
   for (const b of free) {
@@ -2276,24 +2292,28 @@ function physicsStep(dt) {
 }
 function runDrop(maxMs) {
   return new Promise(res => {
-    const t0 = performance.now(); let last = t0, calm = 0;
+    const t0 = performance.now(); let simStep = 0, calm = 0;
     function f(now) {
-      const el = now - t0, steps = Math.max(1, Math.min(8, Math.round((now - last) / (1000 / 240)))); last = now;
-      rotF += .004 * steps;
-      balls.forEach(b => { if (!b.free && el >= b.rel) { b.free = true; b.vx = (Math.random() - .5) * N * .3; b.vy = N * .05; } });
-      for (let s = 0; s < steps; s++) physicsStep(1 / 240);
-      // once every ball is down between the dividers its slot can't change
-      let settled = true;
-      balls.forEach(b => {
-        if (!b.free) { settled = false; return; }
-        const v = Math.hypot(b.vx, b.vy);
-        if (b.y > B.slotTop + ballR) { b.vx *= .985; return; }
-        settled = false;
-        if (v < N * .02) b.vx += (Math.random() - .5) * N * .1; // stuck on a peg: nudge
-      });
-      calm = settled ? calm + 1 : 0;
+      const elapsed = now - t0, targetStep = Math.floor((elapsed + 1e-6) * DROP_HZ / 1000);
+      while (simStep < targetStep) {
+        const simTime = ++simStep * 1000 / DROP_HZ;
+        rotF += .004;
+        balls.forEach(b => { if (!b.free && simTime >= b.rel) { b.free = true; b.vx = (Math.random() - .5) * N * .3; b.vy = N * .05; } });
+        physicsStep(DROP_DT);
+        // once every ball is down between the dividers its slot can't change
+        let settled = true;
+        balls.forEach(b => {
+          if (!b.free) { settled = false; return; }
+          const v = Math.hypot(b.vx, b.vy);
+          if (b.y > B.slotTop + ballR) { b.vx *= .985; return; }
+          settled = false;
+          if (v < N * .02) b.vx += (Math.random() - .5) * N * .1; // stuck on a peg: nudge
+        });
+        calm = settled ? calm + 1 : 0;
+        if (calm >= DROP_SETTLE_STEPS) break;
+      }
       draw();
-      if (calm > 50 || el > maxMs) res(); else requestAnimationFrame(f);
+      if (calm >= DROP_SETTLE_STEPS || elapsed > maxMs) res(); else requestAnimationFrame(f);
     }
     requestAnimationFrame(f);
   });
@@ -2965,9 +2985,9 @@ async function vaultRun(steps, cash, acts) {
   whoosh(true);
   await crossTo(() => { scene = 'vault'; }, 900);
   $('#caption').textContent = 'The golden locksafe';
-  await animate(2200, t => { vault.drop = t; if (Math.random() < .1) tick(.3, 300 + Math.random() * 200); draw(); });
+  await animate(2200, t => { vault.drop = t; if (cosmeticRandom() < .1) tick(.3, 300 + cosmeticRandom() * 200); draw(); });
   await wait(300);
-  await animate(1700, t => { vault.spin = easeInOut(t) * TAU * 1.25; if (Math.random() < .25) tick(.6, 500 + Math.random() * 300); draw(); });
+  await animate(1700, t => { vault.spin = easeInOut(t) * TAU * 1.25; if (cosmeticRandom() < .25) tick(.6, 500 + cosmeticRandom() * 300); draw(); });
   ting(); buzz([40, 30, 80]);
   await animate(1300, t => { vault.open = easeInOut(t); draw(); });
   await crossTo(() => { vault.ph = 'doors'; vault.pickable = true; }, 800);
@@ -2978,7 +2998,7 @@ async function vaultRun(steps, cash, acts) {
   stopPulse(); vault.pickable = false;
   const d = vault.doors[chosen];
   Music.sting(3); buzz([40, 40, 40]);
-  await animate(1400, t => { d.open = easeInOut(t); if (t < .8 && Math.random() < .3) tick(.4, 600 + Math.random() * 200); draw(); });
+  await animate(1400, t => { d.open = easeInOut(t); if (t < .8 && cosmeticRandom() < .3) tick(.4, 600 + cosmeticRandom() * 200); draw(); });
   ting(); buzz([60, 40, 120]);
   await wait(600);
   await animate(1000, t => { vault.doors.forEach(o => { if (o !== d) o.open = easeInOut(t) * .85; }); draw(); });
@@ -3053,7 +3073,7 @@ async function bonusRun(steps, w = 3, b = 0) {
     roul.balls.forEach(bl => {
       if (roul.t < bl.s) return;
       const u = Math.min(1, (roul.t - bl.s) / (bl.land - bl.s));
-      if (u > .7 && u < 1) { const k = Math.floor((u - .7) / .3 * 3); if (k !== bl.bn) { bl.bn = k; tick(.7, 2600 + Math.random() * 400); } }
+      if (u > .7 && u < 1) { const k = Math.floor((u - .7) / .3 * 3); if (k !== bl.bn) { bl.bn = k; tick(.7, 2600 + cosmeticRandom() * 400); } }
       if (u >= 1 && !bl.landed) { bl.landed = true; bl.winAt = performance.now(); tick(1.3, 1500); buzz(15); }
     });
     if (roul.t - lastTick > .09 * (1 + t * 3)) { lastTick = roul.t; tick(.25, 3200); }
@@ -3408,7 +3428,7 @@ async function roll12(dice) {
           d.vz -= 3.4 * h; d.z += d.vz * h; d.x += d.vx * h; d.y += d.vy * h; d.M = spinRot(d.M, d.w, h);
           if (d.z <= 0) {
             d.z = 0;
-            if (d.vz < -.35) { d.vz = -d.vz * .52; d.w = d.w.map(x => x * .75 + (Math.random() - .5) * 6); d.vx += (Math.random() - .5) * N * .12; d.vy += (Math.random() - .5) * N * .12; tick(.5 + Math.min(.6, -d.vz * .2), 1200 + Math.random() * 500); }
+            if (d.vz < -.35) { d.vz = -d.vz * .52; d.w = d.w.map(x => x * .75 + (Math.random() - .5) * 6); d.vx += (Math.random() - .5) * N * .12; d.vy += (Math.random() - .5) * N * .12; tick(.5 + Math.min(.6, -d.vz * .2), 1200 + cosmeticRandom() * 500); }
             else d.vz = 0;
             d.vx *= .975; d.vy *= .975; d.w = d.w.map(x => x * .985);
             // on the felt it rolls: spin follows the direction it travels
@@ -3887,7 +3907,7 @@ function drawPyramid(now) {
   g.restore();
 }
 function sandStep(dt, rate) {
-  if (Math.random() < rate) pyr.sand.push({ x: -N * .1, y: N * (.2 + Math.random() * .75), v: N * (1.2 + Math.random()), l: N * (.04 + Math.random() * .08), a: .3 + Math.random() * .4 });
+  if (cosmeticRandom() < rate) pyr.sand.push({ x: -N * .1, y: N * (.2 + cosmeticRandom() * .75), v: N * (1.2 + cosmeticRandom()), l: N * (.04 + cosmeticRandom() * .08), a: .3 + cosmeticRandom() * .4 });
   pyr.sand.forEach(p => p.x += p.v * dt); pyr.sand = pyr.sand.filter(p => p.x < N * 1.2);
 }
 async function pyramidRun(steps) {
@@ -3930,13 +3950,13 @@ async function pyramidRun(steps) {
     sandStep(dt, .9);
     if (t > .7 && !ghost) { ghost = { x: c + N * .1, y: pyrBase() - N * .07, a: 0, side: 1 }; pyr.wave = true; }
     if (ghost) ghost.a = Math.min(1, (t - .7) / .15);
-    if (Math.random() < .08) tick(.25, 400 + Math.random() * 300);
+    if (cosmeticRandom() < .08) tick(.25, 400 + cosmeticRandom() * 300);
     draw();
   });
   // 3. into the tomb
   await crossTo(() => { pyr.ph = 'tomb'; ghost = null; pyr.wave = false; pyr.scroll = 0; }, 900);
   $('#caption').textContent = '';
-  await animate(6500, t => { pyr.scroll = easeInOut(t) * N * 2.6; if (Math.random() < .05) tick(.3, 300); draw(); });
+  await animate(6500, t => { pyr.scroll = easeInOut(t) * N * 2.6; if (cosmeticRandom() < .05) tick(.3, 300); draw(); });
   // 4. three doors: tap one
   const wildDoor = Math.floor(Math.random() * 3);
   pyr.doors = [0, 1, 2].map(j => ({ open: 0, wild: j === wildDoor, amt: 60 + 10 * Math.floor(Math.random() * 15) }));
@@ -3949,7 +3969,7 @@ async function pyramidRun(steps) {
   doorPick = null; stage.classList.remove('pick'); pyr.pickable = false; stopPulse();
   const d = pyr.doors[chosen];
   Music.sting(3); buzz([40, 40, 40]);
-  await animate(1400, t => { d.open = easeInOut(t); if (t < .8 && Math.random() < .3) tick(.4, 200 + Math.random() * 100); draw(); });
+  await animate(1400, t => { d.open = easeInOut(t); if (t < .8 && cosmeticRandom() < .3) tick(.4, 200 + cosmeticRandom() * 100); draw(); });
   await wait(600);
   // the other two open as well, so you see what you walked past
   await animate(1000, t => { pyr.doors.forEach(o => { if (o !== d) o.open = easeInOut(t) * .85; }); draw(); });
@@ -3971,9 +3991,9 @@ async function pyramidRun(steps) {
   last = performance.now();
   await animate(5500, t => {
     const now = performance.now(), dt = Math.max(0, Math.min(.033, (now - last) / 1000)); last = now;
-    if (t < .8) for (let j = 0; j < 3; j++) pyr.coins.push({ x: c + (Math.random() - .5) * N * .5, y: -N * .05, v: N * (.5 + Math.random() * .5), r: Math.random() * TAU });
+    if (t < .8) for (let j = 0; j < 3; j++) pyr.coins.push({ x: c + (cosmeticRandom() - .5) * N * .5, y: -N * .05, v: N * (.5 + cosmeticRandom() * .5), r: cosmeticRandom() * TAU });
     pyr.coins.forEach(k => { k.v += N * 1.6 * dt; k.y += k.v * dt; k.r += dt * 12; });
-    const n0 = pyr.coins.length; pyr.coins = pyr.coins.filter(k => k.y < N * .95 - pyr.pile * N * .12); if (pyr.coins.length < n0 && Math.random() < .4) tick(.3, 2400 + Math.random() * 900);
+    const n0 = pyr.coins.length; pyr.coins = pyr.coins.filter(k => k.y < N * .95 - pyr.pile * N * .12); if (pyr.coins.length < n0 && cosmeticRandom() < .4) tick(.3, 2400 + cosmeticRandom() * 900);
     pyr.pile = Math.min(1, t * 1.4);
     pyr.cleo = easeOut(Math.max(0, (t - .45) / .55));
     draw();
@@ -4034,9 +4054,9 @@ async function monsterRun(steps, w = 0, b = 3) {
   setVerdict({ eyebrow: 'Bonus', title: fakeEur(won), body: 'Wait. Something is wrong with it.', steps: steps.slice(), flash: false });
   await animate(4200, t => {
     planet.melt = easeIn(t);
-    if (Math.random() < .6) planet.embers.push({ x: Math.random() * N, y: N * (1 - .3 * planet.melt), vx: (Math.random() - .5) * N * .1, vy: -N * (.2 + Math.random() * .4), r: N * (.003 + Math.random() * .006), life: 1, col: Math.random() < .5 ? '#ffb347' : '#ff5a1f' });
+    if (cosmeticRandom() < .6) planet.embers.push({ x: cosmeticRandom() * N, y: N * (1 - .3 * planet.melt), vx: (cosmeticRandom() - .5) * N * .1, vy: -N * (.2 + cosmeticRandom() * .4), r: N * (.003 + cosmeticRandom() * .006), life: 1, col: cosmeticRandom() < .5 ? '#ffb347' : '#ff5a1f' });
     planet.embers.forEach(e => { e.x += e.vx / 60; e.y += e.vy / 60; e.life -= 1 / 70; }); planet.embers = planet.embers.filter(e => e.life > 0);
-    if (Math.random() < .15) tick(.6, 200 + Math.random() * 200);
+    if (cosmeticRandom() < .15) tick(.6, 200 + cosmeticRandom() * 200);
     draw();
   });
   // Ghost Phelan pops up laughing, so you know you've been had
@@ -4371,7 +4391,7 @@ async function rollD6() {
           d.vz -= 6 * h; d.z += d.vz * h; d.x += d.vx * h; d.y += d.vy * h; d.M = spinRot(d.M, d.w, h);
           if (d.z <= 0) {
             d.z = 0;
-            if (d.vz < -.5) { d.vz = -d.vz * .48; d.w = d.w.map(x => x * .7 + (Math.random() - .5) * 8); tick(.9, 1400 + Math.random() * 400); }
+            if (d.vz < -.5) { d.vz = -d.vz * .48; d.w = d.w.map(x => x * .7 + (Math.random() - .5) * 8); tick(.9, 1400 + cosmeticRandom() * 400); }
             else d.vz = 0;
             d.vx *= .94; d.vy *= .94; d.w = d.w.map(x => x * .97);
           }
@@ -4627,7 +4647,7 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
     dots.forEach((p, i) => {
       const ch = chickens[i], u = Math.max(0, Math.min(1, (t - p.delay) / .32)), e = easeInOut(u);
       p.x = lerp(p.sx, ch.x, e); p.y = lerp(p.sy, ch.y - N * .02, e) - Math.sin(u * Math.PI) * N * .12;
-      if (u >= 1) { if (!p.done) { p.done = true; tick(.5, 900 + Math.random() * 300); } p.hide = true; ch.pop = Math.min(1, ch.pop + .12); }
+      if (u >= 1) { if (!p.done) { p.done = true; tick(.5, 900 + cosmeticRandom() * 300); } p.hide = true; ch.pop = Math.min(1, ch.pop + .12); }
     });
     chickens.forEach((ch, i) => ch.peck = Math.max(0, Math.sin(t * 20 + ch.x) * .8));
     draw();
@@ -4716,20 +4736,20 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
   }
   // 4. march to the farm, then peck about
   $('#caption').textContent = 'Off to the farm';
-  alive.forEach((ch, i) => { ch.tx = N * (1.08 + Math.random() * .84); ch.ty = N * (.66 + Math.random() * .27); });
+  alive.forEach((ch, i) => { ch.tx = N * (1.08 + cosmeticRandom() * .84); ch.ty = N * (.66 + cosmeticRandom() * .27); });
   const cam0 = camX;
   await farmLoop(5.5, (dt, el) => {
     camX = lerp(cam0, N, easeInOut(Math.min(1, el / 3.6)));
     let all = true; alive.forEach(ch => { if (!walkChicken(ch, dt, N * .32)) all = false; });
-    if (Math.random() < .05) tick(.3, 1000);
+    if (cosmeticRandom() < .05) tick(.3, 1000);
     return all && el > 3.6;
   });
   $('#caption').textContent = 'Pecking';
-  alive.forEach(ch => { ch.tx = ch.x; ch.ty = ch.y; ch.wait = Math.random(); });
+  alive.forEach(ch => { ch.tx = ch.x; ch.ty = ch.y; ch.wait = cosmeticRandom(); });
   await farmLoop(4.5, (dt, el) => {
     alive.forEach(ch => {
       if (ch.wait > 0) { ch.wait -= dt; ch.peck = Math.abs(Math.sin(el * 14 + ch.x)) ; return; }
-      if (walkChicken(ch, dt, N * .12)) { ch.wait = .4 + Math.random() * .9; ch.tx = Math.max(N * 1.06, Math.min(N * 1.94, ch.x + (Math.random() - .5) * N * .3)); ch.ty = Math.max(N * .65, Math.min(N * .94, ch.y + (Math.random() - .5) * N * .15)); }
+      if (walkChicken(ch, dt, N * .12)) { ch.wait = .4 + cosmeticRandom() * .9; ch.tx = Math.max(N * 1.06, Math.min(N * 1.94, ch.x + (cosmeticRandom() - .5) * N * .3)); ch.ty = Math.max(N * .65, Math.min(N * .94, ch.y + (cosmeticRandom() - .5) * N * .15)); }
     });
   });
   if (Math.random() < RACE_CHANCE) return await chickenRace(steps, alive);
@@ -4825,10 +4845,10 @@ async function chickenRace(steps, alive) {
     racers.forEach((ch, i) => {
       const b = el * 9 + i * 1.3; ch.y = ch.by - Math.abs(Math.sin(b)) * N * .02; ch.peck = Math.max(0, Math.sin(b * 2)) * .6;
       ch.dir = Math.sin(el * 3.5 + i) > 0 ? 1 : -1; ch.ph += dt * 10;
-      if (Math.random() < .02) ch.glow = .5;
+      if (cosmeticRandom() < .02) ch.glow = .5;
     });
     rest.forEach(ch => walkChicken(ch, dt, N * .45));
-    if (Math.random() < .08) tick(.4, 1200 + Math.random() * 800);
+    if (cosmeticRandom() < .08) tick(.4, 1200 + cosmeticRandom() * 800);
   });
   rest.forEach(ch => ch.alive = false);
   // 2. into the lanes, tags up
