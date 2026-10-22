@@ -1,0 +1,99 @@
+# RolexG: a coding agent on Gemini (Cillian, 2026-10-22). Give it a task by writing "@rolexg <what to do>"
+# in a comment on any issue, PR or Banter (#30), or by labelling an issue rolexg-task. It edits the code
+# with Google's Gemini CLI, then this workflow commits to a rolexg/ branch, opens a PR and reports back.
+#  - On an issue: branch rolexg/issue-N from main, or from the branch named by "base: update-28".
+#  - On RolexG's own PR: it pushes more commits to that PR. On anyone else's PR: a follow-up PR on top.
+#  - "@rolexg merge" on someone else's PR merges it (.github/scripts/bot-merge.sh has the rules).
+# Only comments from Cillian's account (or other collaborators) count, so strangers can't spend his credits.
+# Limits: ROLEXG_DAILY_CAP tasks a day (default 8), 5 rounds per issue or PR, 30 minutes and 60 model
+# turns per task. Sign-in is the same as the other Gemini Actions: GCP_* variables (docs/gemini-adc.md)
+# or a GEMINI_API_KEY secret. Details and costs: docs/rolexg.md.
+name: RolexG
+on:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: Issue or PR number to work on
+        required: true
+      task:
+        description: What RolexG should do
+        required: true
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  actions: write # starts CI and Gemini's review on its PRs (its own pushes don't start them)
+  checks: read
+  id-token: write # Google sign-in through Workload Identity Federation
+concurrency:
+  group: rolexg-${{ github.event.issue.number || inputs.issue }}
+  cancel-in-progress: false
+jobs:
+  work:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' && github.event.label.name == 'rolexg-task') ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@rolexg') &&
+       github.event.comment.user.login != 'github-actions[bot]' &&
+       contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      NUM: ${{ github.event.issue.number || inputs.issue }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      BOT_MERGE_MAIN: ${{ vars.BOT_MERGE_MAIN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false # Gemini runs with every tool allowed, so it gets no way to push
+      - name: Read the task and check the limits
+        id: task
+        env:
+          EVENT: ${{ github.event_name }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          INPUT_TASK: ${{ inputs.task }}
+          MAX_DAY: ${{ vars.ROLEXG_DAILY_CAP || 8 }}
+        run: |
+          cp .github/scripts/rolexg.sh .github/scripts/bot-merge.sh "$RUNNER_TEMP/"
+          "$RUNNER_TEMP/rolexg.sh" start
+      - name: Switch to the work branch
+        if: steps.task.outputs.skip == 'false'
+        env:
+          FROM: ${{ steps.task.outputs.from }}
+          BRANCH: ${{ steps.task.outputs.branch }}
+        run: git checkout -B "$BRANCH" "origin/$FROM"
+      - uses: actions/setup-node@v4
+        if: steps.task.outputs.skip == 'false'
+        with:
+          node-version: 24
+      - name: RolexG works (Gemini CLI)
+        id: gemini
+        if: steps.task.outputs.skip == 'false'
+        continue-on-error: true
+        uses: google-github-actions/run-gemini-cli@v0.1.22
+        with:
+          use_vertex_ai: ${{ vars.GCP_WIF_PROVIDER != '' }}
+          gcp_workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          gcp_service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+          gcp_project_id: ${{ vars.GCP_PROJECT }}
+          gcp_location: global
+          gemini_api_key: ${{ vars.GCP_WIF_PROVIDER == '' && secrets.GEMINI_API_KEY || '' }}
+          gemini_model: ${{ vars.ROLEXG_MODEL || 'gemini-2.5-pro' }}
+          settings: '{"model": {"maxSessionTurns": 60}, "privacy": {"usageStatisticsEnabled": false}}'
+          prompt: ${{ steps.task.outputs.prompt }}
+      - name: Commit, open the PR and report back
+        if: steps.task.outputs.skip == 'false'
+        env:
+          BRANCH: ${{ steps.task.outputs.branch }}
+          BASE: ${{ steps.task.outputs.base }}
+          TITLE: ${{ steps.task.outputs.title }}
+          SUMMARY: ${{ steps.gemini.outputs.summary }}
+          ERRORS: ${{ steps.gemini.outputs.error }}${{ steps.gemini.outcome == 'failure' && ' (Gemini CLI step failed)' || '' }}
+        run: $RUNNER_TEMP/rolexg.sh finish

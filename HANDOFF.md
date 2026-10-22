@@ -8,6 +8,7 @@
   3. Gemini reviews every PR into `update-*` automatically (`.github/workflows/gemini-review.yml`, posts one "Gemini review:" comment). Claude still does the final check and merges.
   The 320/360/390px regression pass was dropped by Cillian.
 - **Who:** Copilot builds and opens each PR into `update-N` and posts `DONE: Task …`. Gemini reviews. Claude does a quick check and merges. Copilot does not merge. Anything that changes money, odds, prizes or payouts waits for Cillian.
+- **RolexG** (Gemini coding agent, 2026-10-22): anyone with access writes `@rolexg <task>` on an issue, PR or #30 and it opens a `rolexg/` PR (docs/rolexg.md). Gemini's review and RolexG may merge (Cillian): never their own PRs, CI green, not into `main`. The money/odds rule is Claude's only.
 - **PR #34 stays CLOSED.**
 - **Next:** release PR `update-28` → `main` once #70 (and #71 unless cut) are merged. Cillian (2026-10-22): start and run updates without waiting for his nod; money/odds/prizes still need him.
 - **If stuck:** post `BLOCKED: <reason>` on that issue straight away and move on. Cillian checks in the morning.
