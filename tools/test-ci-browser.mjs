@@ -15,7 +15,11 @@ const server = createServer((request, response) => {
 });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const address = server.address();
-const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
+const browser = await chromium.launch({
+  headless: true,
+  ...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}),
+  args: ['--no-sandbox'],
+});
 
 async function spin(path, fps = 60) {
   const context = await browser.newContext({ viewport: { width: 360, height: 800 }, reducedMotion: 'reduce' });
