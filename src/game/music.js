@@ -1,7 +1,7 @@
 // ---------- music: a driving Egyptian groove (Hijaz on D) that builds with every wild ----------
 // Owns synthesized background music and its playback controls.
 const Music = (() => {
-  let on = true, muted = false, muteLoaded = false, level = 0, duckV = 1, master = null, noise = null, timer = null, nextT = 0, step = 0, drone = null;
+  let on = true, muted = false, muteLoaded = false, level = 0, duckV = 1, master = null, noise = null, timer = null, nextT = 0, step = 0, drone = null, countryTimer = null;
   try { on = localStorage.getItem('wol-music') !== 'off'; } catch (e) {}
   const hz = m => 440 * Math.pow(2, (m - 69) / 12);
   const OUD = [62, 0, 63, 66, 67, 66, 63, 0];
@@ -91,6 +91,24 @@ const Music = (() => {
     const eighth = 60 / bpm() / 2;
     while (nextT < AC.currentTime + .12) { play(step, nextT); nextT += eighth; step = (step + 1) % 32; }
   }
+  function countrySong() {
+    if (!AC || !master || muted) return false;
+    stopCountrySong();
+    const chords = [50, 55, 57, 50], melody = [74, 76, 78, 76, 74, 71, 69, 71, 74, 76, 78, 81, 78, 76, 74, 71];
+    let i = 0;
+    const tick = () => {
+      if (muted || i >= 32) return stopCountrySong();
+      const t = AC.currentTime + .02, bar = i >> 3, beat = i & 7;
+      if (beat % 2 === 0) banjo(hz(chords[bar] + (beat === 0 ? 0 : 7)), t, beat === 0 ? .055 : .035);
+      const note = melody[i >> 1];
+      if (beat % 2 === 0) fiddle(hz(note), t, .22, .035);
+      i++;
+    };
+    tick();
+    countryTimer = setInterval(tick, (60 / 104 / 2) * 1000);
+    return true;
+  }
+  function stopCountrySong() { clearInterval(countryTimer); countryTimer = null; }
   function loadMute() {
     if (muteLoaded || !window.wolPref) return;
     muteLoaded = true;
@@ -112,6 +130,8 @@ const Music = (() => {
       run.forEach((m, i) => ney(hz(m + 12), t + i * .06, i === run.length - 1 ? .9 : .1, .1));
       zill(t + run.length * .06, .09); doum(t + run.length * .06, .9);
     },
+    countrySong,
+    stopCountrySong,
     vis() { applyGain(); },
   };
 })();
