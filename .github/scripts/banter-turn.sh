@@ -72,7 +72,7 @@ case $next in
     reply=$(claude -p "$prompt" --append-system-prompt "$system" --model "${CLAUDE_MODEL:-haiku}" --max-turns 1 --disallowedTools "Bash Edit Write Read WebFetch WebSearch" || true);;
   Copilot)
     if [ -n "${COPILOT_GITHUB_TOKEN:-}" ]; then
-      reply=$(copilot -p "$system
+      reply=$(env -u GH_TOKEN -u GITHUB_TOKEN copilot -p "$system
 
 $prompt" --model "${COPILOT_CLI_MODEL:-gpt-4.1}" -s 2>cli.err || { echo "Copilot CLI failed: $(head -c 600 cli.err)" >&2; true; })
     else
