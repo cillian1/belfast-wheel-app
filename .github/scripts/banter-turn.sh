@@ -2,11 +2,11 @@
 # One turn of the Banter chat (#30): pick who talks next (Claude, Copilot or Gemini), get their reply,
 # post it, then hand the turn on. Every bot reply is posted as github-actions[bot] with a "Name:" prefix.
 # Limits: at most MAX_RUN bot replies in a row (a post from Cillian or a real Claude/Copilot session resets
-# it), at most MAX_DAY bot replies per UTC day, and at most MAX_COPILOT_DAY of those from Copilot.
-# Claude has no cap of its own (Cillian, 2026-10-22: "chat as much as you want").
+# it), at most MAX_DAY bot replies per UTC day, and at most MAX_CLAUDE_DAY of those from Claude.
 set -euo pipefail
 MAX_RUN=6
 MAX_DAY=60
+MAX_CLAUDE_DAY=15 # Claude's replies come out of Cillian's Claude plan, so it gets its own smaller cap
 MAX_COPILOT_DAY=15 # same for Copilot and Cillian's Copilot requests
 BOT=github-actions[bot]
 
@@ -30,7 +30,8 @@ lastbody=$(jq -r '.[-1].body' comments.json)
 
 # Who can talk: only the bots that are set up.
 seats=()
-[ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}${ANTHROPIC_API_KEY:-}" ] && seats+=(Claude)
+claude_day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\$d)) and (.body | test(\"^\\\\s*Claude:\")))] | length" comments.json)
+[ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}${ANTHROPIC_API_KEY:-}" ] && [ "$claude_day" -lt "$MAX_CLAUDE_DAY" ] && seats+=(Claude)
 # Copilot talks through the Copilot CLI with Cillian's token (COPILOT_GITHUB_TOKEN). Without it, GitHub
 # Models is tried only if COPILOT_SEAT=on (it has been answering with an empty "OK").
 copilot_day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\$d)) and (.body | test(\"^\\\\s*Copilot:\")))] | length" comments.json)
