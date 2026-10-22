@@ -17,7 +17,20 @@ function animate(dur, step) {
     requestAnimationFrame(f);
   });
 }
-const wait = ms => new Promise(r => setTimeout(r, reduce ? Math.min(ms, 300) : ms));
+// Waits use elapsed milliseconds, never frame counts; taps skip the remaining time.
+const WAIT_SCALE = .5, pendingWaits = new Set();
+const wait = ms => new Promise(r => {
+  const t0 = performance.now(), dur = Math.round((reduce ? Math.min(ms, 300) : ms) * WAIT_SCALE);
+  let timer;
+  const w = { done: () => { clearTimeout(timer); pendingWaits.delete(w); r(); }, t0 };
+  const check = () => {
+    const remaining = dur - (performance.now() - t0);
+    if (remaining > 0) timer = setTimeout(check, remaining);
+    else w.done();
+  };
+  timer = setTimeout(check, dur); pendingWaits.add(w);
+});
+addEventListener('pointerdown', () => { const now = performance.now(); pendingWaits.forEach(w => { if (now - w.t0 > 120) w.done(); }); }, true);
 const sliceAt = (r, n) => Math.floor(mod(-r, TAU) / (TAU / n)) % n;
 function target(n) { const i = Math.floor(Math.random() * n); return { i, a: (i + .15 + Math.random() * .7) * TAU / n }; }
 

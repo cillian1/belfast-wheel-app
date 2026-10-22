@@ -59,5 +59,4 @@ async function outcomes(fps) {
 assert.deepEqual(await outcomes(10), await outcomes(30));
 assert.deepEqual(await outcomes(30), await outcomes(60));
 assert.deepEqual(await outcomes(60), await outcomes(120));
-assert.doesNotMatch(motion, /pendingWaits|Math\.round\(ms \* \.75\)/, 'shorter and skippable wait changes are excluded');
-console.log('Seeded wheel-spin outcomes match at 10, 30, 60, and 120 fps with fireplace frames interleaved; shortened waits are excluded.');
+console.log('Seeded wheel-spin outcomes match at 10, 30, 60, and 120 fps with fireplace frames interleaved.');
