@@ -5610,15 +5610,20 @@ header>span{flex-wrap:wrap}
   const howTo = document.getElementById('howToPlay');
   const helpButton = document.getElementById('helpBtn');
   function closeHowTo() {
+    if (howTo.hidden) return;
     howTo.hidden = true;
     helpButton.setAttribute('aria-expanded', 'false');
+    if (typeof fitStage === 'function') fitStage();
+    try { localStorage.setItem('wol.howToSeen', '1'); }
+    catch (e) { console.warn('Could not save how-to preference.', e); }
   }
   function openHowTo() {
-    if (busy || autoOn || (W.run && W.run.live)) return;
     howTo.hidden = false;
     howToSeen = true;
     helpButton.setAttribute('aria-expanded', 'true');
-    try { localStorage.setItem('wol.howToSeen', '1'); } catch (e) {}
+    if (typeof fitStage === 'function') fitStage();
+    try { localStorage.setItem('wol.howToSeen', '1'); }
+    catch (e) { console.warn('Could not save how-to preference.', e); }
   }
   helpButton.addEventListener('click', openHowTo);
   document.addEventListener('click', e => {
@@ -5628,7 +5633,8 @@ header>span{flex-wrap:wrap}
     if (e.key === 'Escape') closeHowTo();
   });
   let howToSeen = false;
-  try { howToSeen = localStorage.getItem('wol.howToSeen') === '1'; } catch (e) {}
+  try { howToSeen = localStorage.getItem('wol.howToSeen') === '1'; }
+  catch (e) { console.warn('Could not read how-to preference.', e); }
   // ---------- top bar ----------
   // Owns the wallet header, stake controls, and toast UI.
   const bar = el('div', 'wbar');
@@ -5657,7 +5663,7 @@ header>span{flex-wrap:wrap}
     t.textContent = msg; t.className = 'wtoast' + (gold ? ' gold' : ''); t.style.opacity = 1;
     clearTimeout(toastT); toastT = setTimeout(() => { t.style.opacity = 0; }, 2600);
   }
-  const spinButton = document.getElementById('spinBtn');
+  const spinButton = $w('spinBtn');
   if (spinButton) spinButton.addEventListener('click', e => {
     if (W.connected !== false || (scene === 'photo' && !photoDone)) return;
     e.preventDefault(); e.stopImmediatePropagation(); toast('No connection, reconnecting…');
