@@ -3,6 +3,7 @@ $Repo = 'cillian1/belfast-wheel-app'
 $PollSeconds = 120
 $AllowedAuthors = @('cillian1', 'github-actions[bot]')
 $SeenIds = [System.Collections.Generic.HashSet[string]]::new()
+$ReplyTimes = [System.Collections.Generic.Queue[DateTimeOffset]]::new()
 $LastCheck = [DateTimeOffset]::UtcNow
 
 # Make GitHub CLI available in fresh PowerShell windows after a winget install.
@@ -53,6 +54,15 @@ while ($true) {
     $Body = [string]$Comment.body
     if ($Body -notmatch '(?i)\bGambler\b' -or $Body -match '^\s*The Gambler:') { continue }
 
+    $OneHourAgo = [DateTimeOffset]::UtcNow.AddHours(-1)
+    while ($ReplyTimes.Count -gt 0 -and $ReplyTimes.Peek() -le $OneHourAgo) {
+      [void]$ReplyTimes.Dequeue()
+    }
+    if ($ReplyTimes.Count -ge 6) {
+      Write-Host 'Hourly reply limit reached (6); skipping this Banter mention.'
+      continue
+    }
+
     Write-Host "Trusted Banter mention found from $Author; drafting a reply..."
     $CommentData = ConvertTo-Json -InputObject @{
       author = $Author
@@ -100,6 +110,8 @@ $CommentData
       Write-Warning 'Could not post the reply to Banter.'
       [void]$SeenIds.Remove($CommentId)
       $PollHadFailures = $true
+    } else {
+      $ReplyTimes.Enqueue([DateTimeOffset]::UtcNow)
     }
   }
 
