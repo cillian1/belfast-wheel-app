@@ -1,7 +1,7 @@
 import { availableParallelism } from 'node:os';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import { createCore } from './core.mjs';
-import { sources } from './core-source.mjs';
+import { liveTipChance, sources } from './core-source.mjs';
 
 if (!isMainThread) {
   const spin = createCore(sources), records = [];
@@ -15,7 +15,7 @@ if (!isMainThread) {
   };
   const engine = option('engine', 'core'), spins = Number(option('spins', 10000));
   const workers = Number(option('workers', Math.min(4, availableParallelism())));
-  const seed = Number(option('seed', 1)), tip = Number(option('tip', .10));
+  const seed = Number(option('seed', 1)), tip = Number(option('tip', liveTipChance));
   if (!['core', 'node'].includes(engine) || !Number.isSafeInteger(spins) || spins < 1 ||
       !Number.isSafeInteger(workers) || workers < 1 || !Number.isSafeInteger(seed) ||
       !Number.isFinite(tip) || tip < 0 || tip > 1) throw new Error('Expected --engine core|node --spins N [--workers N --seed N --tip 0..1]');
