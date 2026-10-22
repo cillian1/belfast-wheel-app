@@ -2,3 +2,4 @@
 gha-creds-*.json
 gemini-artifacts/
 .gemini/
+node_modules/

@@ -7,9 +7,12 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 | Issue | Task | Status | PRs |
 |---|---|---|---|
 | #97 | Task: Live Watch keyboard pushes the board off screen | Started, no PR yet |  |
-| #98 | Task: game sound not working on Cillian's phone | In review | #112 → update-30 |
+| #98 | Task: game sound not working on Cillian's phone | Started, no PR yet |  |
+| #103 | Task: browser-free sim core (spin paths in plain Node, matched seed-for-seed) | Started, no PR yet |  |
 
 **Other open PRs**
 
+- #102 Add delayed replay-style Watch → main
 - #94 Park Watch task for future update → main
+- #92 RolexG: please take this issue: speed up the fast odds sim as described above, → main
 - #82 RolexG: second try (the first run failed on a setup bug, now fixed): find why  → update-28
