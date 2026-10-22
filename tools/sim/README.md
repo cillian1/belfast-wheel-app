@@ -3,16 +3,16 @@
 Runs the real game code headless with fake time (no waiting, no drawing) and records where each spin ends.
 Use this for every odds or prize check. Never time real-game runs.
 
-    node tools/sim/fastsim.mjs game/index.html 10000 .10 3 > runs.json     # ~19 min on 4 cores
-    TABLES=tools/sim/tables.json node tools/sim/rooms.js runs.json > /dev/null   # rooms EV per spin ("EV/spin base")
-    python3 tools/sim/race.py runs.json <rooms EV>                         # adds Chicken Race + Mark's wheel, prints payback
+    node tools/sim/run.mjs game/index.html
 
-- `fastsim.mjs` swaps the game's `wait()` for fake time, strips the wallet script and stubs `$m`, forces `RACE_CHANCE` to 1
-  (race.py weights races back to the real chance) and stubs every room so it stops as soon as the room is known.
-  It throws "wait() changed" / "race changed" if those lines move.
-- `rooms.js` draws prizes from the room tables in `tables.json` (keep them in step with the game).
-- `race.py` scores races and Mark's wheel from the recorded chickens (`sw`/`sb` = gold/purple special chickens).
-  Payback = total base per spin × edge / ev (src/config.json).
-- Noise: the Pyramid (about 1 in 250 spins, prizes up to 2500 base) dominates the spread, so a 10k-spin total is only
-  good to a few points. Compare variants on the same runs (as race.py does) rather than across separate runs.
+The new `run.mjs` script is a complete replacement for the older `fastsim.mjs`, `rooms.js`, and `race.py` scripts. It performs the simulation and payback calculations in a single, much faster step.
+
+A 10,000-spin simulation now takes about 2 minutes, down from ~19 minutes with the old scripts. The new script also provides more accurate results by using analytic expected values for room prizes, which reduces the noise from rare, high-payout events like the Pyramid.
+
+When comparing two versions of the game, `run.mjs` can take two file paths as arguments:
+
+    node tools/sim/run.mjs game/index.html game-v2.html
+
+The script will then run a comparative simulation, using common random numbers to reduce the number of spins required for a good comparison, and output the difference in payback between the two versions.
+
 - Needs Playwright + Chromium at /opt/node-tools and /opt/pw-browsers (preinstalled in Claude cloud sessions).
