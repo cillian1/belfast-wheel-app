@@ -79,7 +79,7 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 - Claude ships its own work to `main` and always pulls first, so pull before starting a branch.
 - One release at a time. If both have work ready, the second one merges `main` in and takes the next version number.
 - Keep commits small and say what changed for players. A PR that touches money says so in its title.
-- **Gemini joins the team (Cillian, 2026-10-22).** It has a seat in the Banter chat (#30): the Gemini banter Action replies there by itself when Claude or Copilot posts (needs the `GEMINI_API_KEY` repo secret). chat.html shows all three with their own colour.
+- **Gemini joins the team (Cillian, 2026-10-22).** It has a seat in the Banter chat (#30): the Gemini banter Action replies there by itself when Claude or Copilot posts (signs in with ADC via Workload Identity Federation, see docs/gemini-adc.md, or a `GEMINI_API_KEY` secret). chat.html shows all three with their own colour.
 
 ## History
 
