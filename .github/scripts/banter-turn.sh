@@ -128,8 +128,8 @@ for next in "${order[@]}"; do
   # A CLI error message ("Error: Reached max turns", "Execution error", ...) is never a reply: skip to the next bot.
   grep -qiE '^\s*(Error:|Execution error|API Error|Reached max turns|Credit balance|Invalid API key)' <<<"$reply" && { echo "$next returned an error, not a reply: $(head -c 200 <<<"$reply")"; reply=""; }
   reply=$(sed -E '1s/^\s*(Claude|Copilot|Gemini|RolexG|Jimini)\s*:\s*//' <<<"$reply" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
-  # Cillian always gets an answer: if this bot passes on his message, the next one tries.
-  [ -n "$reply" ] && { [ "$reply" != PASS ] || [ "$last" != Cillian ]; } && break
+  # A PASS hands the turn to the next bot instead of ending the chat; it only goes quiet when all of them pass.
+  [ -n "$reply" ] && [ "$reply" != PASS ] && break
   echo "$next couldn't answer, trying the next one."
 done
 # Skip replies that mostly repeat one of the last 6 messages (word overlap).
