@@ -71,6 +71,9 @@ try {
     'payback analysis must use the live race chance and payout constants');
   assert.match(race, /Mark wheel EV\/farm before 12\.500 after 15\.000/,
     'Mark analysis must weight a stacked wedge by its token count');
+  const raceEV = race.match(/current odds \(weighted Mark wedges\)\s+race\/spin\s+([\d.]+)/);
+  assert.ok(raceEV && Number(raceEV[1]) > 24 && Number(raceEV[1]) < 29,
+    'current race analysis must give the top tag to the strongest special, as the live game does');
   const payback = race.match(/payback before ([\d.]+)% after ([\d.]+)%/);
   assert.ok(payback && Number(payback[2]) > Number(payback[1]),
     'race analysis must report increased paired payback for the restored weighted odds');

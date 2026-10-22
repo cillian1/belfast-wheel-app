@@ -31,7 +31,7 @@ def race_ev(sp, plain, mode, it):
     for _ in range(it):
         vals = random.sample(VALS, 8)
         if mode in ('top', 'win') and any(racers):
-            idx = [i for i, c in enumerate(racers) if c]; big = max(idx, key=lambda i: racers[i][1])
+            idx = [i for i, c in enumerate(racers) if c]; big = max(idx, key=lambda i: (racers[i][1], racers[i][0] == 'W'))
         else: big = random.randrange(r)
         w = big if (mode == 'win' and any(racers)) else random.randrange(r)
         base = random.choice([80, 100, 120]) if w == big else vals[w % 8]
@@ -65,7 +65,7 @@ def run(label, stack=False, inc=None, mode='plain', it=300):
               f"payback before {100*before*EDGE/EV:.3f}% after {100*tot*EDGE/EV:.3f}%")
     return tot
 BASE = None
-BASE = run('current odds (weighted Mark wedges)')
+BASE = run('current odds (weighted Mark wedges)', mode='top')
 run('2a special carries the top tag', mode='top')
 run('2b special always wins with top tag', mode='win')
 dbl = lambda c: 1.5 * 2 ** (c - 1)

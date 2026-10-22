@@ -56,6 +56,8 @@ Use the full-path Chromium core sampler above and analyze one shared path sample
 - `race.py` scores races and Mark's wheel from the recorded chickens (`sw`/`sb` = gold/purple special chickens).
   It reads live race chance and payout constants from `src/`, weights Mark's special wedges by their token counts,
   and reports paired payback before (uniform Mark wedges) and after (token-weighted wedges) on the same path sample.
+  The current race model gives the top tag to the strongest special (gold wins multiplier ties), with a uniform winner,
+  as in the live game. Room prizes and race tags are sampled analytically, so payback is an estimate, not a replay of every payout.
   Payback = total base per spin × edge / ev (src/config.json).
 - Noise: the Pyramid (about 1 in 250 spins, prizes up to 2500 base) dominates the spread, so a 10k-spin total is only
   good to a few points. Compare variants on the same runs (as race.py does) rather than across separate runs.
