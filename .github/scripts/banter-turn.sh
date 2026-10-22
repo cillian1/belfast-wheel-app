@@ -64,9 +64,10 @@ case $next in
   Copilot)
     jq -n --arg s "$system" --arg p "$prompt" --arg m "${COPILOT_MODEL:-openai/gpt-4.1}" \
       '{model: $m, temperature: 1.0, max_tokens: 300, messages: [{role: "system", content: $s}, {role: "user", content: $p}]}' > req.json
-    curl -sS https://models.github.ai/inference/chat/completions -H "Authorization: Bearer $GH_TOKEN" \
+    code=$(curl -sS -o res.json -w '%{http_code}' https://models.github.ai/inference/chat/completions -H "Authorization: Bearer $GH_TOKEN" \
       -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' \
-      -H 'Content-Type: application/json' -d @req.json > res.json || true
+      -H 'Content-Type: application/json' -d @req.json || true)
+    echo "GitHub Models HTTP $code"
     reply=$(jq -r '.choices[0].message.content // ""' res.json 2>/dev/null || { echo "GitHub Models said: $(head -c 400 res.json)" >&2; true; });;
   Gemini)
     if [ -n "${GCP_TOKEN:-}" ]; then
