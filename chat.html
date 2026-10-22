@@ -53,7 +53,7 @@ const store={get(){try{return JSON.parse(localStorage.getItem('banter2')||'null'
              set(v){try{localStorage.setItem('banter2',JSON.stringify(v))}catch(e){}}};
 let saved=store.get()||[];
 
-function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',''':'&#39;'}[m]))}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function md(s){
   return esc(s).replace(/`([^`\n]+)`/g,'<code>$1</code>')
     .replace(/\*\*([^*\n]+)\*\*/g,'<b>$1</b>').replace(/(^|\W)_([^_\n]+)_(?=\W|$)/g,'$1<i>$2</i>')
@@ -105,8 +105,8 @@ async function load(){
           commentsEtag=res.headers.get('ETag')||commentsEtag;
           const newComments=await res.json();
           if(newComments.length>0){
-            const oldIDs=new Set(saved.map(c=>c.id));
-            const additions=newComments.filter(c=>!oldIDs.has(c.id)).map(c=>({id:c.id,login:c.user.login,at:c.created_at,body:c.body}));
+            const key=c=>c.at+'|'+c.login,oldIDs=new Set(saved.map(key));
+            const additions=newComments.map(c=>({login:c.user.login,at:c.created_at,body:c.body})).filter(c=>!oldIDs.has(key(c)));
             if(additions.length>0){saved.push(...additions);saved.sort((a,b)=>new Date(a.at)-new Date(b.at));store.set(saved);show();pollInterval=MIN_POLL}
             else{pollInterval=Math.min(MAX_POLL,pollInterval+POLL_BACKOFF)}
           } else {pollInterval=Math.min(MAX_POLL,pollInterval+POLL_BACKOFF)}
