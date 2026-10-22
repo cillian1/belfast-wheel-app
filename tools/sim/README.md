@@ -1,5 +1,49 @@
 # Fast odds sim
 
+## Compute-only Chromium core
+
+    node tools/sim/core-check.mjs       # 200 full browser/core seeds; CI runs 50
+    node tools/sim/core-test.mjs        # isolation, path coverage and worker partitioning
+    node tools/sim/run.mjs --engine core --spins 10000 --workers 4 > runs.json
+
+`core.mjs` is a browser-loadable module with no Node imports. `core-source.mjs`
+reads the real `src/game/` functions; `core-browser.mjs` imports the module into
+blank Chromium pages, one compute context per worker. There is no game DOM,
+canvas, audio or real timer. The core uses the original dice, fixed-240Hz drop,
+pipe and farm physics, with synchronous virtual frames. A conservative peg
+broad-phase skips only tests that would all reject a ball below the lowest peg.
+Presentation sinks retain setup/drawing RNG calls rather than skipping them.
+
+The independent oracle loads the bundled game, fixes the canvas at 396px and uses
+fastsim-style room stops without the core's broad-phase or synchronous frame
+draining. Comparisons include wheel choices, dice values, drop slots, pipes,
+Wilds/ankhs, special-chicken stacks/multipliers and RNG-call counts. The runner's
+100-spin batches get fresh core closures, and output remains in seed order
+regardless of worker scheduling.
+
+Records use the existing fastsim format: `k` (`W/B/G/P/M/-`), `w`, `b`, `g`, `god`,
+and farm fields `race`, `n`, `sp`, `sw`, `sb`, consumable by `rooms.js`/`race.py`.
+As in fastsim, races are forced on for sampling and stopped at the survivor
+roster; the downstream analysis supplies the race weighting and prize EVs.
+This does not update or validate those analytic tables or their weighting.
+
+Measured here: **10,000 full paths in 57.278 s on four cores**, including browser
+startup; all 200 browser/core seeds match. No game, money or prize files changed.
+`--workers`, `--seed` (first seed, default 1) and `--tip` (default .10) are optional.
+`CHROMIUM_PATH` optionally selects the browser executable for both commands;
+otherwise they use the existing Playwright test installation.
+
+### Node fallback (wheel-only; not EV-ready)
+
+    node tools/sim/run.mjs --engine node --spins 10000 > wheel-paths.json
+
+Node runs only the wheels and pre-dice room choice, because its `Math.sin`/`cos`
+rounding can differ from Chromium and change physics outcomes. `k: "D"` marks an
+unresolved dice/farm path, **not a loss**. Never feed Node fallback records to
+`rooms.js` or `race.py` for payback. Game maths is unchanged.
+
+## Full browser sampler
+
 Runs the real game code headless with fake time (no waiting, no drawing) and records where each spin ends.
 Use this for every odds or prize check. Never time real-game runs.
 

@@ -6,7 +6,7 @@
 # Claude has no cap of its own (Cillian, 2026-10-22: "chat as much as you want").
 set -euo pipefail
 MAX_RUN=6
-MAX_DAY=200
+MAX_DAY=400
 MAX_COPILOT_DAY=15 # same for Copilot and Cillian's Copilot requests
 MAX_CLAUDE_DAY=30 # Claude shares Cillian's plan, keep it sensible
 BOT=github-actions[bot]
