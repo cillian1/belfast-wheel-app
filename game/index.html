@@ -1860,12 +1860,18 @@ function animate(dur, step) {
     requestAnimationFrame(f);
   });
 }
-// Waits are wall-clock ms (never frame counts), shortened to WAIT_SCALE, and a tap skips whatever is left of them
+// Waits use elapsed milliseconds, never frame counts; taps skip the remaining time.
 const WAIT_SCALE = .5, pendingWaits = new Set();
 const wait = ms => new Promise(r => {
   const t0 = performance.now(), dur = Math.round((reduce ? Math.min(ms, 300) : ms) * WAIT_SCALE);
-  const w = { done: () => { clearTimeout(w.id); pendingWaits.delete(w); r(); } };
-  w.id = setTimeout(w.done, dur); pendingWaits.add(w); w.t0 = t0;
+  let timer;
+  const w = { done: () => { clearTimeout(timer); pendingWaits.delete(w); r(); }, t0 };
+  const check = () => {
+    const remaining = dur - (performance.now() - t0);
+    if (remaining > 0) timer = setTimeout(check, remaining);
+    else w.done();
+  };
+  timer = setTimeout(check, dur); pendingWaits.add(w);
 });
 addEventListener('pointerdown', () => { const now = performance.now(); pendingWaits.forEach(w => { if (now - w.t0 > 120) w.done(); }); }, true);
 const sliceAt = (r, n) => Math.floor(mod(-r, TAU) / (TAU / n)) % n;
