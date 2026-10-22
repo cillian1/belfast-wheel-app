@@ -11,6 +11,6 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 **Other open PRs**
 
 - #92 RolexG: please take this issue: speed up the fast odds sim as described above, → main
-- #91 Stack special chickens and scale their prize money → main (draft)
+- #91 Stack special chickens and scale their prize money → update-29
 - #90 Throttle near-miss teases while preserving the tip rate → update-29
 - #82 RolexG: second try (the first run failed on a setup bug, now fixed): find why  → update-28
