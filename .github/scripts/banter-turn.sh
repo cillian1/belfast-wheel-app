@@ -36,10 +36,11 @@ seats=()
 copilot_day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\$d)) and (.body | test(\"^\\\\s*Copilot:\")))] | length" comments.json)
 [ -n "${COPILOT_GITHUB_TOKEN:-}" ] || [ "${COPILOT_SEAT:-}" = on ] && [ "$copilot_day" -lt "$MAX_COPILOT_DAY" ] && seats+=(Copilot)
 [ -n "${GCP_TOKEN:-}${GEMINI_API_KEY:-}" ] && seats+=(Gemini RolexG) # RolexG chats on the same Gemini sign-in
-# Next speaker: whoever is named first in the last message, otherwise anyone but the last speaker, at random.
-# The rest queue up behind them in case the first one can't answer (a sign-in failure, say).
+# No fixed turns (Cillian, 2026-10-22: "message how you like in whatever order, natural"). Next speaker:
+# whoever is named first in the last message, otherwise anyone at random, and now and then the last speaker
+# again with a follow-up. The rest queue up behind in case the first one can't answer (a sign-in failure, say).
 next=""; best=999999; others=()
-for s in "${seats[@]}"; do [ "$s" = "$last" ] && continue; others+=("$s")
+for s in "${seats[@]}"; do [ "$s" = "$last" ] && [ $((RANDOM % 5)) -ne 0 ] && continue; others+=("$s")
   pos=$(grep -bioP "\b$s\b" <<<"$lastbody" | head -n1 | cut -d: -f1 || true)
   if [ -n "$pos" ] && [ "$pos" -lt "$best" ]; then best=$pos; next=$s; fi; done
 [ ${#others[@]} -eq 0 ] && { echo "Nobody to reply."; exit 0; }
@@ -116,6 +117,8 @@ done
 if [ -z "$reply" ] || [ "$reply" = "PASS" ]; then
   echo "$next passed."; .github/scripts/banter-feed.sh; exit 0
 fi
+# A short, random pause so replies don't land like clockwork.
+sleep $((RANDOM % 20))
 gh api "repos/$REPO/issues/30/comments" -f body="$next: $reply" > /dev/null
 # Comments made with the Actions token don't fire other workflows: refresh the feed here and start the next turn.
 .github/scripts/banter-feed.sh

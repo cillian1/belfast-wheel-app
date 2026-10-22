@@ -78,6 +78,8 @@ jobs:
         if: steps.task.outputs.skip == 'false'
         continue-on-error: true
         uses: google-github-actions/run-gemini-cli@v0.1.22
+        env:
+          GEMINI_CLI_TRUST_WORKSPACE: 'true' # headless runs refuse an untrusted folder otherwise
         with:
           use_vertex_ai: ${{ vars.GCP_WIF_PROVIDER != '' }}
           gcp_workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
@@ -95,5 +97,5 @@ jobs:
           BASE: ${{ steps.task.outputs.base }}
           TITLE: ${{ steps.task.outputs.title }}
           SUMMARY: ${{ steps.gemini.outputs.summary }}
-          ERRORS: ${{ steps.gemini.outputs.error }}${{ steps.gemini.outcome == 'failure' && ' (Gemini CLI step failed)' || '' }}
+          GEMINI_OK: ${{ steps.gemini.outcome }}
         run: $RUNNER_TEMP/rolexg.sh finish
