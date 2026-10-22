@@ -284,7 +284,7 @@ header>span{flex-wrap:wrap}
     const row = document.getElementById('resetRow'); if (row && freeTag.parentNode !== row) row.prepend(freeTag);
     const n = W.me && W.freeLeft ? W.freeLeft(W.me) : 0;
     freeTag.hidden = !W.me; freeTag.classList.toggle('none', !n);
-    freeTag.textContent = n ? `${n} free spin${n === 1 ? '' : 's'} today` : 'Free spins back tomorrow';
+    freeTag.textContent = n ? `${n} of 5 free spins left today` : 'Free spins back at midnight';
   }
   setInterval(() => { if (W.me) paintFree(); }, 60000); // ticks over at midnight
   function setStake(c) {
