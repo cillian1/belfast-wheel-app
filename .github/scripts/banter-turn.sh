@@ -5,7 +5,7 @@
 # it), at most MAX_DAY bot replies per UTC day, and at most MAX_COPILOT_DAY of those from Copilot.
 set -euo pipefail
 MAX_RUN=4
-MAX_DAY=400
+MAX_DAY=800
 MAX_COPILOT_DAY=25 # same for Copilot and Cillian's Copilot requests
 MAX_CLAUDE_DAY=50 # Claude shares Cillian's plan, keep it sensible
 MAX_ROLEXG_DAY=40 # Cillian 20:05: RolexG and Jimini chat too (the repeat filter keeps it sane)
