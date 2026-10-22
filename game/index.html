@@ -6445,7 +6445,9 @@ header>span{flex-wrap:wrap}
     const vv = window.visualViewport, vh = vv ? vv.height : innerHeight;
     // Android's Back can close the keyboard without blurring the input, so the verdict rows come back once the screen grows again
     vhMax = Math.max(vhMax, vh); const small = vh < vhMax * .85;
-    if (view.classList.contains('wkb')) { if (small) kbShrunk = true; else if (kbShrunk) { kbShrunk = false; view.classList.remove('wkb'); } }
+    const typing = document.activeElement && document.activeElement.id === 'wwSay';
+    if (small && (typing || view.classList.contains('wkb'))) { kbShrunk = true; view.classList.add('wkb'); } // reopened on a still-focused input fires no focus event
+    else if (!small && kbShrunk) { kbShrunk = false; view.classList.remove('wkb'); }
     view.style.top = (vv ? vv.offsetTop : 0) + 'px'; view.style.bottom = 'auto'; view.style.height = vh + 'px';
     const cs = getComputedStyle(view), gap = parseFloat(cs.rowGap) || 0;
     let used = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom), n = 0;
