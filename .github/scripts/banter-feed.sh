@@ -10,4 +10,10 @@ if [ -n "$typing" ]; then jq -n --arg who "$typing" '{who: $who, at: (now | toda
 cd "$dir" && git init -q && git config user.name "github-actions[bot]"
 git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 git checkout -q --orphan banter && git add banter.json typing.json && git commit -qm "Update banter.json"
-git push -qf "https://x-access-token:${GH_TOKEN}@github.com/$REPO.git" banter
+# Two runs can write at once (a bot turn and the feed workflow). A force push then loses the race with
+# "cannot lock ref"; try again a couple of times, and never fail the caller over a feed refresh.
+for i in 1 2 3; do
+  git push -qf "https://x-access-token:${GH_TOKEN}@github.com/$REPO.git" banter && exit 0
+  sleep $((i * 2))
+done
+echo "Couldn't update the banter branch; the next run will." >&2
