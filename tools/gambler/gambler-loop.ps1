@@ -3,7 +3,7 @@
 $Repo = 'cillian1/belfast-wheel-app'
 $seen = ''
 while ($true) {
-  $last = gh api "repos/$Repo/issues/30/comments?per_page=100&sort=created" --jq '.[-1] | {id, body}' | ConvertFrom-Json
+  $last = gh issue view 30 -R $Repo --json comments --jq '.comments[-1] | {id, body}' | ConvertFrom-Json
   if ($last -and "$($last.id)" -ne $seen) {
     $seen = "$($last.id)"
     if ($last.body -match '(?i)gambler' -and $last.body -notmatch '^\s*The Gambler:') {
