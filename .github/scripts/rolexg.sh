@@ -104,7 +104,9 @@ finish(){
     say "$NUM" "I got stuck before finishing, so I've changed nothing. The run log has the details: $RUN_URL"; exit 1; fi
   node tools/bundle.mjs
   summary=${SUMMARY:-}
-  [ -n "${summary// }" ] || summary="(Gemini didn't send a summary.)"
+  # With no final text, the action hands over the CLI's raw JSON instead; keep only its response.
+  if jq -e . > /dev/null 2>&1 <<<"$summary"; then summary=$(jq -r '.response // ""' <<<"$summary"); fi
+  [ -n "${summary// }" ] || summary="I didn't write a summary this time. Changed: $(git status --porcelain | awk '{print $2}' | grep -v '^game/index.html$' | tr '\n' ' ')"
   if [ -z "$(git status --porcelain)" ]; then say "$NUM" "$summary"; exit 0; fi
 
   checks="passed"; node tools/check.mjs > check.log 2>&1 || checks="FAILED (see the run log)"
