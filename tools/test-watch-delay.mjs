@@ -54,7 +54,7 @@ function createHarness({ stopAfter, updates = true, toggleAfter = 0 }) {
       if (path.endsWith('/d')) {
         reads++;
         return {
-          i: updates ? reads : 1, b: 1, d: JSON.stringify({ step: updates ? reads : 1 }),
+          i: updates ? reads : 1, b: 1, d: JSON.stringify({ step: updates ? reads : 1, gamble: { phase: 'reveal', pick: 'red', colour: 'black', won: false, amount: 0, count: 1 } }),
           v: { e: 'Test', t: 'frame ' + reads, b: '' }, cap: '', s: 10, bal: 100, play: true,
         };
       }
@@ -68,10 +68,10 @@ function createHarness({ stopAfter, updates = true, toggleAfter = 0 }) {
     if (pauses >= stopAfter) throw stopped;
   };
   const mirrorScreen = () => ({
-    push(state, info) { states.push({ at: clock, step: state.step, info }); },
+    push(state, info) { states.push({ at: clock, step: state.step, gamble: state.gamble, info }); },
     say(message) { messages.push(message); },
   });
-  const runtime = new Function('db', 'now', 'pause', '$w', 'W', 'me4', 'closeSheet', 'toast', 'mirrorScreen', 'stakeLbl', 'eur', 'parse', `let busy = false, viewing = null;\n${helpersMatch[0]}\n${watchSource}\nreturn { watch, get viewing() { return viewing; } };`)(
+  const runtime = new Function('db', 'now', 'pause', '$w', 'W', 'me4', 'closeSheet', 'toast', 'mirrorScreen', 'stakeLbl', 'eur', 'parse', `let busy = false, viewing = null, gambleBusy = false; const collectGamble = () => {};\n${helpersMatch[0]}\n${watchSource}\nreturn { watch, get viewing() { return viewing; } };`)(
     db, () => clock, pause, id => elements[id], {}, () => 'watcher', () => {}, () => {},
     mirrorScreen, value => String(value), value => String(value), value => { try { return JSON.parse(value); } catch { return {}; } },
   );
@@ -83,6 +83,7 @@ await assert.rejects(delayed.runtime.watch('player', 'Sam'), error => error === 
 assert.ok(delayed.states.length > 0, `delayed state is sent through the same mirror renderer: ${delayed.messages.join(' | ')}`);
 assert.ok(delayed.states[0].at >= 1000 + 3000, 'the default Watch mode holds the first state for three seconds');
 assert.equal(delayed.states[0].step, 1, 'the first rendered state is the oldest eligible buffered snapshot');
+assert.deepEqual(delayed.states[0].gamble, { phase: 'reveal', pick: 'red', colour: 'black', won: false, amount: 0, count: 1 }, 'card, pick and reveal travel through the delayed Watch stream');
 assert.ok(delayed.states.at(-1).step <= 8, 'playback stays close to its three-second-old source state');
 assert.equal(delayed.modeButton.textContent, 'Go live', 'the delayed mode keeps an immediate-live option without displaying the delay');
 assert.equal(delayed.attrs['aria-pressed'], 'false');

@@ -47,6 +47,7 @@
     st.tw = String(tiles.slice(0, 3).filter(t => t.classList.contains('lit')).length); st.tb = String(tiles.slice(3).filter(t => t.classList.contains('lit')).length);
     const capEl = document.getElementById('caption');
     st.v = JSON.stringify(lastVerdict); st.cap = JSON.stringify(capEl ? capEl.textContent : '');
+    st.gamble = JSON.stringify(W.gamble || null);
     st.fin = JSON.stringify(document.querySelector('.stage.done') ? [...document.querySelectorAll('#finalList li')].map(li => li.textContent).slice(0, 10) : null);
     return st;
   }
@@ -320,7 +321,7 @@
     view.innerHTML = `<div class="wwh"><div><b>${esc(title)}</b><small id="wwSub">${esc(sub)}</small></div>${live ? '<div><button class="wbtn small" id="wwMode" type="button" aria-pressed="false">Go live</button> <span class="wlive" id="wwModeBadge" style="margin:0"><i></i><span id="wwModeLabel">DELAYED</span></span></div>' : '<span class="wlive" style="margin:0"><i></i>REPLAY</span>'}</div>
       <div class="wscr"><canvas id="wwCv"></canvas><ol id="wwFin" hidden></ol><p id="wwMsg">${live ? 'Connecting…' : 'Loading…'}</p></div>
       <div class="wwt" id="wwTiles"></div>
-      <div class="wvd"><small id="wwE"></small><h3 id="wwT"></h3><p id="wwB"></p><p id="wwC" style="color:var(--mute);margin-top:6px"></p></div>
+      <div class="wvd"><small id="wwE"></small><h3 id="wwT"></h3><p id="wwB"></p><p id="wwC" style="color:var(--mute);margin-top:6px"></p><div class="wgamble" id="wwGamble" hidden></div></div>
       ${live ? '<div class="wsay"><input id="wwSay" maxlength="60" placeholder="Send a message with Ghost Phelan"><button class="wbtn gold small" type="button" id="wwSend">Send</button></div>' : ''}
       <button class="wbtn" type="button" id="wwX" style="width:100%;max-width:560px">${live ? 'Stop watching' : 'Close'}</button>`;
     $w('wwX').onclick = stopWatch;
@@ -357,9 +358,10 @@
       if (info && info.sub) $w('wwSub').textContent = info.sub;
       const v = st.v || {}; $w('wwE').textContent = v.e || ''; $w('wwT').textContent = v.t || ''; $w('wwB').textContent = v.b || ''; $w('wwC').textContent = st.cap || '';
       const fin = $w('wwFin'), fl = st.fin; fin.hidden = !fl; if (fl) fin.innerHTML = fl.map(x => `<li>${esc(x)}</li>`).join('');
+      renderGamble($w('wwGamble'), st.gamble || null, true);
       const tw = +st.tw || 0, tb = +st.tb || 0;
       $w('wwTiles').innerHTML = `<span class="g">${'●'.repeat(Math.min(tw, 9))}${'○'.repeat(Math.max(0, 3 - tw))} WILDS</span><span class="p">${'●'.repeat(Math.min(tb, 9))}${'○'.repeat(Math.max(0, 3 - tb))} BONUS</span>`;
-      const vk = [v.e, v.t, v.b, st.cap].join('|'); if (vk !== S.vk) { S.vk = vk; fitWatch(); } // refit only when the verdict text changes
+      const vk = [v.e, v.t, v.b, st.cap, JSON.stringify(st.gamble)].join('|'); if (vk !== S.vk) { S.vk = vk; fitWatch(); } // refit only when the verdict text changes
     };
     S.say = text => { const m = $w('wwMsg'); if (m) { m.hidden = !text; m.textContent = text || ''; } };
     return S;
@@ -404,7 +406,9 @@
     });
   }
   async function watch(key, name) {
+    if (gambleBusy) return toast('Wait for the card.');
     if (typeof busy !== 'undefined' && busy) return toast('Finish your spin first');
+    collectGamble(); if (W.run) W.run.gambleClosed = true;
     closeSheet();
     viewing = 'live:' + key; const mine = viewing;
     const S = mirrorScreen(name, 'Connecting…', true);
@@ -466,6 +470,8 @@
     }
   }
   async function replay(id, card, path = 'hld') {
+    if (gambleBusy) return toast('Wait for the card.');
+    collectGamble(); if (W.run) W.run.gambleClosed = true;
     if (typeof busy !== 'undefined' && busy) return toast('Finish your spin first');
     closeSheet();
     viewing = (path === 'hld' ? 'hl:' : 'rp:') + id; const mine = viewing;

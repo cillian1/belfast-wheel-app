@@ -30,9 +30,12 @@
   const gameSpin = spin;
   let charging = false;
   spin = async function () {
+    if (gambleBusy) return toast('Wait for the card.');
     if (W.connected === false && !(scene === 'photo' && !photoDone)) return toast('No connection, reconnecting…');
     if (busy || charging) return;
     if (scene === 'photo' && !photoDone) return gameSpin(); // finishing a Show me run is part of the spin already paid for
+    collectGamble();
+    if (W.run) W.run.gambleClosed = true;
     if (!W.me) return showLogin('Log in to spin.');
     // free spins are only used on a 10c bet, so a bigger bet always plays (and pays) at that bet
     if (W.stake === FREE_STAKE && W.freeLeft(W.me) > 0) return freeSpin();
@@ -53,9 +56,9 @@
         db.txn('jackpot', cur => { cur = cur || { amount: JACKPOT_START }; cur.amount = (cur.amount || 0) + s; return cur; }).then(() => refreshJackpot()).catch(() => {});
       }
     } catch (e) { setBtn('Spin', false); charging = false; toast('No connection. Spin not charged.'); return; }
-    W.run = { stake: s, paid: false, live: true };
+    W.run = { stake: s, paid: false, live: true, auto: autoOn };
     charging = false;
-    try { await gameSpin(); } finally { if (W.run) W.run.live = false; }
+    try { await gameSpin(); } finally { if (W.run) { W.run.live = false; offerGamble(W.run); } }
   };
 
   async function freeSpin() {
@@ -78,12 +81,12 @@
     } catch (e) { setBtn('Spin', false); charging = false; toast('No connection. Free spin not used.'); return; }
     toast(`Free spin! ${W.freeLeft(W.me)} left today.`);
     if (W.stake !== s) dropPrizeFaces(); // prizes on the wheels show at 10c for this run
-    W.run = { stake: s, paid: false, live: true, free: true }; paint();
+    W.run = { stake: s, paid: false, live: true, free: true, auto: autoOn }; paint();
     charging = false;
-    try { await gameSpin(); } finally { if (W.run) W.run.live = false; paint(); if (W.stake !== s) dropPrizeFaces(); }
+    try { await gameSpin(); } finally { if (W.run) { W.run.live = false; offerGamble(W.run); } paint(); if (W.stake !== s) dropPrizeFaces(); }
   }
 
-  window.wolResetOk = () => !(W.run && W.run.paid); // no resetting once the prize is being paid
+  window.wolResetOk = () => !gambleBusy && !(W.run && W.run.paid); // no resetting once the prize is being paid
   window.wolNextRoom = () => { if (W.run) W.run.paid = false; }; // a second room in the same run (God room, then a full set) pays its own prize
   const gameVerdict = setVerdict;
   let lastVerdict = null; // what the player's screen says, for anyone watching
@@ -97,6 +100,7 @@
         let m = /^Final answer · €([\d.]+)/.exec(o.eyebrow || '');
         if (!m && o.eyebrow === 'Final answer' && /^€[\d.]+$/.test(o.title || '')) m = [0, o.title.slice(1)];
         const isPhelanTomb = /, Phelan['’]s Tomb$/.test(String(o.title || ''));
+        if (isPhelanTomb) run.gambleClosed = true;
         if (m && isPhelanTomb && !isTest()) {
           try { playSfx('jackpot'); } catch (e) { console.warn('Jackpot sound failed', e); }
           run.paid = true;
@@ -114,8 +118,14 @@
           })().catch(() => {});
           return r;
         }
-        if (m) { run.paid = true; credit(W.payCents(m[1]), run.stake, o.title); }
-        else if (o.title === 'That run broke halfway') { run.paid = true; run.free ? refundFree() : refund(run.stake); }
+        if (m) {
+          run.paid = true;
+          const cents = W.payCents(m[1]);
+          credit(cents, run.stake, o.title).then(ok => {
+            if (ok) { run.gambleCredit = cents; offerGamble(run); }
+          });
+        }
+        else if (o.title === 'That run broke halfway') { run.paid = true; run.gambleClosed = true; run.free ? refundFree() : refund(run.stake); }
       }
     } catch (e) {}
     return r;
@@ -131,8 +141,115 @@
       if (stake > 0 && c >= stake * 50) awardTrophy('big');
       log(W.user, 'win', c, { stake, what: String(what || '').slice(0, 60) });
       if (!isTest()) db.txn('stats', st => { st = st || {}; st.won = (st.won || 0) + c; if (c > (st.biggest || 0)) { st.biggest = c; st.biggestBy = W.me.name; } return st; }).catch(() => {});
+      return true;
     } catch (e) { pendingWins.push([c, stake, what]); savePending(); toast('Win saved on this phone. It adds when you are back online.'); }
   }
+  // ---------- a separate, fair wager on money already banked ----------
+  function gambleAllowed(amount, count) {
+    return Number.isSafeInteger(amount) && amount > 0 && amount <= 2000 && Number.isInteger(count) && count >= 0 && count < 5;
+  }
+  function gambleDecision(pick, random) {
+    if (pick !== 'red' && pick !== 'black') throw new Error('Pick red or black');
+    const colour = (random & 1) === 0 ? 'red' : 'black';
+    return { colour, won: pick === colour };
+  }
+  function settleGamble(u, bet) {
+    if (!u) return undefined;
+    if (u.gambleResults && Object.prototype.hasOwnProperty.call(u.gambleResults, bet.id)) return u;
+    if (!gambleAllowed(bet.amount, bet.count) || (u.balance || 0) < bet.amount) return undefined;
+    const delta = bet.won ? bet.amount : -bet.amount, field = bet.won ? 'gambleWon' : 'gambleLost';
+    u.balance = (u.balance || 0) + delta;
+    u[field] = (u[field] || 0) + bet.amount;
+    // Keep the receipt in the same write: an acknowledged-late PUT must not settle twice.
+    u.gambleResults = u.gambleResults || {};
+    u.gambleResults[bet.id] = delta;
+    return u;
+  }
+  let gambleBusy = false, gambleTimer = 0;
+  function collectGamble() {
+    if (gambleBusy) return;
+    clearTimeout(gambleTimer);
+    W.gamble = null;
+    renderGamble(gambleBox, null);
+  }
+  function armGamble() {
+    clearTimeout(gambleTimer);
+    W.gamble.expiresAt = now() + 15000;
+    gambleTimer = setTimeout(collectGamble, 15000);
+    renderGamble(gambleBox, W.gamble);
+  }
+  function offerGamble(run) {
+    if (W.run !== run || run.live || run.auto || autoOn || run.gambleClosed || !gambleAllowed(run.gambleCredit, 0)) return;
+    run.gambleClosed = true;
+    W.gamble = { amount: run.gambleCredit, count: 0, phase: 'offer', user: W.user };
+    armGamble();
+  }
+  function dealGamble() {
+    const g = W.gamble;
+    if (!g || gambleBusy || autoOn || busy || g.user !== W.user || g.phase !== 'offer' || !gambleAllowed(g.amount, g.count)) return;
+    if (now() >= g.expiresAt) return collectGamble();
+    phelanStop();
+    g.phase = 'pick'; g.pick = null; g.colour = null;
+    armGamble();
+  }
+  async function pickGamble(pick) {
+    const g = W.gamble;
+    if (!g || gambleBusy || g.phase !== 'pick' || g.user !== W.user || autoOn || busy) return;
+    if (now() >= g.expiresAt) return collectGamble();
+    if (W.connected === false) { collectGamble(); return toast('No connection. Keep your banked win.'); }
+    const user = W.user, test = isTest(), amount = g.amount;
+    let bet;
+    try {
+      const random = crypto.getRandomValues(new Uint32Array(5));
+      const result = gambleDecision(pick, random[0]);
+      bet = { id: Array.from(random.slice(1), n => n.toString(16).padStart(8, '0')).join(''), amount, count: g.count, won: result.won };
+      g.pick = pick;
+      gambleBusy = true; clearTimeout(gambleTimer); g.phase = 'settling';
+      renderGamble(gambleBox, g);
+      const u = await db.txn('users/' + user, u => settleGamble(u, bet));
+      if (!u || !u.gambleResults || !Object.prototype.hasOwnProperty.call(u.gambleResults, bet.id)) {
+        if (u) W.me = u;
+        gambleBusy = false; collectGamble(); paint();
+        return toast('Not enough balance. No gamble placed.');
+      }
+      W.me = u; paint();
+      const delta = bet.won ? amount : -amount, what = bet.won ? 'Gamble win' : 'Gamble lose';
+      log(user, 'gamble', delta, { what, pick, colour: result.colour, gambleId: bet.id });
+      if (!test) db.txn('stats', st => { st = st || {}; const field = bet.won ? 'gambleWon' : 'gambleLost'; st[field] = (st[field] || 0) + amount; return st; }).catch(() => {});
+      g.phase = 'flipping'; renderGamble(gambleBox, g);
+      await new Promise(resolve => setTimeout(resolve, 350));
+      g.colour = result.colour; g.won = bet.won; g.count++; g.amount = bet.won ? amount * 2 : 0;
+      g.phase = 'reveal'; renderGamble(gambleBox, g);
+      if (!bet.won) {
+        try {
+          if (!Music.muted && window.speechSynthesis) {
+            const laugh = new SpeechSynthesisUtterance('Hahah not so easy!');
+            laugh.pitch = 2; laugh.rate = 1.35; laugh.lang = sayVoice ? sayVoice.lang : 'en-GB';
+            if (sayVoice) laugh.voice = sayVoice;
+            speechSynthesis.cancel(); speechSynthesis.speak(laugh);
+          }
+        } catch (e) {}
+      }
+      await new Promise(resolve => setTimeout(resolve, 900));
+      gambleBusy = false;
+      g.phase = bet.won && gambleAllowed(g.amount, g.count) ? 'offer' : 'done';
+      armGamble();
+    } catch (e) {
+      gambleBusy = false; collectGamble();
+      toast(bet ? 'Connection interrupted. Check your balance/history before playing again.' : 'Card unavailable. Keep your banked win.');
+    }
+  }
+  gambleBox.addEventListener('click', e => {
+    const action = e.target.dataset.gamble;
+    if (action === 'collect') collectGamble();
+    else if (action === 'deal') dealGamble();
+    else if (action === 'red' || action === 'black') pickGamble(action);
+  });
+  $w('autoBtn').addEventListener('click', e => {
+    if (gambleBusy) { e.stopImmediatePropagation(); return toast('Wait for the card.'); }
+    collectGamble();
+    if (W.run) W.run.gambleClosed = true;
+  }, true);
   // wins that could not reach the database are kept and retried
   let pendingWins = []; try { pendingWins = JSON.parse(pref.get('wol.pendingWins') || '[]'); } catch (e) {}
   const savePending = () => pref.set('wol.pendingWins', JSON.stringify(pendingWins));
