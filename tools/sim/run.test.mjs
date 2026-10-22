@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  godEV, markEV, pairedDifference, raceEV, sampleInterval, seedForSpin, stankEV, summarize, tankEV,
+  godEV, markEV, pairedDifference, raceEV, sampleInterval, seedForSpin, stankEV, summarize, tankEV, topSpecialIndex,
 } from './run.mjs';
 
 function randomGenerator(seed) {
@@ -100,6 +100,31 @@ test('race and Mark EVs preserve the existing tag rules', () => {
   assert.equal(raceEV({ n: 1, sw: 1, sb: 0 }), 150);
   assert.equal(markEV({ n: 2, sw: 1, sb: 1 }), 7.5);
   assert.equal(markEV({ n: 0, sw: 0, sb: 0 }), 0);
+});
+
+test('stacked race tags use the highest multiplier and average rounded tag payouts', () => {
+  const run = {
+    n: 4,
+    raceTopSpecial: true,
+    specials: [{ kind: 'B', mult: 3 }, { kind: 'W', mult: 6 }],
+  };
+  assert.equal(topSpecialIndex(run.specials), 1);
+  assert.equal(raceEV(run), 169.53125);
+  assert.equal(markEV({ n: 3, specials: run.specials }), 50 / 3);
+  assert.equal(topSpecialIndex([{ kind: 'B', mult: 3 }, { kind: 'W', mult: 3 }]), 1);
+  assert.equal(raceEV({
+    n: 2,
+    raceTopSpecial: true,
+    specials: [{ kind: 'W', mult: 3 }, { kind: 'B', mult: 1.5 }],
+  }), (300 + 23.625) / 2);
+});
+
+test('race lineup truncates specials before evaluating the top tag', () => {
+  const specials = Array.from({ length: 9 }, (_, index) => ({
+    kind: index === 8 ? 'W' : 'B',
+    mult: index === 8 ? 99 : 1.5,
+  }));
+  assert.equal(raceEV({ n: 10, raceTopSpecial: true, specials }), 315.375 / 8);
 });
 
 test('summary reports per-spin expected components and their total interval', () => {

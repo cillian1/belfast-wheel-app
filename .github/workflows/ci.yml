@@ -27,6 +27,19 @@ jobs:
       - run: node tools/check-game-invariants.mjs origin/main
       - run: git show origin/main:game/index.html > "$RUNNER_TEMP/main-game.html"
       - run: node tools/test-ci-browser.mjs "$RUNNER_TEMP/main-game.html"
+      - name: Run exact PR #90 and #91 paired simulator comparisons
+        if: github.event_name == 'workflow_dispatch' && github.ref_name == 'rolexg/issue-89'
+        env:
+          SIM_EVIDENCE_DIR: ${{ runner.temp }}/review-sim-evidence
+        run: node tools/sim/compare-review-branches.mjs
+      - name: Upload paired simulator evidence
+        if: always() && github.event_name == 'workflow_dispatch' && github.ref_name == 'rolexg/issue-89'
+        uses: actions/upload-artifact@v4
+        with:
+          name: review-sim-evidence-${{ github.sha }}
+          path: ${{ runner.temp }}/review-sim-evidence
+          if-no-files-found: warn
+          retention-days: 90
 
   # Gemini may merge (Cillian, 2026-10-22). If Gemini's review already said "Verdict: merge" on this commit,
   # merge now that CI is green (.github/scripts/bot-merge.sh has the rules). Quiet otherwise.

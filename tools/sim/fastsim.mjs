@@ -1,6 +1,6 @@
 // Fast room-odds sim: the real game code, but time is fake and nothing waits (rAF and timers fire immediately).
-// usage: node tools/sim/fastsim.mjs game/index.html 10000 .10 3 1 > runs.json (file, spins, TIP_CHANCE, pages, seed)
-// Records one line per spin: room reached (W/B/G/P), M = farm run (Chicken Race forced on; race.py weights it), - = nothing.
+// usage: node tools/sim/fastsim.mjs game/index.html 10000 game 3 1 > runs.json (file, spins, tip override or game, pages, seed)
+// Records each spin's room and surviving special chickens; race chance is weighted by the analyzer.
 import fs from 'fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -8,10 +8,12 @@ const playwrightModule = process.env.SIM_PLAYWRIGHT_MODULE ||
   (fs.existsSync('/opt/node-tools/node_modules/playwright/index.mjs') ? '/opt/node-tools/node_modules/playwright/index.mjs' : 'playwright');
 const moduleSpecifier = path.isAbsolute(playwrightModule) ? pathToFileURL(playwrightModule).href : playwrightModule;
 const { chromium } = await import(moduleSpecifier);
-const [file, runs = '1000', tip = '.25', pages = '3', seed = '1'] = process.argv.slice(2);
+const [file, runs = '1000', tip = 'game', pages = '3', seed = '1'] = process.argv.slice(2);
 if (!file || !Number.isInteger(+runs) || +runs < 1 || !Number.isInteger(+pages) || +pages < 1 || !Number.isInteger(+seed) || +seed < 0 || +seed > 0xffffffff) {
-  throw new Error('Usage: fastsim.mjs game.html [spins] [tip] [pages] [seed]');
+  throw new Error('Usage: fastsim.mjs game.html [spins] [tip override or game] [pages] [seed]');
 }
+const tipOverride = tip === 'game' ? null : Number(tip);
+if (tipOverride != null && !(tipOverride >= 0 && tipOverride <= 1)) throw new Error('Tip chance must be between 0 and 1.');
 let html = fs.readFileSync(file, 'utf8');
 const waitStart = html.indexOf('const wait = ms =>');
 const waitEnd = html.indexOf("addEventListener('pointerdown'", waitStart);
@@ -21,6 +23,7 @@ const wl = html.indexOf('<script>window.WALLET_CFG'); if (wl > 0) html = html.sl
 const raceChance = html.match(/const\s+RACE_CHANCE\s*=\s*([0-9]*\.?[0-9]+)/);
 if (!raceChance) throw new Error('race changed');
 html = html.replace(raceChance[0], 'const RACE_CHANCE = 1');
+const raceTopSpecial = html.includes('function raceBigAt(');
 const executablePath = process.env.SIM_CHROMIUM_EXECUTABLE ||
   (fs.existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : chromium.executablePath());
 const b = await chromium.launch({ executablePath, args: ['--no-sandbox', '--disable-renderer-backgrounding', '--disable-background-timer-throttling'] });
@@ -46,26 +49,45 @@ async function worker(n, firstSpin) {
     window.cancelAnimationFrame = () => {};
     window.setInterval = () => 0; // watchdog and timers that would never settle
   }, +seed);
+  await p.exposeFunction('__simProgress', completed => {
+    console.error(`worker ${firstSpin + completed}/${runs} spins complete`);
+  });
   await p.goto('http://sim/');
   await p.waitForFunction(() => typeof spin === 'function');
-  return p.evaluate(async ([tip, n, baseSeed, startAt]) => {
-    TIP_CHANCE = +tip;
+  return p.evaluate(async ([tip, n, baseSeed, startAt, hasStackedTopTag]) => {
+    if (tip != null) TIP_CHANCE = tip;
     draw = () => {}; speak = () => {};
     animate = (d, step) => { try { step(1); } catch (e) {} return Promise.resolve(); };
     let rec = null; const stop = o => { rec = o; throw new Error('stop'); };
     pyramidRun = async () => stop({ k: 'P' }); godRoom = async () => { godHitRec = 1; };
     bonusRun = async (s, w, b) => stop({ k: 'W', w, b }); monsterRun = async (s, w, b) => stop({ k: 'B', w, b });
-    chickenRace = async (s, alive) => stop({ k: 'M', race: 1, n: alive.length, sp: alive.filter(c => c.special).length, sw: alive.filter(c => c.special === 'W').length, sb: alive.filter(c => c.special === 'B').length });
+    chickenRace = async (s, alive) => {
+      const specials = alive.filter(c => c.special).map(c => ({ kind: c.special, mult: c.mult || 1.5 }));
+      return stop({
+        k: 'M', race: 1, n: alive.length, sp: specials.length,
+        sw: specials.filter(c => c.kind === 'W').length,
+        sb: specials.filter(c => c.kind === 'B').length,
+        specials,
+      });
+    };
     let gold = 0; window.godHitRec = 0; const _gr = goldenRun; goldenRun = async (...a) => { gold = 1; return _gr(...a); };
     const out = [];
     for (let i = 0; i < n; i++) {
       window.__setSimSeed((+baseSeed + Math.imul(startAt + i + 1, 0x9e3779b9)) >>> 0);
       rec = null; gold = 0; godHitRec = 0; scene = 'nested'; zoom = 1; photoDone = true;
       await spin();
-      out.push(Object.assign(rec || (godHitRec ? { k: 'G' } : { k: '-' }), gold ? { g: 1 } : {}, godHitRec ? { god: 1 } : {}));
+      const record = rec || (godHitRec ? { k: 'G' } : { k: '-' });
+      out.push(Object.assign(
+        record,
+        gold ? { g: 1 } : {},
+        godHitRec ? { god: 1 } : {},
+        record.specials ? {} : { specials: [] },
+        hasStackedTopTag ? { raceTopSpecial: true } : {},
+      ));
+      if ((i + 1) % 500 === 0 || i + 1 === n) await window.__simProgress(i + 1);
     }
     return out;
-  }, [tip, n, seed, firstSpin]);
+  }, [tipOverride, n, seed, firstSpin, raceTopSpecial]);
 }
 const workerCount = Math.min(+runs, +pages), per = Math.floor(+runs / workerCount), extra = +runs % workerCount;
 const t0 = Date.now();

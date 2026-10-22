@@ -84,19 +84,54 @@ function roomEV(run) {
 export function raceEV(run) {
   const racers = Math.min(run.n, 8);
   if (!racers) return 0;
-  const specials = Math.min(run.sw + run.sb, racers);
-  const plain = racers - specials;
-  const normalTagEV = (100 + 15.625 * (racers - 1)) / racers;
-  const specialTagEV = (150 + 23.625 * (racers - 1)) / racers;
-  return (specials * specialTagEV + plain * normalTagEV) / racers;
+  const specials = specialEntries(run).slice(0, racers);
+  const plain = racers - specials.length;
+  if (run.raceTopSpecial && specials.length) {
+    const top = specials[topSpecialIndex(specials)];
+    return (bigSpecialEV(top.mult) + 15.625 * plain + specials.reduce((sum, chicken) =>
+      sum + (chicken === top ? 0 : regularSpecialEV(chicken.mult)), 0)) / racers;
+  }
+  const normalEV = (100 + 15.625 * (racers - 1)) / racers;
+  const specialEV = chicken => (bigSpecialEV(chicken.mult) + (racers - 1) * regularSpecialEV(chicken.mult)) / racers;
+  return (plain * normalEV + specials.reduce((sum, chicken) => sum + specialEV(chicken), 0)) / racers;
+}
+
+const RACE_TAG_VALUES = [5, 8, 10, 12, 15, 20, 25, 30];
+const BIG_TAG_VALUES = [80, 100, 120];
+
+function regularSpecialEV(mult) {
+  return mean(RACE_TAG_VALUES.map(value => Math.round(value * mult)));
+}
+
+function bigSpecialEV(mult) {
+  return mean(BIG_TAG_VALUES.map(value => Math.round(value * mult)));
+}
+
+export function topSpecialIndex(specials) {
+  return specials.reduce((best, chicken, index) =>
+    chicken.mult > specials[best].mult ||
+    (chicken.mult === specials[best].mult && chicken.kind === 'W' && specials[best].kind !== 'W')
+      ? index : best, 0);
+}
+
+function specialEntries(run) {
+  if (Array.isArray(run.specials)) {
+    return run.specials.map(chicken => ({
+      kind: chicken.kind,
+      mult: chicken.mult || 1.5,
+    }));
+  }
+  return [
+    ...Array(run.sw || 0).fill({ kind: 'W', mult: 1.5 }),
+    ...Array(run.sb || 0).fill({ kind: 'B', mult: 1.5 }),
+  ];
 }
 
 export function markEV(run) {
   const slices = Math.min(run.n, 16);
   if (!slices) return 0;
-  const gold = Math.min(run.sw, slices);
-  const purple = Math.min(run.sb, slices - gold);
-  return (gold * 10 + purple * 5) / slices;
+  return specialEntries(run).slice(0, slices).reduce((sum, chicken) =>
+    sum + (chicken.kind === 'W' ? 10 : 5) * chicken.mult / 1.5, 0) / slices;
 }
 
 export function seedForSpin(seed, spinIndex) {
@@ -137,19 +172,28 @@ export function pairedDifference(first, second, firstChance, secondChance) {
   return sampleInterval(second.map((run, index) => totalFor(run, secondChance) - totalFor(first[index], firstChance)));
 }
 
-function readRaceChance(file) {
+function readGameChances(file, tipOverride) {
   const html = fs.readFileSync(file, 'utf8');
-  const match = html.match(/const\s+RACE_CHANCE\s*=\s*([0-9]*\.?[0-9]+)/);
-  if (!match) throw new Error(`${file}: could not find the game's RACE_CHANCE constant.`);
-  const chance = Number(match[1]);
-  if (!(chance >= 0 && chance <= 1)) throw new Error(`${file}: RACE_CHANCE must be between 0 and 1.`);
-  return chance;
+  const race = html.match(/const\s+RACE_CHANCE\s*=\s*([0-9]*\.?[0-9]+)/);
+  const tip = html.match(/(?:const|let)\s+TIP_CHANCE\s*=\s*([0-9]*\.?[0-9]+)/);
+  const tease = html.match(/TEASE_CHANCE\s*=\s*([0-9]*\.?[0-9]+)\s*(?:\/\s*([0-9]*\.?[0-9]+))?/);
+  if (!race) throw new Error(`${file}: could not find the game's RACE_CHANCE constant.`);
+  if (!tip) throw new Error(`${file}: could not find the game's TIP_CHANCE constant.`);
+  const chances = {
+    race: Number(race[1]),
+    tip: tipOverride ?? Number(tip[1]),
+    tease: tease ? Number(tease[1]) / Number(tease[2] || 1) : 1,
+  };
+  for (const [name, value] of Object.entries(chances)) {
+    if (!(value >= 0 && value <= 1)) throw new Error(`${file}: ${name} chance must be between 0 and 1.`);
+  }
+  return chances;
 }
 
 function runBrowserSim(file, spins, tip, pages, seed) {
   const fastsim = path.join(here, 'fastsim.mjs');
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [fastsim, file, String(spins), String(tip), String(pages), String(seed)], {
+    const child = spawn(process.execPath, [fastsim, file, String(spins), tip == null ? 'game' : String(tip), String(pages), String(seed)], {
       stdio: ['ignore', 'pipe', 'inherit'],
     });
     const output = [];
@@ -176,13 +220,13 @@ function componentLine(label, interval) {
   return `${label.padEnd(12)} ${fixed(interval.mean).padStart(9)} base/spin  [${fixed(interval.low)}, ${fixed(interval.high)}]`;
 }
 
-function printReport(file, result, raceChance, elapsed) {
+function printReport(file, result, chances, elapsed) {
   const payback = {
     mean: 100 * result.total.mean * config.edge / config.ev,
     low: 100 * result.total.low * config.edge / config.ev,
     high: 100 * result.total.high * config.edge / config.ev,
   };
-  console.log(`\n${file} — ${result.spins.toLocaleString()} spins, race chance ${(100 * raceChance).toFixed(1)}%, seed ${options.seed}`);
+  console.log(`\n${file} — ${result.spins.toLocaleString()} spins, race ${(100 * chances.race).toFixed(1)}%, tip ${(100 * chances.tip).toFixed(1)}%, tease ${(100 * chances.tease).toFixed(1)}%, seed ${options.seed}`);
   console.log('Mean base/spin; brackets are 95% normal-approximation intervals.');
   console.log(componentLine('Rooms', result.rooms));
   console.log(componentLine('Race', result.race));
@@ -204,7 +248,7 @@ function printPaired(firstFile, secondFile, first, second, firstChance, secondCh
 }
 
 function parseOptions(args) {
-  const parsed = { spins: 10000, pages: 3, seed: 1, tip: .10, files: [] };
+  const parsed = { spins: 10000, pages: 3, seed: 1, tip: null, files: [] };
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === '--help' || arg === '-h') {
@@ -226,7 +270,7 @@ function parseOptions(args) {
   if (!Number.isInteger(parsed.spins) || parsed.spins < 2) throw new Error('--spins must be an integer of at least 2.');
   if (!Number.isInteger(parsed.pages) || parsed.pages < 1) throw new Error('--pages must be a positive integer.');
   if (!Number.isInteger(parsed.seed) || parsed.seed < 0 || parsed.seed > 0xffffffff) throw new Error('--seed must be an unsigned 32-bit integer.');
-  if (!(parsed.tip >= 0 && parsed.tip <= 1)) throw new Error('--tip must be between 0 and 1.');
+  if (parsed.tip != null && !(parsed.tip >= 0 && parsed.tip <= 1)) throw new Error('--tip must be between 0 and 1.');
   if (parsed.files.length === 0) parsed.files.push('game/index.html');
   if (parsed.files.length > 2) throw new Error('Pass one game file, or two files to compare.');
   return parsed;
@@ -241,19 +285,19 @@ async function main() {
   const chances = [];
   for (const file of options.files) {
     if (!fs.existsSync(file)) throw new Error(`Game file not found: ${file}`);
-    const chance = readRaceChance(file);
-    chances.push(chance);
+    const gameChances = readGameChances(file, options.tip);
+    chances.push(gameChances);
     console.error(`Simulating ${options.spins.toLocaleString()} spins: ${file}`);
     const started = performance.now();
     const records = await runBrowserSim(file, options.spins, options.tip, options.pages, options.seed);
     const elapsed = (performance.now() - started) / 1000;
     recordSets.push(records);
-    const summary = summarize(records, chance);
+    const summary = summarize(records, gameChances.race);
     summaries.push(summary);
-    printReport(file, summary, chance, elapsed);
+    printReport(file, summary, gameChances, elapsed);
   }
   if (summaries.length === 2) {
-    printPaired(options.files[0], options.files[1], recordSets[0], recordSets[1], chances[0], chances[1]);
+    printPaired(options.files[0], options.files[1], recordSets[0], recordSets[1], chances[0].race, chances[1].race);
   }
 }
 
