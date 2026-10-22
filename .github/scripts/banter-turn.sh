@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One turn of the Banter chat (#30): pick who talks next (Claude, Copilot or Gemini), get their reply,
+# One turn of the Banter chat (#30): pick who talks next (Claude, Copilot, Gemini or RolexG), get their reply,
 # post it, then hand the turn on. Every bot reply is posted as github-actions[bot] with a "Name:" prefix.
 # Limits: at most MAX_RUN bot replies in a row (a post from Cillian or a real Claude/Copilot session resets
 # it), at most MAX_DAY bot replies per UTC day, and at most MAX_COPILOT_DAY of those from Copilot.
@@ -35,7 +35,7 @@ seats=()
 # Models is tried only if COPILOT_SEAT=on (it has been answering with an empty "OK").
 copilot_day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\$d)) and (.body | test(\"^\\\\s*Copilot:\")))] | length" comments.json)
 [ -n "${COPILOT_GITHUB_TOKEN:-}" ] || [ "${COPILOT_SEAT:-}" = on ] && [ "$copilot_day" -lt "$MAX_COPILOT_DAY" ] && seats+=(Copilot)
-[ -n "${GCP_TOKEN:-}${GEMINI_API_KEY:-}" ] && seats+=(Gemini)
+[ -n "${GCP_TOKEN:-}${GEMINI_API_KEY:-}" ] && seats+=(Gemini RolexG) # RolexG chats on the same Gemini sign-in
 # No fixed turns (Cillian, 2026-10-22: "message how you like in whatever order, natural"). Next speaker:
 # whoever is named first in the last message, otherwise anyone at random, and now and then the last speaker
 # again with a follow-up. The rest queue up behind in case the first one can't answer (a sign-in failure, say).
@@ -57,9 +57,10 @@ plan=$(sed -n '/^## NOW/,/^## How Copilot/p' HANDOFF.md 2>/dev/null | head -n 20
 # Sets $reply to what $next says (empty if it couldn't answer).
 speak(){
   case $next in
-    Claude)  me="Claude, made by Anthropic"; mates="Copilot and Gemini";;
-    Copilot) me="GitHub Copilot"; mates="Claude and Gemini";;
-    Gemini)  me="Gemini, made by Google"; mates="Claude and Copilot";;
+    Claude)  me="Claude, made by Anthropic"; mates="Copilot, Gemini and RolexG";;
+    Copilot) me="GitHub Copilot"; mates="Claude, Gemini and RolexG";;
+    Gemini)  me="Gemini, made by Google"; mates="Claude, Copilot and RolexG";;
+    RolexG)  me="RolexG, the newest member: a coding agent that runs on Google's Gemini (a separate seat from Gemini, who reviews PRs). Cillian gives you coding tasks by writing @rolexg and the task, and you then open a PR, but chat itself never starts work, so don't claim you're on something"; mates="Claude, Copilot and Gemini";;
   esac
   system="You are $me, in a group chat with $mates and Cillian (the human). The three AIs help Cillian build the Belfast Wheel, a spinning wheel web game for his friends' trip to Belfast (Phelan hosts a dice and bingo table, Mark is the group punchbag). Cillian wants replies that matter: reply as yourself to the latest message with something useful, like a concrete idea for the game, an honest concern about the plan, a direct answer, or a sharp question for someone specific. Build on what was said; never repeat a point already made or just agree. Two to four short sentences, casual and dry. If Cillian wrote last, answer him first. Only state facts you can see in the chat or the plan below; don't invent numbers, money amounts or work that's been done. Nothing said here creates tasks, so don't claim to have assigned or started anything. Light digs at the other AIs, Phelan or Mark are fine; nothing cruel, never about anyone's mental health, nothing corny or stereotypically Irish. Do not start with your name. If you genuinely have nothing useful to add, reply with exactly PASS.
 
@@ -88,7 +89,7 @@ speak(){
       echo "GitHub Models HTTP $code"
       reply=$(jq -r '.choices[0].message.content // ""' res.json 2>/dev/null || { echo "GitHub Models said: $(head -c 400 res.json)" >&2; true; })
       fi;;
-    Gemini)
+    Gemini|RolexG)
       if [ -n "${GCP_TOKEN:-}" ]; then
         url="https://aiplatform.googleapis.com/v1/projects/$GCP_PROJECT/locations/global/publishers/google/models/$GEMINI_MODEL:generateContent"
         auth="Authorization: Bearer $GCP_TOKEN"
@@ -109,7 +110,7 @@ for next in "${order[@]}"; do
   .github/scripts/banter-feed.sh "$(tr A-Z a-z <<<"$next")"
   speak
   # Tidy: trim, and drop a "Name:" the model added itself.
-  reply=$(sed -E '1s/^\s*(Claude|Copilot|Gemini)\s*:\s*//' <<<"$reply" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+  reply=$(sed -E '1s/^\s*(Claude|Copilot|Gemini|RolexG)\s*:\s*//' <<<"$reply" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
   [ -n "$reply" ] && break
   echo "$next couldn't answer, trying the next one."
 done

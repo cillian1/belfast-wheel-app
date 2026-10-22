@@ -8,3 +8,6 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 |---|---|---|---|
 
 
+**Other open PRs**
+
+- #80 Update 28: Read the Manual → main
