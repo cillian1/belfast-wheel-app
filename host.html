@@ -128,6 +128,10 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
   
   const main = document.getElementById('main');
   const toast = msg => { const t = document.getElementById('toast'); t.textContent = msg; t.style.opacity = 1; clearTimeout(toast.t); toast.t = setTimeout(() => { t.style.opacity = 0; }, 2600); };
+  function showLoadError(target, retry) {
+    const button = document.createElement('button'); button.textContent = "Couldn't load, tap to retry"; button.onclick = retry;
+    target.replaceChildren(button);
+  }
   let tab = 'money', cfg = {}, poll = 0;
   const viewer = document.getElementById('viewer'), viewerFrame = document.getElementById('viewerFrame');
   function closeViewer() { viewer.hidden = true; viewerFrame.src = 'about:blank'; }
@@ -144,7 +148,10 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
 
   // ---------- PIN (set on first use; the hash lives in config/pin) ----------
   async function gate(msg) {
-    try { cfg = await db.get('config') || {}; } catch (e) { main.innerHTML = '<h1>Wheel Host</h1><p class="err">Can\'t reach the database. Check your connection and reload.</p>'; return; }
+    main.innerHTML = '<h1>Wheel Host</h1><p>Loading…</p>';
+    const timer = setTimeout(() => showLoadError(main, () => gate()), 10000);
+    try { cfg = await db.get('config') || {}; } catch (e) { showLoadError(main, () => gate()); return; }
+    finally { clearTimeout(timer); }
     if (sessionStorage.getItem('host') === cfg.pin && cfg.pin) return render();
     const first = !cfg.pin;
     main.innerHTML = `<h1>Wheel Host</h1><p>${first ? 'Set your host PIN (4 to 8 digits). You need it every time you open this page.' : 'Enter your host PIN.'}</p>
@@ -164,10 +171,15 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
   }
 
   // ---------- main screen ----------
-  async function render() {
+  async function render(showLoading = true) {
+    const currentBody = document.getElementById('body');
+    if (currentBody && showLoading) currentBody.innerHTML = '<p>Loading…</p>';
+    else if (!currentBody) main.innerHTML = '<h1>Wheel Host</h1><p>Loading…</p>';
+    const timer = setTimeout(() => showLoadError(main, render), 10000);
     let all, users, st;
     try { [all, users, st] = await Promise.all([db.get('reqs'), db.get('users'), db.get('stats')]); }
-    catch (e) { toast('No connection'); return; }
+    catch (e) { showLoadError(main, render); return; }
+    finally { clearTimeout(timer); }
     all = Object.entries(all || {}); users = Object.fromEntries(Object.entries(users || {}).filter(([, u]) => !u.test)); st = st || {}; // the test account plays with play money
     const wd = all.filter(([, r]) => r.kind === 'withdraw' && r.status === 'pending').sort((a, b) => a[1].at - b[1].at);
     const oldTops = all.filter(([, r]) => r.kind === 'topup' && r.status === 'pending').sort((a, b) => a[1].at - b[1].at);
@@ -187,35 +199,41 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
     if (tab === 'money') {
       body.innerHTML = `<h2>Withdrawals to pay</h2>
         <ul>${wd.map(([id, r]) => `<li><div><b>${esc(r.name)}</b> wants <b>${eur(r.a)}</b> to @${esc(r.tag)}<br><span>${when(r.at)}</span></div>
-          <div class="acts"><button class="small" data-rev="${esc(r.tag)}" type="button">Revolut</button><button class="small gold" data-paid="${id}" type="button">Paid</button><button class="small red" data-cancel="${id}" type="button">✕</button></div></li>`).join('') || '<li><span>Nothing to pay</span></li>'}</ul>
+          <div class="acts"><button class="small" data-rev="${esc(r.tag)}" type="button">Revolut</button><button class="small gold" data-paid="${id}" type="button">Paid</button><button class="small red" data-cancel="${id}" type="button">✕</button></div></li>`).join('') || '<li><span>Nothing here yet</span></li>'}</ul>
         <p><span>Tap Revolut to open their page, send the money, then tap Paid. ✕ cancels it and puts the money back on their balance.</span></p>
         <h2>Old top-up requests</h2>
-        <ul>${oldTops.map(([id, r]) => `<li><div><b>${esc(r.name)}</b> ${eur(r.a)}<br><span>${when(r.at)}</span></div><button class="small red" data-dismiss-topup="${esc(id)}" type="button">Dismiss</button></li>`).join('') || '<li><span>None</span></li>'}</ul>
+        <ul>${oldTops.map(([id, r]) => `<li><div><b>${esc(r.name)}</b> ${eur(r.a)}<br><span>${when(r.at)}</span></div><button class="small red" data-dismiss-topup="${esc(id)}" type="button">Dismiss</button></li>`).join('') || '<li><span>Nothing here yet</span></li>'}</ul>
         <h2>Top-ups (check they arrived in your Revolut)</h2>
         <ul>${tops.map(([id, r]) => `<li><div><b>${esc(r.name)}</b> ${eur(r.a)}<br><span>${when(r.at)}${r.status === 'reversed' ? ' · <b class="err">reversed</b>' : ''}</span></div>
-          ${r.status === 'reversed' ? '' : `<button class="small red" data-undo="${id}" type="button">Reverse</button>`}</li>`).join('') || '<li><span>No top-ups yet</span></li>'}</ul>
+          ${r.status === 'reversed' ? '' : `<button class="small red" data-undo="${id}" type="button">Reverse</button>`}</li>`).join('') || '<li><span>Nothing here yet</span></li>'}</ul>
         <h2>Paid out</h2>
-        <ul>${done.map(([, r]) => `<li><div>${esc(r.name)} ${eur(r.a)} <span>@${esc(r.tag)}</span><br><span>${when(r.done || r.at)}</span></div><span class="${r.status === 'done' ? 'ok' : 'err'}">${r.status === 'done' ? 'paid' : 'cancelled'}</span></li>`).join('') || '<li><span>None yet</span></li>'}</ul>`;
+        <ul>${done.map(([, r]) => `<li><div>${esc(r.name)} ${eur(r.a)} <span>@${esc(r.tag)}</span><br><span>${when(r.done || r.at)}</span></div><span class="${r.status === 'done' ? 'ok' : 'err'}">${r.status === 'done' ? 'paid' : 'cancelled'}</span></li>`).join('') || '<li><span>Nothing here yet</span></li>'}</ul>`;
     } else if (tab === 'players') {
       body.innerHTML = `<h2>Balances</h2>
         <ul>${Object.entries(users).sort((a, b) => (b[1].balance || 0) - (a[1].balance || 0)).map(([k, u]) => `<li><div><b>${esc(u.name)}</b> ${eur(u.balance || 0)}<br><span>${u.spins || 0} spins · staked ${eur(u.staked || 0)} · won ${eur(u.won || 0)} · in ${eur(u.topped || 0)} · out ${eur(u.withdrawn || 0)}</span></div>
-          <button class="small" data-adj="${k}" type="button">±</button></li>`).join('') || '<li><span>No players yet</span></li>'}</ul>`;
+          <button class="small" data-adj="${k}" type="button">±</button></li>`).join('') || '<li><span>Nothing here yet</span></li>'}</ul>`;
     } else if (tab === 'live') {
+      body.innerHTML = '<h2>Players online</h2><p>Loading…</p>';
+      const liveTimer = setTimeout(() => showLoadError(body, render), 10000);
       let live;
-      try { live = await db.get('live') || {}; } catch (e) { toast('Could not load live players'); live = {}; }
+      try { live = await db.get('live') || {}; } catch (e) { showLoadError(body, render); return; }
+      finally { clearTimeout(liveTimer); }
       const online = Object.entries(live).map(([key, value]) => Object.assign({ key }, value && value.p && value.p.name ? value.p : value))
         .filter(player => player.key !== 'test' && player.name && now() - (player.at || 0) < 90000)
         .sort((a, b) => Number(!!b.play) - Number(!!a.play) || b.at - a.at);
-      body.innerHTML = `<h2>Players online</h2><ul class="viewer-list">${online.map(player => `<li><div><b>${esc(player.name)}</b><br><span>${player.play ? 'Spinning now' : 'Online'}</span></div><button class="small gold" data-watch="${esc(player.key)}" data-name="${esc(player.name)}" type="button">Watch</button></li>`).join('') || '<li><span>Nobody is online right now.</span></li>'}</ul>`;
+      body.innerHTML = `<h2>Players online</h2><ul class="viewer-list">${online.map(player => `<li><div><b>${esc(player.name)}</b><br><span>${player.play ? 'Spinning now' : 'Online'}</span></div><button class="small gold" data-watch="${esc(player.key)}" data-name="${esc(player.name)}" type="button">Watch</button></li>`).join('') || '<li><span>Nothing here yet</span></li>'}</ul>`;
       body.querySelectorAll('[data-watch]').forEach(b => b.onclick = () => openViewer({ watch: b.dataset.watch, name: b.dataset.name }, 'Live · ' + b.dataset.name));
     } else if (tab === 'replays') {
       const owners = Object.entries(users).filter(([key]) => key !== 'test');
-      let cards = [];
+      body.innerHTML = '<h2>Recent replays</h2><p>Loading…</p>';
+      const replayTimer = setTimeout(() => showLoadError(body, render), 10000);
+      let cards;
       try {
         cards = (await Promise.all(owners.map(async ([key, user]) => Object.entries(await db.get('rpm/' + key, '?orderBy="$key"&limitToLast=20') || {})
           .map(([id, card]) => ({ id, name: user.name, ...card }))))).flat().sort((a, b) => b.at - a.at).slice(0, 50);
-      } catch (e) { toast('Could not load replays'); }
-      body.innerHTML = `<h2>Recent replays</h2><ul class="viewer-list">${cards.map(card => `<li><div><b>${esc(card.name)}</b> <span>${card.amt ? esc(card.amt) : 'no win'} · ${esc(card.room || 'Main wheel')}<br>${when(card.at)}</span></div><button class="small" data-replay="${esc(card.id)}" type="button">Replay</button></li>`).join('') || '<li><span>No replays yet.</span></li>'}</ul>`;
+      } catch (e) { showLoadError(body, render); return; }
+      finally { clearTimeout(replayTimer); }
+      body.innerHTML = `<h2>Recent replays</h2><ul class="viewer-list">${cards.map(card => `<li><div><b>${esc(card.name)}</b> <span>${card.amt ? esc(card.amt) : 'no win'} · ${esc(card.room || 'Main wheel')}<br>${when(card.at)}</span></div><button class="small" data-replay="${esc(card.id)}" type="button">Replay</button></li>`).join('') || '<li><span>Nothing here yet</span></li>'}</ul>`;
       body.querySelectorAll('[data-replay]').forEach(b => {
         const card = cards.find(item => item.id === b.dataset.replay);
         b.onclick = () => openViewer({ replay: b.dataset.replay }, card ? `Replay · ${card.name}` : 'Replay');
@@ -244,7 +262,7 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
     body.querySelectorAll('[data-dismiss-topup]').forEach(b => b.onclick = () => dismissTopup(b.dataset.dismissTopup));
     body.querySelectorAll('[data-undo]').forEach(b => b.onclick = () => twice(b, () => reverse(b.dataset.undo)));
     body.querySelectorAll('[data-adj]').forEach(b => b.onclick = () => adjust(b.dataset.adj, users[b.dataset.adj]));
-    clearInterval(poll); poll = setInterval(() => { if (!document.hidden && !main.querySelector('input:focus')) render(); }, 20000);
+    clearInterval(poll); poll = setInterval(() => { if (!document.hidden && !main.querySelector('input:focus')) render(false); }, 20000);
   }
 
   async function payout(id, paid) {

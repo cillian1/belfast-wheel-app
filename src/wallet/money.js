@@ -25,6 +25,7 @@
   const gameSpin = spin;
   let charging = false;
   spin = async function () {
+    if (W.connected === false && !(scene === 'photo' && !photoDone)) return toast('No connection, reconnecting…');
     if (busy || charging) return;
     if (scene === 'photo' && !photoDone) return gameSpin(); // finishing a Show me run is part of the spin already paid for
     if (!W.me) return showLogin('Log in to spin.');

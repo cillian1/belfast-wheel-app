@@ -14,6 +14,8 @@ function setVerdict({ eyebrow = 'The wheel says', title, body = '', steps = null
   $('#showActions').hidden = !show; $('#photoActions').hidden = !photo;
   if (plate.classList.contains('need') !== (show || photo)) { plate.classList.toggle('need', show || photo); fitStage(); }
   if (flash) { plate.classList.remove('landed'); void plate.offsetWidth; plate.classList.add('landed'); }
+  const win = /^Final answer · €([\d.]+)/.exec(eyebrow), stake = window.W && (W.run ? W.run.stake : W.stake);
+  if (win && stake && parseFloat(win[1]) >= Math.max(1, stake / 10)) ghostReact('cheer');
 }
 function setBtn(text, disabled) { spinBtn.textContent = text; spinBtn.disabled = disabled; }
 
