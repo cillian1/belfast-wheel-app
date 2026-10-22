@@ -3,8 +3,10 @@
 #  1. No bot merges its own PR: RolexG never merges a rolexg/ branch, and neither does Gemini's review,
 #     since RolexG runs on Gemini too. Those wait for Claude or Copilot.
 #  2. CI ("ci") must be green on the PR's latest commit.
-#  3. Not into main, because a push to main is a release to every phone. Set the repo variable
-#     BOT_MERGE_MAIN=on to allow it.
+#  3. Not into main if it changes anything players get (game, app, src, assets, pages), because a push to
+#     main is a release to every phone. PRs into main that only touch .github/, docs/, tools/, screenshots/
+#     or top-level .md files ship nothing to players, so those merge too (Cillian, 2026-10-22).
+#     BOT_MERGE_MAIN=on allows all.
 # Usage: bot-merge.sh <pr> Gemini   called after CI or a Gemini review; merges only if the latest Gemini
 #                                    review of the current commit says "Verdict: merge". Quiet otherwise,
 #                                    because whichever of CI and the review finishes last does the merge.
@@ -21,7 +23,11 @@ pr=$(gh api "repos/$REPO/pulls/$PR")
 head=$(jq -r .head.ref <<<"$pr"); base=$(jq -r .base.ref <<<"$pr"); sha=$(jq -r .head.sha <<<"$pr")
 [[ $head == rolexg/* ]] && no "it's RolexG's own PR, so Claude or Copilot merges it."
 default=$(gh api "repos/$REPO" --jq .default_branch)
-[ "$base" != "$default" ] || [ "${BOT_MERGE_MAIN:-}" = on ] || no "it goes into \`$default\`, which is a release. Claude or Copilot merges those."
+if [ "$base" = "$default" ] && [ "${BOT_MERGE_MAIN:-}" != on ]; then
+  shipped=$(gh api --paginate "repos/$REPO/pulls/$PR/files?per_page=100" --jq '.[].filename' \
+    | grep -vE '^(\.github/|docs/|tools/|screenshots/|[^/]*\.md$)' || true)
+  [ -z "$shipped" ] || no "it goes into \`$default\` and changes what players get ($(head -n3 <<<"$shipped" | paste -sd, -)), so it's a release. Claude or Copilot merges those."
+fi
 
 ci=$(gh api "repos/$REPO/commits/$sha/check-runs?check_name=ci&per_page=20" \
   --jq '[.check_runs[] | {status, conclusion, started_at}] | sort_by(.started_at) | last // empty')
