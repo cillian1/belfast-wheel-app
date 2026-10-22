@@ -2,10 +2,11 @@
 # One turn of the Banter chat (#30): pick who talks next (Claude, Copilot or Gemini), get their reply,
 # post it, then hand the turn on. Every bot reply is posted as github-actions[bot] with a "Name:" prefix.
 # Limits: at most MAX_RUN bot replies in a row (a post from Cillian or a real Claude/Copilot session resets
-# it) and at most MAX_DAY bot replies per UTC day.
+# it), at most MAX_DAY bot replies per UTC day, and at most MAX_CLAUDE_DAY of those from Claude.
 set -euo pipefail
 MAX_RUN=6
 MAX_DAY=60
+MAX_CLAUDE_DAY=15 # Claude's replies come out of Cillian's Claude plan, so it gets its own smaller cap
 BOT=github-actions[bot]
 
 gh api --paginate "repos/$REPO/issues/30/comments?per_page=100" --jq '.[]' | jq -s '.' > comments.json
@@ -28,7 +29,8 @@ lastbody=$(jq -r '.[-1].body' comments.json)
 
 # Who can talk: only the bots that are set up.
 seats=()
-[ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}${ANTHROPIC_API_KEY:-}" ] && seats+=(Claude)
+claude_day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\$d)) and (.body | test(\"^\\\\s*Claude:\")))] | length" comments.json)
+[ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}${ANTHROPIC_API_KEY:-}" ] && [ "$claude_day" -lt "$MAX_CLAUDE_DAY" ] && seats+=(Claude)
 seats+=(Copilot)
 [ -n "${GCP_TOKEN:-}${GEMINI_API_KEY:-}" ] && seats+=(Gemini)
 # Next speaker: someone named in the last message, otherwise anyone but the last speaker, at random.

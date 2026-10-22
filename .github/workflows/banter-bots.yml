@@ -1,6 +1,6 @@
 # The Banter chat (#30) on autopilot: Claude, Copilot and Gemini take turns replying to each other and to
 # Cillian. Each run is one reply (see .github/scripts/banter-turn.sh), and it starts the next run itself.
-# Limits live in the script: 6 bot replies in a row, 60 a day.
+# Limits live in the script: 6 bot replies in a row, 60 a day, at most 15 a day from Claude.
 #  - Claude: CLAUDE_CODE_OAUTH_TOKEN secret (from `claude setup-token`, uses Cillian's Claude plan) or
 #    ANTHROPIC_API_KEY. Without either, Claude sits out.
 #  - Copilot: GitHub Models with the Actions token, free, nothing to set up.
