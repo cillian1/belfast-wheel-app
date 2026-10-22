@@ -99,7 +99,10 @@ body{box-sizing:border-box;margin:0}
 .wtoast.gold{border-color:#f5d27a;color:#f8e4a6}
 .wbar .who.test{border:2px dashed #4fd1c5;background:rgba(20,70,68,.5)}.wbar .who.test small{color:#8ef0e6}.wbar .who.test b{color:#8ef0e6}
 body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;right:0;bottom:0;z-index:30;text-align:center;font:700 11px/1 var(--body);letter-spacing:.2em;padding:6px 0 calc(6px + env(safe-area-inset-bottom,0px));background:#0f4f4c;color:#c8fff8;pointer-events:none}
-.wlive{display:inline-flex;vertical-align:middle;margin-left:12px;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1.5px solid #ff4d4d;background:rgba(60,8,8,.85);color:#fff;font:700 13px/1 var(--body);letter-spacing:.12em;box-shadow:0 0 14px rgba(255,60,60,.35)}
+.wfree{margin-right:8px;padding:3px 10px;border-radius:999px;border:1px solid rgba(245,210,122,.7);color:#f5d27a;font-size:12px;letter-spacing:.04em;white-space:nowrap}
+.wfree.none{border-color:rgba(255,255,255,.15);color:var(--mute)}
+.wfree[hidden]{display:none}
+.wlive{display:inline-flex;vertical-align:middle;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;border:1.5px solid #ff4d4d;background:rgba(60,8,8,.85);color:#fff;font:700 12px/1 var(--body);letter-spacing:.06em;box-shadow:0 0 14px rgba(255,60,60,.35)}
 .wlive i{width:9px;height:9px;border-radius:50%;background:#9b5de5;box-shadow:0 0 6px #9b5de5}
 .wlive.on i{background:#ff3b3b;box-shadow:0 0 8px #ff3b3b;animation:wblink 1.2s ease-in-out infinite}
 .wlive em{font-style:normal;background:#ff3b3b;border-radius:999px;padding:2px 7px;letter-spacing:0;font-size:12px}
@@ -236,8 +239,18 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     $w('wStake').textContent = stakeLbl(W.stake);
     $w('wLess').disabled = W.stake <= STAKES[0]; $w('wMore').disabled = !nextStake();
     const pot = $w('wPot'); if (pot) pot.textContent = eur(W.jackpot || JACKPOT_START);
+    paintFree();
     if (typeof fitStage === 'function') fitStage();
   }
+  // free daily spins counter, in the row under Spin
+  const freeTag = el('span', 'wfree'); freeTag.setAttribute('aria-live', 'polite');
+  function paintFree() {
+    const row = document.getElementById('resetRow'); if (row && freeTag.parentNode !== row) row.prepend(freeTag);
+    const n = W.me && W.freeLeft ? W.freeLeft(W.me) : 0;
+    freeTag.hidden = !W.me; freeTag.classList.toggle('none', !n);
+    freeTag.textContent = n ? `${n} free spin${n === 1 ? '' : 's'} today` : 'Free spins back tomorrow';
+  }
+  setInterval(() => { if (W.me) paintFree(); }, 60000); // ticks over at midnight
   function setStake(c) {
     if (busy || (W.run && W.run.live)) return;
     W.stake = c; pref.set('wol.stake', String(c));

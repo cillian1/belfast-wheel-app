@@ -331,7 +331,7 @@ function fitStage() {
   [...app.children].forEach(el => { if (el === st || getComputedStyle(el).display === 'none' || /^(fixed|absolute)$/.test(getComputedStyle(el).position)) return; used += el.offsetHeight; n++; });
   used += gap * n;
   const h = (window.visualViewport ? visualViewport.height : innerHeight) - used;
-  const sw = Math.max(220, Math.min(innerWidth - 4, 600, h - (window.visualViewport ? visualViewport.height : innerHeight) * .1)); st.style.width = sw + 'px'; st.style.marginLeft = st.style.marginRight = sw > app.clientWidth ? (app.clientWidth - sw) / 2 + 'px' : 'auto';
+  const sw = Math.max(220, Math.min(innerWidth - 4, 600, h)); st.style.width = sw + 'px'; st.style.marginLeft = st.style.marginRight = sw > app.clientWidth ? (app.clientWidth - sw) / 2 + 'px' : 'auto';
 }
 addEventListener('resize', fitStage); if (window.visualViewport) visualViewport.addEventListener('resize', fitStage);
 function syncCanvasQuality(preserve = true) {

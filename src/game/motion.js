@@ -17,7 +17,20 @@ function animate(dur, step) {
     requestAnimationFrame(f);
   });
 }
-const wait = ms => new Promise(r => setTimeout(r, reduce ? Math.min(ms, 300) : ms));
+// Waits use elapsed milliseconds, never frame counts; taps skip the remaining time.
+const WAIT_SCALE = .5, pendingWaits = new Set();
+const wait = ms => new Promise(r => {
+  const t0 = performance.now(), dur = Math.round((reduce ? Math.min(ms, 300) : ms) * WAIT_SCALE);
+  let timer;
+  const w = { done: () => { clearTimeout(timer); pendingWaits.delete(w); r(); }, t0 };
+  const check = () => {
+    const remaining = dur - (performance.now() - t0);
+    if (remaining > 0) timer = setTimeout(check, remaining);
+    else w.done();
+  };
+  timer = setTimeout(check, dur); pendingWaits.add(w);
+});
+addEventListener('pointerdown', () => { const now = performance.now(); pendingWaits.forEach(w => { if (now - w.t0 > 120) w.done(); }); }, true);
 const sliceAt = (r, n) => Math.floor(mod(-r, TAU) / (TAU / n)) % n;
 function target(n) { const i = Math.floor(Math.random() * n); return { i, a: (i + .15 + Math.random() * .7) * TAU / n }; }
 
@@ -240,7 +253,7 @@ async function boostRun(kind, fromK) {
     godParts.forEach(p => {
       const u = Math.max(0, Math.min(1, (t - p.d) / .55)), e = easeInOut(u);
       p.x = lerp(p.sx, p.tx, e); p.y = lerp(p.sy, p.ty, e) - Math.sin(u * Math.PI) * N * .15; p.r += p.vr / 60; p.life = u >= 1 ? Math.max(0, p.life - .08) : 1;
-      if (u >= 1 && !p.hit) { p.hit = true; if (hits++ % 3 === 0) tick(.8, 1600 + Math.random() * 800); }
+      if (u >= 1 && !p.hit) { p.hit = true; if (hits++ % 3 === 0) tick(.8, 1600 + cosmeticRandom() * 800); }
     });
     for (let j = fromK + 1; j <= DEPTH; j++) boostA[j] = Math.max(0, Math.min(1, (t - .45) / .45));
     draw();
@@ -312,7 +325,7 @@ async function rollDiceRun() {
             d.vz -= G * h; d.z += d.vz * h; d.x += d.vx * h; d.y += d.vy * h; d.M = spinRot(d.M, d.w, h);
             if (d.z <= 0) {
               d.z = 0;
-              if (d.vz < -.3) { d.vz = -d.vz * .5; d.w = d.w.map(x => x * .75 + (Math.random() - .5) * 10); tick(.9, 1500 + Math.random() * 500); }
+              if (d.vz < -.3) { d.vz = -d.vz * .5; d.w = d.w.map(x => x * .75 + (Math.random() - .5) * 10); tick(.9, 1500 + cosmeticRandom() * 500); }
               else d.vz = 0;
               d.vx *= .93; d.vy *= .93; d.w = d.w.map(x => x * .975);
             }

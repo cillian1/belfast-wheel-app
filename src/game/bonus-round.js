@@ -252,7 +252,7 @@ async function roll12(dice) {
           d.vz -= 3.4 * h; d.z += d.vz * h; d.x += d.vx * h; d.y += d.vy * h; d.M = spinRot(d.M, d.w, h);
           if (d.z <= 0) {
             d.z = 0;
-            if (d.vz < -.35) { d.vz = -d.vz * .52; d.w = d.w.map(x => x * .75 + (Math.random() - .5) * 6); d.vx += (Math.random() - .5) * N * .12; d.vy += (Math.random() - .5) * N * .12; tick(.5 + Math.min(.6, -d.vz * .2), 1200 + Math.random() * 500); }
+            if (d.vz < -.35) { d.vz = -d.vz * .52; d.w = d.w.map(x => x * .75 + (Math.random() - .5) * 6); d.vx += (Math.random() - .5) * N * .12; d.vy += (Math.random() - .5) * N * .12; tick(.5 + Math.min(.6, -d.vz * .2), 1200 + cosmeticRandom() * 500); }
             else d.vz = 0;
             d.vx *= .975; d.vy *= .975; d.w = d.w.map(x => x * .985);
             // on the felt it rolls: spin follows the direction it travels
