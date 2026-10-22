@@ -10,4 +10,4 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
-- #72 [WIP] Add dismissible how to play card on first game launch → main (draft)
+- #72 [WIP] Add dismissible how to play card on first game launch → update-28 (draft)
