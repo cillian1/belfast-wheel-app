@@ -43,14 +43,20 @@ jobs:
           node-version: 24
       - if: steps.scope.outputs.game == 'true'
         run: npm install --no-save --package-lock=false @playwright/test@1.64.1
-      # Use the Chrome already on the runner: no browser download and no apt install-deps (which hung for 6 h on Oct 22)
+      # Chromium is cached per Playwright version. apt install-deps (which hung for 6 h on Oct 22) only runs
+      # if the runner is actually missing a library the browser needs.
+      - if: steps.scope.outputs.game == 'true'
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-1.64.1-${{ runner.os }}
       - if: steps.scope.outputs.game == 'true'
         timeout-minutes: 4
         run: |
-          if command -v google-chrome >/dev/null; then
-            echo "CHROMIUM_PATH=$(command -v google-chrome)" >> "$GITHUB_ENV"
-          else
-            npx playwright install --with-deps chromium
+          [ "${{ steps.pw-cache.outputs.cache-hit }}" = true ] || npx playwright install chromium
+          if ldd ~/.cache/ms-playwright/chromium*/chrome-*/{chrome,headless_shell} 2>/dev/null | grep -q 'not found'; then
+            npx playwright install-deps chromium
           fi
       - if: steps.scope.outputs.game == 'true'
         timeout-minutes: 5
