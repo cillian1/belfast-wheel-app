@@ -383,15 +383,14 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     const rows = Object.values(tx).sort((a, b) => b.at - a.at);
     const name = { spin: 'Spin', win: 'Win', topup: 'Top-up', withdraw: 'Withdrawal', refund: 'Refund', adjust: 'Adjustment', payout: 'Paid out' };
     const history = [];
-    rows.forEach(t => {
-      const date = new Date(t.at), day = date.toDateString();
+    rows.slice().reverse().forEach(t => {
       const previous = history[history.length - 1];
-      if (t.t === 'spin' && previous && previous.day === day && previous.type === 'spins') {
-        previous.count++;
-        previous.amount += t.a || 0;
-        previous.at = Math.max(previous.at, t.at);
-      } else history.push({ day, at: t.at, type: t.t === 'spin' ? 'spins' : 'entry', count: t.t === 'spin' ? 1 : 0, amount: t.a || 0, tx: t });
+      if (t.t === 'win' && previous && previous.tx.t === 'spin' && Number.isFinite(Number(t.stake)) && Math.abs(Number(previous.tx.a)) === Number(t.stake)) {
+        previous.win = t;
+        previous.at = t.at;
+      } else history.push({ at: t.at, tx: t });
     });
+    history.sort((a, b) => b.at - a.at);
     const today = new Date().toDateString(), yesterday = new Date(Date.now() - 86400000).toDateString();
     const dayLabel = day => day === today ? 'Today' : day === yesterday ? 'Yesterday' : new Date(day).toLocaleDateString('en-IE', { day: 'numeric', month: 'short', year: 'numeric' });
     const pending = reqs.reduce((sum, [, r]) => sum + (Number(r.a) || 0), 0);
@@ -399,10 +398,11 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     const renderHistory = () => {
       let lastDay = null;
       const shown = history.slice(0, historyLimit).map(item => {
-        const header = item.day !== lastDay ? `<li class="whistory-day">${dayLabel(item.day)}</li>` : '';
-        lastDay = item.day;
-        if (item.type === 'spins') return `${header}<li class="whistory-entry"><div>${item.count} ${item.count === 1 ? 'spin' : 'spins'} <span>${when(item.at)}</span></div><b class="${item.amount >= 0 ? 'plus' : 'minus'}">${eur(item.amount)}</b></li>`;
+        const day = new Date(item.at).toDateString();
+        const header = day !== lastDay ? `<li class="whistory-day">${dayLabel(day)}</li>` : '';
+        lastDay = day;
         const t = item.tx;
+        if (item.win) return `${header}<li class="whistory-entry"><div>Spin <b class="minus">${eur(t.a)}</b> → Win <b class="plus">+${eur(item.win.a)}</b>${item.win.what ? `<br><span>${esc(item.win.what)}</span>` : ''}<br><span>${when(t.at)} → ${when(item.win.at)}</span></div></li>`;
         return `${header}<li class="whistory-entry"><div>${esc(name[t.t] || t.t)}${t.what ? ` <span>${esc(t.what)}</span>` : ''}<br><span>${when(t.at)}</span></div><b class="${t.a >= 0 ? 'plus' : 'minus'}">${t.a >= 0 ? '+' : ''}${eur(t.a)}</b></li>`;
       }).join('');
       $w('wHistory').innerHTML = shown || '<li>Nothing here yet</li>';
