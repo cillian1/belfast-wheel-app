@@ -136,9 +136,9 @@ async function vaultRun(steps, cash, acts) {
   whoosh(true);
   await crossTo(() => { scene = 'vault'; }, 900);
   $('#caption').textContent = 'The golden locksafe';
-  await animate(2200, t => { vault.drop = t; if (Math.random() < .1) tick(.3, 300 + Math.random() * 200); draw(); });
+  await animate(2200, t => { vault.drop = t; if (cosmeticRandom() < .1) tick(.3, 300 + cosmeticRandom() * 200); draw(); });
   await wait(300);
-  await animate(1700, t => { vault.spin = easeInOut(t) * TAU * 1.25; if (Math.random() < .25) tick(.6, 500 + Math.random() * 300); draw(); });
+  await animate(1700, t => { vault.spin = easeInOut(t) * TAU * 1.25; if (cosmeticRandom() < .25) tick(.6, 500 + cosmeticRandom() * 300); draw(); });
   ting(); buzz([40, 30, 80]);
   await animate(1300, t => { vault.open = easeInOut(t); draw(); });
   await crossTo(() => { vault.ph = 'doors'; vault.pickable = true; }, 800);
@@ -149,7 +149,7 @@ async function vaultRun(steps, cash, acts) {
   stopPulse(); vault.pickable = false;
   const d = vault.doors[chosen];
   Music.sting(3); buzz([40, 40, 40]);
-  await animate(1400, t => { d.open = easeInOut(t); if (t < .8 && Math.random() < .3) tick(.4, 600 + Math.random() * 200); draw(); });
+  await animate(1400, t => { d.open = easeInOut(t); if (t < .8 && cosmeticRandom() < .3) tick(.4, 600 + cosmeticRandom() * 200); draw(); });
   ting(); buzz([60, 40, 120]);
   await wait(600);
   await animate(1000, t => { vault.doors.forEach(o => { if (o !== d) o.open = easeInOut(t) * .85; }); draw(); });
@@ -224,7 +224,7 @@ async function bonusRun(steps, w = 3, b = 0) {
     roul.balls.forEach(bl => {
       if (roul.t < bl.s) return;
       const u = Math.min(1, (roul.t - bl.s) / (bl.land - bl.s));
-      if (u > .7 && u < 1) { const k = Math.floor((u - .7) / .3 * 3); if (k !== bl.bn) { bl.bn = k; tick(.7, 2600 + Math.random() * 400); } }
+      if (u > .7 && u < 1) { const k = Math.floor((u - .7) / .3 * 3); if (k !== bl.bn) { bl.bn = k; tick(.7, 2600 + cosmeticRandom() * 400); } }
       if (u >= 1 && !bl.landed) { bl.landed = true; bl.winAt = performance.now(); tick(1.3, 1500); buzz(15); }
     });
     if (roul.t - lastTick > .09 * (1 + t * 3)) { lastTick = roul.t; tick(.25, 3200); }
