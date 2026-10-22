@@ -12,6 +12,7 @@ permissions:
   contents: write
   issues: read
   pull-requests: read
+  checks: read
 concurrency:
   group: status-board
   cancel-in-progress: true
@@ -31,6 +32,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: node tools/status.mjs
+      - name: Build tracker data
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node tools/tracker.mjs
       - name: Commit if changed
         run: |
           git diff --quiet -- STATUS.md && exit 0
@@ -39,3 +44,14 @@ jobs:
           git add STATUS.md
           git commit -m "Status board update [skip ci]"
           git pull --rebase origin main && git push origin HEAD:main
+      - name: Publish tracker data to the tracker branch
+        # Its own branch: the Banter feed force-pushes "banter" every few seconds and would wipe these files.
+        run: |
+          d=$(mktemp -d) && cp tracker.json tracker-history.json "$d/" && cd "$d"
+          git init -q && git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q --orphan tracker && git add tracker.json tracker-history.json
+          git commit -qm "Update tracker data [skip ci]"
+          git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" tracker
+        env:
+          GH_TOKEN: ${{ github.token }}
