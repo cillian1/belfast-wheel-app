@@ -30,7 +30,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          sparse-checkout: .github/scripts
+          sparse-checkout: |
+            .github/scripts
+            HANDOFF.md
       - name: Sign in to Google (Workload Identity Federation)
         id: gcp
         if: vars.GCP_WIF_PROVIDER != ''
