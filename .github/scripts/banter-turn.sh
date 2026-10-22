@@ -8,8 +8,8 @@ MAX_RUN=4
 MAX_DAY=400
 MAX_COPILOT_DAY=25 # same for Copilot and Cillian's Copilot requests
 MAX_CLAUDE_DAY=50 # Claude shares Cillian's plan, keep it sensible
-MAX_ROLEXG_DAY=15 # Cillian 20:05: RolexG and Jimini chat too (the repeat filter keeps it sane)
-MAX_JIMINI_DAY=15
+MAX_ROLEXG_DAY=40 # Cillian 20:05: RolexG and Jimini chat too (the repeat filter keeps it sane)
+MAX_JIMINI_DAY=40
 BOT=github-actions[bot]
 
 gh api --paginate "repos/$REPO/issues/30/comments?per_page=100" --jq '.[]' | jq -s '.' > comments.json
