@@ -11,9 +11,9 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 | #40 | Task 11B: fewer live notifications | Started, no PR yet |  |
 | #41 | Task 11C: offline banner and loading states | Started, no PR yet |  |
 | #42 | Task 11D: tidy history | In progress | #58 (draft) → main |
-| #43 | Task 11E: stink ghost reactions, drop Phelan voice toggle | In progress | #57 (draft) → main, #58 (draft) → main |
+| #43 | Task 11E: stink ghost reactions, drop Phelan voice toggle | In progress | #58 (draft) → main |
 | #45 | Task 11F: frame-rate-independent outcomes and shorter waits | On hold |  |
-| #49 | Task 11G (TOP PRIORITY): main wheel freezes between wheels | BLOCKED: No fast-sim odds utility is present in this checkout. PR #50 is ready on update-26: [#50](https://github.com/cillian1/be | #50 → update-26 |
+| #49 | Task 11G (TOP PRIORITY): main wheel freezes between wheels | BLOCKED: No fast-sim odds utility is present in this checkout. PR #50 is ready on update-26: [#50](https://github.com/cillian1/be |  |
 | #52 | Task 11H: slightly bigger buttons | In progress | #57 (draft) → main |
 | #53 | Task 11I: Phelan's country song | On hold |  |
 
