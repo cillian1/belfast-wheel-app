@@ -6,7 +6,7 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 | Issue | Task | Status | PRs |
 |---|---|---|---|
-| #97 | Task: Live Watch keyboard pushes the board off screen | In progress | #113 (draft) → main |
+| #97 | Task: Live Watch keyboard pushes the board off screen | In review | #113 → update-30 |
 | #98 | Task: game sound not working on Cillian's phone | In review | #112 → update-30 |
 
 **Other open PRs**
