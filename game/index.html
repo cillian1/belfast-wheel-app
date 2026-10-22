@@ -6545,7 +6545,7 @@ header>span{flex-wrap:wrap}
       const fin = $w('wwFin'), fl = st.fin; fin.hidden = !fl; if (fl) fin.innerHTML = fl.map(x => `<li>${esc(x)}</li>`).join('');
       const tw = +st.tw || 0, tb = +st.tb || 0;
       $w('wwTiles').innerHTML = `<span class="g">${'●'.repeat(Math.min(tw, 9))}${'○'.repeat(Math.max(0, 3 - tw))} WILDS</span><span class="p">${'●'.repeat(Math.min(tb, 9))}${'○'.repeat(Math.max(0, 3 - tb))} BONUS</span>`;
-      fitWatch();
+      const vk = [v.e, v.t, v.b, st.cap].join('|'); if (vk !== S.vk) { S.vk = vk; fitWatch(); } // refit only when the verdict text changes
     };
     S.say = text => { const m = $w('wwMsg'); if (m) { m.hidden = !text; m.textContent = text || ''; } };
     return S;
