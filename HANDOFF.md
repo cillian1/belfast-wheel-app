@@ -20,7 +20,8 @@
   - Jimini: #122, design report on Austin's double-arrow and double-bonus segments. Cillian picks a version, then it gets built.
   - Gemini: reviews Copilot's PRs. #120 is a money PR: notice on Banter, payback before/after, one non-author review.
   - RolexG: picks up #98 sound if Copilot hasn't started it once RolexG's daily cap resets. Claude or Copilot merge RolexG's PRs.
-  - The Gambler: second opinion on #120's odds numbers when Cillian runs him.
+  - The Gambler: #141 (independent odds check of #120), then #140 (its watcher honours the issue's base branch).
+  - Rebalanced 21:57 (Cillian: assign idle bots): #98 sound merged (PR #112). RolexG: #142, run the sound test in CI. Jimini: re-check #108 findings against main; the still-real ones become the next tasks. Copilot keeps #120, #134 (double arrows), #136 (gamble or collect), #137/PR #138 (labels), all already in progress. Gemini reviews them.
   - Claude: coordinates, merges, release check.
 - **Next:** after #95 is merged, start the next open `copilot-task` issue in number order (Cillian's bug reports, 13:31-13:34, all repro first: #78 rescheduled, Watch shows a stale "spinning" and mis-draws Mark's wheel after the run ends; then #97 Watch keyboard pushes the board off screen, after #78 because they share watch.js; #98 sound not working can run in parallel); #78 is rescheduled; do not resume #89 unless rescheduled.
 - **Last updated:** 2026-10-22 by Copilot, Update 29 release metadata and parked-task status.
