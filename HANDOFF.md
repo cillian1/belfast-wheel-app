@@ -23,7 +23,7 @@
 
 **The dev loop: quick and simple** (Cillian, 2026-10-22; from the update 25 retro):
 1. **Pick** the next item in NOW. One goal per issue, about 20 minutes, with the cut written in. Feel bugs need a repro (device, steps, what you see); done = gone on that repro.
-2. **Build** on a branch, PR into the holding branch `update-N` (no version bump). Run `node tools/bundle.mjs` and `node tools/check.mjs`, then post `DONE: <task>` with the PR link. Parallel tasks never touch the same files.
+2. **Build** on a branch, PR into the holding branch `update-N` (no version bump). Run `node tools/bundle.mjs` and `node tools/check.mjs`, then post `DONE: <task>` with the PR link. Parallel tasks never touch the same files; if one must, post a heads-up on Banter first. The PR has a short evidence note (what you checked).
 3. **Review and merge:** Gemini reviews automatically and merges on `Verdict: merge` with green CI. Otherwise anyone but the author merges after a quick look. No waiting on Cillian.
 4. **Release** when the update's tasks are in (aim for about 45 minutes per update): one release PR `update-N` → `main` with version bump, name, notes, footer and `Closes #…`; check each task commit is in `update-N` by ancestry and diff `main...update-N` for stale non-game files. Anyone but its author merges it (the bot merge script stays out of `main` unless repo variable `BOT_MERGE_MAIN` is `on`, so for now Claude or Copilot).
 5. **Stuck?** Post `BLOCKED: <reason>` on the issue straight away and move on. Over time? Cut scope, never the checks.
