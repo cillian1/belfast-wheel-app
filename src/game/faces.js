@@ -75,10 +75,10 @@ function buildRing(items, pal) {
       wedgeText(g, am, R * .725, s.lbl, fsFor(s.lbl, R * .725), R * .27, 'dark');
       return;
     }
-    if (s.boost) { // More Wilds / More Bonus: copper or orchid, a stack of three small emblems and chevrons pouring inward
+    if (s.boost) { // More Wilds / More Bonus: copper or orchid, an emblem and chevrons pouring inward
       const am = BASE + (i + .5) * seg, tx = -Math.sin(am), ty = Math.cos(am), sz = R * .072 * Math.min(1, icon * 1.3);
       const at = (r, t) => [c + Math.cos(am) * r + tx * t, c + Math.sin(am) * r + ty * t];
-      [R * .85, R * .755, R * .66].forEach(r => {
+      [R * .69].forEach(r => {
         const [x, y] = at(r, 0);
         if (s.boost === 'W') cleopatra(g, x, y, am, sz * 1.15); else ankh(g, x, y, am, sz);
       });
@@ -88,6 +88,8 @@ function buildRing(items, pal) {
         g.beginPath(); g.moveTo(lx, ly); g.lineTo(mx, my); g.lineTo(rx, ry); g.stroke();
       });
       g.restore();
+      const label = ['MORE', s.boost === 'W' ? 'WILD' : 'BONUS'];
+      wedgeText(g, am, R * .83, label, fsFor(label, R * .83), R * .17, 'dark');
       return;
     }
     if (s.up && (s.wild || s.bonus)) { // half Wild or ankh, half Go back up
@@ -104,12 +106,14 @@ function buildRing(items, pal) {
     }
     if (s.bonus) {
       const am = BASE + (i + .5) * seg;
-      ankh(g, c + Math.cos(am) * R * .72, c + Math.sin(am) * R * .72, am, R * .19 * icon);
+      ankh(g, c + Math.cos(am) * R * .65, c + Math.sin(am) * R * .65, am, R * .15 * icon);
+      wedgeText(g, am, R * .83, ['BONUS'], fsFor(['BONUS'], R * .83), R * .18, 'dark');
       return;
     }
     if (s.wild) {
       const am = BASE + (i + .5) * seg;
-      cleopatra(g, c + Math.cos(am) * R * .72, c + Math.sin(am) * R * .72, am, R * .22 * icon);
+      cleopatra(g, c + Math.cos(am) * R * .65, c + Math.sin(am) * R * .65, am, R * .17 * icon);
+      wedgeText(g, am, R * .83, ['WILD'], fsFor(['WILD'], R * .83), R * .18, 'light');
       return;
     }
     wedgeText(g, BASE + (i + .5) * seg, s.deep ? R * .76 : R * .725, s.lbl, fsFor(s.lbl, R * .725), s.deep ? R * .2 : R * .27, s.show || s.deep ? 'dark' : (i % 2 ? 'dark' : 'light'));
@@ -223,6 +227,7 @@ function buildBall(gold) {
   else if (gold) { gr.addColorStop(0, '#fffbe8'); gr.addColorStop(.3, '#f3cf6e'); gr.addColorStop(.8, '#8a5a12'); gr.addColorStop(1, '#3e2806'); }
   else { gr.addColorStop(0, '#ffffff'); gr.addColorStop(.3, '#d5dce2'); gr.addColorStop(.75, '#5a626b'); gr.addColorStop(1, '#1d2126'); }
   g.beginPath(); g.arc(r, r, r - .5, 0, TAU); g.fillStyle = gr; g.fill();
+  if (gold === 'W' || gold === 'B') g.drawImage(specialMark(gold), s * .12, s * .12, s * .76, s * .76);
   return k;
 }
 

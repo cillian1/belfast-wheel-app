@@ -216,11 +216,11 @@ button,.btn,label,a{touch-action:manipulation}
   box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 6px 18px rgba(0,0,0,.45);
 }
 [hidden]{display:none!important}
-.wilds{display:flex;justify-content:center;gap:8px;margin-top:-6px}
-#wilds canvas.wt{min-width:0;height:auto;aspect-ratio:1}
+.wilds{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) 10px repeat(3,minmax(0,1fr));gap:8px;width:100%;max-width:298px;margin:-6px auto 0}
+#wilds canvas.wt{width:100%;min-width:0;height:auto;aspect-ratio:1}
 .wilds .wgap{width:10px}
-.wlab{display:flex;justify-content:center;gap:26px;margin-top:-9px;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--mute);font-weight:600}
-.wlab span{width:136px;height:18px;display:flex;align-items:center;justify-content:center;gap:5px}
+.wlab{display:grid;grid-template-columns:1fr 1fr;gap:26px;width:100%;max-width:298px;margin:-6px auto 0;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);font-weight:700}
+.wlab span{min-width:0;min-height:18px;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:5px}
 .wlab .wx{display:flex;gap:3px;align-items:center}
 .wlab .wx canvas{width:16px;height:16px;border-radius:4px;box-shadow:0 0 8px rgba(240,190,90,.75);animation:wpop .6s ease-out}
 .wlab .wx.b canvas{box-shadow:0 0 8px rgba(170,110,255,.85)}
@@ -272,6 +272,7 @@ footer{position:fixed;top:8px;left:10px;z-index:5;color:rgba(220,225,230,.55);fo
       <li><b>Auto spin</b> keeps spinning for you; tap again to stop.</li>
       <li><b>Reset spin</b> starts the wheel over.</li>
       <li>Tap to skip the waits.</li>
+      <li>Gold Cleopatra = <b>WILD</b>. Purple ankh = <b>BONUS</b>. Collect 3 of a kind.</li>
       <li>Tap your <b>name / balance</b> for top up, withdraw and leaderboards.</li>
       <li><b>Music / Quality / Mute</b> control sound and graphics.</li>
     </ul>
@@ -280,7 +281,7 @@ footer{position:fixed;top:8px;left:10px;z-index:5;color:rgba(220,225,230,.55);fo
 
   <div class="stage"><canvas id="wheel" aria-label="The Wheel of Life. Tap to spin."></canvas><div class="final" id="finalCard" aria-live="polite"><span class="eyebrow">Final answer</span><ol id="finalList"></ol><p class="fquote" id="finalQuote"></p></div></div>
   <div class="wilds" id="wilds" aria-label="Wilds and Bonuses collected"><canvas class="wt" width="96" height="96"></canvas><canvas class="wt" width="96" height="96"></canvas><canvas class="wt" width="96" height="96"></canvas><span class="wgap"></span><canvas class="wt" width="96" height="96"></canvas><canvas class="wt" width="96" height="96"></canvas><canvas class="wt" width="96" height="96"></canvas></div>
-  <div class="wlab" aria-hidden="true"><span>Wilds<i class="wx" id="wxW"></i></span><span>Bonus<i class="wx b" id="wxB"></i></span></div>
+  <div class="wlab"><span>Gold · WILD<i class="wx" id="wxW"></i></span><span>Purple · BONUS<i class="wx b" id="wxB"></i></span></div>
   <p class="caption" id="caption">Land on Go deeper and you fall through the wheels.</p>
 
   <button class="spin" id="spinBtn" type="button">Spin</button>
@@ -653,6 +654,16 @@ function mk(w = N, h = N) { const k = document.createElement('canvas'); k.width 
 function grad(g, x0, y0, x1, y1, stops) { const gr = g.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, col]) => gr.addColorStop(o, col)); return gr; }
 function rrect(g, x, y, w, h, r) { r = Math.max(0, Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2)); g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
 
+const specialMarks = {};
+function specialMark(kind) {
+  if (specialMarks[kind]) return specialMarks[kind];
+  const k = mk(64, 64), g = k.getContext('2d');
+  g.fillStyle = kind === 'W' ? '#3d2706' : '#fff2ff';
+  g.font = '900 52px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(kind, 32, 35);
+  return specialMarks[kind] = k;
+}
+
 const CHROME_LIGHT = [[0, '#59616a'], [.28, '#eef2f5'], [.45, '#a7b0b9'], [.62, '#fafcfd'], [1, '#666f79']];
 const CHROME_DARK = [[0, '#0d1013'], [.34, '#47505a'], [.5, '#181c21'], [.76, '#323941'], [1, '#0b0d10']];
 const TITANIUM = [[0, '#263b78'], [.28, '#5a88e2'], [.5, '#a47ee0'], [.72, '#ecc46c'], [1, '#7d4f27']];
@@ -1012,10 +1023,10 @@ function buildRing(items, pal) {
       wedgeText(g, am, R * .725, s.lbl, fsFor(s.lbl, R * .725), R * .27, 'dark');
       return;
     }
-    if (s.boost) { // More Wilds / More Bonus: copper or orchid, a stack of three small emblems and chevrons pouring inward
+    if (s.boost) { // More Wilds / More Bonus: copper or orchid, an emblem and chevrons pouring inward
       const am = BASE + (i + .5) * seg, tx = -Math.sin(am), ty = Math.cos(am), sz = R * .072 * Math.min(1, icon * 1.3);
       const at = (r, t) => [c + Math.cos(am) * r + tx * t, c + Math.sin(am) * r + ty * t];
-      [R * .85, R * .755, R * .66].forEach(r => {
+      [R * .69].forEach(r => {
         const [x, y] = at(r, 0);
         if (s.boost === 'W') cleopatra(g, x, y, am, sz * 1.15); else ankh(g, x, y, am, sz);
       });
@@ -1025,6 +1036,8 @@ function buildRing(items, pal) {
         g.beginPath(); g.moveTo(lx, ly); g.lineTo(mx, my); g.lineTo(rx, ry); g.stroke();
       });
       g.restore();
+      const label = ['MORE', s.boost === 'W' ? 'WILD' : 'BONUS'];
+      wedgeText(g, am, R * .83, label, fsFor(label, R * .83), R * .17, 'dark');
       return;
     }
     if (s.up && (s.wild || s.bonus)) { // half Wild or ankh, half Go back up
@@ -1041,12 +1054,14 @@ function buildRing(items, pal) {
     }
     if (s.bonus) {
       const am = BASE + (i + .5) * seg;
-      ankh(g, c + Math.cos(am) * R * .72, c + Math.sin(am) * R * .72, am, R * .19 * icon);
+      ankh(g, c + Math.cos(am) * R * .65, c + Math.sin(am) * R * .65, am, R * .15 * icon);
+      wedgeText(g, am, R * .83, ['BONUS'], fsFor(['BONUS'], R * .83), R * .18, 'dark');
       return;
     }
     if (s.wild) {
       const am = BASE + (i + .5) * seg;
-      cleopatra(g, c + Math.cos(am) * R * .72, c + Math.sin(am) * R * .72, am, R * .22 * icon);
+      cleopatra(g, c + Math.cos(am) * R * .65, c + Math.sin(am) * R * .65, am, R * .17 * icon);
+      wedgeText(g, am, R * .83, ['WILD'], fsFor(['WILD'], R * .83), R * .18, 'light');
       return;
     }
     wedgeText(g, BASE + (i + .5) * seg, s.deep ? R * .76 : R * .725, s.lbl, fsFor(s.lbl, R * .725), s.deep ? R * .2 : R * .27, s.show || s.deep ? 'dark' : (i % 2 ? 'dark' : 'light'));
@@ -1160,6 +1175,7 @@ function buildBall(gold) {
   else if (gold) { gr.addColorStop(0, '#fffbe8'); gr.addColorStop(.3, '#f3cf6e'); gr.addColorStop(.8, '#8a5a12'); gr.addColorStop(1, '#3e2806'); }
   else { gr.addColorStop(0, '#ffffff'); gr.addColorStop(.3, '#d5dce2'); gr.addColorStop(.75, '#5a626b'); gr.addColorStop(1, '#1d2126'); }
   g.beginPath(); g.arc(r, r, r - .5, 0, TAU); g.fillStyle = gr; g.fill();
+  if (gold === 'W' || gold === 'B') g.drawImage(specialMark(gold), s * .12, s * .12, s * .76, s * .76);
   return k;
 }
 
@@ -3183,13 +3199,14 @@ function drawDie3D(g, x, y, s, M, sp) {
       g.fillStyle = `rgb(${Math.round(col[0] * lit)},${Math.round(col[1] * lit)},${Math.round(col[2] * lit)})`; g.fill();
       g.strokeStyle = `rgba(30,20,40,${.4 + (1 - n[2]) * .3})`; g.lineWidth = Math.max(1, s * .02); g.stroke();
       g.globalAlpha = Math.min(1, n[2] * 2.2);
-      if (special) { // a diamond instead of pips
-        g.fillStyle = sp === 'W' ? '#8a5a08' : '#fff2ff'; g.beginPath();
-        [[0, -.5], [.36, 0], [0, .5], [-.36, 0]].forEach(([a, b], k) => { const p = P(a, b); k ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); }); g.closePath(); g.fill();
-      } else {
+      if (!special) {
         g.fillStyle = sp === 'W' ? '#3a2406' : '#fff6dc';
         PIPS[f.val].forEach(([a, b]) => { g.beginPath(); for (let k = 0; k <= 10; k++) { const t = k / 10 * TAU, p = P(a * .5 + Math.cos(t) * .17, b * .5 + Math.sin(t) * .17); k ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); } g.fill(); });
       }
+      g.save(); g.transform(U[0], U[1], V[0], V[1], x + C[0], y + C[1]);
+      if (special) g.drawImage(specialMark(sp), -.65, -.65, 1.3, 1.3);
+      else g.drawImage(specialMark(sp), -.28, -.98, .56, .56);
+      g.restore();
       g.globalAlpha = 1;
       return;
     }
@@ -4487,6 +4504,7 @@ function drawChicken(g, x, y, s, dir, ph, peck, flash, kind) {
   if (kind) g.restore();
   g.beginPath(); g.moveTo(-.26, -.1); g.lineTo(-.44, -.36); g.lineTo(-.2, -.24); g.fill();
   g.fillStyle = wing; g.beginPath(); g.ellipse(-.04, -.04, .17, .1, -.2, 0, TAU); g.fill();
+  if (kind) { g.save(); g.scale(dir, 1); g.drawImage(specialMark(kind), -.18, -.22, .36, .36); g.restore(); }
   const hx = .24 + peck * .1, hy = -.3 + peck * .3;
   g.fillStyle = body; g.beginPath(); g.arc(hx, hy, .13, 0, TAU); g.fill();
   g.fillStyle = '#d62a20'; [[-.04, -.13], [.03, -.15], [.09, -.12]].forEach(([a, b]) => { g.beginPath(); g.arc(hx + a, hy + b, .05, 0, TAU); g.fill(); });
