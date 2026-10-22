@@ -121,11 +121,10 @@ async function spin(path, fps = 60) {
 try {
   const baseline = await spin('/baseline');
   const runs = [];
-  for (const fps of [10, 30, 60]) runs.push({ fps, ...await spin('/current', fps) });
+  for (const fps of [10, 30, 60, 120]) runs.push({ fps, ...await spin('/current', fps) });
   for (const run of runs) assert.deepEqual(run.values, baseline.values, `EV, edge, and stakes must match main at ${run.fps} fps`);
-  assert.equal(runs[0].result, runs[1].result, 'seeded spin results must match at 10 and 30 fps');
-  assert.equal(runs[1].result, runs[2].result, 'seeded spin results must match at 30 and 60 fps');
-  console.log('Seeded 360px headless spin matches at 10, 30, and 60 fps; EV, edge, and stakes match main; no browser console errors.');
+  for (let i = 1; i < runs.length; i++) assert.equal(runs[i].result, runs[0].result, `seeded spin results must match at ${runs[0].fps} and ${runs[i].fps} fps`);
+  console.log('Seeded 360px headless spin matches at 10, 30, 60, and 120 fps; EV, edge, and stakes match main; no browser console errors.');
 } finally {
   await browser.close();
   await new Promise(resolve => server.close(resolve));

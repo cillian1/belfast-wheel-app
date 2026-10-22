@@ -1,6 +1,7 @@
 // ---------- ball physics ----------
 // Owns ball-drop simulation and final-slot counting.
 let lastPeg = 0;
+const DROP_HZ = 240, DROP_DT = 1 / DROP_HZ, DROP_SETTLE_STEPS = Math.ceil(DROP_HZ * 50 / 60);
 function physicsStep(dt) {
   const g = N * 1.7, r = ballR, free = balls.filter(b => b.free);
   for (const b of free) {
@@ -53,24 +54,28 @@ function physicsStep(dt) {
 }
 function runDrop(maxMs) {
   return new Promise(res => {
-    const t0 = performance.now(); let last = t0, calm = 0;
+    const t0 = performance.now(); let simStep = 0, calm = 0;
     function f(now) {
-      const el = now - t0, steps = Math.max(1, Math.min(8, Math.round((now - last) / (1000 / 240)))); last = now;
-      rotF += .004 * steps;
-      balls.forEach(b => { if (!b.free && el >= b.rel) { b.free = true; b.vx = (Math.random() - .5) * N * .3; b.vy = N * .05; } });
-      for (let s = 0; s < steps; s++) physicsStep(1 / 240);
-      // once every ball is down between the dividers its slot can't change
-      let settled = true;
-      balls.forEach(b => {
-        if (!b.free) { settled = false; return; }
-        const v = Math.hypot(b.vx, b.vy);
-        if (b.y > B.slotTop + ballR) { b.vx *= .985; return; }
-        settled = false;
-        if (v < N * .02) b.vx += (Math.random() - .5) * N * .1; // stuck on a peg: nudge
-      });
-      calm = settled ? calm + 1 : 0;
+      const elapsed = now - t0, targetStep = Math.floor((elapsed + 1e-6) * DROP_HZ / 1000);
+      while (simStep < targetStep) {
+        const simTime = ++simStep * 1000 / DROP_HZ;
+        rotF += .004;
+        balls.forEach(b => { if (!b.free && simTime >= b.rel) { b.free = true; b.vx = (Math.random() - .5) * N * .3; b.vy = N * .05; } });
+        physicsStep(DROP_DT);
+        // once every ball is down between the dividers its slot can't change
+        let settled = true;
+        balls.forEach(b => {
+          if (!b.free) { settled = false; return; }
+          const v = Math.hypot(b.vx, b.vy);
+          if (b.y > B.slotTop + ballR) { b.vx *= .985; return; }
+          settled = false;
+          if (v < N * .02) b.vx += (Math.random() - .5) * N * .1; // stuck on a peg: nudge
+        });
+        calm = settled ? calm + 1 : 0;
+        if (calm >= DROP_SETTLE_STEPS) break;
+      }
       draw();
-      if (calm > 50 || el > maxMs) res(); else requestAnimationFrame(f);
+      if (calm >= DROP_SETTLE_STEPS || elapsed > maxMs) res(); else requestAnimationFrame(f);
     }
     requestAnimationFrame(f);
   });
