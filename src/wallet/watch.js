@@ -298,7 +298,7 @@
   // one screen for both live watching and replays: push() states in, it draws them smoothly
   function mirrorScreen(title, sub, live) {
     view.hidden = false;
-    view.innerHTML = `<div class="wwh"><div><b>${esc(title)}</b><small id="wwSub">${esc(sub)}</small></div>${live ? '<div><button class="wbtn small" id="wwMode" type="button" aria-pressed="false">Go live</button> <span class="wlive on" style="margin:0"><i></i>LIVE</span></div>' : '<span class="wlive" style="margin:0"><i></i>REPLAY</span>'}</div>
+    view.innerHTML = `<div class="wwh"><div><b>${esc(title)}</b><small id="wwSub">${esc(sub)}</small></div>${live ? '<div><button class="wbtn small" id="wwMode" type="button" aria-pressed="false">Go live</button> <span class="wlive" id="wwModeBadge" style="margin:0"><i></i><span id="wwModeLabel">DELAYED</span></span></div>' : '<span class="wlive" style="margin:0"><i></i>REPLAY</span>'}</div>
       <div class="wscr"><canvas id="wwCv"></canvas><ol id="wwFin" hidden></ol><p id="wwMsg">${live ? 'Connecting…' : 'Loading…'}</p></div>
       <div class="wwt" id="wwTiles"></div>
       <div class="wvd"><small id="wwE"></small><h3 id="wwT"></h3><p id="wwB"></p><p id="wwC" style="color:var(--mute);margin-top:6px"></p></div>
@@ -390,11 +390,13 @@
       try { await db.put('live/' + key + '/msg', { id: now().toString(36) + Math.random().toString(36).slice(2, 6), from: W.me ? W.me.name : 'A watcher', text, at: now() }); toast('Ghost Phelan is on his way'); } catch (e) { toast('No connection'); }
     };
     let delayed = true, latestFrame = null, lastFrameAt = 0;
-    const buffer = [], modeButton = $w('wwMode');
+    const buffer = [], modeButton = $w('wwMode'), modeBadge = $w('wwModeBadge'), modeLabel = $w('wwModeLabel');
     modeButton.onclick = () => {
       delayed = !delayed;
       modeButton.textContent = delayed ? 'Go live' : 'Use delay';
       modeButton.setAttribute('aria-pressed', String(!delayed));
+      modeLabel.textContent = delayed ? 'DELAYED' : 'LIVE';
+      modeBadge.classList.toggle('on', !delayed);
       if (delayed) {
         alignWatchBuffer(buffer, now() - WATCH_DELAY_MS);
         S.say('Starting Watch…');
@@ -403,6 +405,8 @@
     };
     modeButton.textContent = 'Go live';
     modeButton.setAttribute('aria-pressed', 'false');
+    modeLabel.textContent = 'DELAYED';
+    modeBadge.classList.remove('on');
     const renderFrame = frame => S.push(frame.state, frame.info);
     let lastI = -1, ping = 0, got = now(), base = null, baseId = -1;
     while (viewing === mine) {

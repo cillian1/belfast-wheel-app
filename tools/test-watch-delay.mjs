@@ -8,6 +8,7 @@ const source = readFileSync(resolve(root, 'src/wallet/watch.js'), 'utf8');
 const helpersMatch = source.match(/  const WATCH_DELAY_MS = 3000,[\s\S]*?function watchOfflineMessage\(name, lastI, got, at\) \{[\s\S]*?\n  \}/);
 const watchMatch = source.match(/  async function watch\(key, name\) \{[\s\S]*?\r?\n  \}\r?\n  async function replay/);
 if (!helpersMatch || !watchMatch) throw new Error('Could not find delayed Watch helpers in src/wallet/watch.js');
+assert.match(source, /id="wwModeBadge"[^>]*><i><\/i><span id="wwModeLabel">DELAYED<\/span>/, 'the Watch screen starts with an accurate delayed-mode badge');
 const watchSource = watchMatch[0].replace(/\r?\n  async function replay$/, '');
 
 const helpers = new Function(`${helpersMatch[0]}; return { addWatchFrame, pruneWatchFrames, alignWatchBuffer, takeWatchFrame, watchOfflineMessage };`)();
@@ -34,11 +35,19 @@ function createHarness({ stopAfter, updates = true, toggleAfter = 0 }) {
   let clock = 1000, reads = 0, pauses = 0;
   const toggleAt = new Set(Array.isArray(toggleAfter) ? toggleAfter : [toggleAfter]);
   const states = [], messages = [], attrs = {};
+  let badgeOn = false;
   const modeButton = {
     textContent: '',
     setAttribute(name, value) { attrs[name] = value; },
   };
-  const elements = { wwSend: {}, wwMode: modeButton };
+  const modeLabel = { textContent: '' };
+  const modeBadge = {
+    classList: {
+      toggle(name, force) { if (name === 'on') badgeOn = force; },
+      remove(name) { if (name === 'on') badgeOn = false; },
+    },
+  };
+  const elements = { wwSend: {}, wwMode: modeButton, wwModeBadge: modeBadge, wwModeLabel: modeLabel };
   const db = {
     async put() {},
     async get(path) {
@@ -66,7 +75,7 @@ function createHarness({ stopAfter, updates = true, toggleAfter = 0 }) {
     db, () => clock, pause, id => elements[id], {}, () => 'watcher', () => {}, () => {},
     mirrorScreen, value => String(value), value => String(value), value => { try { return JSON.parse(value); } catch { return {}; } },
   );
-  return { runtime, states, messages, modeButton, attrs, get clock() { return clock; } };
+  return { runtime, states, messages, modeButton, modeLabel, attrs, get badgeOn() { return badgeOn; }, get clock() { return clock; } };
 }
 
 const delayed = createHarness({ stopAfter: 45 });
@@ -77,6 +86,8 @@ assert.equal(delayed.states[0].step, 1, 'the first rendered state is the oldest 
 assert.ok(delayed.states.at(-1).step <= 8, 'playback stays close to its three-second-old source state');
 assert.equal(delayed.modeButton.textContent, 'Go live', 'the delayed mode keeps an immediate-live option without displaying the delay');
 assert.equal(delayed.attrs['aria-pressed'], 'false');
+assert.equal(delayed.modeLabel.textContent, 'DELAYED');
+assert.equal(delayed.badgeOn, false);
 assert.ok(delayed.messages.every(message => !message.includes('3-second')), 'buffering does not expose the delay to viewers');
 
 const live = createHarness({ stopAfter: 4, toggleAfter: 1 });
@@ -84,10 +95,14 @@ await assert.rejects(live.runtime.watch('player', 'Sam'), error => error === sto
 assert.ok(live.states[0].at < 1000 + 3000, 'switching to Live immediately renders the latest state');
 assert.equal(live.modeButton.textContent, 'Use delay');
 assert.equal(live.attrs['aria-pressed'], 'true');
+assert.equal(live.modeLabel.textContent, 'LIVE');
+assert.equal(live.badgeOn, true);
 
 const switched = createHarness({ stopAfter: 43, toggleAfter: [1, 40] });
 await assert.rejects(switched.runtime.watch('player', 'Sam'), error => error === stopped);
 assert.equal(switched.states.find(frame => frame.at >= 4200).step, 3, 'returning from Live resumes close to the delayed target instead of replaying the old backlog');
+assert.equal(switched.modeLabel.textContent, 'DELAYED');
+assert.equal(switched.badgeOn, false);
 
 const offline = createHarness({ stopAfter: 205, updates: false });
 await assert.rejects(offline.runtime.watch('player', 'Sam'), error => error === stopped);
