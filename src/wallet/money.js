@@ -22,6 +22,11 @@
 
   // ---------- spins: pay the stake, play, collect ----------
   // Owns spin charging, collection, and refund handling.
+  // 5 free spins a day per player (Cillian, update 27): a real 10c spin that can win the jackpot but doesn't feed it
+  const FREE_SPINS = 5, FREE_STAKE = 10;
+  const today = () => new Date().toLocaleDateString('en-CA');
+  W.freeLeft = u => !u ? 0 : Math.max(0, FREE_SPINS - (u.free && u.free.day === today() ? u.free.used || 0 : 0));
+  const dropPrizeFaces = () => { try { faces.godWheel = null; faces.cosmic = null; } catch (e) {} };
   const gameSpin = spin;
   let charging = false;
   spin = async function () {
@@ -29,6 +34,7 @@
     if (busy || charging) return;
     if (scene === 'photo' && !photoDone) return gameSpin(); // finishing a Show me run is part of the spin already paid for
     if (!W.me) return showLogin('Log in to spin.');
+    if (W.freeLeft(W.me) > 0) return freeSpin();
     const s = W.stake;
     if ((W.me.balance || 0) < s) return topupSheet(`You need ${stakeLbl(s)} for a spin. Top up from €1.`);
     charging = true; setBtn('Paying ' + stakeLbl(s), true);
@@ -50,6 +56,31 @@
     charging = false;
     try { await gameSpin(); } finally { if (W.run) W.run.live = false; }
   };
+
+  async function freeSpin() {
+    const s = FREE_STAKE;
+    charging = true; setBtn('Free spin', true);
+    try {
+      let none = false;
+      const u = await db.txn('users/' + W.user, u => {
+        if (!u || W.freeLeft(u) <= 0) { none = true; return undefined; }
+        const used = u.free && u.free.day === today() ? u.free.used || 0 : 0;
+        u.free = { day: today(), used: used + 1 }; u.spins = (u.spins || 0) + 1; u.last = now(); return u;
+      });
+      if (none) { if (u) W.me = u; paint(); setBtn('Spin', false); charging = false; return spin(); }
+      W.me = u; paint();
+      awardTrophy('first');
+      if ((u.spins || 0) >= 100) awardTrophy('spins100');
+      if ((u.spins || 0) >= 1000) awardTrophy('spins1000');
+      log(W.user, 'spin', 0, { what: 'Free spin' });
+      if (!isTest()) db.txn('stats', st => { st = st || {}; st.spins = (st.spins || 0) + 1; st.free = (st.free || 0) + 1; return st; }).catch(() => {});
+    } catch (e) { setBtn('Spin', false); charging = false; toast('No connection. Free spin not used.'); return; }
+    toast(`Free spin! ${W.freeLeft(W.me)} left today.`);
+    if (W.stake !== s) dropPrizeFaces(); // prizes on the wheels show at 10c for this run
+    W.run = { stake: s, paid: false, live: true, free: true };
+    charging = false;
+    try { await gameSpin(); } finally { if (W.run) W.run.live = false; if (W.stake !== s) dropPrizeFaces(); }
+  }
 
   window.wolResetOk = () => !(W.run && W.run.paid); // no resetting once the prize is being paid
   window.wolNextRoom = () => { if (W.run) W.run.paid = false; }; // a second room in the same run (God room, then a full set) pays its own prize
@@ -83,7 +114,7 @@
           return r;
         }
         if (m) { run.paid = true; credit(W.payCents(m[1]), run.stake, o.title); }
-        else if (o.title === 'That run broke halfway') { run.paid = true; refund(run.stake); }
+        else if (o.title === 'That run broke halfway') { run.paid = true; run.free ? refundFree() : refund(run.stake); }
       }
     } catch (e) {}
     return r;
@@ -105,6 +136,9 @@
   let pendingWins = []; try { pendingWins = JSON.parse(pref.get('wol.pendingWins') || '[]'); } catch (e) {}
   const savePending = () => pref.set('wol.pendingWins', JSON.stringify(pendingWins));
   setInterval(() => { if (pendingWins.length && W.user && navigator.onLine !== false) { const p = pendingWins; pendingWins = []; savePending(); p.forEach(a => credit(...a)); } }, 15000);
+  async function refundFree() {
+    try { const u = await db.txn('users/' + W.user, u => { if (u.free && u.free.day === today() && u.free.used > 0) u.free.used -= 1; u.spins -= 1; return u; }); W.me = u; paint(); toast('Run broke, free spin given back.'); } catch (e) {}
+  }
   async function refund(s) {
     try { const u = await db.txn('users/' + W.user, u => { u.balance += s; u.staked -= s; u.spins -= 1; return u; }); W.me = u; paint(); log(W.user, 'refund', s); toast('Run broke, stake refunded.'); } catch (e) {}
   }
