@@ -104,10 +104,10 @@ function wedgeText(g, ang, rm, lines, fs, maxLen, tone) {
   });
   g.restore();
 }
-function ridges(g, n, r0, r1) {
+function ridges(g, n, r0, r1, angles = null) {
   const seg = TAU / n;
   for (let i = 0; i < n; i++) {
-    const a = BASE + i * seg, cs = Math.cos(a), sn = Math.sin(a), px = -sn * 1.6 * D, py = cs * 1.6 * D;
+    const a = angles ? angles[i] : BASE + i * seg, cs = Math.cos(a), sn = Math.sin(a), px = -sn * 1.6 * D, py = cs * 1.6 * D;
     g.beginPath(); g.moveTo(c + cs * r0 + px, c + sn * r0 + py); g.lineTo(c + cs * r1 + px, c + sn * r1 + py);
     g.strokeStyle = 'rgba(0,0,0,.6)'; g.lineWidth = 2.6 * D; g.stroke();
     g.beginPath(); g.moveTo(c + cs * r0, c + sn * r0); g.lineTo(c + cs * r1, c + sn * r1);
