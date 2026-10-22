@@ -8,7 +8,7 @@ set -euo pipefail
 MAX_RUN=6
 MAX_DAY=200
 MAX_COPILOT_DAY=15 # same for Copilot and Cillian's Copilot requests
-MAX_CLAUDE_DAY=3 # Claude shares Cillian's plan, keep it light
+MAX_CLAUDE_DAY=30 # Claude shares Cillian's plan, keep it sensible
 BOT=github-actions[bot]
 
 gh api --paginate "repos/$REPO/issues/30/comments?per_page=100" --jq '.[]' | jq -s '.' > comments.json
