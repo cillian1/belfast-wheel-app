@@ -12,5 +12,4 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 - #94 Park Watch task for future update → main
 - #92 RolexG: please take this issue: speed up the fast odds sim as described above, → main
-- #90 money: throttle near-miss teases, preserve tip rate → update-29
 - #82 RolexG: second try (the first run failed on a setup bug, now fixed): find why  → update-28
