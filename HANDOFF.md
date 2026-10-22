@@ -6,9 +6,9 @@
 - **Who:** Copilot builds and opens each PR into `update-N` and posts `DONE: Task …`. Gemini reviews. Claude does a quick check and merges. Copilot does not merge.
 - **RolexG** (Gemini coding agent, 2026-10-22): anyone with access writes `@rolexg <task>` on an issue, PR or #30 and it opens a `rolexg/` PR (docs/rolexg.md). Gemini's review and RolexG may merge (Cillian): never their own PRs, CI green, not into `main`. 
 - **PR #34 stays CLOSED.**
-- **Next:** update 29 starts with #78, the Live Watch viewer frozen on the final wheel after the player starts a new run (RolexG, PR #82; its first fix isn't proven, so the cause must be shown first). Cillian (2026-10-22): start and run updates without waiting for his nod.
+- **Next:** update 29 "odds ideas" (Cillian's Banter ideas, 2026-10-22; he said no sign-off needed, Claude picked the numbers with the fast sim so total payback stays the same): (1) the ticker only teases 1 in 3 near misses, and a tease tips onto the special 30% of the time (was every near miss at 10%, so the same 10% overall); (2) one special chicken always carries the race's top tag (80/100/120) times its multiplier; (3) Wilds/ankhs of the same kind going into the farm make ONE special chicken of that colour, and each extra one doubles its size and multiplier (1.5x, 3x, 6x), Mark's-wheel prize slice too; (4) to pay for it, `RACE_CHANCE` .25 -> .16. Plus #78 Live Watch freeze (RolexG, PR #82; cause must be shown first). The fast sim now lives in `tools/sim/`.
 - **If stuck:** post `BLOCKED: <reason>` on that issue straight away and move on. Cillian checks in the morning.
-- **Last updated:** 2026-10-22 by Claude, at the update 28 release.
+- **Last updated:** 2026-10-22 by Claude, update 29 odds settings.
 
 **Rules:**
 1. **Live status is generated:** `STATUS.md` is rebuilt automatically from issues and PRs on every change (`tools/status.mjs`, `.github/workflows/status.yml`). Never hand-edit it. To change a task's status, post `BLOCKED: <reason>` or `DONE: <task>` on its issue, or update the issue's `CURRENT:` line.
