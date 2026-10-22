@@ -7,4 +7,5 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 | Issue | Task | Status | PRs |
 |---|---|---|---|
 | #45 | Task 12A: frame-rate-independent spin outcomes (fixed timestep) | BLOCKED: The seeded headless FPS gate is still failing after the cosmetic RNG split. One 10fps/30fps run produced different resul | #61 (draft) → update-27 |
+| #63 | Task 12B: main screen layout, bigger wheel and no wasted space | Started, no PR yet |  |
 
