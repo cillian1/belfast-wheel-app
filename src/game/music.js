@@ -115,12 +115,6 @@ const Music = (() => {
     try { muted = !!(window.wolPref && window.wolPref.get('wol-audio-muted') === 'on'); } catch (e) {}
   }
   function applyGain() { if (master) master.gain.setTargetAtTime(on && !muted && !document.hidden ? VOL * duckV : 0, AC.currentTime, .25); }
-  
-  // call this as soon as wolPref is available
-  try {
-    if (window.wolPref) loadMute();
-    else window.addEventListener('wol-preference-ready', () => { loadMute(); Music.syncMute(); });
-  } catch (e) {}
 
   return {
     get on() { return on; },
@@ -140,7 +134,7 @@ const Music = (() => {
     countrySong,
     stopCountrySong,
     vis() {
-      if (AC && AC.state === 'suspended') AC.resume();
+      if (AC && !document.hidden) AC.resume().catch(() => {});
       applyGain();
     },
   };
