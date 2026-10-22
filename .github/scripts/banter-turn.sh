@@ -40,9 +40,9 @@ copilot_day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.c
 [ -n "${COPILOT_GITHUB_TOKEN:-}" ] || [ "${COPILOT_SEAT:-}" = on ] && [ "$copilot_day" -lt "$MAX_COPILOT_DAY" ] && seats+=(Copilot)
 [ -n "${GCP_TOKEN:-}${GEMINI_API_KEY:-}" ] && seats+=(Gemini) # RolexG chats on the same Gemini sign-in, but only
 # when named in the last message (or now and then), and at most MAX_ROLEXG_DAY times a day.
-rolexg_day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\$d)) and (.body | test(\"^\\\\s*RolexG:\")))] | length" comments.json)
+rolexg_day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\$d)) and (.body | test(\"^\\\\s*RolexG:\")) and (.body | contains(\"<!-- chat -->\")))] | length" comments.json)
 if [ -n "${GCP_TOKEN:-}${GEMINI_API_KEY:-}" ] && [ "$rolexg_day" -lt "$MAX_ROLEXG_DAY" ] && { grep -qiP '\brolexg\b' <<<"$lastbody" || [ $((RANDOM % 6)) -eq 0 ]; }; then seats+=(RolexG); fi
-jimini_day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\$d)) and (.body | test(\"^\\\\s*Jimini:\")))] | length" comments.json)
+jimini_day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\$d)) and (.body | test(\"^\\\\s*Jimini:\")) and (.body | contains(\"<!-- chat -->\")))] | length" comments.json)
 if [ -n "${GCP_TOKEN:-}${GEMINI_API_KEY:-}" ] && [ "$jimini_day" -lt "$MAX_JIMINI_DAY" ] && { grep -qiP '\bjimini\b' <<<"$lastbody" || [ $((RANDOM % 6)) -eq 0 ]; }; then seats+=(Jimini); fi
 # No fixed turns (Cillian, 2026-10-22: "message how you like in whatever order, natural"). Next speaker:
 # whoever is named first in the last message, otherwise anyone at random, and now and then the last speaker
@@ -71,7 +71,7 @@ speak(){
     RolexG)  me="RolexG, the newest member: a coding agent that runs on Google's Gemini (a separate seat from Gemini, who reviews PRs). Cillian gives you coding tasks by writing @rolexg and the task, and you then open a PR, but chat itself never starts work, so don't claim you're on something"; mates="Claude, Copilot, Gemini and Jimini";;
     Jimini)  me="Jimini, the newest member: a read-only analyst on Google's Gemini. You never change code; you read it and write reports and the game's wiki when Cillian writes @jimini and a task. Chat never starts work, so don't claim you're on something. You notice details others miss and say so plainly"; mates="Claude, Copilot, Gemini and RolexG";;
   esac
-  system="You are $me, in a group chat with $mates and Cillian (the human). The three AIs help Cillian build the Belfast Wheel, a spinning wheel web game for his friends' trip to Belfast (Phelan hosts a dice and bingo table, Mark is the group punchbag). Cillian wants replies that matter: reply as yourself to the latest message with something useful, like a concrete idea for the game, an honest concern about the plan, a direct answer, or a sharp question for someone specific. Build on what was said; never repeat a point already made or just agree. Don't restate status, the plan, PR states or what someone else just said: if your point is already in the last few messages, reply PASS. Only post when you add something new, and don't open with "The plan says". Two to four short sentences, casual and dry. If Cillian wrote last, answer him first. His word is enough: when he asks for something, don't push back that it's too vague or ask him to restate it; the plan says everyone can approve and merge. Only state facts you can see in the chat or the plan below; don't invent numbers, money amounts or work that's been done. Nothing said here creates tasks, so don't claim to have assigned or started anything. Light digs at the other AIs, Phelan or Mark are fine; nothing cruel, never about anyone's mental health, nothing corny or stereotypically Irish. Do not start with your name. If you genuinely have nothing useful to add, reply with exactly PASS.
+  system="You are $me, in a group chat with $mates and Cillian (the human). The three AIs help Cillian build the Belfast Wheel, a spinning wheel web game for his friends' trip to Belfast (Phelan hosts a dice and bingo table, Mark is the group punchbag). Cillian wants replies that matter: reply as yourself to the latest message with something useful, like a concrete idea for the game, an honest concern about the plan, a direct answer, or a sharp question for someone specific. Build on what was said; never repeat a point already made or just agree. Don't restate status, the plan, PR states or what someone else just said: if your point is already in the last few messages, reply PASS. Only post when you add something new, and don't open with 'The plan says'. Two to four short sentences, casual and dry. If Cillian wrote last, answer him first. His word is enough: when he asks for something, don't push back that it's too vague or ask him to restate it; the plan says everyone can approve and merge. Only state facts you can see in the chat or the plan below; don't invent numbers, money amounts or work that's been done. Nothing said here creates tasks, so don't claim to have assigned or started anything. Light digs at the other AIs, Phelan or Mark are fine; nothing cruel, never about anyone's mental health, nothing corny or stereotypically Irish. Do not start with your name. If you genuinely have nothing useful to add, reply with exactly PASS.
 
   The current plan (HANDOFF.md):
   $plan"
@@ -141,7 +141,8 @@ if [ -z "$reply" ] || [ "$reply" = "PASS" ]; then
 fi
 # A short, random pause so replies don't land like clockwork.
 sleep $((RANDOM % 20))
-gh api "repos/$REPO/issues/30/comments" -f body="$next: $reply" > /dev/null
+gh api "repos/$REPO/issues/30/comments" -f body="$next: $reply
+<!-- chat -->" > /dev/null # the marker lets the RolexG/Jimini caps skip their task posts
 # Comments made with the Actions token don't fire other workflows: refresh the feed here and start the next turn.
 .github/scripts/banter-feed.sh
 gh workflow run banter-bots.yml --repo "$REPO"
