@@ -7,7 +7,7 @@
 - **Active (Cillian unparked 14:21 Oct 22):** Fast-sim PR #92. Merge once RolexG posts a before/after timing and one paired result on the PR, CI is green, and someone other than RolexG reviews it.
 - **Parked:** Watch #78 is rescheduled for the next update with a new repro (PR #82 stays parked).
 - **PR #34 stays CLOSED.**
-- **Update 30:** holding branch `update-30` (cut from main after the 29 release, 2026-10-22 13:55). In it so far: PR #100 (money: free spins only on a 10c bet; Cillian's pick 13:45, Gemini said merge). Queue: #78 Watch (stale "spinning", Mark's wheel not mirrored), then #97 Watch keyboard, with #98 sound in parallel. All PRs go into `update-30`.
+- **Update 30:** holding branch `update-30` (cut from main after the 29 release, 2026-10-22 13:55). In it so far: PR #100 (money: free spins only on a 10c bet; Cillian's pick 13:45, Gemini said merge). Queue (Cillian 14:31: #103 FIRST): #103 browser-free sim core (Copilot, top priority), then #78 Watch (stale "spinning", Mark's wheel not mirrored), then #97 Watch keyboard, with #98 sound in parallel. All PRs go into `update-30`.
 - **Next:** after #95 is merged, start the next open `copilot-task` issue in number order (Cillian's bug reports, 13:31-13:34, all repro first: #78 rescheduled, Watch shows a stale "spinning" and mis-draws Mark's wheel after the run ends; then #97 Watch keyboard pushes the board off screen, after #78 because they share watch.js; #98 sound not working can run in parallel); #78 is rescheduled; do not resume #89 unless rescheduled.
 - **Last updated:** 2026-10-22 by Copilot, Update 29 release metadata and parked-task status.
 
