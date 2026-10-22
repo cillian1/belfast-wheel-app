@@ -9,6 +9,3 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 | #63 | Task 12B: main screen layout, bigger wheel and no wasted space | Not started |  |
 | #66 | Task 12C: shorter time-based waits | In progress | #67 (draft) → main |
 
-**Other open PRs**
-
-- #68 Update 27: 5 free daily spins with a counter → update-27
