@@ -6189,7 +6189,7 @@ header>span{flex-wrap:wrap}
   // ---------- live: who is on now, and watching them play ----------
   // Owns watcher heartbeats and the live game-state stream.
   // live/{key} = { name, at, play } is a heartbeat. A watcher writes live/{key}/w/{them} = time every few seconds;
-  // only then does the player's phone send small JPEG frames of the wheel to livef/{key}. No watchers, no frames.
+  // only then does the player's phone send small game-state updates to livef/{key}. No watchers, no updates.
   const ONLINE_MS = 90000, WATCH_MS = 20000, me4 = () => W.user || 'guest';
   const liveBtn = el('button', 'wlive'); liveBtn.type = 'button'; liveBtn.innerHTML = '<i></i>WATCH<em></em>';
   const hdr = document.querySelector('.app header > span'); if (hdr) hdr.appendChild(liveBtn); else appEl.prepend(liveBtn);
@@ -6486,7 +6486,7 @@ header>span{flex-wrap:wrap}
   // one screen for both live watching and replays: push() states in, it draws them smoothly
   function mirrorScreen(title, sub, live) {
     view.hidden = false;
-    view.innerHTML = `<div class="wwh"><div><b>${esc(title)}</b><small id="wwSub">${esc(sub)}</small></div>${live ? '<span class="wlive on" style="margin:0"><i></i>LIVE</span>' : '<span class="wlive" style="margin:0"><i></i>REPLAY</span>'}</div>
+    view.innerHTML = `<div class="wwh"><div><b>${esc(title)}</b><small id="wwSub">${esc(sub)}</small></div>${live ? '<div><button class="wbtn small" id="wwMode" type="button" aria-pressed="false">Go live</button> <span class="wlive" id="wwModeBadge" style="margin:0"><i></i><span id="wwModeLabel">DELAYED</span></span></div>' : '<span class="wlive" style="margin:0"><i></i>REPLAY</span>'}</div>
       <div class="wscr"><canvas id="wwCv"></canvas><ol id="wwFin" hidden></ol><p id="wwMsg">${live ? 'Connecting…' : 'Loading…'}</p></div>
       <div class="wwt" id="wwTiles"></div>
       <div class="wvd"><small id="wwE"></small><h3 id="wwT"></h3><p id="wwB"></p><p id="wwC" style="color:var(--mute);margin-top:6px"></p></div>
@@ -6528,6 +6528,24 @@ header>span{flex-wrap:wrap}
     return S;
   }
   const parse = s => { try { return JSON.parse(s); } catch (e) { return {}; } };
+  const WATCH_DELAY_MS = 3000, WATCH_BUFFER_MS = 8000, WATCH_BUFFER_MAX = 128;
+  function addWatchFrame(buffer, frame) {
+    buffer.push(frame);
+    while (buffer.length > WATCH_BUFFER_MAX) buffer.shift();
+  }
+  function pruneWatchFrames(buffer, at) {
+    while (buffer.length && at - buffer[0].at > WATCH_BUFFER_MS) buffer.shift();
+  }
+  function alignWatchBuffer(buffer, at) {
+    while (buffer.length > 1 && buffer[1].at <= at) buffer.shift();
+  }
+  function takeWatchFrame(buffer, at) {
+    return buffer.length && buffer[0].at <= at ? buffer.shift() : null;
+  }
+  function watchOfflineMessage(name, lastI, got, at) {
+    if (at - got <= 15000) return '';
+    return lastI < 0 ? `Connecting to ${name}'s phone…` : `${name} has stepped away. Waiting…`;
+  }
   function decodeReplayFrames(text) {
     const frames = JSON.parse(text);
     if (!Array.isArray(frames)) throw new Error('Replay frames are not a list.');
@@ -6559,6 +6577,25 @@ header>span{flex-wrap:wrap}
       inp.value = '';
       try { await db.put('live/' + key + '/msg', { id: now().toString(36) + Math.random().toString(36).slice(2, 6), from: W.me ? W.me.name : 'A watcher', text, at: now() }); toast('Ghost Phelan is on his way'); } catch (e) { toast('No connection'); }
     };
+    let delayed = true, latestFrame = null, lastFrameAt = 0;
+    const buffer = [], modeButton = $w('wwMode'), modeBadge = $w('wwModeBadge'), modeLabel = $w('wwModeLabel');
+    modeButton.onclick = () => {
+      delayed = !delayed;
+      modeButton.textContent = delayed ? 'Go live' : 'Use delay';
+      modeButton.setAttribute('aria-pressed', String(!delayed));
+      modeLabel.textContent = delayed ? 'DELAYED' : 'LIVE';
+      modeBadge.classList.toggle('on', !delayed);
+      if (delayed) {
+        alignWatchBuffer(buffer, now() - WATCH_DELAY_MS);
+        S.say('Starting Watch…');
+      }
+      else if (latestFrame) S.push(latestFrame.state, latestFrame.info);
+    };
+    modeButton.textContent = 'Go live';
+    modeButton.setAttribute('aria-pressed', 'false');
+    modeLabel.textContent = 'DELAYED';
+    modeBadge.classList.remove('on');
+    const renderFrame = frame => S.push(frame.state, frame.info);
     let lastI = -1, ping = 0, got = now(), base = null, baseId = -1;
     while (viewing === mine) {
       const t0 = now();
@@ -6571,11 +6608,22 @@ header>span{flex-wrap:wrap}
           if (viewing !== mine) break;
           if (base && baseId === f.b) {
             lastI = f.i; got = now();
-            S.push(Object.assign({}, base, parse(f.d)), { v: f.v, cap: f.cap, sub: `Bet ${stakeLbl(f.s || 10)} · balance ${eur(f.bal || 0)}${f.play ? ' · spinning' : ''}` });
+            const state = Object.assign({}, base, parse(f.d));
+            latestFrame = { at: Math.max(now(), lastFrameAt), state, info: { v: f.v, cap: f.cap, sub: `Bet ${stakeLbl(f.s || 10)} · balance ${eur(f.bal || 0)}${f.play ? ' · spinning' : ''}` } };
+            lastFrameAt = latestFrame.at;
+            addWatchFrame(buffer, latestFrame);
+            if (!delayed) renderFrame(latestFrame);
           }
-        } else if (now() - got > 15000) { // nothing new for a while: their app is closed or in the background
-          S.say(lastI < 0 ? `Connecting to ${name}'s phone…` : `${name} has stepped away. Waiting…`);
         }
+        const at = now();
+        pruneWatchFrames(buffer, at);
+        if (delayed) {
+          const ready = takeWatchFrame(buffer, at - WATCH_DELAY_MS);
+          if (ready) renderFrame(ready);
+          else if (lastI >= 0 && at - got <= 15000) S.say('Starting Watch…');
+        }
+        const offline = watchOfflineMessage(name, lastI, got, at);
+        if (offline) S.say(offline);
       } catch (e) { S.say('No connection. Retrying…'); await pause(1500); }
       const gap = 80 - (now() - t0); if (gap > 0) await pause(gap);
     }
