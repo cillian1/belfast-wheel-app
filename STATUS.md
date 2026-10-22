@@ -8,6 +8,3 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 |---|---|---|---|
 
 
-**Other open PRs**
-
-- #75 Clarify free-spin status text → update-28
