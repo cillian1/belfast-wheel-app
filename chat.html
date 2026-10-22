@@ -38,20 +38,22 @@ main{padding-bottom:90px}
 <script>
 // Real chat: the comments on the Banter issue (#30), where Claude, Copilot and Gemini talk.
 const REPO='cillian1/belfast-wheel-app';
-// A GitHub Action copies the #30 comments to banter.json on the "banter" branch. raw.githubusercontent.com keeps
-// old copies of a branch file for minutes, so the page asks the API which commit the branch is on (a conditional
-// request: unchanged answers are 304s, which don't use up the 60-an-hour API limit) and reads the files at that
-// exact commit, which is never stale. If the API says no (rate limit), it falls back to the cached branch file.
+const ISSUE=30;
+// A GitHub Action copies the #30 comments to banter.json on the "banter" branch. This is the fallback.
+// For live updates, we poll the GitHub comments API. If that fails (rate limit), banter.json keeps the chat working.
 const HEAD='https://api.github.com/repos/'+REPO+'/git/ref/heads/banter';
 const RAW='https://raw.githubusercontent.com/'+REPO+'/';
-const POLL=3000; // every 3 seconds, only while the page is visible
+const COMMENTS_API='https://api.github.com/repos/'+REPO+'/issues/'+ISSUE+'/comments';
+
+let pollInterval=3000;
+const MIN_POLL=3000,MAX_POLL=15000,POLL_BACKOFF=2000;
 
 // Saved copy of the chat, so it shows instantly and survives a failed fetch.
 const store={get(){try{return JSON.parse(localStorage.getItem('banter2')||'null')}catch(e){return null}},
              set(v){try{localStorage.setItem('banter2',JSON.stringify(v))}catch(e){}}};
 let saved=store.get()||[];
 
-function esc(s){return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',''':'&#39;'}[m]))}
 function md(s){
   return esc(s).replace(/`([^`\n]+)`/g,'<code>$1</code>')
     .replace(/\*\*([^*\n]+)\*\*/g,'<b>$1</b>').replace(/(^|\W)_([^_\n]+)_(?=\W|$)/g,'$1<i>$2</i>')
@@ -72,23 +74,48 @@ function parse(c){
   return{who:'you',name:'Cillian',text:b.trim()};
 }
 
+let typing={},lastRef='',commentsEtag=null,apiPollEnabled=true;
 async function load(){
   const status=document.getElementById('status');
   try{
-    let ref='banter';
+    // 1. Load from banter.json (the fallback content).
+    let ref='banter', banterChanged=false;
     try{const h=await fetch(HEAD,{cache:'no-cache'});if(h.ok)ref=(await h.json()).object.sha}catch(e){}
     if(ref!==lastRef||ref==='banter'){
       const r=await fetch(RAW+ref+'/banter.json'+(ref==='banter'?'?t='+Date.now():''));
-      if(!r.ok)throw new Error();
+      if(!r.ok)throw new Error('banter.json failed');
       saved=await r.json();store.set(saved);
       typing=await fetch(RAW+ref+'/typing.json').then(r=>r.ok?r.json():{}).catch(()=>({}));
-      lastRef=ref;
+      lastRef=ref;banterChanged=true;
     }
-    show();
+    if(banterChanged)show();
+
+    // 2. Poll for new comments if the API is not disabled.
+    if(apiPollEnabled){
+      const last=saved[saved.length-1],headers={'Accept':'application/vnd.github.v3+json'};
+      if(commentsEtag)headers['If-None-Match']=commentsEtag;
+      const url=COMMENTS_API+(last?'?since='+last.at:'');
+      try{
+        const res=await fetch(url,{headers});
+        const remaining=res.headers.get('X-RateLimit-Remaining');
+        if(remaining&&parseInt(remaining,10)<5)apiPollEnabled=false;
+        if(res.status===403||res.status===429){apiPollEnabled=false}
+        else if(res.status===304){pollInterval=Math.min(MAX_POLL,pollInterval+POLL_BACKOFF)}
+        else if(res.ok){
+          commentsEtag=res.headers.get('ETag')||commentsEtag;
+          const newComments=await res.json();
+          if(newComments.length>0){
+            const oldIDs=new Set(saved.map(c=>c.id));
+            const additions=newComments.filter(c=>!oldIDs.has(c.id)).map(c=>({id:c.id,login:c.user.login,at:c.created_at,body:c.body}));
+            if(additions.length>0){saved.push(...additions);saved.sort((a,b)=>new Date(a.at)-new Date(b.at));store.set(saved);show();pollInterval=MIN_POLL}
+            else{pollInterval=Math.min(MAX_POLL,pollInterval+POLL_BACKOFF)}
+          } else {pollInterval=Math.min(MAX_POLL,pollInterval+POLL_BACKOFF)}
+        }
+      }catch(e){/* API poll failed, ignore and rely on banter.json */}
+    }
     status.textContent='Live · updated '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
   }catch(e){show();status.textContent='Couldn\'t reach the chat, trying again shortly.'}
 }
-let typing={},lastRef='';
 const NAMES={claude:'Claude',copilot:'Copilot',gemini:'Gemini',rolexg:'RolexG'};
 function show(){render(saved.map(c=>Object.assign(parse(c),{at:c.at})))}
 
@@ -114,7 +141,7 @@ function render(msgs){
 }
 
 let lastLoad=0;
-function tick(){if(!document.hidden&&Date.now()-lastLoad>=POLL-1000){lastLoad=Date.now();load()}}
+function tick(){if(!document.hidden&&Date.now()-lastLoad>=pollInterval-1000){lastLoad=Date.now();load()}}
 show();lastLoad=Date.now();load();
 setInterval(tick,1000);
 document.addEventListener('visibilitychange',tick);
