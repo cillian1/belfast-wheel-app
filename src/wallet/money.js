@@ -23,7 +23,7 @@
   // ---------- spins: pay the stake, play, collect ----------
   // Owns spin charging, collection, and refund handling.
   // 5 free spins a day per player (Cillian, update 27): a real 10c spin that can win the jackpot but doesn't feed it
-  const FREE_SPINS = 5, FREE_STAKE = 10;
+  const FREE_SPINS = 5, FREE_STAKE = 10; W.freeStake = FREE_STAKE;
   const today = () => new Date().toLocaleDateString('en-CA');
   W.freeLeft = u => !u ? 0 : Math.max(0, FREE_SPINS - (u.free && u.free.day === today() ? u.free.used || 0 : 0));
   const dropPrizeFaces = () => { try { faces.godWheel = null; faces.cosmic = null; } catch (e) {} };
@@ -34,7 +34,8 @@
     if (busy || charging) return;
     if (scene === 'photo' && !photoDone) return gameSpin(); // finishing a Show me run is part of the spin already paid for
     if (!W.me) return showLogin('Log in to spin.');
-    if (W.freeLeft(W.me) > 0) return freeSpin();
+    // free spins are only used on a 10c bet, so a bigger bet always plays (and pays) at that bet
+    if (W.stake === FREE_STAKE && W.freeLeft(W.me) > 0) return freeSpin();
     const s = W.stake;
     if ((W.me.balance || 0) < s) return topupSheet(`You need ${stakeLbl(s)} for a spin. Top up from €1.`);
     charging = true; setBtn('Paying ' + stakeLbl(s), true);
@@ -77,9 +78,9 @@
     } catch (e) { setBtn('Spin', false); charging = false; toast('No connection. Free spin not used.'); return; }
     toast(`Free spin! ${W.freeLeft(W.me)} left today.`);
     if (W.stake !== s) dropPrizeFaces(); // prizes on the wheels show at 10c for this run
-    W.run = { stake: s, paid: false, live: true, free: true };
+    W.run = { stake: s, paid: false, live: true, free: true }; paint();
     charging = false;
-    try { await gameSpin(); } finally { if (W.run) W.run.live = false; if (W.stake !== s) dropPrizeFaces(); }
+    try { await gameSpin(); } finally { if (W.run) W.run.live = false; paint(); if (W.stake !== s) dropPrizeFaces(); }
   }
 
   window.wolResetOk = () => !(W.run && W.run.paid); // no resetting once the prize is being paid

@@ -20,11 +20,22 @@ jobs:
         with:
           node-version: 24
       - run: npm install --no-save --package-lock=false @playwright/test@1.64.1
-      - run: npx playwright install --with-deps chromium
+      # Chromium is cached per Playwright version, so runs only download it when the version changes
+      - id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-1.64.1-${{ runner.os }}
+      - if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
       - run: node tools/bundle.mjs
       - run: git diff --exit-code -- game/index.html
       - run: node tools/check.mjs
       - run: node tools/check-game-invariants.mjs origin/main
+      - run: node tools/sim/core-test.mjs
+      - run: node tools/sim/core-check.mjs 50
       - run: git show origin/main:game/index.html > "$RUNNER_TEMP/main-game.html"
       - run: node tools/test-ci-browser.mjs "$RUNNER_TEMP/main-game.html"
 

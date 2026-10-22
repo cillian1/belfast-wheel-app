@@ -1,9 +1,9 @@
 {
-  "game": 29,
+  "game": 30,
   "apk": 3,
-  "gameBuild": 66,
-  "notes": "Near-miss teases are rarer; special chickens can stack into bigger prizes",
+  "gameBuild": 67,
+  "notes": "Live Watch fixed (no freeze, Mark's wheel shows, keyboard no longer hides the board); free spins only at 10c; safer wallet saves",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk",
-  "name": "Stacked Fowl"
+  "name": "Watch Party"
 }

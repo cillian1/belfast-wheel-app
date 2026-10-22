@@ -127,12 +127,12 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
 .wpl .amt{color:#f5d27a;font-weight:700}
 .wwatch .wwh{width:100%;max-width:560px;display:flex;align-items:center;justify-content:space-between;gap:8px}
 .wwatch .wwh b{font-size:18px}.wwatch .wwh small{display:block;color:var(--mute);font-size:12px}
-.wwatch .wscr{position:relative;width:min(100%,66vh,560px);aspect-ratio:1;border-radius:18px;overflow:hidden;background:#120b07;border:1px solid var(--line)}
+.wwatch>*{flex:none}.wwatch .wscr{position:relative;width:min(100%,66vh,560px);aspect-ratio:1;border-radius:18px;overflow:hidden;background:#120b07;border:1px solid var(--line)}
 .wwatch .wscr canvas{width:100%;height:100%;display:block}
 .wwatch .wwt{display:flex;gap:18px;font:700 13px/1 var(--body);letter-spacing:.14em}.wwatch .wwt .g{color:#f5d27a}.wwatch .wwt .p{color:#c9a2ff}
 .wwatch .wscr p{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;margin:0;color:var(--mute);font-size:15px}
 .wwatch .wscr ol{position:absolute;inset:0;margin:0;padding:18px 18px 18px 38px;display:flex;flex-direction:column;justify-content:center;gap:6px;font-size:15px;color:#f8e4a6;background:rgba(10,8,6,.88)}
-.wwatch .wvd{width:100%;max-width:560px;text-align:center}
+.wwatch .wvd{width:100%;max-width:560px;text-align:center}.wwatch.wkb .wvd{display:none}
 .wwatch .wvd small{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute)}
 .wwatch .wvd h3{margin:4px 0;font-family:var(--display);font-weight:400;font-size:24px;color:#f5d27a}
 .wwatch .wvd p{margin:0;font-size:15px;color:var(--chrome)}
@@ -271,7 +271,7 @@ header>span{flex-wrap:wrap}
     const me = W.me;
     $w('wWho').innerHTML = `<small>${me ? (me.test ? 'TEST' : esc(me.name)) : 'Log in'}</small><b>${eur(me ? me.balance || 0 : 0)}</b>`;
     $w('wWho').classList.toggle('test', isTest()); document.body.classList.toggle('wtest', isTest());
-    $w('wStake').textContent = stakeLbl(W.stake);
+    $w('wStake').textContent = W.run && W.run.live && W.run.free ? 'FREE 10c' : stakeLbl(W.stake);
     $w('wLess').disabled = W.stake <= STAKES[0]; $w('wMore').disabled = !nextStake();
     const pot = $w('wPot'); if (pot) pot.textContent = eur(W.jackpot || JACKPOT_START);
     paintFree();
@@ -284,7 +284,7 @@ header>span{flex-wrap:wrap}
     const row = document.getElementById('resetRow'); if (row && freeTag.parentNode !== row) row.prepend(freeTag);
     const n = W.me && W.freeLeft ? W.freeLeft(W.me) : 0;
     freeTag.hidden = !W.me; freeTag.classList.toggle('none', !n);
-    freeTag.textContent = n ? `${n} of 5 free spins left today` : 'Free spins back at midnight';
+    freeTag.textContent = !n ? 'Free spins back at midnight' : W.stake === W.freeStake ? `${n} of 5 free spins left today` : `${n} free 10c spins: set bet to 10c`;
   }
   setInterval(() => { if (W.me) paintFree(); }, 60000); // ticks over at midnight
   function setStake(c) {
