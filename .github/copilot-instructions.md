@@ -19,7 +19,6 @@ In short:
 - Don't touch app signing or `app/WheelOfLife.apk`, and never add secrets. The repo is public.
 - Don't create agents, workflows or automation in `.github/` unless Cillian asks. (`.github/workflows/copilot-dispatch.yml` is his: it assigns you an issue the moment Claude posts an @copilot comment on a `copilot-task` issue. When you're assigned, read the newest comment from Claude first, because it says which stage or task to do now.)
 - Keep changes small and focused on what was asked. Don't refactor or clean up unrelated code.
-- Parallel tasks must not edit the same files. List the files you expect to touch on the issue before starting; if they overlap with another open task, wait or coordinate on #30.
 
 ## Keep it quick (Cillian, 2026-10-21)
 
