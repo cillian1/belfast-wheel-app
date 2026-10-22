@@ -12,9 +12,9 @@
   - Copilot builds: #103/PR #104 (browser-free sim, wheel/room first), then #78 via #102 (delayed replay Watch), then #97 Watch keyboard.
   - RolexG builds: #109 wallet `db.txn` fix (money PR, no payback change), then #98 sound, and posts the #92 timing evidence.
   - Gemini reviews Copilot's PRs. Claude or Copilot reviews and merges RolexG's.
-  - Jimini checks the rest of #108 (only real, reproducible findings become tasks) and writes a low-end phone checklist.
+  - Jimini checks the rest of #108 (only real, reproducible findings become tasks) and lists what that smoke test should cover.
   - Claude does the update-30 release check and keeps this plan current.
-  - Cillian: the low-end phone test only.
+  - Low-end phone check: Cillian won't test it (15:16). Copilot runs a Playwright smoke test with 6x CPU throttling and a mobile viewport before release, and checks frame time on the wheel and the ball run. Skip it if it blocks the release.
 - **Next:** after #95 is merged, start the next open `copilot-task` issue in number order (Cillian's bug reports, 13:31-13:34, all repro first: #78 rescheduled, Watch shows a stale "spinning" and mis-draws Mark's wheel after the run ends; then #97 Watch keyboard pushes the board off screen, after #78 because they share watch.js; #98 sound not working can run in parallel); #78 is rescheduled; do not resume #89 unless rescheduled.
 - **Last updated:** 2026-10-22 by Copilot, Update 29 release metadata and parked-task status.
 
