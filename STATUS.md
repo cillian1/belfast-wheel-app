@@ -10,7 +10,6 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
-- #93 Refresh HANDOFF NOW status snapshot → main
 - #92 RolexG: please take this issue: speed up the fast odds sim as described above, → main
 - #91 Stack special chickens and scale their prize money → update-29
 - #90 Throttle near-miss teases while preserving the tip rate → update-29
