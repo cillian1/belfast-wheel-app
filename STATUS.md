@@ -10,7 +10,6 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
-- #148 Faster Gemini reviews (update-31) → update-31
 - #147 Faster Gemini reviews (main) → main
 - #146 Gambler watcher: honour the base branch an issue names → main
 - #144 RolexG: please take this issue as described above. PR into `main`. → main
