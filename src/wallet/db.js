@@ -101,10 +101,12 @@
       for (let i = 0; i < 8; i++) {
         let r;
         try { r = await fetch(db.url(p), { headers: tags ? { 'X-Firebase-ETag': 'true' } : {}, cache: 'no-store' }); }
-        catch (e) { if (!tags) throw e; continue; }
+        catch (e) { if (!tags) throw e; if (!db.tagSeen) { db.tags = tags = false; i--; } continue; }
         if (!r.ok) throw new Error('db ' + r.status);
-        const tag = tags && r.headers.get('ETag'), cur = await r.json(), next = fn(cur);
+        const tag = tags && r.headers.get('ETag');
+        if (tag) db.tagSeen = true;
         if (tags && !tag) db.tags = tags = false;
+        const cur = await r.json(), next = fn(cur);
         if (next === undefined) return cur; // fn said abort
         const w = await fetch(db.url(p), { method: 'PUT', headers: tag ? { 'if-match': tag } : {}, body: JSON.stringify(next) }).catch(() => null);
         if (!w) { if (!tag) throw new Error('offline'); continue; }

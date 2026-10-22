@@ -40,13 +40,31 @@ assert.deepEqual(retryPut.calls.filter(call => call.method === 'PUT').map(call =
 assert.deepEqual(retryPut.calls.filter(call => call.method === 'PUT').map(call => JSON.parse(call.body)), [110, 130, 140]);
 assert.notEqual(retryPut.db.tags, false, 'a failed PUT must not disable ETags for later transactions');
 
-const retryRead = createDb([new TypeError('network'), response(100), response(null)]);
+assert.equal(retryPut.db.tagSeen, true);
+
+const retryRead = createDb([response(100), new TypeError('network'), response(100), response(null)]);
+assert.equal(await retryRead.db.txn('users/test/balance', () => undefined), 100);
+assert.equal(retryRead.db.tagSeen, true, 'even an aborted transaction establishes ETag support');
 assert.equal(await retryRead.db.txn('users/test/balance', value => value + 10), 110);
-assert.deepEqual(retryRead.calls.slice(0, 2).map(call => call.headers), [
+assert.deepEqual(retryRead.calls.slice(1, 3).map(call => call.headers), [
   { 'X-Firebase-ETag': 'true' }, { 'X-Firebase-ETag': 'true' },
 ]);
-assert.deepEqual(retryRead.calls[2].headers, { 'if-match': '"v1"' });
+assert.deepEqual(retryRead.calls[3].headers, { 'if-match': '"v1"' });
 assert.notEqual(retryRead.db.tags, false, 'a failed read must not disable ETags');
+
+const refusedHeader = createDb([new TypeError('CORS'), response(100, null), response(null)]);
+assert.equal(await refusedHeader.db.txn('users/test/balance', value => value + 10), 110);
+assert.equal(refusedHeader.db.tags, false);
+assert.notEqual(refusedHeader.db.tagSeen, true);
+assert.deepEqual(refusedHeader.calls.map(call => call.headers), [{ 'X-Firebase-ETag': 'true' }, {}, {}]);
+
+const twoReadFailures = createDb([
+  new TypeError('CORS'), new TypeError('network'), response(100, null), response(null),
+]);
+await assert.rejects(twoReadFailures.db.txn('users/test/balance', value => value + 10), /network/);
+assert.notEqual(twoReadFailures.db.tagSeen, true);
+assert.equal(await twoReadFailures.db.txn('users/test/balance', value => value + 10), 110);
+assert.deepEqual(twoReadFailures.calls.map(call => call.headers), [{ 'X-Firebase-ETag': 'true' }, {}, {}, {}]);
 
 const noTags = createDb([response(100, null), response(null), response(110, null), response(null)]);
 assert.equal(await noTags.db.txn('users/test/balance', value => value + 10), 110);
@@ -58,7 +76,9 @@ for (const failure of ['read', 'put', 'conflict']) {
   const replies = Array.from({ length: 8 }, () => failure === 'read'
     ? [new TypeError('network')]
     : [response(100), failure === 'put' ? new TypeError('network') : response(null, null, 412)]).flat();
-  const busy = createDb(replies);
+  const busy = createDb([response(100), ...replies]);
+  await busy.db.txn('users/test/balance', () => undefined);
+  busy.calls.length = 0;
   await assert.rejects(busy.db.txn('users/test/balance', value => value + 10), /busy, try again/);
   assert.equal(busy.calls.filter(call => !call.method).length, 8, `${failure} retries must stop after eight attempts`);
   assert.notEqual(busy.db.tags, false);
