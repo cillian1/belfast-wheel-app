@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
 
 const baselinePath = process.argv[2];
@@ -124,7 +126,15 @@ try {
   for (const fps of [10, 30, 60, 120]) runs.push({ fps, ...await spin('/current', fps) });
   for (const run of runs) assert.deepEqual(run.values, baseline.values, `EV, edge, and stakes must match main at ${run.fps} fps`);
   for (let i = 1; i < runs.length; i++) assert.equal(runs[i].result, runs[0].result, `seeded spin results must match at ${runs[0].fps} and ${runs[i].fps} fps`);
-  console.log('Seeded 360px headless spin matches at 10, 30, 60, and 120 fps; EV, edge, and stakes match main; no browser console errors.');
+  const sim = spawnSync(process.execPath, [
+    fileURLToPath(new URL('sim/run.mjs', import.meta.url)),
+    '--spins', '10', '--pages', '1', '--seed', '1', 'game/index.html',
+  ], { encoding: 'utf8', timeout: 120000 });
+  assert.equal(sim.status, 0, `fast odds sim smoke test failed: ${sim.stderr || sim.error || sim.stdout}`);
+  for (const output of ['Rooms', 'Race', "Mark's wheel", 'Payback', '95%']) {
+    assert.ok(sim.stdout.includes(output), `fast odds sim output is missing ${output}`);
+  }
+  console.log('Seeded 360px headless spin matches at 10, 30, 60, and 120 fps; EV, edge, and stakes match main; no browser console errors. Fast odds sim smoke test passes.');
 } finally {
   await browser.close();
   await new Promise(resolve => server.close(resolve));

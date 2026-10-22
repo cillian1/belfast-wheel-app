@@ -1,21 +1,29 @@
 // Fast room-odds sim: the real game code, but time is fake and nothing waits (rAF and timers fire immediately).
 // usage: node tools/sim/fastsim.mjs game/index.html 10000 .10 3 1 > runs.json (file, spins, TIP_CHANCE, pages, seed)
 // Records one line per spin: room reached (W/B/G/P), M = farm run (Chicken Race forced on; race.py weights it), - = nothing.
-import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
 import fs from 'fs';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+const playwrightModule = process.env.SIM_PLAYWRIGHT_MODULE ||
+  (fs.existsSync('/opt/node-tools/node_modules/playwright/index.mjs') ? '/opt/node-tools/node_modules/playwright/index.mjs' : 'playwright');
+const moduleSpecifier = path.isAbsolute(playwrightModule) ? pathToFileURL(playwrightModule).href : playwrightModule;
+const { chromium } = await import(moduleSpecifier);
 const [file, runs = '1000', tip = '.25', pages = '3', seed = '1'] = process.argv.slice(2);
 if (!file || !Number.isInteger(+runs) || +runs < 1 || !Number.isInteger(+pages) || +pages < 1 || !Number.isInteger(+seed) || +seed < 0 || +seed > 0xffffffff) {
   throw new Error('Usage: fastsim.mjs game.html [spins] [tip] [pages] [seed]');
 }
 let html = fs.readFileSync(file, 'utf8');
-const a = html.indexOf('const wait = ms => new Promise(r => {'), z = html.indexOf('pendingWaits.add(w);\n});', a);
-if (a < 0 || z < 0) throw new Error('wait() changed');
-html = html.slice(0, a) + 'const wait = ms => new Promise(r => { __now += ms; setTimeout(r, 0); });' + html.slice(z + 'pendingWaits.add(w);\n});'.length);
+const waitStart = html.indexOf('const wait = ms =>');
+const waitEnd = html.indexOf("addEventListener('pointerdown'", waitStart);
+if (waitStart < 0 || waitEnd < 0) throw new Error('wait() changed');
+html = html.slice(0, waitStart) + 'const wait = ms => new Promise(r => { __now += ms; setTimeout(r, 0); });\n' + html.slice(waitEnd);
 const wl = html.indexOf('<script>window.WALLET_CFG'); if (wl > 0) html = html.slice(0, wl) + '<script>window.$m = v => v;</script></body></html>';
 const raceChance = html.match(/const\s+RACE_CHANCE\s*=\s*([0-9]*\.?[0-9]+)/);
 if (!raceChance) throw new Error('race changed');
 html = html.replace(raceChance[0], 'const RACE_CHANCE = 1');
-const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', args: ['--disable-renderer-backgrounding', '--disable-background-timer-throttling'] });
+const executablePath = process.env.SIM_CHROMIUM_EXECUTABLE ||
+  (fs.existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : chromium.executablePath());
+const b = await chromium.launch({ executablePath, args: ['--no-sandbox', '--disable-renderer-backgrounding', '--disable-background-timer-throttling'] });
 async function worker(n, firstSpin) {
   const p = await b.newPage({ viewport: { width: 400, height: 800 } });
   await p.route('**/*', r => r.request().url().startsWith('http://sim/') ? r.fulfill({ body: Buffer.from(html), contentType: 'text/html; charset=utf-8' }) : r.abort());

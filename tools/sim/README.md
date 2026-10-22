@@ -6,6 +6,8 @@ Run the real game headlessly with fake time and drawing disabled. The browser st
 
 The default is 10,000 spins, a `.10` tip chance, three parallel pages, and seed `1`. Options can be set with `--spins N`, `--pages N`, `--seed N`, and `--tip P`. The output lists rooms, Chicken Race, Mark's wheel, total payback, and a normal-approximation 95% confidence interval. Room prizes use `tables.json`; keep it in step with `src/game/wild-room.js`, `src/game/pyramid.js`, and `src/game/god-room.js`. Race chance is read from each game's `RACE_CHANCE` and the fast sampler forces races on so the analysis can weight them back to their real chance.
 
+The documented Claude environment paths are used by default. For a preinstalled Playwright/Chromium elsewhere, set `SIM_PLAYWRIGHT_MODULE` to its `playwright/index.mjs` path and `SIM_CHROMIUM_EXECUTABLE` to the browser executable.
+
 Compare two files with common random numbers, resetting the same seeded random stream at the start of every spin:
 
     node tools/sim/run.mjs --spins 10000 --seed 1 game/index.html game-v2.html
