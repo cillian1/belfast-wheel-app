@@ -123,7 +123,7 @@ speak(){
 
 }
 
-.github/scripts/banter-reply.sh
+source .github/scripts/banter-reply.sh
 reply=""
 for next in "${order[@]}"; do
   .github/scripts/banter-feed.sh "$(tr A-Z a-z <<<"$next")"
