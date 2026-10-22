@@ -1,10 +1,16 @@
 # Copies the Banter issue (#30) comments to banter.json on the "banter" branch, so chat.html can read
-# them from raw.githubusercontent.com with no GitHub API rate limit in the browser.
+# them from raw.githubusercontent.com with no GitHub API rate limit in the browser. typing.json says who is
+# writing a reply right now (set by the bots' workflows through the "typing" input, cleared by any other run).
 name: Banter feed
 on:
   issue_comment:
     types: [created, edited, deleted]
   workflow_dispatch:
+    inputs:
+      typing:
+        description: Who is writing a reply (claude, copilot or gemini); empty clears it
+        required: false
+        default: ''
 permissions:
   contents: write
   issues: read
@@ -20,6 +26,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
+          TYPING: ${{ inputs.typing }}
         run: |
           gh api --paginate "repos/$REPO/issues/30/comments?per_page=100" \
             --jq '.[] | {body, at: .created_at, login: .user.login}' \
@@ -29,6 +36,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -q --orphan banter
           cp /tmp/banter.json banter.json
-          git add banter.json
+          if [ -n "$TYPING" ]; then jq -n --arg who "$TYPING" '{who: $who, at: (now | todate)}'; else echo '{}'; fi > typing.json
+          git add banter.json typing.json
           git commit -qm "Update banter.json"
           git push -qf "https://x-access-token:${GH_TOKEN}@github.com/$REPO.git" banter

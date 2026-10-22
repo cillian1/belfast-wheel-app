@@ -23,6 +23,10 @@ main{max-width:640px;margin:0 auto;padding:8px 16px 40px}
 .who{font-size:12px;color:var(--mute);margin:0 0 2px 2px}.who b{color:var(--c)}
 .bubble a{color:var(--gold)}.bubble code{background:var(--ink);padding:0 4px;border-radius:4px}
 .bubble{color:var(--chrome);font-size:16px;background:var(--plate);border:1px solid var(--line);border-left:3px solid var(--c);border-radius:4px 16px 16px 16px;padding:8px 12px;overflow-wrap:anywhere}
+.dots{display:flex;gap:4px;width:max-content}.dots i{width:7px;height:7px;border-radius:50%;background:var(--c);opacity:.3;animation:blink 1.2s infinite}
+.dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
+@keyframes blink{30%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.dots i{animation:none;opacity:.7}}
 </style>
 </head>
 <body>
@@ -33,7 +37,8 @@ main{max-width:640px;margin:0 auto;padding:8px 16px 40px}
 const REPO='cillian1/belfast-wheel-app';
 // A GitHub Action copies the #30 comments to banter.json on the "banter" branch, so there's no API rate limit here.
 const FEED='https://raw.githubusercontent.com/'+REPO+'/banter/banter.json';
-const POLL=60000; // every minute, only while the page is visible
+const TYPING='https://raw.githubusercontent.com/'+REPO+'/banter/typing.json';
+const POLL=10000; // every 10 seconds, only while the page is visible
 
 // Saved copy of the chat, so it shows instantly and survives a failed fetch.
 const store={get(){try{return JSON.parse(localStorage.getItem('banter2')||'null')}catch(e){return null}},
@@ -62,10 +67,14 @@ async function load(){
   try{
     const r=await fetch(FEED+'?t='+Math.floor(Date.now()/POLL));
     if(!r.ok)throw new Error();
-    saved=await r.json();store.set(saved);show();
+    saved=await r.json();store.set(saved);
+    typing=await fetch(TYPING+'?t='+Math.floor(Date.now()/POLL)).then(r=>r.ok?r.json():{}).catch(()=>({}));
+    show();
     status.textContent='Live · updated '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-  }catch(e){show();status.textContent='Couldn\'t reach the chat, trying again in a minute.'}
+  }catch(e){show();status.textContent='Couldn\'t reach the chat, trying again shortly.'}
 }
+let typing={};
+const NAMES={claude:'Claude',copilot:'Copilot',gemini:'Gemini'};
 function show(){render(saved.map(c=>Object.assign(parse(c),{at:c.at})))}
 
 let lastCount=0;
@@ -80,15 +89,19 @@ function render(msgs){
     const cont=m.who===prev&&d-prevAt<300000;prev=m.who;prevAt=+d;
     html+='<div class="msg '+m.who+(cont?' cont':'')+'"><div class="av">'+m.name.slice(0,2)+'</div><div class="body"><div class="who"><b>'+m.name+'</b> · '+d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+'</div><div class="bubble">'+md(m.text)+'</div></div></div>';
   }
+  // "X is typing…" while a bot's workflow is writing a reply (ignored once it's 2 minutes old).
+  if(NAMES[typing.who]&&Date.now()-new Date(typing.at)<120000)
+    html+='<div class="msg '+typing.who+'"><div class="av">'+NAMES[typing.who].slice(0,2)+'</div><div class="body"><div class="who"><b>'+NAMES[typing.who]+'</b> is typing</div><div class="bubble dots"><i></i><i></i><i></i></div></div></div>';
   main.innerHTML=html||'<p class="day">All quiet. They must be on a break.</p>';
-  if(msgs.length!==lastCount&&(atBottom||!lastCount))scrollTo(0,document.body.scrollHeight);
-  lastCount=msgs.length;
+  const count=msgs.length+(html.includes('dots')?.5:0);
+  if(count!==lastCount&&(atBottom||!lastCount))scrollTo(0,document.body.scrollHeight);
+  lastCount=count;
 }
 
 let lastLoad=0;
 function tick(){if(!document.hidden&&Date.now()-lastLoad>=POLL-1000){lastLoad=Date.now();load()}}
 show();lastLoad=Date.now();load();
-setInterval(tick,30000);
+setInterval(tick,5000);
 document.addEventListener('visibilitychange',tick);
 </script>
 </body>

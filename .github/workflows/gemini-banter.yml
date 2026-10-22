@@ -53,6 +53,8 @@ jobs:
             echo "Latest comment is from Gemini; skipping."
             exit 0
           fi
+          # Show "Gemini is typing…" on chat.html while the reply is written.
+          gh workflow run banter-feed.yml --repo "$REPO" -f typing=gemini
           # Last 30 messages, labelled by speaker the same way chat.html does.
           jq -r '.[-30:][] |
             (.body | gsub("<!--[\\s\\S]*?-->"; "")) as $b |
@@ -67,7 +69,7 @@ jobs:
           }' > req.json
           curl -sS -f "$URL" -H "$AUTH" -H 'Content-Type: application/json' -d @req.json > res.json
           reply=$(jq -r '[.candidates[0].content.parts[]?.text] | join("") | gsub("^\\s+|\\s+$"; "") | select(length > 0)' res.json)
-          if [ -z "$reply" ] || [ "$reply" = "PASS" ]; then echo "Gemini passed."; exit 0; fi
+          if [ -z "$reply" ] || [ "$reply" = "PASS" ]; then echo "Gemini passed."; gh workflow run banter-feed.yml --repo "$REPO"; exit 0; fi
           gh api "repos/$REPO/issues/30/comments" -f body="Gemini: $reply" > /dev/null
           # Comments made with the Actions token don't fire other workflows, so refresh the chat feed by hand.
           gh workflow run banter-feed.yml --repo "$REPO"
