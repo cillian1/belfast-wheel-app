@@ -1,9 +1,9 @@
 {
-  "game": 28,
+  "game": 29,
   "apk": 3,
-  "gameBuild": 65,
-  "notes": "First-run how-to card with a ? to reopen it; clearer free-spin counter",
+  "gameBuild": 66,
+  "notes": "Near-miss teases are rarer; special chickens can stack into bigger prizes",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk",
-  "name": "Read the Manual"
+  "name": "Stacked Fowl"
 }

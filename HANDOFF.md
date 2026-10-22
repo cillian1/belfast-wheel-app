@@ -3,10 +3,11 @@
 ## NOW: the plan (everyone edits this; live status is in STATUS.md)
 
 - **Shipped:** Update 28 "Read the Manual" (game 28, build 65) shipped on 2026-10-22. The team workflow change is merged as PR #85.
-- **Update 29:** Tasks 1 and 2 are represented by open PRs #90 and #91 into `update-29`; neither has shipped, and both have Gemini changes-needed reviews. The #78 Live Watch task also belongs in Update 29: issue #78 and PR #82 remain open. Cillian's latest direction is a small recovery guard for a viewer that stops drawing while the feed advances, retaining the logging; the cause is not yet proven, and #82 must not be merged as-is.
-- **Separate main-target work:** Issue #89 and PR #92 remain open. Gemini found that `tools/sim/run.mjs` is only a stub that logs "Starting simulation..." and exits; the promised simulator is still pending.
+- **Update 29 release:** "Stacked Fowl" (game 29, build 66) is ready for review in open, non-draft PR #95. PR #90 (merge commit `757676e`) and PR #91 (merge commit `1895451`) are merged into `update-29`. Cillian waived paired fast-sim evidence for this release only; the cancelled comparison produced no valid result, and no payback or speed claim is made.
+- **Parked:** Fast-sim work #89/PR #92 has no valid paired result or speed claim. Watch #78/PR #82 remains parked and unresolved; its cause is unproven and it is not part of Update 29.
 - **PR #34 stays CLOSED.**
-- **Last updated:** 2026-10-22 by Copilot, status and ordering refresh.
+- **Next:** after #95 is merged, start the next open `copilot-task` issue in number order; do not resume #78/#89 unless rescheduled.
+- **Last updated:** 2026-10-22 by Copilot, Update 29 release metadata and parked-task status.
 
 **Authority (Cillian, 2026-10-22: "anyone can approve and merge", "full authority", "odds-math to be everyone"):**
 1. Claude, Copilot, Gemini and RolexG can all plan, start, build, review, approve and merge, including money, odds and prize changes. Nobody waits for Cillian's nod or asks him about approvals or merges.
@@ -26,7 +27,7 @@
 1. **Pick** the next item in NOW. One goal per issue, about 20 minutes, with the cut written in. Feel bugs need a repro (device, steps, what you see); done = gone on that repro.
 2. **Build** on a branch, PR into the holding branch `update-N` (no version bump). Run `node tools/bundle.mjs` and `node tools/check.mjs`, then post `DONE: <task>` with the PR link. Parallel tasks never touch the same files; if one must, post a heads-up on Banter first. The PR has a short evidence note (what you checked).
 3. **Review and merge:** Gemini reviews automatically and merges on `Verdict: merge` with green CI. Otherwise anyone but the author merges after a quick look. No waiting on Cillian.
-4. **Release** when the update's tasks are in (aim for about 45 minutes per update): one release PR `update-N` → `main` with version bump, name, notes, footer and `Closes #…`; check each task commit is in `update-N` by ancestry and diff `main...update-N` for stale non-game files. Anyone but its author merges it (the bot merge script stays out of `main` unless repo variable `BOT_MERGE_MAIN` is `on`, so for now Claude or Copilot).
+4. **Release** when the update's tasks are in (aim for about 45 minutes per update): one release PR `update-N` → `main` with version bump, name, notes, footer and `Closes #…`; check each task commit is in `update-N` by ancestry and diff `main...update-N` for stale non-game files; record any Cillian-approved, release-only evidence waiver in the PR and NOW plan. Anyone but its author merges it (the bot merge script stays out of `main` unless repo variable `BOT_MERGE_MAIN` is `on`, so for now Claude or Copilot).
 5. **Stuck?** Post `BLOCKED: <reason>` on the issue straight away and move on. Over time? Cut scope, never the checks.
 
 Checks that stay: timing, animation or random-draw changes need a seeded equivalence test (same seeds, same outcomes) plus the seeded-spin CI (#39). Payout changes follow Authority rule 2; the fast sim is in `tools/sim/` (anyone can run it; Claude does by default) and its result goes on the PR. Phone checks are a last step that never blocks a PR. One update at a time; new ideas go on a one-line list.

@@ -44,12 +44,12 @@ async function outcomes(fps) {
       step(frame / frameCount);
     }
   };
-  const spinLayerRun = new Function('Math', 'LAYERS', 'rot', 'TAU', 'GHOST_CHANCE', 'TIP_CHANCE', 'target', 'easeOut', 'easeInOut', 'sliceAt', 'mod', 'hotSlice', 'animate', 'ghostPhelan', 'tick', 'flap', 'pegBuzz', 'draw', 'ting', 'buzz', `${spinMatch[0]}; return spinLayerRun;`)(
-    gameMath, layers, layerAngles, Math.PI * 2, .05, .1, new Function('Math', 'TAU', `${targetMatch[0]}; return target;`)(gameMath, Math.PI * 2), t => 1 - (1 - t) ** 4,
-    t => t < .5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2,
+  const spinLayerRun = new Function('Math', 'LAYERS', 'rot', 'TAU', 'GHOST_CHANCE', 'TIP_CHANCE', 'TEASE_CHANCE', 'target', 'easeOut', 'easeInOut', 'lerp', 'sliceAt', 'mod', 'hotSlice', 'animate', 'ghostPhelan', 'ghostReact', 'tick', 'flap', 'pegBuzz', 'draw', 'ting', 'buzz', `${spinMatch[0]}; return spinLayerRun;`)(
+    gameMath, layers, layerAngles, Math.PI * 2, .05, .3, 1 / 3, new Function('Math', 'TAU', `${targetMatch[0]}; return target;`)(gameMath, Math.PI * 2), t => 1 - (1 - t) ** 4,
+    t => t < .5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2, (a, b, t) => a + (b - a) * t,
     (r, n) => Math.floor((((-r % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2 / n)) % n,
     (a, n) => ((a % n) + n) % n, it => !!(it && (it.wild || it.bonus || it.god)), animate,
-    async (k, i) => i, () => {}, () => {}, () => {}, () => {}, () => {}, () => {},
+    async (k, i) => i, () => {}, () => {}, () => {}, () => {}, () => {}, () => {}, () => {},
   );
   const results = [];
   for (let i = 0; i < 6; i++) results.push(await spinLayerRun(i % 2, 1000, 1));
@@ -60,3 +60,35 @@ assert.deepEqual(await outcomes(10), await outcomes(30));
 assert.deepEqual(await outcomes(30), await outcomes(60));
 assert.deepEqual(await outcomes(60), await outcomes(120));
 console.log('Seeded wheel-spin outcomes match at 10, 30, 60, and 120 fps with fireplace frames interleaved.');
+
+async function tickerOutcomes() {
+  const gameMath = Object.create(Math);
+  gameMath.random = seededRandom(0x5eed1234);
+  const layers = [Array.from({ length: 8 }, () => ({})), Array.from({ length: 8 }, () => ({}))];
+  layers[1][3] = { wild: true };
+  const rotations = [0, 0], runs = [];
+  const spinLayerRun = new Function('Math', 'LAYERS', 'rot', 'TAU', 'GHOST_CHANCE', 'TIP_CHANCE', 'TEASE_CHANCE', 'target', 'easeOut', 'easeInOut', 'lerp', 'sliceAt', 'mod', 'hotSlice', 'animate', 'ghostPhelan', 'ghostReact', 'tick', 'flap', 'pegBuzz', 'draw', 'ting', 'buzz', `${spinMatch[0]}; return spinLayerRun;`)(
+    gameMath, layers, rotations, Math.PI * 2, 0, .3, 1 / 3, n => ({ i: 2, a: 2.5 * Math.PI / n }), t => 1 - (1 - t) ** 4,
+    t => t < .5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2, (a, b, t) => a + (b - a) * t,
+    (r, n) => Math.floor((((-r % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2 / n)) % n,
+    (a, n) => ((a % n) + n) % n, it => !!(it && (it.wild || it.bonus || it.god)),
+    async (duration, step) => { runs.at(-1).durations.push(duration); step(1); },
+    async (k, i) => i, () => {}, () => {}, () => {}, () => {}, () => {}, () => {}, () => {},
+  );
+  for (let i = 0; i < 30000; i++) {
+    runs.push({ durations: [] });
+    runs[i].result = await spinLayerRun(1, 100, 1);
+  }
+  return runs;
+}
+
+const tickerRuns = await tickerOutcomes();
+const teased = tickerRuns.filter(run => run.durations.includes(1300) || run.durations.includes(1500));
+const tipped = tickerRuns.filter(run => run.durations.includes(1500));
+const notTeased = tickerRuns.filter(run => !run.durations.includes(1300) && !run.durations.includes(1500));
+assert.ok(teased.length > 9300 && teased.length < 10700, `teases occurred ${teased.length} times, expected about one third`);
+assert.ok(tipped.length > 2700 && tipped.length < 3300, `tips occurred ${tipped.length} times, expected about 10% of near misses`);
+assert.ok(notTeased.every(run => run.durations.length === 1 && run.result === 2), 'non-teased near misses must use the ordinary stop without a lean');
+assert.ok(tipped.every(run => run.result === 3), 'every tip must land from a normal slice onto the adjacent special');
+assert.ok(tickerRuns.filter(run => run.result === 3).length === tipped.length, 'only tips may land on the adjacent special');
+console.log('Seeded ticker test confirms about one-third of near misses tease, about 10% tip, and tips land on the special.');
