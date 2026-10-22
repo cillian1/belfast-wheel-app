@@ -24,7 +24,7 @@ it under the repo's Actions tab ("RolexG").
 
 Gemini's review and RolexG can both merge, through `.github/scripts/bot-merge.sh`:
 
-1. No bot merges its own PR. RolexG's PRs (`rolexg/...` branches) are merged by Claude or Cillian, not
+1. No bot merges its own PR. RolexG's PRs (`rolexg/...` branches) are merged by Claude or Copilot, not
    by RolexG or Gemini's review (same model).
 2. CI must be green on the PR's latest commit.
 3. Not into `main`, because a push to `main` is a release to every phone. Set the repo variable

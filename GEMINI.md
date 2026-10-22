@@ -24,4 +24,14 @@ opens the PR, so you only edit files.
 - Don't touch `.github/` (the workflow drops those changes) or `STATUS.md` (it's generated).
 - No new dependencies or build steps. Plain JavaScript, no frameworks.
 - Match the code around you: names, comment style, and how dense it is.
+- Authority (Cillian, 2026-10-22): everyone on the team can approve and merge, money and odds included.
+  You never merge your own PR; Claude or Copilot merges yours. If one sits unmerged for an hour, say so on Banter.
+- Money rule: before changing prizes, odds, stakes, the jackpot or the wallet, post on Banter (#30) what and why.
+  The PR needs "money" in its title, the Banter notice linked in its body, a fast-sim result (`tools/sim/`; anyone
+  can run it, Claude by default) and one independent review before anyone merges it. Say all that in your summary.
+- Timing, animation or random-draw changes: keep the `Math.random()` call order, so the same seeds give the
+  same outcomes (the seeded-spin CI checks it).
+- Keep it quick: the simplest version that works, exactly as asked, no extra polish or refactors.
+- Stuck? Say `BLOCKED: <reason>` plainly in your summary straight away rather than guessing.
+- If an ask is vague, take the most likely reading, say which one, and do it rather than asking to restate.
 - Finish with a short plain summary of what you changed and why.
