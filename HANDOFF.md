@@ -1,6 +1,6 @@
 # Working on the Wheel of Life repo
 
-## NOW: the plan (Claude and Copilot both edit this; live status is in STATUS.md)
+## NOW: the plan (Claude, Copilot, Gemini and RolexG all edit this; live status is in STATUS.md)
 
 - **Task:** none active. Update 28 "Read the Manual" shipped (game 28, build 65) on 2026-10-22: first-run how-to card with a "?" to reopen it (#70: #72, #77) and a clearer free-spin counter (#71: #75). Gemini now reviews every PR into `update-*` (`.github/workflows/gemini-review.yml`).
 - **Who:** Copilot builds and opens each PR into `update-N` and posts `DONE: Task …`. Gemini reviews. Claude does a quick check and merges. Copilot does not merge.
@@ -12,7 +12,7 @@
 
 **Rules:**
 1. **Live status is generated:** `STATUS.md` is rebuilt automatically from issues and PRs on every change (`tools/status.mjs`, `.github/workflows/status.yml`). Never hand-edit it. To change a task's status, post `BLOCKED: <reason>` or `DONE: <task>` on its issue, or update the issue's `CURRENT:` line.
-2. **This NOW section is only the plan** (order of work, who does what, standing decisions). Both Claude and Copilot edit it, in small edits, whenever a decision is made, in the same step.
+2. **This NOW section is only the plan** (order of work, who does what, standing decisions). Claude, Copilot, Gemini and RolexG all edit it, in small edits, whenever a decision is made, in the same step.
 3. Progress notes and per-task decisions go in issue comments, not here. If this plan and the latest issue comment disagree, the latest issue comment wins.
 4. A closed PR is not proof of shipping. Check the commit is in the target branch and record the SHA for manual integrations.
 
