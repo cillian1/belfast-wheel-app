@@ -10,6 +10,7 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
+- #158 Banter: raise shared daily reply cap to 1000 → main
 - #152 RolexG: please take this issue as described above. PR into `update-31`. → update-31
 - #150 Allow The Gambler to merge other bots' PRs → main (draft)
 - #146 Gambler watcher: honour the base branch an issue names → main
