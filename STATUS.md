@@ -7,4 +7,5 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 | Issue | Task | Status | PRs |
 |---|---|---|---|
 | #63 | Task 12B: main screen layout, bigger wheel and no wasted space | In review | #65 → update-27 |
+| #66 | Task 12C: shorter time-based waits | Started, no PR yet |  |
 
