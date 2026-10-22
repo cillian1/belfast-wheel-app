@@ -6,8 +6,8 @@
 set -euo pipefail
 MAX_RUN=4
 MAX_DAY=400
-MAX_COPILOT_DAY=15 # same for Copilot and Cillian's Copilot requests
-MAX_CLAUDE_DAY=30 # Claude shares Cillian's plan, keep it sensible
+MAX_COPILOT_DAY=25 # same for Copilot and Cillian's Copilot requests
+MAX_CLAUDE_DAY=50 # Claude shares Cillian's plan, keep it sensible
 MAX_ROLEXG_DAY=6 # Cillian, 2026-10-22: RolexG was going off too much
 MAX_JIMINI_DAY=8 # Jimini, the read-only analyst, chats on the same terms as RolexG
 BOT=github-actions[bot]
@@ -99,17 +99,22 @@ speak(){
       reply=$(jq -r '.choices[0].message.content // ""' res.json 2>/dev/null || { echo "GitHub Models said: $(head -c 400 res.json)" >&2; true; })
       fi;;
     Gemini|RolexG|Jimini)
-      if [ -n "${GCP_TOKEN:-}" ]; then
-        url="https://aiplatform.googleapis.com/v1/projects/$GCP_PROJECT/locations/global/publishers/google/models/$GEMINI_MODEL:generateContent"
-        auth="Authorization: Bearer $GCP_TOKEN"
-      else
-        url="https://generativelanguage.googleapis.com/v1beta/models/$GEMINI_MODEL:generateContent"
-        auth="x-goog-api-key: $GEMINI_API_KEY"
-      fi
       jq -n --arg s "$system" --arg p "$prompt" '{systemInstruction: {parts: [{text: $s}]}, contents: [{role: "user", parts: [{text: $p}]}],
-        generationConfig: {temperature: 1.0, maxOutputTokens: 1000, thinkingConfig: {thinkingBudget: 0}}}' > req.json
-      reply=$(curl -sS -f "$url" -H "$auth" -H 'Content-Type: application/json' -d @req.json \
-        | jq -r '[.candidates[0].content.parts[]?.text] | join("")' || true);;
+        generationConfig: {temperature: 1.0, maxOutputTokens: 2048}}' > req.json; reply=""
+      # Google retires model names now and then (a 404), so fall back through newer names until one answers.
+      for model in "$GEMINI_MODEL" ${GEMINI_FALLBACKS:-gemini-3-flash gemini-3-flash-preview gemini-flash-latest gemini-2.5-flash-lite gemini-2.0-flash-001}; do
+        if [ -n "${GCP_TOKEN:-}" ]; then
+          url="https://aiplatform.googleapis.com/v1/projects/$GCP_PROJECT/locations/global/publishers/google/models/$model:generateContent"
+          auth="Authorization: Bearer $GCP_TOKEN"
+        else
+          url="https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent"
+          auth="x-goog-api-key: $GEMINI_API_KEY"
+        fi
+        code=$(curl -sS -o gem.json -w '%{http_code}' "$url" -H "$auth" -H 'Content-Type: application/json' -d @req.json || echo 000)
+        if [ "$code" = 200 ]; then reply=$(jq -r '[.candidates[0].content.parts[]?.text] | join("")' gem.json); echo "Gemini model: $model"; break; fi
+        echo "Gemini $model: HTTP $code $(jq -r '.error.message // empty' gem.json 2>/dev/null | head -c 300)"
+        [ "$code" = 404 ] || break # only a missing model is worth trying another name for
+      done;;
   esac
 
 }
