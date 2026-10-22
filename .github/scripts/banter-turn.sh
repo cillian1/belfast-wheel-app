@@ -8,8 +8,8 @@ MAX_RUN=4
 MAX_DAY=400
 MAX_COPILOT_DAY=25 # same for Copilot and Cillian's Copilot requests
 MAX_CLAUDE_DAY=50 # Claude shares Cillian's plan, keep it sensible
-MAX_ROLEXG_DAY=6 # Cillian, 2026-10-22: RolexG was going off too much
-MAX_JIMINI_DAY=8 # Jimini, the read-only analyst, chats on the same terms as RolexG
+MAX_ROLEXG_DAY=15 # Cillian 20:05: RolexG and Jimini chat too (the repeat filter keeps it sane)
+MAX_JIMINI_DAY=15
 BOT=github-actions[bot]
 
 gh api --paginate "repos/$REPO/issues/30/comments?per_page=100" --jq '.[]' | jq -s '.' > comments.json
@@ -39,11 +39,11 @@ claude_day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.cr
 copilot_day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\$d)) and (.body | test(\"^\\\\s*Copilot:\")))] | length" comments.json)
 [ -n "${COPILOT_GITHUB_TOKEN:-}" ] || [ "${COPILOT_SEAT:-}" = on ] && [ "$copilot_day" -lt "$MAX_COPILOT_DAY" ] && seats+=(Copilot)
 [ -n "${GCP_TOKEN:-}${GEMINI_API_KEY:-}" ] && seats+=(Gemini) # RolexG chats on the same Gemini sign-in, but only
-# when named in the last message (or now and then), and at most MAX_ROLEXG_DAY times a day.
+# at most MAX_ROLEXG_DAY times a day (chat posts only).
 rolexg_day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\$d)) and (.body | test(\"^\\\\s*RolexG:\")) and (.body | contains(\"<!-- chat -->\")))] | length" comments.json)
-if [ -n "${GCP_TOKEN:-}${GEMINI_API_KEY:-}" ] && [ "$rolexg_day" -lt "$MAX_ROLEXG_DAY" ] && { [ "$last" = Cillian ] || grep -qiP '\brolexg\b' <<<"$lastbody" || [ $((RANDOM % 6)) -eq 0 ]; }; then seats+=(RolexG); fi
+if [ -n "${GCP_TOKEN:-}${GEMINI_API_KEY:-}" ] && [ "$rolexg_day" -lt "$MAX_ROLEXG_DAY" ]; then seats+=(RolexG); fi
 jimini_day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\$d)) and (.body | test(\"^\\\\s*Jimini:\")) and (.body | contains(\"<!-- chat -->\")))] | length" comments.json)
-if [ -n "${GCP_TOKEN:-}${GEMINI_API_KEY:-}" ] && [ "$jimini_day" -lt "$MAX_JIMINI_DAY" ] && { [ "$last" = Cillian ] || grep -qiP '\bjimini\b' <<<"$lastbody" || [ $((RANDOM % 6)) -eq 0 ]; }; then seats+=(Jimini); fi
+if [ -n "${GCP_TOKEN:-}${GEMINI_API_KEY:-}" ] && [ "$jimini_day" -lt "$MAX_JIMINI_DAY" ]; then seats+=(Jimini); fi
 # No fixed turns (Cillian, 2026-10-22: "message how you like in whatever order, natural"). Next speaker:
 # whoever is named first in the last message, otherwise anyone at random, and now and then the last speaker
 # again with a follow-up. The rest queue up behind in case the first one can't answer (a sign-in failure, say).
@@ -102,7 +102,7 @@ speak(){
       jq -n --arg s "$system" --arg p "$prompt" '{systemInstruction: {parts: [{text: $s}]}, contents: [{role: "user", parts: [{text: $p}]}],
         generationConfig: {temperature: 1.0, maxOutputTokens: 2048}}' > req.json; reply=""
       # Google retires model names now and then (a 404), so fall back through newer names until one answers.
-      for model in "$GEMINI_MODEL" ${GEMINI_FALLBACKS:-gemini-3-flash gemini-3-flash-preview gemini-flash-latest gemini-2.5-flash-lite gemini-2.0-flash-001}; do
+      for model in "$GEMINI_MODEL" ${GEMINI_FALLBACKS:-gemini-2.5-flash gemini-3-flash gemini-flash-latest gemini-2.5-flash-lite gemini-2.0-flash-001}; do
         if [ -n "${GCP_TOKEN:-}" ]; then
           url="https://aiplatform.googleapis.com/v1/projects/$GCP_PROJECT/locations/global/publishers/google/models/$model:generateContent"
           auth="Authorization: Bearer $GCP_TOKEN"

@@ -66,5 +66,5 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GCP_TOKEN: ${{ steps.gcp.outputs.access_token }}
           GCP_PROJECT: ${{ vars.GCP_PROJECT }}
-          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || (vars.GCP_WIF_PROVIDER != '' && 'gemini-2.5-flash') || 'gemini-flash-latest' }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || (vars.GCP_WIF_PROVIDER != '' && 'gemini-3-flash-preview') || 'gemini-flash-latest' }}
         run: .github/scripts/banter-turn.sh

@@ -75,7 +75,7 @@ jobs:
           gcp_project_id: ${{ vars.GCP_PROJECT }}
           gcp_location: global
           gemini_api_key: ${{ vars.GCP_WIF_PROVIDER == '' && secrets.GEMINI_API_KEY || '' }}
-          gemini_model: ${{ vars.JIMINI_MODEL || 'gemini-2.5-pro' }}
+          gemini_model: ${{ vars.JIMINI_MODEL || 'gemini-3-flash-preview' }}
           settings: '{"model": {"maxSessionTurns": 80}, "privacy": {"usageStatisticsEnabled": false}, "tools": {"core": ["read_file", "read_many_files", "list_directory", "glob", "search_file_content", "write_file"]}}'
           prompt: ${{ steps.task.outputs.prompt }}
       - name: Publish the report and wiki
