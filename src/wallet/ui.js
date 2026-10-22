@@ -50,8 +50,11 @@
 .waccount .wstats .plus{color:#9be38a}.waccount .wstats .minus{color:#ff9b8a}
 .wpending{border:1px solid #8c6a20;border-radius:10px;padding:8px 10px;background:#2a2312;color:#f8e4a6;font-size:13px}
 .whistory-day{margin-top:8px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute)}
-.whistory-entry{min-width:0;overflow-wrap:anywhere}
-.whistory-entry>div:first-child{flex:1}
+.whistory-entry{min-width:0;overflow-wrap:anywhere;gap:8px}
+.whistory-entry .whistory-icon{flex:none;width:1.4em;text-align:center}
+.whistory-entry .whistory-detail{flex:1;min-width:0}
+.whistory-entry .whistory-detail>span{display:block}
+.whistory-entry>b{flex:none;white-space:nowrap}
 .wboard-pick{display:flex;gap:6px;flex-wrap:wrap}
 .wboard-pick .wbtn{flex:1 1 40%;min-width:0;padding:8px 6px;font-size:12px;white-space:normal}
 .wboard-stats{font-size:13px;line-height:1.5;color:#c3cbd3}
@@ -381,29 +384,36 @@ body.wtest::after{content:'TEST ACCOUNT · PLAY MONEY';position:fixed;left:0;rig
     const reqs = Object.entries(await db.get('reqs').catch(() => null) || {}).filter(([, r]) => r.user === W.user && r.kind === 'withdraw' && r.status === 'pending');
     const net = (me.won || 0) - (me.staked || 0);
     const rows = Object.values(tx).sort((a, b) => b.at - a.at);
-    const name = { spin: 'Spin', win: 'Win', topup: 'Top-up', withdraw: 'Withdrawal', refund: 'Refund', adjust: 'Adjustment', payout: 'Paid out' };
+    const name = { spin: 'Spin', win: 'Win', topup: 'Top-up', gift: 'Gift', withdraw: 'Withdrawal', refund: 'Refund', adjust: 'Adjustment', payout: 'Paid out' };
+    const icon = { spin: '🎡', win: '🏆', topup: '➕', gift: '🎁', withdraw: '↗', refund: '↩', adjust: '⚙', payout: '✓' };
     const history = [];
-    rows.forEach(t => {
-      const date = new Date(t.at), day = date.toDateString();
-      const previous = history[history.length - 1];
-      if (t.t === 'spin' && previous && previous.day === day && previous.type === 'spins') {
-        previous.count++;
-        previous.amount += t.a || 0;
-        previous.at = Math.max(previous.at, t.at);
-      } else history.push({ day, at: t.at, type: t.t === 'spin' ? 'spins' : 'entry', count: t.t === 'spin' ? 1 : 0, amount: t.a || 0, tx: t });
+    rows.slice().reverse().forEach(t => {
+      if (isTest() && (t.t === 'spin' || t.t === 'win')) return;
+      const previous = t.t === 'win' && Number.isFinite(Number(t.stake)) && Number(t.stake) > 0
+        ? history.slice().reverse().find(item => !item.win && item.tx.t === 'spin' && new Date(item.tx.at).toDateString() === new Date(t.at).toDateString() && Math.abs(Number(item.tx.a)) === Number(t.stake))
+        : null;
+      if (previous) {
+        previous.win = t;
+        previous.at = t.at;
+      } else {
+        const type = t.t === 'topup' && t.what === 'by host' ? 'gift' : t.t;
+        history.push({ at: t.at, type, tx: t });
+      }
     });
+    history.sort((a, b) => b.at - a.at);
     const today = new Date().toDateString(), yesterday = new Date(Date.now() - 86400000).toDateString();
     const dayLabel = day => day === today ? 'Today' : day === yesterday ? 'Yesterday' : new Date(day).toLocaleDateString('en-IE', { day: 'numeric', month: 'short', year: 'numeric' });
+    const historyTime = at => new Date(at).toLocaleTimeString('en-IE', { hour: '2-digit', minute: '2-digit' });
     const pending = reqs.reduce((sum, [, r]) => sum + (Number(r.a) || 0), 0);
     let historyLimit = 15;
     const renderHistory = () => {
       let lastDay = null;
       const shown = history.slice(0, historyLimit).map(item => {
-        const header = item.day !== lastDay ? `<li class="whistory-day">${dayLabel(item.day)}</li>` : '';
-        lastDay = item.day;
-        if (item.type === 'spins') return `${header}<li class="whistory-entry"><div>${item.count} ${item.count === 1 ? 'spin' : 'spins'} <span>${when(item.at)}</span></div><b class="${item.amount >= 0 ? 'plus' : 'minus'}">${eur(item.amount)}</b></li>`;
+        const day = new Date(item.at).toDateString(), header = day !== lastDay ? `<li class="whistory-day">${dayLabel(day)}</li>` : '';
+        lastDay = day;
         const t = item.tx;
-        return `${header}<li class="whistory-entry"><div>${esc(name[t.t] || t.t)}${t.what ? ` <span>${esc(t.what)}</span>` : ''}<br><span>${when(t.at)}</span></div><b class="${t.a >= 0 ? 'plus' : 'minus'}">${t.a >= 0 ? '+' : ''}${eur(t.a)}</b></li>`;
+        if (item.win) return `${header}<li class="whistory-entry"><span class="whistory-icon" aria-hidden="true">${icon.spin}</span><div class="whistory-detail"><b>Spin <span class="minus">${eur(t.a)}</span> → Win <span class="plus">${item.win.a >= 0 ? '+' : ''}${eur(item.win.a)}</span></b>${item.win.what ? `<span>${esc(item.win.what)}</span>` : ''}<span>${historyTime(t.at)} → ${historyTime(item.win.at)}</span></div></li>`;
+        return `${header}<li class="whistory-entry"><span class="whistory-icon" aria-hidden="true">${icon[item.type] || '•'}</span><div class="whistory-detail"><b>${esc(name[item.type] || item.type)}${t.what && item.type !== 'gift' ? ` <span>${esc(t.what)}</span>` : ''}</b><span>${historyTime(t.at)}</span></div><b class="${t.a >= 0 ? 'plus' : 'minus'}">${t.a >= 0 ? '+' : ''}${eur(t.a)}</b></li>`;
       }).join('');
       $w('wHistory').innerHTML = shown || '<li>Nothing here yet</li>';
       $w('wMoreHistory').hidden = history.length <= historyLimit;
