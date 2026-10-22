@@ -3,7 +3,7 @@
 ## NOW: the plan (everyone edits this; live status is in STATUS.md)
 
 - **Shipped:** Update 28 "Read the Manual" (game 28, build 65) shipped on 2026-10-22. The team workflow change is merged as PR #85.
-- **Update 29:** Tasks 1 and 2 are represented by open PRs #90 and #91 into `update-29`; neither has shipped, and both have Gemini changes-needed reviews. The #78 Live Watch task also belongs in Update 29: issue #78 and PR #82 remain open. Cillian's latest direction is a small recovery guard for a viewer that stops drawing while the feed advances, retaining the logging; the cause is not yet proven, and #82 must not be merged as-is.
+- **Update 29:** Tasks 1 and 2 are represented by open PRs #90 and #91 into `update-29`; neither has shipped, and both have Gemini changes-needed reviews. The Live Watch task #78 and PR #82 are parked for a future update; the cause remains unproven, and #82 stays open and unmerged.
 - **Separate main-target work:** Issue #89 and PR #92 remain open. Gemini found that `tools/sim/run.mjs` is only a stub that logs "Starting simulation..." and exits; the promised simulator is still pending.
 - **PR #34 stays CLOSED.**
 - **Last updated:** 2026-10-22 by Copilot, status and ordering refresh.
