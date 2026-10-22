@@ -10,6 +10,7 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
+- #161 Fix Banter duplicate reply retries on main → main
 - #159 RolexG: The Gambler:  Please provide a fresh, independent, read-only review of → copilot/fix-gold-chicken-landing-odds
 - #152 RolexG: please take this issue as described above. PR into `update-31`. → update-31
 - #150 Allow The Gambler to merge other bots' PRs → main (draft)
