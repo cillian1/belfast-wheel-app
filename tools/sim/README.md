@@ -1,35 +1,46 @@
 # Fast odds sim
 
-## Browser-free core: wheel/room stage only (#103 cut line)
+## Compute-only Chromium core
 
-    node tools/sim/core-check.mjs       # 200 browser/core seeds; CI runs 50
+    node tools/sim/core-check.mjs       # 200 full browser/core seeds; CI runs 50
     node tools/sim/core-test.mjs        # isolation, path coverage and worker partitioning
-    node tools/sim/run.mjs --engine core --spins 10000 > wheel-paths.json
+    node tools/sim/run.mjs --engine core --spins 10000 --workers 4 > runs.json
 
-`core.mjs` loads the game's own `src/game/` functions in a private function scope.
-It has no browser dependency, DOM, real canvas, audio or timers. Presentation
-sinks retain setup/drawing RNG calls rather than silently skipping them. The
-browser oracle uses the bundled game with fastsim-style room stops. Each seed
-starts from the same fresh wheel/dice state; worker count does not change results.
-Records retain `k`, `w`, `b`, `g`, `god`; **`k: "D"` means unresolved dice/farm,
-not a losing spin. Do not feed these partial records to `rooms.js` or `race.py`,
-or use them for payback.** The legacy full browser sampler below remains required.
+`core.mjs` is a browser-loadable module with no Node imports. `core-source.mjs`
+reads the real `src/game/` functions; `core-browser.mjs` imports the module into
+blank Chromium pages, one compute context per worker. There is no game DOM,
+canvas, audio or real timer. The core uses the original dice, fixed-240Hz drop,
+pipe and farm physics, with synchronous virtual frames. A conservative peg
+broad-phase skips only tests that would all reject a ball below the lowest peg.
+Presentation sinks retain setup/drawing RNG calls rather than skipping them.
 
-Measured here: 200 identical browser/core wheel paths and room choices in 1.325 s;
-10,000 partial paths in 0.982 s on four workers. These are not full-path timings.
+The independent oracle loads the bundled game, fixes the canvas at 396px and uses
+fastsim-style room stops without the core's broad-phase or synchronous frame
+draining. Comparisons include wheel choices, dice values, drop slots, pipes,
+Wilds/ankhs, special-chicken stacks/multipliers and RNG-call counts. The runner's
+100-spin batches get fresh core closures, and output remains in seed order
+regardless of worker scheduling.
+
+Records use the existing fastsim format: `k` (`W/B/G/P/M/-`), `w`, `b`, `g`, `god`,
+and farm fields `race`, `n`, `sp`, `sw`, `sb`, consumable by `rooms.js`/`race.py`.
+As in fastsim, races are forced on for sampling and stopped at the survivor
+roster; the downstream analysis supplies the race weighting and prize EVs.
+This does not update or validate those analytic tables or their weighting.
+
+Measured here: **10,000 full paths in 57.278 s on four cores**, including browser
+startup; all 200 browser/core seeds match. No game, money or prize files changed.
 `--workers`, `--seed` (first seed, default 1) and `--tip` (default .10) are optional.
-`CHROMIUM_PATH` optionally selects the browser executable for `core-check.mjs`;
-otherwise it uses the existing Playwright test installation.
+`CHROMIUM_PATH` optionally selects the browser executable for both commands;
+otherwise they use the existing Playwright test installation.
 
-**BLOCKED: dice, ball drop, pipes, chickens and race records remain.** With the
-unmodified dice physics, Node 22/24 and Chromium 155/156 produce different
-last-bit `Math.sin`/`Math.cos` results. Full-path seed 9 diverged during dice
-physics despite identical starting state and wheel RNG counts. For example,
-`Math.sin(13 * .318301)` is `-0.8394771672857622` in Node 22 and
-`-0.8394771672857623` in Chromium 155. Fixed time steps alone do not make
-transcendental maths identical across engines. No game maths was changed to hide
-that discrepancy; the full physics port needs a numerically compatible runtime
-or a separately approved portable-maths approach.
+### Node fallback (wheel-only; not EV-ready)
+
+    node tools/sim/run.mjs --engine node --spins 10000 > wheel-paths.json
+
+Node runs only the wheels and pre-dice room choice, because its `Math.sin`/`cos`
+rounding can differ from Chromium and change physics outcomes. `k: "D"` marks an
+unresolved dice/farm path, **not a loss**. Never feed Node fallback records to
+`rooms.js` or `race.py` for payback. Game maths is unchanged.
 
 ## Full browser sampler
 
