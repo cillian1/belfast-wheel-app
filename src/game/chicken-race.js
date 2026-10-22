@@ -47,10 +47,10 @@ async function chickenRace(steps, alive) {
     racers.forEach((ch, i) => {
       const b = el * 9 + i * 1.3; ch.y = ch.by - Math.abs(Math.sin(b)) * N * .02; ch.peck = Math.max(0, Math.sin(b * 2)) * .6;
       ch.dir = Math.sin(el * 3.5 + i) > 0 ? 1 : -1; ch.ph += dt * 10;
-      if (Math.random() < .02) ch.glow = .5;
+      if (cosmeticRandom() < .02) ch.glow = .5;
     });
     rest.forEach(ch => walkChicken(ch, dt, N * .45));
-    if (Math.random() < .08) tick(.4, 1200 + Math.random() * 800);
+    if (cosmeticRandom() < .08) tick(.4, 1200 + cosmeticRandom() * 800);
   });
   rest.forEach(ch => ch.alive = false);
   // 2. into the lanes, tags up

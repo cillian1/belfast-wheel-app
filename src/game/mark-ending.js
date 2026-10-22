@@ -266,7 +266,7 @@ async function rollD6() {
           d.vz -= 6 * h; d.z += d.vz * h; d.x += d.vx * h; d.y += d.vy * h; d.M = spinRot(d.M, d.w, h);
           if (d.z <= 0) {
             d.z = 0;
-            if (d.vz < -.5) { d.vz = -d.vz * .48; d.w = d.w.map(x => x * .7 + (Math.random() - .5) * 8); tick(.9, 1400 + Math.random() * 400); }
+            if (d.vz < -.5) { d.vz = -d.vz * .48; d.w = d.w.map(x => x * .7 + (Math.random() - .5) * 8); tick(.9, 1400 + cosmeticRandom() * 400); }
             else d.vz = 0;
             d.vx *= .94; d.vy *= .94; d.w = d.w.map(x => x * .97);
           }
@@ -522,7 +522,7 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
     dots.forEach((p, i) => {
       const ch = chickens[i], u = Math.max(0, Math.min(1, (t - p.delay) / .32)), e = easeInOut(u);
       p.x = lerp(p.sx, ch.x, e); p.y = lerp(p.sy, ch.y - N * .02, e) - Math.sin(u * Math.PI) * N * .12;
-      if (u >= 1) { if (!p.done) { p.done = true; tick(.5, 900 + Math.random() * 300); } p.hide = true; ch.pop = Math.min(1, ch.pop + .12); }
+      if (u >= 1) { if (!p.done) { p.done = true; tick(.5, 900 + cosmeticRandom() * 300); } p.hide = true; ch.pop = Math.min(1, ch.pop + .12); }
     });
     chickens.forEach((ch, i) => ch.peck = Math.max(0, Math.sin(t * 20 + ch.x) * .8));
     draw();
@@ -616,7 +616,7 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
   await farmLoop(5.5, (dt, el) => {
     camX = lerp(cam0, N, easeInOut(Math.min(1, el / 3.6)));
     let all = true; alive.forEach(ch => { if (!walkChicken(ch, dt, N * .32)) all = false; });
-    if (Math.random() < .05) tick(.3, 1000);
+    if (cosmeticRandom() < .05) tick(.3, 1000);
     return all && el > 3.6;
   });
   $('#caption').textContent = 'Pecking';
