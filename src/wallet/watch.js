@@ -321,7 +321,7 @@
         vg.clearRect(0, 0, vc.width, vc.height); vg.drawImage(cv, 0, 0, vc.width, vc.height);
       } catch (e) {
         S.failed = true;
-        console.error('Watch viewer render failed', e);
+        console.error('Watch viewer render failed', e, S.cur);
         S.say(live ? 'This live view could not be drawn. Close and retry.' : 'This replay could not be drawn. Close it and try another replay.');
       }
     };
