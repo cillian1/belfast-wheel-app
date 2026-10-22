@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -55,16 +55,28 @@ const tempDir = mkdtempSync(join(tmpdir(), 'sim-race-'));
 const temp = join(tempDir, 'stacked.json');
 try {
   writeFileSync(temp, JSON.stringify([{
-    race: 1, n: 1, sp: 1, sw: 1, sb: 0,
-    ch: [{ special: 'W', count: 2, mult: 3 }],
+    race: 1, n: 2, sp: 2, sw: 1, sb: 1,
+    ch: [
+      { special: 'W', count: 2, mult: 3 },
+      { special: 'B', count: 1, mult: 1.5 },
+    ],
   }]));
   const race = execFileSync(process.platform === 'win32' ? 'py' : 'python3', [
     ...(process.platform === 'win32' ? ['-3'] : []), simFile('./race.py'), temp, '0',
   ], { encoding: 'utf8' });
-  assert.match(race, /baseline \(game 28\).*mark\/spin\s+15\.000/,
-    'race analysis must use the recorded 3x stacked chicken multiplier');
-  assert.match(race, /stacking, x2 per extra token.*mark\/spin\s+15\.000/,
-    'stack analysis must use the recorded token count');
+  const raceChance = Number(readFileSync(simFile('../../src/game/chicken-race.js'), 'utf8')
+    .match(/\bconst RACE_CHANCE\s*=\s*([0-9]*\.?[0-9]+)/)[1]);
+  const config = JSON.parse(readFileSync(simFile('../../src/config.json'), 'utf8'));
+  assert.ok(race.includes(`payback inputs: race chance=${raceChance.toFixed(3)} EV=${config.ev.toFixed(2)} edge=${config.edge.toFixed(3)}`),
+    'payback analysis must use the live race chance and payout constants');
+  assert.match(race, /Mark wheel EV\/farm before 12\.500 after 15\.000/,
+    'Mark analysis must weight a stacked wedge by its token count');
+  const raceEV = race.match(/current odds \(weighted Mark wedges\)\s+race\/spin\s+([\d.]+)/);
+  assert.ok(raceEV && Number(raceEV[1]) > 24 && Number(raceEV[1]) < 29,
+    'current race analysis must give the top tag to the strongest special, as the live game does');
+  const payback = race.match(/payback before ([\d.]+)% after ([\d.]+)%/);
+  assert.ok(payback && Number(payback[2]) > Number(payback[1]),
+    'race analysis must report increased paired payback for the restored weighted odds');
 } finally {
   rmSync(tempDir, { recursive: true, force: true });
 }

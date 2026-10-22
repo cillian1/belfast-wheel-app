@@ -52,9 +52,9 @@ function drawWheelSweep(spinning, sc = 1) {
   drawScaled(faces.sweep, performance.now() / 420, sc);
   ctx.restore();
 }
-function drawWheelSliceGlow(rotation, n, i, t0, sc = 1, inner = .55, outer = .93) {
+function drawWheelSliceGlow(rotation, n, i, t0, sc = 1, inner = .55, outer = .93, wedge = null) {
   if (i == null) return;
-  const seg = TAU / n, a0 = BASE + i * seg, t = Math.max(0, (performance.now() - t0) / 1000);
+  const seg = wedge ? wedge.seg : TAU / n, a0 = wedge ? wedge.a0 : BASE + i * seg, t = Math.max(0, (performance.now() - t0) / 1000);
   const a = Math.min(1, t * 3) * (t < 2.4 ? .55 + .3 * Math.sin(t * 7) : .35);
   ctx.save(); ctx.translate(c, c); ctx.rotate(rotation); ctx.globalCompositeOperation = 'lighter';
   ctx.beginPath(); ctx.arc(0, 0, R * outer * sc, a0, a0 + seg); ctx.arc(0, 0, R * inner * sc, a0 + seg, a0, true); ctx.closePath();

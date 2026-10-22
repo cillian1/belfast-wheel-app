@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const mark = readFileSync(resolve(root, 'src/game/mark-ending.js'), 'utf8');
 const race = readFileSync(resolve(root, 'src/game/chicken-race.js'), 'utf8');
+const motion = readFileSync(resolve(root, 'src/game/motion.js'), 'utf8');
 const extract = (source, name) => {
   const match = source.match(new RegExp(`function ${name}\\([^)]*\\) \\{[\\s\\S]*?\\n\\}`));
   if (!match) throw new Error(`Could not find ${name}`);
@@ -17,6 +18,12 @@ const addSpecialChicken = new Function(`${extract(mark, 'specialChickenStats')};
 const drawSize = new Function(`${extract(mark, 'chickenDrawSize')}; return chickenDrawSize;`)();
 const markPrize = new Function(`${extract(mark, 'markSpecialPrize')}; return markSpecialPrize;`)();
 const raceHelpers = new Function(`${extract(race, 'raceBigAt')}; ${extract(race, 'raceTagValue')}; return { raceBigAt, raceTagValue };`)();
+const gameMath = Object.create(Math), TAU = Math.PI * 2, BASE = -Math.PI / 2;
+const mod = (a, n) => ((a % n) + n) % n;
+const wheel = new Function('Math', 'TAU', 'BASE', 'mod',
+  `${['chickenPickIndex', 'markWedge', 'markTarget', 'markSliceAt'].map(name => extract(mark, name)).join('\n')}
+   return { chickenPickIndex, markWedge, markTarget, markSliceAt };`)(gameMath, TAU, BASE, mod);
+const oldTarget = new Function('Math', 'TAU', `${motion.match(/function target\(n\) \{[^\n]*\}/)[0]}; return target;`)(gameMath, TAU);
 
 function seededRandom(seed) {
   return () => {
@@ -77,5 +84,49 @@ assert.match(mark, /const specialChickens = \{\};/);
 assert.match(mark, /if \(!growing\) chickens\.push\(ch\);/);
 assert.match(race, /const RACE_CHANCE = \.16/);
 assert.match(race, /big: i === bigAt/);
+assert.match(mark, /kind: k, count: ch\.count \|\| 1/);
+assert.match(mark, /const tg = markTarget\(markItems\)/);
+
+const stacked = [
+  { kind: 'W', count: secondGold.ch.count, prize: markPrize('W', secondGold.ch.mult) },
+  { kind: 'B', count: firstPurple.ch.count, prize: markPrize('B', firstPurple.ch.mult) },
+];
+assert.equal(wheel.markWedge(stacked, 0).seg, TAU * 2 / 3);
+assert.equal(wheel.markWedge(stacked, 1).seg, TAU / 3);
+for (const items of [stacked, [...stacked].reverse(), [{}, stacked[0], stacked[1], {}]]) {
+  gameMath.random = seededRandom(0x119);
+  const landings = items.map(() => 0), total = items.reduce((sum, it) => sum + (it.count || 1), 0);
+  for (let j = 0; j < 30000; j++) {
+    const tg = wheel.markTarget(items), rotation = mod(6 * TAU + mod(-tg.a, TAU), TAU);
+    const landed = wheel.markSliceAt(rotation, items);
+    assert.equal(landed, tg.i, 'pointer must land on the selected wedge index');
+    const drawn = wheel.markWedge(items, landed), angle = BASE + mod(-rotation, TAU);
+    assert.ok(angle > drawn.a0 && angle < drawn.a0 + drawn.seg, 'pointer lies inside the drawn winning wedge');
+    landings[landed]++;
+  }
+  landings.forEach((count, i) => assert.ok(Math.abs(count / 30000 - (items[i].count || 1) / total) < .01,
+    `wedge ${i} landed ${count} times; expected stack-weighted frequency`));
+  if (items === stacked) {
+    const after = landings.reduce((sum, count, i) => sum + count * items[i].prize, 0) / 30000;
+    const beforeCounts = [0, 0];
+    gameMath.random = seededRandom(0x119);
+    for (let j = 0; j < 30000; j++) beforeCounts[oldTarget(items.length).i]++;
+    const before = beforeCounts.reduce((sum, count, i) => sum + count * items[i].prize, 0) / 30000;
+    console.log(`30,000 seeded wheel picks by wedge index: before ${beforeCounts}; after ${landings}.`);
+    console.log(`Conditional prize-tag EV (before Mark's answer/stake scaling): before ${before.toFixed(4)}, after ${after.toFixed(4)}; exact 12.5 -> 15.`);
+  }
+}
+for (const items of [[{}], [{}, {}], [{ count: 1 }, {}, { count: 1 }, {}]]) {
+  const beforeRandom = seededRandom(0x119), afterRandom = seededRandom(0x119);
+  for (let j = 0; j < 1000; j++) {
+    gameMath.random = beforeRandom;
+    const before = oldTarget(items.length);
+    gameMath.random = afterRandom;
+    const after = wheel.markTarget(items);
+    assert.equal(after.i, before.i, 'unstacked seeded winners are unchanged');
+    assert.ok(Math.abs(after.a - before.a) < 1e-14, 'unstacked target angles are unchanged');
+    assert.equal(afterRandom(), beforeRandom(), 'wheel consumes the same RNG calls');
+  }
+}
 
 console.log('Seeded special-chicken stacking, size cap, Mark prizes, race tags, and replay stability are correct.');
