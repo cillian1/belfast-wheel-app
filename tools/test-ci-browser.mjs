@@ -17,17 +17,35 @@ await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const address = server.address();
 const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
 
-async function spin(path) {
+async function spin(path, fps = 60) {
   const context = await browser.newContext({ viewport: { width: 360, height: 800 }, reducedMotion: 'reduce' });
   const page = await context.newPage();
   const errors = [];
-  await page.addInitScript(() => {
+  await page.addInitScript(fps => {
     let state = 123456789;
     Math.random = () => {
       state = (1664525 * state + 1013904223) >>> 0;
       return state / 4294967296;
     };
-  });
+    let nextId = 0, nextFrame = 0, timer = null;
+    const callbacks = new Map(), interval = 1000 / fps;
+    window.requestAnimationFrame = callback => {
+      const id = ++nextId;
+      callbacks.set(id, callback);
+      if (timer === null) {
+        timer = setTimeout(() => {
+          timer = null;
+          const now = performance.now();
+          nextFrame = now + interval;
+          const frame = [...callbacks.values()];
+          callbacks.clear();
+          frame.forEach(fn => fn(now));
+        }, Math.max(0, nextFrame - performance.now()));
+      }
+      return id;
+    };
+    window.cancelAnimationFrame = id => callbacks.delete(id);
+  }, fps);
   const data = new Map();
   await page.route('https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app/**', async route => {
     const request = route.request();
@@ -102,10 +120,12 @@ async function spin(path) {
 
 try {
   const baseline = await spin('/baseline');
-  const current = await spin('/current');
-  assert.deepEqual(current.values, baseline.values, 'EV, edge, and stakes must match main');
-  assert.equal(current.result, baseline.result, 'seeded spin result must match main');
-  console.log('Seeded 360px headless spin matches main; no browser console errors.');
+  const runs = [];
+  for (const fps of [10, 30, 60]) runs.push({ fps, ...await spin('/current', fps) });
+  for (const run of runs) assert.deepEqual(run.values, baseline.values, `EV, edge, and stakes must match main at ${run.fps} fps`);
+  assert.equal(runs[0].result, runs[1].result, 'seeded spin results must match at 10 and 30 fps');
+  assert.equal(runs[1].result, runs[2].result, 'seeded spin results must match at 30 and 60 fps');
+  console.log('Seeded 360px headless spin matches at 10, 30, and 60 fps; EV, edge, and stakes match main; no browser console errors.');
 } finally {
   await browser.close();
   await new Promise(resolve => server.close(resolve));
