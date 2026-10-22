@@ -10,6 +10,8 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
+- #136 [WIP] Money: Gamble or collect after a paid win → update-31 (draft)
+- #134 [WIP] Add double-arrow wedges to game content → update-31 (draft)
 - #132 Update tracker live on main (from #131) → main
 - #120 money: restore stack-weighted chicken landing odds → update-31 (draft)
 - #94 Park Watch task for future update → main
