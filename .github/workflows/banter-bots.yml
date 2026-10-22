@@ -53,7 +53,7 @@ jobs:
         if: env.HAS_COPILOT == 'true'
         run: npm install -g @github/copilot
       - name: Test Banter reply retry
-        run: .github/scripts/test-banter-reply.sh
+        run: bash .github/scripts/test-banter-reply.sh
       - name: Take a turn
         env:
           GH_TOKEN: ${{ github.token }}
