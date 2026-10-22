@@ -1,5 +1,38 @@
 # Fast odds sim
 
+## Browser-free core: wheel/room stage only (#103 cut line)
+
+    node tools/sim/core-check.mjs       # 200 browser/core seeds; CI runs 50
+    node tools/sim/core-test.mjs        # isolation, path coverage and worker partitioning
+    node tools/sim/run.mjs --engine core --spins 10000 > wheel-paths.json
+
+`core.mjs` loads the game's own `src/game/` functions in a private function scope.
+It has no browser dependency, DOM, real canvas, audio or timers. Presentation
+sinks retain setup/drawing RNG calls rather than silently skipping them. The
+browser oracle uses the bundled game with fastsim-style room stops. Each seed
+starts from the same fresh wheel/dice state; worker count does not change results.
+Records retain `k`, `w`, `b`, `g`, `god`; **`k: "D"` means unresolved dice/farm,
+not a losing spin. Do not feed these partial records to `rooms.js` or `race.py`,
+or use them for payback.** The legacy full browser sampler below remains required.
+
+Measured here: 200 identical browser/core wheel paths and room choices in 1.325 s;
+10,000 partial paths in 0.982 s on four workers. These are not full-path timings.
+`--workers`, `--seed` (first seed, default 1) and `--tip` (default .10) are optional.
+`CHROMIUM_PATH` optionally selects the browser executable for `core-check.mjs`;
+otherwise it uses the existing Playwright test installation.
+
+**BLOCKED: dice, ball drop, pipes, chickens and race records remain.** With the
+unmodified dice physics, Node 22/24 and Chromium 155/156 produce different
+last-bit `Math.sin`/`Math.cos` results. Full-path seed 9 diverged during dice
+physics despite identical starting state and wheel RNG counts. For example,
+`Math.sin(13 * .318301)` is `-0.8394771672857622` in Node 22 and
+`-0.8394771672857623` in Chromium 155. Fixed time steps alone do not make
+transcendental maths identical across engines. No game maths was changed to hide
+that discrepancy; the full physics port needs a numerically compatible runtime
+or a separately approved portable-maths approach.
+
+## Full browser sampler
+
 Runs the real game code headless with fake time (no waiting, no drawing) and records where each spin ends.
 Use this for every odds or prize check. Never time real-game runs.
 

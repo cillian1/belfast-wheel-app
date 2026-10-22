@@ -25,6 +25,8 @@ jobs:
       - run: git diff --exit-code -- game/index.html
       - run: node tools/check.mjs
       - run: node tools/check-game-invariants.mjs origin/main
+      - run: node tools/sim/core-test.mjs
+      - run: node tools/sim/core-check.mjs 50
       - run: git show origin/main:game/index.html > "$RUNNER_TEMP/main-game.html"
       - run: node tools/test-ci-browser.mjs "$RUNNER_TEMP/main-game.html"
 
