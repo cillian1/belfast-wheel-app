@@ -85,8 +85,10 @@ async function tickerOutcomes() {
 const tickerRuns = await tickerOutcomes();
 const teased = tickerRuns.filter(run => run.durations.includes(1300) || run.durations.includes(1500));
 const tipped = tickerRuns.filter(run => run.durations.includes(1500));
+const notTeased = tickerRuns.filter(run => !run.durations.includes(1300) && !run.durations.includes(1500));
 assert.ok(teased.length > 9300 && teased.length < 10700, `teases occurred ${teased.length} times, expected about one third`);
 assert.ok(tipped.length > 2700 && tipped.length < 3300, `tips occurred ${tipped.length} times, expected about 10% of near misses`);
+assert.ok(notTeased.every(run => run.durations.length === 1 && run.result === 2), 'non-teased near misses must use the ordinary stop without a lean');
 assert.ok(tipped.every(run => run.result === 3), 'every tip must land from a normal slice onto the adjacent special');
 assert.ok(tickerRuns.filter(run => run.result === 3).length === tipped.length, 'only tips may land on the adjacent special');
 console.log('Seeded ticker test confirms about one-third of near misses tease, about 10% tip, and tips land on the special.');
