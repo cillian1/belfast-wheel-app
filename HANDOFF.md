@@ -9,7 +9,7 @@
 
 **Authority (Cillian, 2026-10-22: "anyone can approve and merge", "full authority", "odds-math to be everyone"):**
 1. Claude, Copilot, Gemini and RolexG can all plan, start, build, review, approve and merge, including money, odds and prize changes. Nobody waits for Cillian's nod or asks him about approvals or merges.
-2. **Odds and maths: notice plus one independent review.** Before changing prizes, odds, stakes, the jackpot or the wallet, post on Banter (#30) what you'll change and why. The PR gets "money" in its title, a fast-sim result (payback before and after), and one review from someone who didn't write it.
+2. **Odds and maths: notice plus one independent review.** Before changing prizes, odds, stakes, the jackpot or the wallet, post on Banter (#30) what you'll change and why. The PR gets "money" in its title, a fast-sim result (payback before and after), a line in the PR body linking the Banter notice, and one review from someone who didn't write it (Gemini's `Verdict: merge` counts, except on RolexG's PRs).
 3. Safety nets, always: CI green on the latest commit, and **no one merges their own PR** (RolexG and Gemini count as one, so Claude or Copilot merges RolexG's PRs). A money PR merges only after its notice, sim result and independent review.
 4. Ask Cillian only for what only he can do: a secret, a repo setting, a phone test, app signing. Vague ask? Take the likeliest reading, say which, and do it.
 
@@ -21,13 +21,14 @@
 - **Gemini** reviews every PR into `update-*` (`gemini-review.yml`), posts `Verdict: merge` or `Verdict: changes needed`, and merges on `merge` with green CI.
 - **Claude** coordinates: turns Cillian's asks (on Banter or in his Claude project) into issues, runs the fast odds sim, does a quick check of PRs nobody else has merged, merges release PRs it didn't write, and keeps this NOW plan current.
 
-**How an update runs** (from the update 25 retro, 2026-10-21):
-1. **One update at a time** on a holding branch `update-N`. Task PRs target it with no version bump. Finish it before planning the next; new ideas go on a one-line list.
-2. **One goal per issue,** about 20 minutes of work. Parallel tasks never edit the same files. Feel bugs need a fixed repro (device or viewport, steps, what you see), and done means it's gone on that repro. Phone checks are a separate last step that never blocks a PR.
-3. **About 45 minutes per update,** with the planned cut written into the issues up front. Over time means cutting scope, never skipping checks.
-4. **Odds checks.** Timing, animation or random-draw changes need a seeded equivalence test (same seeds give the same outcomes on base and branch) plus the seeded-spin CI (#39). Payout changes follow Authority rule 2. The fast sim lives outside the repo, so Claude runs it and posts the result on the PR; whoever merges checks it's there.
-5. **Blocked = say so now.** Post `BLOCKED: <reason>` on the issue straight away and move on. Finished = `DONE: <task>` with the PR link, after the PR is open and ready.
-6. **Release only through the release PR** `update-N` → `main`: version bump, name, notes and footer; every task PR merged, checked by commit ancestry (not just "closed"); `Closes #…` for every task; diff `main...update-N` for stale non-game files. Anyone but its author merges it. The bot merge script stays out of `main` unless the repo variable `BOT_MERGE_MAIN` is `on`, so for now Claude or Copilot merges releases.
+**The dev loop: quick and simple** (Cillian, 2026-10-22; from the update 25 retro):
+1. **Pick** the next item in NOW. One goal per issue, about 20 minutes, with the cut written in. Feel bugs need a repro (device, steps, what you see); done = gone on that repro.
+2. **Build** on a branch, PR into the holding branch `update-N` (no version bump). Run `node tools/bundle.mjs` and `node tools/check.mjs`, then post `DONE: <task>` with the PR link. Parallel tasks never touch the same files.
+3. **Review and merge:** Gemini reviews automatically and merges on `Verdict: merge` with green CI. Otherwise anyone but the author merges after a quick look. No waiting on Cillian.
+4. **Release** when the update's tasks are in (aim for about 45 minutes per update): one release PR `update-N` → `main` with version bump, name, notes, footer and `Closes #…`; check each task commit is in `update-N` by ancestry and diff `main...update-N` for stale non-game files. Anyone but its author merges it (the bot merge script stays out of `main` unless repo variable `BOT_MERGE_MAIN` is `on`, so for now Claude or Copilot).
+5. **Stuck?** Post `BLOCKED: <reason>` on the issue straight away and move on. Over time? Cut scope, never the checks.
+
+Checks that stay: timing, animation or random-draw changes need a seeded equivalence test (same seeds, same outcomes) plus the seeded-spin CI (#39). Payout changes follow Authority rule 2; Claude runs the fast sim (it lives outside the repo) and posts the result on the PR. Phone checks are a last step that never blocks a PR. One update at a time; new ideas go on a one-line list.
 
 **Where things live.**
 - `STATUS.md` is rebuilt automatically from issues and PRs (`tools/status.mjs`). Never hand-edit it. Status goes on the issue: `BLOCKED:`, `DONE:` or the `CURRENT:` line at the top of the issue body.
