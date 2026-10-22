@@ -247,11 +247,14 @@
     await render();
   }
   const view = el('div', 'wwatch'); view.hidden = true; document.body.appendChild(view);
-  let viewing = null;
+  let viewing = null, vhMax = 0, kbShrunk = false;
   // the viewer fills the visible screen (above the keyboard when it's open) and the board takes whatever height the other rows leave
   function fitWatch() {
     const scr = view.querySelector('.wscr'); if (view.hidden || !scr) return;
     const vv = window.visualViewport, vh = vv ? vv.height : innerHeight;
+    // Android's Back can close the keyboard without blurring the input, so the verdict rows come back once the screen grows again
+    vhMax = Math.max(vhMax, vh); const small = vh < vhMax * .85;
+    if (view.classList.contains('wkb')) { if (small) kbShrunk = true; else if (kbShrunk) { kbShrunk = false; view.classList.remove('wkb'); } }
     view.style.top = (vv ? vv.offsetTop : 0) + 'px'; view.style.bottom = 'auto'; view.style.height = vh + 'px';
     const cs = getComputedStyle(view), gap = parseFloat(cs.rowGap) || 0;
     let used = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom), n = 0;
@@ -311,7 +314,7 @@
   }
   // one screen for both live watching and replays: push() states in, it draws them smoothly
   function mirrorScreen(title, sub, live) {
-    view.hidden = false; view.classList.remove('wkb');
+    view.hidden = false; view.classList.remove('wkb'); vhMax = 0; kbShrunk = false;
     view.innerHTML = `<div class="wwh"><div><b>${esc(title)}</b><small id="wwSub">${esc(sub)}</small></div>${live ? '<div><button class="wbtn small" id="wwMode" type="button" aria-pressed="false">Go live</button> <span class="wlive" id="wwModeBadge" style="margin:0"><i></i><span id="wwModeLabel">DELAYED</span></span></div>' : '<span class="wlive" style="margin:0"><i></i>REPLAY</span>'}</div>
       <div class="wscr"><canvas id="wwCv"></canvas><ol id="wwFin" hidden></ol><p id="wwMsg">${live ? 'Connecting…' : 'Loading…'}</p></div>
       <div class="wwt" id="wwTiles"></div>
@@ -319,14 +322,14 @@
       ${live ? '<div class="wsay"><input id="wwSay" maxlength="60" placeholder="Send a message with Ghost Phelan"><button class="wbtn gold small" type="button" id="wwSend">Send</button></div>' : ''}
       <button class="wbtn" type="button" id="wwX" style="width:100%;max-width:560px">${live ? 'Stop watching' : 'Close'}</button>`;
     $w('wwX').onclick = stopWatch;
-    const kb = on => () => { view.classList.toggle('wkb', on); fitWatch(); }; // typing: the verdict rows step aside so the board keeps its room
+    const kb = on => () => { view.classList.toggle('wkb', on); kbShrunk = false; fitWatch(); }; // typing: the verdict rows step aside so the board keeps its room
     if (live) { $w('wwSay').onfocus = kb(true); $w('wwSay').onblur = kb(false); }
     fitWatch();
     const vc = $w('wwCv'), vg = vc.getContext('2d');
     const S = { cur: null, prev: null, tCur: 0, span: 120, fresh: false, alive: true, failed: false };
     const frame = () => {
       if (!S.alive || S.failed || view.hidden) return;
-      requestAnimationFrame(frame);
+      S.raf = requestAnimationFrame(frame);
       if (!S.cur) return;
       const p = Math.min(1, (performance.now() - S.tCur) / S.span);
       try {
@@ -343,11 +346,11 @@
         S.say(live ? 'This live view could not be drawn. Close and retry.' : 'This replay could not be drawn. Close it and try another replay.');
       }
     };
-    requestAnimationFrame(frame);
+    S.raf = requestAnimationFrame(frame);
     S.push = (st, info) => {
       const t = performance.now(); S.span = Math.max(60, Math.min(600, t - (S.tCur || t - 120)));
       S.prev = S.cur; S.cur = st; S.tCur = t; S.fresh = true;
-      if (S.failed && live) { S.failed = false; requestAnimationFrame(frame); } // one bad frame doesn't freeze the live view: try again with the next state
+      if (S.failed && live) { S.failed = false; cancelAnimationFrame(S.raf); S.raf = requestAnimationFrame(frame); } // one bad frame doesn't freeze the live view: try again with the next state
       $w('wwMsg').hidden = true;
       if (info && info.sub) $w('wwSub').textContent = info.sub;
       const v = st.v || {}; $w('wwE').textContent = v.e || ''; $w('wwT').textContent = v.t || ''; $w('wwB').textContent = v.b || ''; $w('wwC').textContent = st.cap || '';

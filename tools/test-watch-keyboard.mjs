@@ -76,6 +76,8 @@ try {
   await B.page.setViewportSize({ width: 360, height: 780 });
   const back = await layout(B.page, 780);
   assert.equal(back.scr.height, open.scr.height, 'the board goes back to its size when the keyboard closes');
+  // Android's Back closes the keyboard but leaves the input focused: the verdict still comes back
+  assert.ok(await B.page.evaluate(() => document.activeElement.id === 'wwSay' && getComputedStyle(document.querySelector('.wwatch .wvd')).display !== 'none'), 'the verdict shows again once the keyboard closes, even with the input still focused');
   assert.deepEqual(B.errors.filter(e => !/favicon/.test(e)), [], 'viewer console errors');
   console.log('Live Watch fits the board, message box and Stop watching on screen with the keyboard open and closed.');
 } finally {
