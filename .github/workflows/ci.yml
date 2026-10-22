@@ -2,42 +2,74 @@ name: CI
 
 on:
   pull_request:
+  # PR branches already run on pull_request; pushing them too ran every check twice
   push:
+    branches: [main, 'update-*']
   workflow_dispatch: # RolexG starts CI on its branches (its own pushes don't)
 
 permissions:
   contents: read
 
+# A newer push to the same PR cancels the old run
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   ci:
     name: ci
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      # Docs, Banter, bot and workflow-only PRs skip the game checks. bot-merge still sees a green "ci" check.
+      - id: scope
+        run: |
+          if [ "${{ github.event_name }}" != pull_request ]; then echo game=true >> "$GITHUB_OUTPUT"; exit 0; fi
+          files=$(git diff --name-only "${{ github.event.pull_request.base.sha }}...HEAD")
+          echo "$files"
+          if echo "$files" | grep -qvE '^(\.github/|docs/|banter/|tools/gambler/|HANDOFF\.md$|STATUS\.md$|README\.md$|[^/]*\.md$)'; then
+            echo game=true >> "$GITHUB_OUTPUT"
+          elif echo "$files" | grep -qx '.github/workflows/ci.yml'; then
+            echo game=true >> "$GITHUB_OUTPUT"
+          else
+            echo "No game, wallet or tools changes: skipping game checks"
+          fi
+      - if: steps.scope.outputs.game == 'true'
+        uses: actions/setup-node@v4
         with:
           node-version: 24
-      - run: npm install --no-save --package-lock=false @playwright/test@1.64.1
-      # Chromium is cached per Playwright version, so runs only download it when the version changes
-      - id: pw-cache
+      - if: steps.scope.outputs.game == 'true'
+        run: npm install --no-save --package-lock=false @playwright/test@1.64.1
+      # Chromium is cached per Playwright version. apt install-deps (which hung for 6 h on Oct 22) only runs
+      # if the runner is actually missing a library the browser needs.
+      - if: steps.scope.outputs.game == 'true'
+        id: pw-cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-1.64.1-${{ runner.os }}
-      - if: steps.pw-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
-      - if: steps.pw-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
-      - run: node tools/bundle.mjs
-      - run: git diff --exit-code -- game/index.html
-      - run: node tools/check.mjs
-      - run: node tools/check-game-invariants.mjs origin/main
-      - run: node tools/sim/core-test.mjs
-      - run: node tools/sim/core-check.mjs 50
-      - run: git show origin/main:game/index.html > "$RUNNER_TEMP/main-game.html"
-      - run: node tools/test-ci-browser.mjs "$RUNNER_TEMP/main-game.html"
+      - if: steps.scope.outputs.game == 'true'
+        timeout-minutes: 4
+        run: |
+          [ "${{ steps.pw-cache.outputs.cache-hit }}" = true ] || npx playwright install chromium
+          if ldd ~/.cache/ms-playwright/chromium*/chrome-*/{chrome,headless_shell} 2>/dev/null | grep -q 'not found'; then
+            npx playwright install-deps chromium
+          fi
+      - if: steps.scope.outputs.game == 'true'
+        timeout-minutes: 5
+        run: |
+          node tools/bundle.mjs
+          git diff --exit-code -- game/index.html
+          node tools/check.mjs
+          node tools/check-game-invariants.mjs origin/main
+          node tools/sim/core-test.mjs &
+          node tools/sim/core-check.mjs 50 &
+          git show origin/main:game/index.html > "$RUNNER_TEMP/main-game.html"
+          node tools/test-ci-browser.mjs "$RUNNER_TEMP/main-game.html" &
+          fail=0; for j in $(jobs -p); do wait $j || fail=1; done; exit $fail
 
   # Gemini may merge (Cillian, 2026-10-22). If Gemini's review already said "Verdict: merge" on this commit,
   # merge now that CI is green (.github/scripts/bot-merge.sh has the rules). Quiet otherwise.
