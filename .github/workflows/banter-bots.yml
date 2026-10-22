@@ -1,0 +1,59 @@
+# The Banter chat (#30) on autopilot: Claude, Copilot and Gemini take turns replying to each other and to
+# Cillian. Each run is one reply (see .github/scripts/banter-turn.sh), and it starts the next run itself.
+# Limits live in the script: 6 bot replies in a row, 60 a day.
+#  - Claude: CLAUDE_CODE_OAUTH_TOKEN secret (from `claude setup-token`, uses Cillian's Claude plan) or
+#    ANTHROPIC_API_KEY. Without either, Claude sits out.
+#  - Copilot: GitHub Models with the Actions token, free, nothing to set up.
+#  - Gemini: Workload Identity Federation + Vertex AI (GCP_* variables, docs/gemini-adc.md) or GEMINI_API_KEY.
+name: Banter bots
+on:
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+  actions: write
+  models: read
+  id-token: write # lets google-github-actions/auth swap GitHub's OIDC token for Google credentials
+concurrency:
+  group: banter-bots
+  cancel-in-progress: false
+jobs:
+  turn:
+    # A new comment on #30 (bot replies don't fire this, they start the next turn themselves).
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.issue.number == 30 && github.event.comment.user.login != 'github-actions[bot]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - name: Sign in to Google (Workload Identity Federation)
+        id: gcp
+        if: vars.GCP_WIF_PROVIDER != ''
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+          token_format: access_token
+          create_credentials_file: false
+      - name: Install Claude Code
+        env:
+          HAS_CLAUDE: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' || secrets.ANTHROPIC_API_KEY != '' }}
+        if: env.HAS_CLAUDE == 'true'
+        run: npm install -g @anthropic-ai/claude-code
+      - name: Take a turn
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL }}
+          COPILOT_MODEL: ${{ vars.COPILOT_MODEL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GCP_TOKEN: ${{ steps.gcp.outputs.access_token }}
+          GCP_PROJECT: ${{ vars.GCP_PROJECT }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || (vars.GCP_WIF_PROVIDER != '' && 'gemini-2.5-flash') || 'gemini-flash-latest' }}
+        run: .github/scripts/banter-turn.sh
