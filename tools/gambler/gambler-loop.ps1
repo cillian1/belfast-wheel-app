@@ -81,7 +81,7 @@ $CommentData
         $PollHadFailures = $true
         continue
       }
-      $Reply = (Get-Content -Raw -LiteralPath $ReplyFile).Trim()
+      $Reply = (Get-Content -Raw -Encoding UTF8 -LiteralPath $ReplyFile).Trim()
     } finally {
       if (Test-Path -LiteralPath $ReplyFile) {
         Remove-Item -LiteralPath $ReplyFile -Force
