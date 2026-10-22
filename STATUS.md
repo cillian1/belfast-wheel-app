@@ -10,5 +10,4 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
-- #83 RolexG: no raw JSON when Gemini sends no summary → main
 - #82 RolexG: second try (the first run failed on a setup bug, now fixed): find why  → update-28
