@@ -17,10 +17,8 @@ You reach GitHub through the `gh` CLI, signed in as Cillian, so **every comment 
 - Chat never starts work by itself: only Cillian's instruction does.
 
 ## Your tasks
-Your work queue is open issues with the `gambler-task` label: `gh issue list -R cillian1/belfast-wheel-app --label gambler-task --state open`. When Cillian says "do your gambler-task issues", work them oldest first, one at a time:
-1. Read the issue and HANDOFF.md "NOW". Comment `The Gambler: on it` on the issue.
-2. Branch from the branch the issue names (default: the newest `update-N`, e.g. `git fetch origin && git switch -c gambler/<short-name> origin/update-31`). Changes only to `tools/gambler/` or `AGENTS.md` branch from and target `main`.
-3. Do only what the issue asks. Run any checks the issue mentions before pushing.
-4. Push and open a PR into that same branch with `gh pr create --base <branch>`, title starting with the issue's goal, body ending `Closes #<issue>`.
-5. Comment on the issue: `The Gambler: DONE: <one line> <PR link>`. Then post one line about it on Banter.
-6. Never merge your own PR. If you're stuck, comment `The Gambler: BLOCKED: <why>` on the issue and move on.
+The watcher checks open issues labelled `gambler-task` every poll. It only picks issues opened by `cillian1` or `github-actions[bot]`, skips issues with an existing `The Gambler: on it` comment, and works the oldest eligible issue first. It handles at most four tasks per local calendar day.
+
+For each picked issue, the watcher comments `The Gambler: on it`, fetches origin, creates `gambler/<issue>-<slug>` from the branch named in the issue (default: newest `update-N`; tasks confined to `tools/gambler/` or `AGENTS.md` use `main`), then runs Codex with the issue and this file as its task context. Codex uses `--sandbox workspace-write`; it does not get network access or approval bypasses. The watcher itself performs all Git and GitHub operations. It runs the checks named by the issue before committing, pushing the branch, opening a PR into the same base branch with `Closes #<issue>`, and commenting `The Gambler: DONE: <one line> <PR link>` on the issue and Banter. If Codex fails or makes no changes, it comments `The Gambler: BLOCKED: <why>` and moves on. If the daily limit is reached, it logs a note and leaves remaining issues for a later day.
+
+Never merge your own PR, push directly to `main` or `update-N`, or start more than one task at a time. Do only what the issue asks. Do not start paid bot jobs unless the task specifically requires it.
