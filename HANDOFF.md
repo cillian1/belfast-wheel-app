@@ -7,7 +7,7 @@
 - **PR #34 stays CLOSED. Do not reopen or sync it.** Its code (Task 9: quality modes, low-end mode, faster taps, with the wait changes removed) **IS on main and in update 25** (commit 66a5cb1, merged by hand by Claude). Its leftovers live in #45 (shorter waits) and #49 (main-wheel freezes).
 - **Order:**
   1. **Now, in parallel:** #49 main-wheel freezes between wheels (**TOP PRIORITY**; main wheel only, rooms later), plus wave 1: #39 → PR #46 (CI/template/release notes), #40 → PR #47 (notifications), #41 → PR #48 (offline + loading). All PRs target `update-26`, with no version bump.
-  2. **Wave 2:** #42 (history) and #52 (bigger buttons) STARTED 00:20 (wave 1 #46/#47/#48 merged). #43 (ghost reactions + drop voice toggle) starts when #50 merges. Then #53 ("Stand By Your Stank") after #43.
+  2. **Wave 2:** #42 (history) and #52 (bigger buttons) STARTED 00:20 (wave 1 #46/#47/#48 merged). #43 (ghost reactions + drop voice toggle) STARTED 00:30 (#50 freeze fix merged). Then #53 ("Stand By Your Stank") after #43.
   3. **Wave 3, alone:** #45 (frame-rate-independent results + shorter waits; fast-sim odds check, and any odds change waits for Cillian).
   4. **Release:** a PR `update-26` → `main` bumping to 26 with a name, notes and `Closes #…` for every sub-task, then post DONE.
 - **If stuck:** post `BLOCKED: <reason>` on that issue straight away and move on to the next independent step. Don't retry forever. Cillian checks in the morning.
