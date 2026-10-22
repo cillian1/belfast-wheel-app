@@ -11,7 +11,6 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
-- #100 money: free spins only on a 10c bet, and label them → update-30
 - #99 RolexG: One important point: calling the GitHub API straight from the browser  → main
 - #94 Park Watch task for future update → main
 - #92 RolexG: please take this issue: speed up the fast odds sim as described above, → main
