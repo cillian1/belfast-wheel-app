@@ -244,7 +244,7 @@ header>span{flex-wrap:wrap}
     const canvas = box.querySelector('canvas'), ctx = canvas.getContext('2d');
     canvas.setAttribute('aria-label', g.colour ? g.colour + ' card' : 'Face-down card');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawCard(ctx, 90, 126, 140, { r: 14, s: g.colour === 'red' ? '♥' : '♠' }, !!g.colour, '#4a2a6b');
+    drawCard(ctx, 90, 126, 140, g.card || { r: 14, s: '♥' }, !!g.colour, '#4a2a6b');
   }
   appEl.insertBefore(bar, appEl.querySelector('.stage'));
   const $w = id => document.getElementById(id);

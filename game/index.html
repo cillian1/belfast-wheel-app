@@ -5712,7 +5712,7 @@ header>span{flex-wrap:wrap}
     const canvas = box.querySelector('canvas'), ctx = canvas.getContext('2d');
     canvas.setAttribute('aria-label', g.colour ? g.colour + ' card' : 'Face-down card');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawCard(ctx, 90, 126, 140, { r: 14, s: g.colour === 'red' ? '♥' : '♠' }, !!g.colour, '#4a2a6b');
+    drawCard(ctx, 90, 126, 140, g.card || { r: 14, s: '♥' }, !!g.colour, '#4a2a6b');
   }
   appEl.insertBefore(bar, appEl.querySelector('.stage'));
   const $w = id => document.getElementById(id);
@@ -6238,10 +6238,24 @@ header>span{flex-wrap:wrap}
   function gambleAllowed(amount, count) {
     return Number.isSafeInteger(amount) && amount > 0 && amount <= 2000 && Number.isInteger(count) && count >= 0 && count < 5;
   }
-  function gambleDecision(pick, random) {
+  function gambleEligible(run, current, auto) {
+    return !!run && current === run && !run.live && !run.auto && !auto && !run.gambleClosed && gambleAllowed(run.gambleCredit, 0);
+  }
+  function gambleDecision(pick, randomByte) {
     if (pick !== 'red' && pick !== 'black') throw new Error('Pick red or black');
-    const colour = (random & 1) === 0 ? 'red' : 'black';
-    return { colour, won: pick === colour };
+    if (typeof randomByte !== 'function') throw new TypeError('Secure card source required');
+    let byte;
+    do {
+      byte = randomByte();
+      if (!Number.isInteger(byte) || byte < 0 || byte > 255) throw new RangeError('Invalid card byte');
+    } while (byte >= 208);
+    const cardIndex = byte % 52, suit = ['♥', '♦', '♣', '♠'][Math.floor(cardIndex / 13)];
+    const card = { r: 2 + cardIndex % 13, s: suit };
+    const colour = suit === '♥' || suit === '♦' ? 'red' : 'black';
+    return { card, colour, won: pick === colour };
+  }
+  function secureGambleDecision(pick) {
+    return gambleDecision(pick, () => crypto.getRandomValues(new Uint8Array(1))[0]);
   }
   function settleGamble(u, bet) {
     if (!u) return undefined;
@@ -6254,6 +6268,13 @@ header>span{flex-wrap:wrap}
     u.gambleResults = u.gambleResults || {};
     u.gambleResults[bet.id] = delta;
     return u;
+  }
+  function updateGambleStats(st, bet, test) {
+    if (test) return st;
+    st = st || {};
+    const field = bet.won ? 'gambleWon' : 'gambleLost';
+    st[field] = (st[field] || 0) + bet.amount;
+    return st;
   }
   let gambleBusy = false, gambleTimer = 0;
   function collectGamble() {
@@ -6269,7 +6290,7 @@ header>span{flex-wrap:wrap}
     renderGamble(gambleBox, W.gamble);
   }
   function offerGamble(run) {
-    if (W.run !== run || run.live || run.auto || autoOn || run.gambleClosed || !gambleAllowed(run.gambleCredit, 0)) return;
+    if (!gambleEligible(run, W.run, autoOn)) return;
     run.gambleClosed = true;
     W.gamble = { amount: run.gambleCredit, count: 0, phase: 'offer', user: W.user };
     armGamble();
@@ -6290,9 +6311,8 @@ header>span{flex-wrap:wrap}
     const user = W.user, test = isTest(), amount = g.amount;
     let bet;
     try {
-      const random = crypto.getRandomValues(new Uint32Array(5));
-      const result = gambleDecision(pick, random[0]);
-      bet = { id: Array.from(random.slice(1), n => n.toString(16).padStart(8, '0')).join(''), amount, count: g.count, won: result.won };
+      const result = secureGambleDecision(pick), random = crypto.getRandomValues(new Uint32Array(4));
+      bet = { id: Array.from(random, n => n.toString(16).padStart(8, '0')).join(''), amount, count: g.count, won: result.won };
       g.pick = pick;
       gambleBusy = true; clearTimeout(gambleTimer); g.phase = 'settling';
       renderGamble(gambleBox, g);
@@ -6305,10 +6325,10 @@ header>span{flex-wrap:wrap}
       W.me = u; paint();
       const delta = bet.won ? amount : -amount, what = bet.won ? 'Gamble win' : 'Gamble lose';
       log(user, 'gamble', delta, { what, pick, colour: result.colour, gambleId: bet.id });
-      if (!test) db.txn('stats', st => { st = st || {}; const field = bet.won ? 'gambleWon' : 'gambleLost'; st[field] = (st[field] || 0) + amount; return st; }).catch(() => {});
+      if (!test) db.txn('stats', st => updateGambleStats(st, bet, test)).catch(() => {});
       g.phase = 'flipping'; renderGamble(gambleBox, g);
       await new Promise(resolve => setTimeout(resolve, 350));
-      g.colour = result.colour; g.won = bet.won; g.count++; g.amount = bet.won ? amount * 2 : 0;
+      g.card = result.card; g.colour = result.colour; g.won = bet.won; g.count++; g.amount = bet.won ? amount * 2 : 0;
       g.phase = 'reveal'; renderGamble(gambleBox, g);
       if (!bet.won) {
         try {
@@ -6711,7 +6731,7 @@ header>span{flex-wrap:wrap}
       if (info && info.sub) $w('wwSub').textContent = info.sub;
       const v = st.v || {}; $w('wwE').textContent = v.e || ''; $w('wwT').textContent = v.t || ''; $w('wwB').textContent = v.b || ''; $w('wwC').textContent = st.cap || '';
       const fin = $w('wwFin'), fl = st.fin; fin.hidden = !fl; if (fl) fin.innerHTML = fl.map(x => `<li>${esc(x)}</li>`).join('');
-      renderGamble($w('wwGamble'), st.gamble || null, true);
+      renderGamble($w('wwGamble'), parse(st.gamble) || null, true);
       const tw = +st.tw || 0, tb = +st.tb || 0;
       $w('wwTiles').innerHTML = `<span class="g">${'●'.repeat(Math.min(tw, 9))}${'○'.repeat(Math.max(0, 3 - tw))} WILDS</span><span class="p">${'●'.repeat(Math.min(tb, 9))}${'○'.repeat(Math.max(0, 3 - tb))} BONUS</span>`;
       const vk = [v.e, v.t, v.b, st.cap, JSON.stringify(st.gamble)].join('|'); if (vk !== S.vk) { S.vk = vk; fitWatch(); } // refit only when the verdict text changes
