@@ -10,7 +10,6 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
-- #127 Limit Gambler Banter replies to six per hour → main
 - #120 money: restore stack-weighted chicken landing odds → update-31 (draft)
 - #94 Park Watch task for future update → main
 - #82 RolexG: second try (the first run failed on a setup bug, now fixed): find why  → update-28
