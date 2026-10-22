@@ -5502,6 +5502,7 @@ if (document.fonts && document.fonts.load) {
 .wbtn.sel{border-color:#f5d27a;color:#f5d27a}
 .wgamble{margin-top:12px;text-align:center}
 .wgamble[hidden]{display:none}
+.stage:not(.done) .wgamble{display:none}
 .final.wgambling{max-height:100%;overflow-y:auto;box-sizing:border-box;pointer-events:auto;padding:12px}
 .wgamble p{margin:6px 0}
 .wgamble .wdealer{display:flex;align-items:center;justify-content:center;gap:12px}
@@ -6334,11 +6335,12 @@ header>span{flex-wrap:wrap}
     else if (action === 'deal') dealGamble();
     else if (action === 'red' || action === 'black') pickGamble(action);
   });
-  $w('autoBtn').addEventListener('click', e => {
-    if (gambleBusy) { e.stopImmediatePropagation(); return toast('Wait for the card.'); }
+  function leaveGamble(e) {
+    if (gambleBusy) { e.preventDefault(); e.stopImmediatePropagation(); return toast('Wait for the card.'); }
     collectGamble();
     if (W.run) W.run.gambleClosed = true;
-  }, true);
+  }
+  [$w('spinBtn'), $w('autoBtn')].forEach(button => button.addEventListener('click', leaveGamble, true));
   // wins that could not reach the database are kept and retried
   let pendingWins = []; try { pendingWins = JSON.parse(pref.get('wol.pendingWins') || '[]'); } catch (e) {}
   const savePending = () => pref.set('wol.pendingWins', JSON.stringify(pendingWins));

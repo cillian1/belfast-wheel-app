@@ -245,11 +245,12 @@
     else if (action === 'deal') dealGamble();
     else if (action === 'red' || action === 'black') pickGamble(action);
   });
-  $w('autoBtn').addEventListener('click', e => {
-    if (gambleBusy) { e.stopImmediatePropagation(); return toast('Wait for the card.'); }
+  function leaveGamble(e) {
+    if (gambleBusy) { e.preventDefault(); e.stopImmediatePropagation(); return toast('Wait for the card.'); }
     collectGamble();
     if (W.run) W.run.gambleClosed = true;
-  }, true);
+  }
+  [$w('spinBtn'), $w('autoBtn')].forEach(button => button.addEventListener('click', leaveGamble, true));
   // wins that could not reach the database are kept and retried
   let pendingWins = []; try { pendingWins = JSON.parse(pref.get('wol.pendingWins') || '[]'); } catch (e) {}
   const savePending = () => pref.set('wol.pendingWins', JSON.stringify(pendingWins));

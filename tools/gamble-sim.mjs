@@ -33,6 +33,14 @@ for (const won of [true, false]) {
   assert.deepEqual(short, { balance: 5 }, 'short balance must not change');
 }
 assert.equal(settleGamble(null, { amount: 6 }), undefined);
+const leaveSource = source.match(/  function leaveGamble\(e\) \{[^]*?\n  \}/)[0];
+for (const locked of [false, true]) {
+  const W = { run: {} }, calls = [];
+  const leave = new Function('gambleBusy', 'W', 'collectGamble', 'toast', `${leaveSource}; return leaveGamble;`)(locked, W, () => calls.push('collect'), () => {});
+  leave({ preventDefault: () => calls.push('prevent'), stopImmediatePropagation: () => calls.push('stop') });
+  assert.deepEqual(calls, locked ? ['prevent', 'stop'] : ['collect'], 'Back to top/auto must collect, or block navigation while settling');
+  assert.equal(W.run.gambleClosed, locked ? undefined : true);
+}
 console.log('Decision, ladder, cap, short-balance, separate stats and idempotent settlement checks passed.');
 
 // Reproducible ladders across small and capped wins, using the live decision and stop rules.

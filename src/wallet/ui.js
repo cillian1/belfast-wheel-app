@@ -34,6 +34,7 @@
 .wbtn.sel{border-color:#f5d27a;color:#f5d27a}
 .wgamble{margin-top:12px;text-align:center}
 .wgamble[hidden]{display:none}
+.stage:not(.done) .wgamble{display:none}
 .final.wgambling{max-height:100%;overflow-y:auto;box-sizing:border-box;pointer-events:auto;padding:12px}
 .wgamble p{margin:6px 0}
 .wgamble .wdealer{display:flex;align-items:center;justify-content:center;gap:12px}
