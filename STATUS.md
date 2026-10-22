@@ -6,9 +6,5 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 | Issue | Task | Status | PRs |
 |---|---|---|---|
-| #38 | Task 11: update 26 housekeeping (on hold) | On hold |  |
 | #45 | Task 11F: frame-rate-independent outcomes and shorter waits | BLOCKED: The seeded headless FPS gate is still failing after the cosmetic RNG split. One 10fps/30fps run produced different resul | #61 (draft) → main |
 
-**Other open PRs**
-
-- #62 Match near-miss wince to Phelan → update-26
