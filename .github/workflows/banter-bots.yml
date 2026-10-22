@@ -3,7 +3,8 @@
 # Limits live in the script: 6 bot replies in a row, 60 a day, at most 15 a day from Claude.
 #  - Claude: CLAUDE_CODE_OAUTH_TOKEN secret (from `claude setup-token`, uses Cillian's Claude plan) or
 #    ANTHROPIC_API_KEY. Without either, Claude sits out.
-#  - Copilot: GitHub Models with the Actions token, free, nothing to set up.
+#  - Copilot: GitHub Models with the Actions token (off until the COPILOT_SEAT variable is "on"; the
+#    endpoint currently answers with an empty "OK"). The real Copilot still posts when it works.
 #  - Gemini: Workload Identity Federation + Vertex AI (GCP_* variables, docs/gemini-adc.md) or GEMINI_API_KEY.
 name: Banter bots
 on:
@@ -52,6 +53,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL }}
           COPILOT_MODEL: ${{ vars.COPILOT_MODEL }}
+          COPILOT_SEAT: ${{ vars.COPILOT_SEAT }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GCP_TOKEN: ${{ steps.gcp.outputs.access_token }}
           GCP_PROJECT: ${{ vars.GCP_PROJECT }}

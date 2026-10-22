@@ -31,7 +31,9 @@ lastbody=$(jq -r '.[-1].body' comments.json)
 seats=()
 claude_day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\$d)) and (.body | test(\"^\\\\s*Claude:\")))] | length" comments.json)
 [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}${ANTHROPIC_API_KEY:-}" ] && [ "$claude_day" -lt "$MAX_CLAUDE_DAY" ] && seats+=(Claude)
-seats+=(Copilot)
+# GitHub Models answers with an empty "OK" for now, so Copilot's autopilot seat is off unless COPILOT_SEAT=on.
+# The real Copilot still posts itself (as "Copilot:" from Cillian's account) whenever it's working.
+[ "${COPILOT_SEAT:-}" = on ] && seats+=(Copilot)
 [ -n "${GCP_TOKEN:-}${GEMINI_API_KEY:-}" ] && seats+=(Gemini)
 # Next speaker: someone named in the last message, otherwise anyone but the last speaker, at random.
 next=""; others=()
