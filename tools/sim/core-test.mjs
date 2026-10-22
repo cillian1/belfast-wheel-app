@@ -3,9 +3,11 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createCore, seededRandom } from './core.mjs';
 import { liveTipChance, sources } from './core-source.mjs';
 
+const simFile = name => fileURLToPath(new URL(name, import.meta.url));
 const random = seededRandom(123), same = seededRandom(123);
 for (let i = 0; i < 100; i++) {
   const value = random();
@@ -26,7 +28,7 @@ for (let seed = 1; seed <= 200; seed++) {
 assert.ok(kinds.has('D') && kinds.has('-') && kinds.has('W') && kinds.has('B'));
 assert.ok(gold && backUp && hidden, 'seeds must cover golden runs, go back up and the hidden wheel');
 const run = (workers, tip) => {
-  const args = [new URL('./run.mjs', import.meta.url).pathname, '--engine', 'node', '--spins', '200', '--workers', String(workers)];
+  const args = [simFile('./run.mjs'), '--engine', 'node', '--spins', '200', '--workers', String(workers)];
   if (tip !== undefined) args.push('--tip', String(tip));
   return JSON.parse(execFileSync(process.execPath, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }));
 };
@@ -36,7 +38,7 @@ assert.equal(run(3).length, 200, 'non-divisible worker partitions must not overr
 console.log('Core RNG, fresh-spin isolation, path coverage and worker partitioning passed.');
 
 const fullRun = workers => JSON.parse(execFileSync(process.execPath, [
-  new URL('./run.mjs', import.meta.url).pathname, '--engine', 'core', '--spins', '205',
+  simFile('./run.mjs'), '--engine', 'core', '--spins', '205',
   '--seed', '1500', '--workers', String(workers),
 ], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }));
 const full = fullRun(1);
@@ -56,8 +58,8 @@ try {
     race: 1, n: 1, sp: 1, sw: 1, sb: 0,
     ch: [{ special: 'W', count: 2, mult: 3 }],
   }]));
-  const race = execFileSync('python3', [
-    new URL('./race.py', import.meta.url).pathname, temp, '0',
+  const race = execFileSync(process.platform === 'win32' ? 'py' : 'python3', [
+    ...(process.platform === 'win32' ? ['-3'] : []), simFile('./race.py'), temp, '0',
   ], { encoding: 'utf8' });
   assert.match(race, /baseline \(game 28\).*mark\/spin\s+15\.000/,
     'race analysis must use the recorded 3x stacked chicken multiplier');

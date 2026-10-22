@@ -6,7 +6,7 @@ import { liveTipChance } from './core-source.mjs';
 
 const count = Number(process.argv[2] || 200);
 if (!Number.isSafeInteger(count) || count < 1) throw new Error('Expected a positive seed count');
-let html = readFileSync(new URL('../../game/index.html', import.meta.url), 'utf8');
+let html = readFileSync(new URL('../../game/index.html', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 const wallet = html.indexOf('<script>window.WALLET_CFG');
 assert.ok(wallet > 0, 'wallet boundary changed');
 html = html.slice(0, wallet) + '<script>window.$m = v => v;</script></body></html>';
