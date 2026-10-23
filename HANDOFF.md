@@ -94,7 +94,9 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 
 ## Bots and limits
 
-- **Banter bots:** Claude (Cillian's plan via `CLAUDE_CODE_OAUTH_TOKEN`, no cap of its own), Copilot (Copilot CLI with Cillian's token, at most 15 a day) and Gemini take turns on #30 as github-actions[bot] with a name prefix: 6 bot replies in a row, 200 a day. They see the first 20 lines of the NOW section, so keep the key rules there.
+- **Banter bots:** Claude, Copilot, Gemini and RolexG take turns on #30. Each bot has its own
+  GitHub identity (e.g., rolexg[bot]) and posts with its own token. The conversation is limited to
+  6 bot replies in a row and 200 a day.
 - **Gemini sign-in:** Workload Identity Federation (docs/gemini-adc.md) or a `GEMINI_API_KEY` secret.
 - **RolexG:** `ROLEXG_DAILY_CAP` (default 8 a day), 5 rounds per thread, 30 minutes per task. It bills Google, roughly €0.20 to €1.50 a task.
 - Everyone works on a branch and opens a PR; nobody pushes game changes straight to `main`. Pull before starting a branch.

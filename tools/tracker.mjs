@@ -33,7 +33,8 @@ const selected = currentIssues.length ? taskIssues.filter(i => currentIssues.inc
 function owner(i) {
   const label = (i.labels || []).find(l => /^(copilot-task|rolexg|jimini-task|gambler-task)$/.test(l.name));
   if (label) return ({'copilot-task':'Copilot',rolexg:'RolexG','jimini-task':'Jimini','gambler-task':'The Gambler'})[label.name];
-  return i.assignees?.[0]?.login || i.assignee?.login || 'Unassigned';
+  const login = i.assignees?.[0]?.login || i.assignee?.login || 'Unassigned';
+  return ({'rolexg[bot]':'RolexG', 'jimini[bot]':'Jimini', 'gemini-reviewer[bot]':'Gemini', 'claude-bot[bot]':'Claude', 'copilot[bot]':'Copilot'})[login] || login;
 }
 function activity(i, p) {
   const dates = [i.updated_at, ...(commentsByIssue.get(i.number) || []).map(c => c.updated_at), ...p.map(x => x.updated_at)];
@@ -81,9 +82,10 @@ if (updates.length > 1) {
 }
 history.sort((a,b)=>b.number-a.number);
 const completed = tasks.filter(t=>t.prState==='merged' || (t.prState==='none' && allIssues.find(i=>i.number===t.issue)?.state==='closed')).length;
+const botNames = {'rolexg[bot]':'RolexG', 'jimini[bot]':'Jimini', 'gemini-reviewer[bot]':'Gemini', 'claude-bot[bot]':'Claude', 'copilot[bot]':'Copilot'};
 const data = { generatedAt:new Date().toISOString(), update:{number:branch.n,name:plan.name||`Update ${branch.n}`,branch:branch.name,
   goals:plan.goals||[],cutLine:plan.cutLine||'',progress:{done:completed,total:tasks.length}}, tasks,
-  merges:merged.map(p=>({number:p.number,title:p.title,url:p.html_url,mergedAt:p.merged_at,owner:p.user?.login||''})), history };
+  merges:merged.map(p=>({number:p.number,title:p.title,url:p.html_url,mergedAt:p.merged_at,owner:botNames[p.user?.login]||p.user?.login||''})), history };
 writeFileSync('tracker.json', JSON.stringify(data,null,2)+'\n');
 writeFileSync('tracker-history.json', JSON.stringify(history,null,2)+'\n');
 console.log(`tracker.json: update ${branch.n}, ${tasks.length} tasks, ${merged.length} merges, ${history.length} history entries`);
