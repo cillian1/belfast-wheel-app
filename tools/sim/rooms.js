@@ -1,13 +1,6 @@
 // Full prize outcome table: per-room odds per deep run and every prize at 10c / €1, scaled to RTP.
 // usage: TABLES=tools/sim/tables.json node tools/sim/rooms.js runs.json   (prints rooms EV per spin in base units on stderr)
-const fs = require('fs'); const { tank: monsterTank } = require('./monster-tank.js');
-const seed = process.env.SEED === undefined ? null : Number(process.env.SEED);
-if (seed !== null && (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff)) throw new Error('SEED must be an integer from 0 to 4294967295');
-let state = seed >>> 0;
-const R = seed === null ? Math.random : () => { state = (Math.imul(state, 1664525) + 1013904223) >>> 0; return state / 4294967296; };
-const ri = n => Math.floor(R() * n), M = +(process.env.M || 400000);
-const SPECIAL_DIE_SIDES = +(process.env.MONSTER_SPECIAL_SIDES || 20);
-if (![12, 20].includes(SPECIAL_DIE_SIDES)) throw new Error('MONSTER_SPECIAL_SIDES must be 12 or 20');
+const fs = require('fs'); const R = Math.random, ri = n => Math.floor(R() * n), M = +(process.env.M || 400000);
 const OLD = process.argv[3] === 'old';
 const T = OLD ? {
   AM: [1, 2, 3, 5, 5, 8, 10, 10, 12, 15, 15, 20, 25, 30, 40, 50],
@@ -20,12 +13,15 @@ const T = OLD ? {
 };
 if (process.env.TABLES) Object.assign(T, JSON.parse(fs.readFileSync(process.env.TABLES)));
 const GOLD = [0, 5, 10, 15];
-const tankMetrics = { count: 0, cans: 0, units: 0, hits: Object.fromEntries(T.LV.slice(1).map(([at]) => [at, 0])) };
 function stank(w, b) {
   const am = T.AM.slice().sort(() => R() - .5), pk = []; let j = 0;
   for (let i = 0; i < 20; i++) pk.push(GOLD.includes(i) ? { g: 1 } : { a: am[j++] });
   let g = 0, c = 0; for (const kd of [...Array(w).fill('W'), ...Array(b).fill('B')]) { const p = pk[ri(20)]; if (p.g) g++; else c += p.a * (kd === 'B' ? 2 : 1); }
   return g >= 3 ? { v: (T.LS||[20,10,19])[0] + (T.LS||[20,10,19])[1] * ri((T.LS||[20,10,19])[2]) + c, sub: 'locksafe' } : { v: c + g * (T.GB || 50), sub: g ? 'gold' : 'plain' };
+}
+function tank(w, b) {
+  let t = 0; for (let i = 0; i < 10; i++) t += 1 + ri(12); const sp = w + Math.max(0, b - 3);
+  for (let i = 0; i < sp; i++) t += 2 * (1 + ri(12)); let v = T.LV[0][1]; for (const [a, x] of T.LV) if (t >= a) v = x; return { v };
 }
 function god() {
   const c = []; while (c.length < 5) { const r = 2 + ri(13); if (!c.length || r !== c[c.length - 1]) c.push(r); }
@@ -34,40 +30,16 @@ function god() {
 }
 T.PT ||= [50, 100, 200, 500, 1000]; T.PD ||= [20, 5, 17];
 function pyr() { return ri(3) === 0 ? { v: T.PT[ri(T.PT.length)], sub: 'tip' } : { v: T.PD[0] + T.PD[1] * ri(T.PD[2]), sub: 'door' }; }
-const draw0 = r => r.k === 'W' ? stank(r.w, r.b) : r.k === 'B' ? monsterTank(r.w, r.b, ri, T.LV, SPECIAL_DIE_SIDES) : r.k === 'G' ? god() : r.k === 'P' ? pyr() : { v: 0 };
-const draw = r => {
-  const o = draw0(r);
-  if (r.god && (r.k === 'W' || r.k === 'B')) {
-    const g = god(), result = { v: o.v + g.v, sub: (o.sub ? o.sub + '+' : '') + 'god' };
-    if (o.total !== undefined) { result.total = o.total; result.cans = o.cans; }
-    return result;
-  }
-  return o;
-};
+const draw0 = r => r.k === 'W' ? stank(r.w, r.b) : r.k === 'B' ? tank(r.w, r.b) : r.k === 'G' ? god() : r.k === 'P' ? pyr() : { v: 0 };
+const draw = r => { const o = draw0(r); if (r.god && (r.k === 'W' || r.k === 'B')) { const g = god(); return { v: o.v + g.v, sub: (o.sub ? o.sub + '+' : '') + 'god' }; } return o; };
 const RTP = .995;
 const runs = JSON.parse(fs.readFileSync(process.argv[2])), n = runs.length, deepRuns = runs.filter(r => r.k !== '-');
 const deep = deepRuns.length;
 let ev = 0; const dist = {}; // k -> Map(v -> count)
-for (let i = 0; i < M; i++) {
-  const r = deepRuns[ri(deep)], o = draw(r); ev += o.v;
-  if (o.total !== undefined) {
-    tankMetrics.count++; tankMetrics.cans += o.cans; tankMetrics.units += o.total;
-    for (const at of Object.keys(tankMetrics.hits)) if (o.total >= +at) tankMetrics.hits[at]++;
-  }
-  const key = r.k + (o.sub ? ':' + o.sub : ''); (dist[r.k] ||= {}); (dist[r.k][o.v] ||= 0); dist[r.k][o.v]++; (dist[key] ||= {}); (dist[key][o.v] ||= 0); dist[key][o.v]++;
-}
+for (let i = 0; i < M; i++) { const r = deepRuns[ri(deep)]; const o = draw(r); ev += o.v; const key = r.k + (o.sub ? ':' + o.sub : ''); (dist[r.k] ||= {}); (dist[r.k][o.v] ||= 0); dist[r.k][o.v]++; (dist[key] ||= {}); (dist[key][o.v] ||= 0); dist[key][o.v]++; }
 const evDeep = ev / M, evSpin = evDeep * deep / n, k = RTP / evSpin; // euro paid per base euro at €1
 const cnt = kk => runs.filter(r => r.k === kk).length;
-const out = {
-  spins: n, deep, deepPct: deep / n, evSpinBase: evSpin, perBaseAt1: k,
-  monsterTank: {
-    sampled: tankMetrics.count,
-    meanCans: tankMetrics.cans / (tankMetrics.count || 1),
-    meanFillUnits: tankMetrics.units / (tankMetrics.count || 1),
-    thresholdRates: Object.fromEntries(Object.entries(tankMetrics.hits).map(([at, hit]) => [at, hit / (tankMetrics.count || 1)])),
-  },
-  rooms: {},
-};
+const out = { spins: n, deep, deepPct: deep / n, evSpinBase: evSpin, perBaseAt1: k, rooms: {} };
 for (const kk of ['W', 'B', 'G', 'P', 'M', '-']) out.rooms[kk] = cnt(kk);
 out.dist = {}; out.cnt = {}; for (const kk of Object.keys(dist)) out.cnt[kk] = Object.values(dist[kk]).reduce((a, b) => a + b, 0);
 for (const kk of Object.keys(dist)) { const d = dist[kk] || {}, tot = Object.values(d).reduce((a, b) => a + b, 0); out.dist[kk] = Object.entries(d).map(([v, c]) => [+v, c / tot]).sort((a, b) => a[0] - b[0]); }
