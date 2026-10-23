@@ -132,9 +132,9 @@ function Invoke-GamblerTaskQueue {
     }
     try {
       # Windows PowerShell passes a parsed JSON array down the pipe as one item, so store it first.
-      # Issue numbers rise with creation time, so sorting by number is oldest first.
+      # Releases take priority; otherwise issue numbers give oldest-first ordering.
       $ParsedIssues = ConvertFrom-Json -InputObject ($IssueListLines -join "`n")
-      $TaskIssues = @($ParsedIssues | Sort-Object { [int]$_.number })
+      $TaskIssues = @($ParsedIssues | Sort-Object @{ Expression = { if ([string]$_.title -match '^Release\b') { 0 } else { 1 } } }, @{ Expression = { [int]$_.number } })
     } catch {
       Write-Warning 'Could not parse gambler-task issues; will retry next poll.'
       return
@@ -168,40 +168,53 @@ function Invoke-GamblerTaskQueue {
       }
       $AlreadyStarted = $false
       $LastGamblerStatus = $null
+      $RetryRequested = $false
       foreach ($CommentLine in @($CommentLines)) {
         try { $ExistingComment = ConvertFrom-Json -InputObject $CommentLine } catch { continue }
         if ([string]$ExistingComment.user.login -eq 'cillian1') {
           $ExistingBody = [string]$ExistingComment.body
           if ($ExistingBody -match '(?im)^\s*The Gambler:\s*on it\b') {
             $AlreadyStarted = $true
+            $RetryRequested = $false
             $LastGamblerStatus = [pscustomobject]@{ kind = 'on it'; body = $ExistingBody; created_at = [string]$ExistingComment.created_at }
           } elseif ($AlreadyStarted -and $ExistingBody -match '(?im)^\s*The Gambler:\s*(DONE|BLOCKED):') {
             $LastGamblerStatus = [pscustomobject]@{ kind = $Matches[1].ToUpperInvariant(); body = $ExistingBody; created_at = [string]$ExistingComment.created_at }
+            $RetryRequested = $false
+          } elseif ($LastGamblerStatus -and $LastGamblerStatus.kind -eq 'BLOCKED' -and
+            $ExistingBody -notmatch '(?i)^\s*The Gambler:' -and $ExistingBody -match '(?i)\bretry\b' -and
+            [string]$ExistingComment.created_at -gt [string]$LastGamblerStatus.created_at) {
+            $RetryRequested = $true
           }
         }
       }
       $ResumeStaleTask = $false
       if ($AlreadyStarted) {
-        if ($Issue.state -ne 'open' -or ($LastGamblerStatus -and $LastGamblerStatus.kind -eq 'BLOCKED')) { continue }
-        if ($LastGamblerStatus -and $LastGamblerStatus.kind -eq 'DONE') {
-          $DonePrMatch = [regex]::Match($LastGamblerStatus.body, 'https://github\.com/[^/]+/[^/]+/pull/(\d+)')
-          if ($DonePrMatch.Success) {
-            $DonePrState = & gh pr view $DonePrMatch.Groups[1].Value --repo $Repo --json state --jq .state 2>&1
-            if ($LASTEXITCODE -eq 0 -and [string]$DonePrState -match '^MERGED$') { continue }
+        if ($Issue.state -ne 'open') { continue }
+        if ($LastGamblerStatus -and $LastGamblerStatus.kind -eq 'BLOCKED') {
+          if (-not $RetryRequested) { continue }
+          $ResumeStaleTask = $true
+        }
+        if (-not $ResumeStaleTask) {
+          if ($LastGamblerStatus -and $LastGamblerStatus.kind -eq 'DONE') {
+            $DonePrMatch = [regex]::Match($LastGamblerStatus.body, 'https://github\.com/[^/]+/[^/]+/pull/(\d+)')
+            if ($DonePrMatch.Success) {
+              $DonePrState = & gh pr view $DonePrMatch.Groups[1].Value --repo $Repo --json state --jq .state 2>&1
+              if ($LASTEXITCODE -eq 0 -and [string]$DonePrState -match '^MERGED$') { continue }
+            }
+            Write-Host "Issue #$IssueNumber has an unfinished DONE handoff; leaving it for review or closure."
+            continue
           }
-          Write-Host "Issue #$IssueNumber has an unfinished DONE handoff; leaving it for review or closure."
-          return
-        }
-        if (-not $LastGamblerStatus -or $LastGamblerStatus.kind -ne 'on it') { continue }
-        try {
-          $ClaimTime = [DateTimeOffset]::Parse([string]$LastGamblerStatus.created_at).ToUniversalTime()
-        } catch {
-          Write-Warning "Could not read the start time for issue #$IssueNumber; leaving it queued rather than risking duplicate work."
-          return
-        }
-        if (([DateTimeOffset]::UtcNow - $ClaimTime) -lt [TimeSpan]::FromMinutes(30)) {
-          Write-Host "Issue #$IssueNumber is still within its 30-minute claim window; waiting."
-          return
+          if (-not $LastGamblerStatus -or $LastGamblerStatus.kind -ne 'on it') { continue }
+          try {
+            $ClaimTime = [DateTimeOffset]::Parse([string]$LastGamblerStatus.created_at).ToUniversalTime()
+          } catch {
+            Write-Warning "Could not read the start time for issue #$IssueNumber; leaving it queued rather than risking duplicate work."
+            return
+          }
+          if (([DateTimeOffset]::UtcNow - $ClaimTime) -lt [TimeSpan]::FromMinutes(30)) {
+            Write-Host "Issue #$IssueNumber is still within its 30-minute claim window; waiting."
+            continue
+          }
         }
 
         $OpenPrLines = & gh pr list --repo $Repo --state open --limit 100 --json number,title,body,headRefName 2>&1
@@ -221,7 +234,7 @@ function Invoke-GamblerTaskQueue {
         } | Select-Object -First 1
         if ($IssuePr) {
           Write-Host "Issue #$IssueNumber already has open PR #$($IssuePr.number); waiting for it to finish."
-          return
+          continue
         }
 
         $ResumeStaleTask = $true
@@ -247,7 +260,7 @@ function Invoke-GamblerTaskQueue {
           break
         }
       }
-      if ($WaitingForDependency) { return }
+      if ($WaitingForDependency) { continue }
 
       $GitStatus = & git -C $RepoRoot status --porcelain --untracked-files=all
       if ($LASTEXITCODE -ne 0 -or @($GitStatus).Count -gt 0) {
