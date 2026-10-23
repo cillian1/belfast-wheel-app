@@ -6,7 +6,7 @@
 set -euo pipefail
 MAX_RUN=4
 MAX_DAY=1000
-MAX_COPILOT_DAY=1000 # shared by Copilot, Renauw and Cillian's Copilot requests; GitHub/Copilot account limits still apply
+MAX_COPILOT_DAY=${BANTER_COPILOT_DAY_CAP:-1000} # shared by Copilot, Renauw and Cillian's Copilot requests; account limits still apply
 MAX_CLAUDE_DAY=50 # Claude shares Cillian's plan, keep it sensible
 MAX_ROLEXG_DAY=40 # Cillian 20:05: RolexG and Jimini chat too (the repeat filter keeps it sane)
 MAX_JIMINI_DAY=40

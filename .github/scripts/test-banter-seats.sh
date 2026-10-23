@@ -39,7 +39,7 @@ printf '[{"body":"Renauw","created_at":"%sT12:00:00Z","user":{"login":"cillian1"
   cd "$tmp/work"
   PATH="$tmp/bin:$PATH" REPO=owner/repo GH_TOKEN=test GH_FIXTURE="$tmp/one.json" \
     GH_LOG="$tmp/gh.log" COPILOT_LOG="$tmp/copilot.log" COPILOT_GITHUB_TOKEN=test \
-    COPILOT_RENAUW_SUPPORT=yes bash .github/scripts/banter-turn.sh
+    COPILOT_RENAUW_SUPPORT=yes BANTER_REQUESTED_SPEAKER=Renauw bash .github/scripts/banter-turn.sh
 )
 grep -Fq 'You are Renauw, a general helper' "$tmp/copilot.log"
 grep -Fq 'Renauw: A fresh observation about the lighthouse keeper.' "$tmp/gh.log"
@@ -69,7 +69,8 @@ rm -f "$tmp/copilot.log"
 (
   cd "$tmp/work"
   PATH="$tmp/bin:$PATH" REPO=owner/repo GH_TOKEN=test GH_FIXTURE="$tmp/capped.json" \
-    GH_LOG="$tmp/capped-gh.log" COPILOT_LOG="$tmp/copilot.log" COPILOT_GITHUB_TOKEN=test bash .github/scripts/banter-turn.sh
+    GH_LOG="$tmp/capped-gh.log" COPILOT_LOG="$tmp/copilot.log" COPILOT_GITHUB_TOKEN=test \
+    BANTER_COPILOT_DAY_CAP=25 bash .github/scripts/banter-turn.sh
 )
 [ ! -s "$tmp/copilot.log" ] || { echo "Copilot/Renauw ran after their shared daily cap." >&2; exit 1; }
 
