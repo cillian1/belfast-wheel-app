@@ -142,7 +142,7 @@
       log(W.user, 'win', c, { stake, what: String(what || '').slice(0, 60) });
       if (!isTest()) db.txn('stats', st => { st = st || {}; st.won = (st.won || 0) + c; if (c > (st.biggest || 0)) { st.biggest = c; st.biggestBy = W.me.name; } return st; }).catch(() => {});
       return true;
-    } catch (e) { pendingWins.push([c, stake, what]); savePending(); toast('Win saved on this phone. It adds when you are back online.'); }
+    } catch (e) { pendingWins.push([c, stake, what]); savePending(); toast('Win saved on this phone. It adds when you are back online.'); return true; }
   }
   // ---------- a separate, fair wager on money already banked ----------
   function gambleAllowed(amount, count) {
@@ -177,6 +177,8 @@
     // Keep the receipt in the same write: an acknowledged-late PUT must not settle twice.
     u.gambleResults = u.gambleResults || {};
     u.gambleResults[bet.id] = delta;
+    const ids = Object.keys(u.gambleResults);
+    if (ids.length > 20) delete u.gambleResults[ids[0]];
     return u;
   }
   function updateGambleStats(st, bet, test) {

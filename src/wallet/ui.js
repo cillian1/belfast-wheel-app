@@ -35,7 +35,14 @@
 .wgamble{margin-top:12px;text-align:center}
 .wgamble[hidden]{display:none}
 .stage:not(.done) .wgamble{display:none}
-.final.wgambling{max-height:100%;overflow-y:auto;box-sizing:border-box;pointer-events:auto;padding:12px}
+.final.wgambling{max-height:100%;overflow-y:auto;box-sizing:border-box;pointer-events:auto;padding:12px;display:flex;flex-direction:column}
+.final.wgambling .wgamble{order:-1;flex:none}
+@media(max-height:600px){
+  .wgamble canvas{width:70px;height:98px}
+  .wgamble img{width:48px}
+  .wgamble p{margin:2px 0}
+  .wgamble .wrow{gap:4px}
+}
 .wgamble p{margin:6px 0}
 .wgamble .wdealer{display:flex;align-items:center;justify-content:center;gap:12px}
 .wgamble .wdealer[hidden]{display:none}
