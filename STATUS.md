@@ -7,7 +7,7 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 | Issue | Task | Status | PRs |
 |---|---|---|---|
 | #98 | Task: game sound not working on Cillian's phone | Started, no PR yet |  |
-| #187 | Task sizes, bot lanes and auto-claiming of unassigned tasks | Not started |  |
+| #187 | Task sizes, bot lanes and auto-claiming of unassigned tasks | In progress | #235 (draft) → main |
 
 **Other open PRs**
 
