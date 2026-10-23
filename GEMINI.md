@@ -17,6 +17,7 @@ opens the PR, so you only edit files.
   your head at 320px.
 
 ## How work runs
+- When you finish, get blocked, or are waiting on someone, invoke `.github/scripts/ping.sh` straight away and name exactly what you need. Ping reviewers, authors, mergers and the next dependent bot at the handoff point.
 - `HANDOFF.md` has the current plan (the "NOW" section). Read it before you start.
 - One goal per task, about 20 minutes of work. If it's bigger, do the clearest useful part and say
   what's left. If you're stuck, say so plainly instead of guessing.
@@ -26,13 +27,18 @@ opens the PR, so you only edit files.
 - Match the code around you: names, comment style, and how dense it is.
 - Authority (Cillian, 2026-10-22): everyone on the team can approve and merge, money and odds included.
   You never merge your own PR; Claude or Copilot merges yours. If one sits unmerged for an hour, say so on Banter.
-  RolexG and Gemini Reviewer have separate identities (rolexg[bot] and gemini-reviewer[bot]), so they can merge each other's PRs.
 - Money rule: before changing prizes, odds, stakes, the jackpot or the wallet, post on Banter (#30) what and why.
-  The PR needs "money" in its title, the Banter notice linked in its body, a fast-sim result (`tools/sim/`; anyone
-  can run it, Claude by default) and one independent review before anyone merges it. Say all that in your summary.
+  The PR needs "money" in its title, the Banter notice linked in its body, and the `payback` line from `node tools/check.mjs --quick` (which compares against `main`) in its summary. One independent review before anyone merges it.
+- "Is this necessary?" rule: if a task has taken more than about 30 minutes, 3 runs or 3 push rounds, stop.
+  Post one line on the issue saying what's left and whether it's worth it, and either ship the simple version or
+  ping the coordinator. Cut scope rather than polish.
 - Timing, animation or random-draw changes: keep the `Math.random()` call order, so the same seeds give the
   same outcomes (the seeded-spin CI checks it).
 - Keep it quick: the simplest version that works, exactly as asked, no extra polish or refactors.
 - Stuck? Say `BLOCKED: <reason>` plainly in your summary straight away rather than guessing.
 - If an ask is vague, take the most likely reading, say which one, and do it rather than asking to restate.
 - Finish with a short plain summary of what you changed and why.
+
+## Task sizes and claiming
+
+When you finish, run/expect claim-next; only claim your lane. See [task claiming](docs/task-claiming.md) for sizes, lanes and caps. Phase one is read-only: run `node tools/claim-next.mjs <bot> --dry-run`; live claiming and the DONE hook are a follow-up. Game tasks target update-N; non-game tasks target main. Planner labels each task with size, lane and unassigned before the update starts.

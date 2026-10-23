@@ -4,26 +4,20 @@
 #   jimini.sh finish  keep only jimini-out/, publish the report and wiki pages, report back
 # Jimini never changes the game: everything outside jimini-out/ is thrown away, and nothing is pushed to
 # main. Reports go to issues, wiki pages to the GitHub wiki (or the jimini-docs branch as a fallback).
-# App comments post as jimini[bot]; legacy shared-token comments retain the prefix.
+# His comments are posted as github-actions[bot] with "Jimini:" in front.
 set -euo pipefail
 BOT=github-actions[bot]
 MAX_DAY=${MAX_DAY:-4} # tasks per UTC day (repo variable JIMINI_DAILY_CAP)
 DOCS=jimini-docs      # fallback branch for reports and wiki pages
+WRITE=${WRITE:-off}
 
 say(){ gh api "repos/$REPO/issues/$1/comments" -f body="Jimini: $2" > /dev/null; }
 out(){ local d="EOF_$RANDOM$RANDOM"; { echo "$1<<$d"; echo "$2"; echo "$d"; } >> "$GITHUB_OUTPUT"; }
 
 start(){
-  if [ "${EVENT:-}" = issue_comment ] && { [ "${COMMENT_LOGIN:-}" = 'jimini[bot]' ] || { [ "${COMMENT_LOGIN:-}" = 'github-actions[bot]' ] && [[ ${COMMENT_BODY:-} == 'Jimini:'* ]]; }; }; then
-    echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0
-  fi
-  rounds=$(gh api --paginate "repos/$REPO/issues/$NUM/comments?per_page=100" --jq '[.[] | select((.user.login == "jimini[bot]" or .user.login == "github-actions[bot]") and (.body | startswith("Jimini: on it")))] | length' | awk '{s+=$1} END {print s+0}')
-  if [ "$rounds" -ge "${MAX_ROUNDS:-5}" ]; then
-    echo "Thread ping limit reached"; echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0
-  fi
   today=$(date -u +%F)
   day=$(gh api --paginate "repos/$REPO/issues/comments?since=${today}T00:00:00Z&per_page=100" --jq \
-    "[.[] | select((.user.login == \"$BOT\" or .user.login == \"jimini[bot]\") and (.created_at | startswith(\"$today\")) and (.body | startswith(\"Jimini: on it\")))] | length" \
+    "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\"$today\")) and (.body | startswith(\"Jimini: on it\")))] | length" \
     | awk '{s+=$1} END {print s+0}')
   echo "Jimini tasks today: $day/$MAX_DAY"
   if [ "$day" -ge "$MAX_DAY" ]; then
@@ -39,15 +33,31 @@ $(jq -r '.body // ""' <<<"$issue")";;
     *) task=$INPUT_TASK;;
   esac
   if jq -e .pull_request <<<"$issue" > /dev/null; then where="pull request #$NUM \"$title\""
-    files=$(gh api --paginate "repos/$REPO/pulls/$NUM/files?per_page=100" --jq '.[].filename' | head -n 80)
+    # Avoid head closing the pipe early under pipefail when a PR has many files.
+    files=$(gh api --paginate "repos/$REPO/pulls/$NUM/files?per_page=100" --jq '.[].filename' | sed -n '1,80p')
     where="$where, which changes:
 $files"
   else where="issue #$NUM \"$title\""; fi
+  if [ "$WRITE" = on ]; then
+    default=$(gh api "repos/$REPO" --jq .default_branch)
+    if jq -e .pull_request <<<"$issue" > /dev/null; then
+      pr=$(gh api "repos/$REPO/pulls/$NUM")
+      head=$(jq -r .head.ref <<<"$pr"); fork=$(jq -r '.head.repo.full_name != .base.repo.full_name' <<<"$pr")
+      [ "$fork" = true ] && { say "$NUM" "I can't write to a PR from a fork."; echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0; }
+      branch="jimini/pr-$NUM"; base=$(jq -r .base.ref <<<"$pr"); from=$head
+    else
+      branch="jimini/issue-$NUM"
+      base=$(grep -oiP '\bbase:\s*\K[A-Za-z0-9._/-]+' <<<"$task" | sed -n '1p' || true)
+      base=${base:-$default}; from=$base
+    fi
+    gh api "repos/$REPO/branches/$base" >/dev/null 2>&1 || { say "$NUM" "I can't find a branch called `$base`."; echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0; }
+    out write true; out branch "$branch"; out base "$base"; out from "$from"
+  else out write false; fi
   thread=$(gh api --paginate "repos/$REPO/issues/$NUM/comments?per_page=100" --jq '.[] | "[" + .user.login + "] " + .body' \
     | tail -c 8000)
   body=$(jq -r '.body // ""' <<<"$issue" | head -c 4000)
 
-  prompt="You are Jimini, the read-only analyst on this repository (the Belfast Wheel). GEMINI.md describes the code and the team; you are not RolexG and you never change code. Your job is to read, analyse and write reports and documentation.
+  prompt="You are Jimini, the analyst on this repository (the Belfast Wheel). GEMINI.md describes the code and the team. Write mode: $WRITE.
 
 You were asked for this on $where:
 ---
@@ -60,9 +70,11 @@ $body
 Comments so far (oldest first, may be cut):
 $thread
 
+When you finish, get blocked, or are waiting on someone, invoke .github/scripts/ping.sh straight away and name exactly what you need. Ping the author when a change is needed and the merger when a review is ready to merge.
+
 How to work:
 - Read whatever you need: README.md, HANDOFF.md, GEMINI.md, src/, tools/, host.html, chat.html, .github/. Skip game/index.html (a generated bundle of src/).
-- You have no shell. Don't try to edit the code: any file you write outside jimini-out/ is thrown away.
+- In write mode, do the requested coding task, obey GEMINI.md, and do not run git, gh, commit, or push. In read-only mode, you have no shell and any file you write outside jimini-out/ is thrown away.
 - A report goes in jimini-out/report.md, in Markdown. Start with a one-paragraph summary, then findings, most important first. For each finding: what's wrong, where (file:line), why it matters for players on phones, and a concrete suggested fix. Say how sure you are, and don't invent problems to pad it out.
 - Wiki pages go in jimini-out/wiki/, one Markdown file per page, named like Home.md, How-to-Play.md, Prizes-and-Odds.md (dashes, no spaces). Home.md is the front page and links the others as [[Page Name]]. Write for the friends who play, in plain words; put developer notes on their own pages. Only state rules and numbers you found in the code (src/config.json has the stakes and odds).
 - Questions that need no document: just answer.
@@ -97,7 +109,9 @@ finish(){
   [ -d jimini-out ] && cp -r jimini-out/. "$keep/"
   git checkout -q -- . && git clean -fdq # whatever else he touched goes
   if [ "$GEMINI_OK" != success ]; then
-    say "$NUM" "I got stuck before finishing, so there's no report this time. The run log has the details: $RUN_URL"; exit 1; fi
+    say "$NUM" "I got stuck before finishing, so there's no report this time. The run log has the details: $RUN_URL"
+    PING_FROM=jimini REPO="$REPO" GH_TOKEN="$GH_TOKEN" bash "$(dirname "$0")/ping.sh" claude "$NUM" "Jimini is blocked on #$NUM; please inspect the run log and unblock the task: $RUN_URL" || true
+    exit 1; fi
   summary=${SUMMARY:-}
   if jq -e . > /dev/null 2>&1 <<<"$summary"; then summary=$(jq -r '.response // ""' <<<"$summary"); fi
   [ -n "${summary// }" ] || summary="Done."
@@ -147,6 +161,35 @@ $links}"
     say 30 "done with #$NUM. ${links:-$(head -c 200 <<<"$summary")}"
     gh workflow run banter-feed.yml -R "$REPO" || true
   fi
+}
+
+finish-write(){
+  rm -rf .gemini gemini-artifacts gha-creds-*.json
+  if [ "$GEMINI_OK" != success ]; then
+    say "$NUM" "I got stuck before finishing the coding task. Run log: $RUN_URL"; exit 1
+  fi
+  node tools/bundle.mjs
+  summary=${SUMMARY:-Done.}
+  if jq -e . >/dev/null 2>&1 <<<"$summary"; then summary=$(jq -r '.response // ""' <<<"$summary"); fi
+  [ -n "${summary// }" ] || summary="Done."
+  node tools/check.mjs
+  git config user.name Jimini
+  git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+  git add -A
+  if [ -z "$(git status --porcelain)" ]; then say "$NUM" "$summary (no files changed)."; exit 0; fi
+  git commit -q -m "Jimini: ${TITLE:-task from #$NUM}" -m "Asked for on #$NUM. $RUN_URL"
+  git push -q -f "https://x-access-token:$GH_TOKEN@github.com/$REPO.git" "HEAD:refs/heads/$BRANCH"
+  pr=$(gh api "repos/$REPO/pulls?head=${REPO%%/*}:$BRANCH&state=open" --jq '.[0].number // empty')
+  if [ -z "$pr" ]; then
+    pr=$(gh api "repos/$REPO/pulls" -f title="Jimini: ${TITLE:-task from #$NUM}" -f head="$BRANCH" -f base="$BASE" -f body="Jimini completed this coding task, asked for on #$NUM.
+
+$summary
+
+Run: $RUN_URL" --jq .number)
+  fi
+  gh workflow run ci.yml -R "$REPO" --ref "$BRANCH" || true
+  PING_FROM=jimini REPO="$REPO" GH_TOKEN="$GH_TOKEN" bash "$(dirname "$0")/ping.sh" gemini "$pr" "Please review PR #$pr; merge only if CI is green." || true
+  say "$NUM" "Opened or updated Jimini PR #$pr into `$BASE`. $summary"
 }
 
 "$@"

@@ -10,6 +10,7 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
+- #177 RolexG: please take this issue as described above. → main
 - #173 RolexG: retry. Last time my comment ended the branch name with a full stop, wh → update-31
 - #171 RolexG: please take this issue as described above. → main
 - #165 RolexG: Copilot is going offline, so this one is yours now.  → update-31

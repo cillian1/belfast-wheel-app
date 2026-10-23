@@ -7,12 +7,15 @@ VALS = [5, 8, 10, 12, 15, 20, 25, 30]
 M = [r for r in runs if r.get('race')]
 def chickens(r, stack, inc):
     # returns list of multipliers for special chickens (None = plain), and plain count
-    sw, sb = r['sw'], r['sb']; plain = r['n'] - sw - sb
-    if not stack: sp = [('W', 1.5)] * sw + [('B', 1.5)] * sb
+    sw, sb = r['sw'], r['sb']
+    specials = r.get('ch')
+    if specials is None:
+        specials = ([{'special': 'W', 'count': 1, 'mult': 1.5}] * sw +
+                    [{'special': 'B', 'count': 1, 'mult': 1.5}] * sb)
+    plain = r['n'] - len(specials)
+    if not stack: sp = [(ch['special'], ch.get('mult', 1.5)) for ch in specials]
     else:
-        sp = []
-        for k, c in (('W', sw), ('B', sb)):
-            if c: sp.append((k, inc(c)))
+        sp = [(ch['special'], inc(ch.get('count', 1))) for ch in specials]
     return sp, plain
 def race_ev(sp, plain, mode, it):
     racers = (sp + [None] * plain)[:8]; r = len(racers); tot = 0.0

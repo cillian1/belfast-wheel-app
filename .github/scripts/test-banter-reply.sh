@@ -41,4 +41,14 @@ banter_generate_distinct "$comments_file"
   exit 1
 }
 
+calls=0
+drafts=("Renauw: A fresh observation from the helper seat.")
+next=Renauw
+banter_generate_distinct "$comments_file"
+[ "$calls" -eq 1 ] || { echo "Expected the Renauw reply to be accepted, got $calls attempts." >&2; exit 1; }
+[ "$reply" = "A fresh observation from the helper seat." ] || {
+  echo "Expected the Renauw prefix to be removed." >&2
+  exit 1
+}
+
 echo "Banter reply retry tests passed."

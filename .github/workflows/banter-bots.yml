@@ -1,9 +1,10 @@
+# The Gambler and The Stankman run as separate local Codex watchers and post directly.
 # The Banter chat (#30) on autopilot: Claude, Copilot, Gemini and RolexG take turns replying to each other and to
 # Cillian. Each run is one reply (see .github/scripts/banter-turn.sh), and it starts the next run itself.
-# Limits live in banter-turn.sh and count both App and shared-token comments.
+# Limits live in the script: bot replies in a row, total replies per day, and a shared daily Copilot/Renauw cap.
 #  - Claude: CLAUDE_CODE_OAUTH_TOKEN secret (from `claude setup-token`, uses Cillian's Claude plan) or
 #    ANTHROPIC_API_KEY. Without either, Claude sits out.
-#  - Copilot: the Copilot CLI with Cillian's token (COPILOT_CLI_TOKEN secret, else COPILOT_ASSIGN_TOKEN).
+#  - Copilot and Renauw: the Copilot CLI with Cillian's token (COPILOT_CLI_TOKEN secret, else COPILOT_ASSIGN_TOKEN).
 #    Each reply is one Copilot request on his plan. GitHub Models is the fallback if COPILOT_SEAT is "on".
 #  - Gemini and RolexG: Workload Identity Federation + Vertex AI (GCP_* variables, docs/gemini-adc.md) or GEMINI_API_KEY.
 name: Banter bots
@@ -22,51 +23,17 @@ concurrency:
   cancel-in-progress: false
 jobs:
   turn:
-    # App comments start a turn; fallback-token replies explicitly dispatch one.
+    # A new comment on #30 (bot replies don't fire this, they start the next turn themselves).
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.issue.number == 30 && github.event.comment.user.login != 'github-actions[bot]')
     runs-on: ubuntu-latest
-    env:
-      HAS_ROLEXG_APP: ${{ secrets.ROLEXG_APP_ID != '' && secrets.ROLEXG_APP_KEY != '' }}
-      HAS_JIMINI_APP: ${{ secrets.JIMINI_APP_ID != '' && secrets.JIMINI_APP_KEY != '' }}
-      HAS_GEMINI_APP: ${{ secrets.GEMINI_APP_ID != '' && secrets.GEMINI_APP_KEY != '' }}
-      HAS_CLAUDE_APP: ${{ secrets.CLAUDE_APP_ID != '' && secrets.CLAUDE_APP_KEY != '' }}
     steps:
-      - name: Mint ROLEXG App token
-        id: rolexg
-        if: env.HAS_ROLEXG_APP == 'true'
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ secrets.ROLEXG_APP_ID }}
-          private-key: ${{ secrets.ROLEXG_APP_KEY }}
-      - name: Mint JIMINI App token
-        id: jimini
-        if: env.HAS_JIMINI_APP == 'true'
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ secrets.JIMINI_APP_ID }}
-          private-key: ${{ secrets.JIMINI_APP_KEY }}
-      - name: Mint GEMINI App token
-        id: gemini
-        if: env.HAS_GEMINI_APP == 'true'
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ secrets.GEMINI_APP_ID }}
-          private-key: ${{ secrets.GEMINI_APP_KEY }}
-      - name: Mint CLAUDE App token
-        id: claude
-        if: env.HAS_CLAUDE_APP == 'true'
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ secrets.CLAUDE_APP_ID }}
-          private-key: ${{ secrets.CLAUDE_APP_KEY }}
       - uses: actions/checkout@v4
         with:
           sparse-checkout: |
             .github/scripts
             HANDOFF.md
-          persist-credentials: false
       - name: Sign in to Google (Workload Identity Federation)
         id: gcp
         if: vars.GCP_WIF_PROVIDER != ''
@@ -86,15 +53,14 @@ jobs:
           HAS_COPILOT: ${{ secrets.COPILOT_CLI_TOKEN != '' || secrets.COPILOT_ASSIGN_TOKEN != '' }}
         if: env.HAS_COPILOT == 'true'
         run: npm install -g @github/copilot
-      - name: Test Banter reply retry
-        run: bash .github/scripts/test-banter-reply.sh
+      - name: Test Banter and ping behavior
+        run: |
+          bash .github/scripts/test-banter-reply.sh
+          bash .github/scripts/test-banter-seats.sh
+          bash .github/scripts/test-ping.sh
       - name: Take a turn
         env:
           GH_TOKEN: ${{ github.token }}
-          ROLEXG_GH_TOKEN: ${{ steps.rolexg.outputs.token }}
-          JIMINI_GH_TOKEN: ${{ steps.jimini.outputs.token }}
-          GEMINI_GH_TOKEN: ${{ steps.gemini.outputs.token }}
-          CLAUDE_GH_TOKEN: ${{ steps.claude.outputs.token }}
           REPO: ${{ github.repository }}
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

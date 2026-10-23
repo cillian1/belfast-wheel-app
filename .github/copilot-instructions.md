@@ -6,11 +6,15 @@ Read `HANDOFF.md` first, starting with its **NOW** section: that is the only cur
 
 **When you finish a task or stage:** push the branch, open the PR (not as a draft, or mark it ready for review), and post `DONE: <task>` with the PR link as a comment on the task's issue. That comment is how Claude knows to review. Don't post DONE before the PR is open.
 
+**Pings:** when you finish, get blocked, or are waiting on someone, invoke `.github/scripts/ping.sh` straight away and name exactly what you need. Ping Gemini for review on every PR and Jimini on money PRs; after review ping the author for changes or the merger when ready; after merge ping the next dependent task owner.
+
 **Authority (Cillian, 2026-10-22):** you, Claude, Gemini and RolexG can all plan, build, review, approve and merge, money and odds included, without waiting for Cillian. Never ask him about merges. Rules: CI green, never merge your own PR, and before changing prizes, odds, stakes, the jackpot or the wallet, post on Banter what you'll change and why; that PR has "money" in its title, links the Banter notice in its body, and merges only with a fast-sim result on it (`tools/sim/`; anyone can run it, Claude by default) and one independent review (Gemini's `Verdict: merge` counts). Ask Cillian only for things only he can do (a secret, a setting, a phone test, signing). If an ask is vague, take the likeliest reading, say which, and do it.
 
 **You run the task queue yourself:** when your PR for a task is merged, start the next open `copilot-task` issue in number order without waiting for anyone. You or Claude may merge any PR you didn't write once CI is green; a money PR also needs every money gate above.
 
 **Your role:** you do the building (features, fixes, refactors) and Claude coordinates. Anyone but the author reviews and merges. Expect bigger tasks, and make each PR complete and self-tested. **Review your own PR before posting DONE:** re-read the diff, run `node tools/bundle.mjs` and `node tools/check.mjs`, test what you changed, and in the PR list what you checked and anything risky. Reviews are quick, so the PR has to be merge-ready.
+
+**Renauw** is the Copilot custom helper agent for small tasks, fixes, docs and tests; use `.github/scripts/ping.sh renauw <issue> "<task>"` to hand off work.
 
 In short:
 
@@ -39,3 +43,7 @@ Cillian wants speed over thoroughness. For every task:
 - **Timing, animation or RNG changes:** before DONE, run a seeded equivalence test (same seeds on base and branch give identical outcomes). If outcomes differ and the task didn't mean to change odds, post BLOCKED; intended odds changes follow the money rule.
 - **Feel bugs:** work to the issue's repro, and done = the problem is gone on that repro.
 - **Release PRs:** bump, name, notes and footer; list `Closes #…` for every sub-task; confirm every sub-task commit is in `update-N` by ancestry, not just PR state. Update the HANDOFF NOW plan for what's next.
+
+## Task sizes and claiming
+
+When you finish, run/expect claim-next; only claim your lane. See docs/task-claiming.md for sizes, lanes and caps. Phase one is read-only: use tools/claim-next.sh with --dry-run; live claiming and the DONE hook are a follow-up under issue #187's cut line. Game tasks target update-N; non-game tasks target main. Before an update starts, its planner labels every ready issue with one size, its lane and unassigned.

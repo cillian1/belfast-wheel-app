@@ -4,8 +4,8 @@
 #   rolexg.sh finish  rebuild the bundle, commit, push, open or update the PR, report back
 # RolexG never merges its own PRs. "@rolexg merge" on someone else's PR merges it through
 # .github/scripts/bot-merge.sh (green CI, not into main).
-# App comments post as rolexg[bot]; legacy shared-token comments retain the prefix.
-# The workflow and start guard reject self mentions.
+# Its comments are posted as github-actions[bot] with "RolexG:" in front. Comments made with the
+# workflow's own token never start workflows, so RolexG can't set itself off.
 set -euo pipefail
 BOT=github-actions[bot]
 MAX_DAY=${MAX_DAY:-8}       # tasks per UTC day, across the whole repo (repo variable ROLEXG_DAILY_CAP)
@@ -15,19 +15,16 @@ say(){ gh api "repos/$REPO/issues/$1/comments" -f body="RolexG: $2" > /dev/null;
 out(){ local d="EOF_$RANDOM$RANDOM"; { echo "$1<<$d"; echo "$2"; echo "$d"; } >> "$GITHUB_OUTPUT"; }
 
 start(){
-  if [ "${EVENT:-}" = issue_comment ] && { [ "${COMMENT_LOGIN:-}" = 'rolexg[bot]' ] || { [ "${COMMENT_LOGIN:-}" = 'github-actions[bot]' ] && [[ ${COMMENT_BODY:-} == 'RolexG:'* ]]; }; }; then
-    echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0
-  fi
   # "@rolexg merge" on a PR is a merge, not a coding task (no Gemini call, doesn't count towards the limits).
   if [ "$EVENT" = issue_comment ] && grep -qiP '^\s*@rolexg\s+merge\b' <<<"$COMMENT_BODY"; then
     echo "skip=true" >> "$GITHUB_OUTPUT"
     "$(dirname "$0")/bot-merge.sh" "$NUM" RolexG; exit 0; fi
   today=$(date -u +%F)
   day=$(gh api --paginate "repos/$REPO/issues/comments?since=${today}T00:00:00Z&per_page=100" --jq \
-    "[.[] | select((.user.login == \"$BOT\" or .user.login == \"rolexg[bot]\") and (.created_at | startswith(\"$today\")) and (.body | startswith(\"RolexG: on it\")))] | length" \
+    "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\"$today\")) and (.body | startswith(\"RolexG: on it\")))] | length" \
     | awk '{s+=$1} END {print s+0}')
   rounds=$(gh api --paginate "repos/$REPO/issues/$NUM/comments?per_page=100" --jq \
-    "[.[] | select((.user.login == \"$BOT\" or .user.login == \"rolexg[bot]\") and (.body | startswith(\"RolexG: on it\")))] | length" | awk '{s+=$1} END {print s+0}')
+    "[.[] | select(.user.login == \"$BOT\" and (.body | startswith(\"RolexG: on it\")))] | length" | awk '{s+=$1} END {print s+0}')
   echo "RolexG tasks today: $day/$MAX_DAY, rounds on #$NUM: $rounds/$MAX_ROUNDS"
   if [ "$day" -ge "$MAX_DAY" ]; then
     say "$NUM" "I've hit today's limit of $MAX_DAY tasks, so I'm leaving this one. Ask again after midnight UTC, or raise the ROLEXG_DAILY_CAP repo variable."
@@ -72,6 +69,7 @@ $(jq -r '.body // ""' <<<"$issue")";;
   body=$(jq -r '.body // ""' <<<"$issue" | head -c 6000)
 
   prompt="You are RolexG, a coding agent built on Gemini, working in this repository (the Belfast Wheel). GEMINI.md has the house rules: follow them.
+When you finish, get blocked, or are waiting on someone, invoke .github/scripts/ping.sh straight away and name exactly what you need. Ping Gemini for review when you open a PR, and Jimini too for money PRs; ping the author or merger when a review or merge is needed.
 
 You were asked for this on $where:
 ---
@@ -102,15 +100,28 @@ When you're done, end with a short summary for the humans: what you changed and 
 finish(){
   # The CLI's settings file and anything under .github never go in RolexG's commits
   # (the workflow token can't push workflow changes anyway).
+  dropped_github=$(git status --porcelain -- .github | sed -E 's/^...//')
+  if [ -n "$dropped_github" ]; then
+    dropped_note="I couldn't change .github files ($dropped_github); ping The Gambler."
+  fi
   rm -rf .gemini gemini-artifacts gha-creds-*.json; git checkout -- .github 2>/dev/null || true; git clean -fdq -- .github
   if [ "$GEMINI_OK" != success ]; then
-    say "$NUM" "I got stuck before finishing, so I've changed nothing. The run log has the details: $RUN_URL"; exit 1; fi
+    say "$NUM" "I got stuck before finishing, so I've changed nothing. The run log has the details: $RUN_URL"
+    PING_FROM=rolexg REPO="$REPO" GH_TOKEN="$GH_TOKEN" bash "$(dirname "$0")/ping.sh" claude "$NUM" "RolexG is blocked on #$NUM; please inspect the run log and unblock the task: $RUN_URL" || true
+    exit 1; fi
   node tools/bundle.mjs
   summary=${SUMMARY:-}
   # With no final text, the action hands over the CLI's raw JSON instead; keep only its response.
   if jq -e . > /dev/null 2>&1 <<<"$summary"; then summary=$(jq -r '.response // ""' <<<"$summary"); fi
   [ -n "${summary// }" ] || summary="I didn't write a summary this time. Changed: $(git status --porcelain | awk '{print $2}' | grep -v '^game/index.html$' | tr '\n' ' ')"
-  if [ -z "$(git status --porcelain)" ]; then say "$NUM" "$summary"; exit 0; fi
+  if [ -n "$dropped_github" ]; then summary="${summary}
+
+${dropped_note}"; fi
+  if [ -z "$(git status --porcelain)" ]; then
+    say "$NUM" "$summary"
+    if [ -n "$dropped_github" ]; then PING_FROM=rolexg REPO="$REPO" GH_TOKEN="$GH_TOKEN" bash "$(dirname "$0")/ping.sh" gambler "$NUM" "$dropped_note" || true; fi
+    exit 0
+  fi
 
   checks="passed"; node tools/check.mjs > check.log 2>&1 || checks="FAILED (see the run log)"
   cat check.log; rm -f check.log
@@ -135,11 +146,13 @@ Run: $RUN_URL" --jq .number) || {
     gh api "repos/$REPO/issues/$pr/labels" -f "labels[]=rolexg" > /dev/null || true
     msg="opened #$pr into \`$BASE\`."
   else msg="pushed to #$pr."; fi
-  # App pushes/PRs already trigger CI and review. Only dispatch for the fallback token.
-  if [ "${USING_APP_TOKEN:-false}" != true ]; then
-    gh workflow run ci.yml -R "$REPO" --ref "$BRANCH" || true
-    gh workflow run gemini-review.yml -R "$REPO" -f pr="$pr" || true
+  # PRs and pushes made with the workflow token don't start other workflows, so start CI by hand.
+  gh workflow run ci.yml -R "$REPO" --ref "$BRANCH" || true
+  PING_FROM=rolexg REPO="$REPO" GH_TOKEN="$GH_TOKEN" bash "$(dirname "$0")/ping.sh" gemini "$pr" "Please review PR #$pr; merge it if the verdict is merge and CI is green." || true
+  if [ -n "$dropped_github" ]; then
+    PING_FROM=rolexg REPO="$REPO" GH_TOKEN="$GH_TOKEN" bash "$(dirname "$0")/ping.sh" gambler "$NUM" "$dropped_note" || true
   fi
+  if [[ "$TITLE" =~ [Mm]oney ]]; then PING_FROM=rolexg REPO="$REPO" GH_TOKEN="$GH_TOKEN" bash "$(dirname "$0")/ping.sh" jimini "$pr" "Please check the money changes and report any concerns." || true; fi
 
   say "$NUM" "$msg
 

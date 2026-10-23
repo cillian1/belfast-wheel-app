@@ -2,10 +2,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { pathHarness, seededRandom } from './core.mjs';
 import { openCoreBrowser } from './core-browser.mjs';
+import { liveTipChance } from './core-source.mjs';
 
 const count = Number(process.argv[2] || 200);
 if (!Number.isSafeInteger(count) || count < 1) throw new Error('Expected a positive seed count');
-let html = readFileSync(new URL('../../game/index.html', import.meta.url), 'utf8');
+let html = readFileSync(new URL('../../game/index.html', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 const wallet = html.indexOf('<script>window.WALLET_CFG');
 assert.ok(wallet > 0, 'wallet boundary changed');
 html = html.slice(0, wallet) + '<script>window.$m = v => v;</script></body></html>';
@@ -49,14 +50,16 @@ try {
   });
   const records = [];
   for (let seed = 1; seed <= count; seed++) {
-    const expected = await page.evaluate(seed => window.__spinPath(seed, .10, true), seed);
-    const actual = await core.evaluate(seed => window.__spinPath(seed, .10, true), seed);
+    const expected = await page.evaluate(({ seed, tip }) => window.__spinPath(seed, tip, true),
+      { seed, tip: liveTipChance });
+    const actual = await core.evaluate(({ seed, tip }) => window.__spinPath(seed, tip, true),
+      { seed, tip: liveTipChance });
     assert.deepEqual(actual, expected, `path mismatch for seed ${seed}`);
     records.push(expected.result);
   }
   for (let offset = 0; offset < count; offset += 100) {
-    const batch = await core.evaluate(({ start, count }) => window.__spinBatch(start, count, .10),
-      { start: offset + 1, count: Math.min(100, count - offset) });
+    const batch = await core.evaluate(({ start, count, tip }) => window.__spinBatch(start, count, tip),
+      { start: offset + 1, count: Math.min(100, count - offset), tip: liveTipChance });
     assert.deepEqual(batch, records.slice(offset, offset + batch.length), `runner batch mismatch at seed ${offset + 1}`);
   }
   console.log(`${count} full browser/core paths identical (${((performance.now() - started) / 1000).toFixed(3)} s)`);

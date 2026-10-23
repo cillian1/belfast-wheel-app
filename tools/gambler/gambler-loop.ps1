@@ -6,9 +6,6 @@ $SeenIds = [System.Collections.Generic.HashSet[string]]::new()
 $ReplyTimes = [System.Collections.Generic.Queue[DateTimeOffset]]::new()
 $LastCheck = [DateTimeOffset]::UtcNow
 $RepoRoot = (& git rev-parse --show-toplevel).Trim()
-$DailyTaskLimit = 4
-$TaskStateDirectory = if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA 'TheGambler' } else { Join-Path $env:TEMP 'TheGambler' }
-$TaskStateFile = Join-Path $TaskStateDirectory 'task-state.json'
 $TaskMutex = [System.Threading.Mutex]::new($false, 'Local\BelfastWheelGamblerTask')
 
 # Make GitHub CLI available in fresh PowerShell windows after a winget install.
@@ -27,9 +24,38 @@ if (-not (Get-Command codex -ErrorAction SilentlyContinue)) {
 
 function Post-GamblerIssueComment {
   param([int]$IssueNumber, [string]$Body)
-  $Output = & gh issue comment $IssueNumber --repo $Repo --body $Body 2>&1
-  if ($LASTEXITCODE -ne 0) {
-    throw "Could not post a comment on issue #$IssueNumber. $($Output -join ' ')"
+  $BodyFile = Join-Path $env:TEMP ('gambler-comment-' + [Guid]::NewGuid().ToString('N') + '.txt')
+  try {
+    [IO.File]::WriteAllText($BodyFile, $Body, [Text.UTF8Encoding]::new($false))
+    $Output = & gh issue comment $IssueNumber --repo $Repo --body-file $BodyFile 2>&1
+    if ($LASTEXITCODE -ne 0) { throw "Could not post a comment on issue #$IssueNumber. $($Output -join ' ')" }
+  } finally {
+    if (Test-Path -LiteralPath $BodyFile) { Remove-Item -LiteralPath $BodyFile -Force }
+  }
+}
+
+function Commit-GamblerTask {
+  param([string]$Title)
+  $MessageFile = Join-Path $env:TEMP ('gambler-commit-' + [Guid]::NewGuid().ToString('N') + '.txt')
+  try {
+    [IO.File]::WriteAllText($MessageFile, $Title, [Text.UTF8Encoding]::new($false))
+    Invoke-GamblerGit @('commit', '--file', $MessageFile) | Out-Null
+  } finally {
+    if (Test-Path -LiteralPath $MessageFile) { Remove-Item -LiteralPath $MessageFile -Force }
+  }
+}
+
+function New-GamblerTaskPr {
+  param([string]$BaseBranch, [string]$TaskBranch, [string]$Title, [string]$Body)
+  $RequestFile = Join-Path $env:TEMP ('gambler-pr-' + [Guid]::NewGuid().ToString('N') + '.json')
+  try {
+    $Request = @{ base = $BaseBranch; head = $TaskBranch; title = $Title; body = $Body } | ConvertTo-Json
+    [IO.File]::WriteAllText($RequestFile, $Request, [Text.UTF8Encoding]::new($false))
+    $Output = & gh api --method POST "repos/$Repo/pulls" --input $RequestFile --jq .html_url 2>&1
+    if ($LASTEXITCODE -ne 0) { throw "Could not create the pull request. $($Output -join ' ')" }
+    return $Output
+  } finally {
+    if (Test-Path -LiteralPath $RequestFile) { Remove-Item -LiteralPath $RequestFile -Force }
   }
 }
 
@@ -42,33 +68,51 @@ function Invoke-GamblerGit {
   return $Output
 }
 
-function Get-GamblerTaskState {
-  $Today = Get-Date -Format 'yyyy-MM-dd'
-  if (-not (Test-Path -LiteralPath $TaskStateFile)) {
-    return [pscustomobject]@{ date = $Today; started = 0 }
-  }
+function Assert-GamblerStagedDiff {
+  $CheckOutput = & git -C $RepoRoot diff --cached --check 2>&1
+  if ($LASTEXITCODE -eq 0) { return }
 
-  try {
-    $Saved = Get-Content -Raw -Encoding UTF8 -LiteralPath $TaskStateFile | ConvertFrom-Json
-    if ($Saved.date -eq $Today -and $Saved.PSObject.Properties['started'] -and [int]$Saved.started -ge 0) {
-      return [pscustomobject]@{ date = $Today; started = [int]$Saved.started }
+  # Retry only the harmless EOF error that used to discard a whole task.
+  $FixedPaths = @()
+  foreach ($Line in @($CheckOutput)) {
+    if ([string]$Line -match '^(.+):\d+: new blank line at EOF\.$') {
+      $RelativePath = $Matches[1]
+      $FullPath = [IO.Path]::GetFullPath((Join-Path $RepoRoot $RelativePath))
+      $RootPrefix = $RepoRoot.TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
+      if (-not $FullPath.StartsWith($RootPrefix, [StringComparison]::OrdinalIgnoreCase)) { continue }
+      $Item = Get-Item -LiteralPath $FullPath -ErrorAction Stop
+      if ($Item.Attributes -band [IO.FileAttributes]::ReparsePoint) { continue }
+      $Bytes = [IO.File]::ReadAllBytes($FullPath)
+      $HasBom = $Bytes.Length -ge 3 -and $Bytes[0] -eq 239 -and $Bytes[1] -eq 187 -and $Bytes[2] -eq 191
+      $Encoding = [Text.UTF8Encoding]::new($HasBom, $true)
+      $Text = [IO.File]::ReadAllText($FullPath, $Encoding)
+      $Ending = if ($Text.Contains("`r`n")) { "`r`n" } else { "`n" }
+      $Text = [regex]::Replace($Text, '(?:\r?\n[\t ]*)+\z', '') + $Ending
+      [IO.File]::WriteAllText($FullPath, $Text, $Encoding)
+      $FixedPaths += $RelativePath
     }
-    return [pscustomobject]@{ date = $Today; started = 0 }
-  } catch {
-    Write-Warning 'Could not read the Gambler task counter; refusing to start tasks until its state is repaired.'
-    return $null
   }
+  if ($FixedPaths.Count -gt 0) {
+    Invoke-GamblerGit (@('add', '--') + $FixedPaths) | Out-Null
+    Write-Host 'Removed extra blank lines at EOF; retrying the staged whitespace check once.'
+  }
+  Invoke-GamblerGit @('diff', '--cached', '--check') | Out-Null
 }
 
-function Save-GamblerTaskState {
-  param([int]$Started)
-  New-Item -ItemType Directory -Path $TaskStateDirectory -Force | Out-Null
-  [pscustomobject]@{ date = (Get-Date -Format 'yyyy-MM-dd'); started = $Started } |
-    ConvertTo-Json -Compress | Set-Content -Encoding UTF8 -LiteralPath $TaskStateFile
+function Save-GamblerTaskCheckpoint {
+  param([int]$IssueNumber)
+  $Dirty = @(Invoke-GamblerGit @('status', '--porcelain', '--untracked-files=all'))
+  if ($Dirty.Count -eq 0) { return }
+  Invoke-GamblerGit @('add', '--all') | Out-Null
+  Invoke-GamblerGit @('commit', '-m', "WIP #${IssueNumber}: preserve failed task for recovery") | Out-Null
 }
 
 function Get-GamblerTaskBaseBranch {
   param([string]$IssueBody)
+
+  # Explicit base directives take precedence over a later PR target.
+  $Base = [regex]::Match($IssueBody, '(?im)\bbase(?:\s+branch)?\s*:\s*`?(main|update-\d+)`?\b')
+  if ($Base.Success) { return $Base.Groups[1].Value }
 
   # Accept the explicit branch directives used in issue bodies, whether they
   # appear as a heading, a label, or inline prose (for example "target `main").
@@ -92,6 +136,13 @@ function Get-GamblerTaskBaseBranch {
 
 function Write-GamblerTaskBlocked {
   param([int]$IssueNumber, [string]$Reason)
+  try {
+    $FailureDir = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'BelfastWheelGambler\failures'
+    [void](New-Item -ItemType Directory -Path $FailureDir -Force)
+    $FailureFile = Join-Path $FailureDir "issue-$IssueNumber.txt"
+    [IO.File]::WriteAllText($FailureFile, $Reason, [Text.UTF8Encoding]::new($false))
+    Write-Host "Task failure saved to $FailureFile"
+  } catch { Write-Warning "Could not save the task failure locally. $_" }
   $OneLine = ($Reason -replace '[\r\n]+', ' ').Trim()
   if ($OneLine.Length -gt 350) { $OneLine = $OneLine.Substring(0, 350) }
   try {
@@ -114,13 +165,6 @@ function Invoke-GamblerTaskQueue {
       return
     }
 
-    $State = Get-GamblerTaskState
-    if ($null -eq $State) { return }
-    if ($State.started -ge $DailyTaskLimit) {
-      Write-Host "Daily Gambler task limit reached ($DailyTaskLimit); leaving labelled issues for tomorrow."
-      return
-    }
-
     $IssueListLines = & gh issue list --repo $Repo --state open --label gambler-task --limit 100 --json number,title,author,createdAt 2>&1
     if ($LASTEXITCODE -ne 0) {
       Write-Warning "Could not read gambler-task issues; will retry next poll. $($IssueListLines -join ' ')"
@@ -128,9 +172,9 @@ function Invoke-GamblerTaskQueue {
     }
     try {
       # Windows PowerShell passes a parsed JSON array down the pipe as one item, so store it first.
-      # Issue numbers rise with creation time, so sorting by number is oldest first.
+      # Releases take priority; otherwise issue numbers give oldest-first ordering.
       $ParsedIssues = ConvertFrom-Json -InputObject ($IssueListLines -join "`n")
-      $TaskIssues = @($ParsedIssues | Sort-Object { [int]$_.number })
+      $TaskIssues = @($ParsedIssues | Sort-Object @{ Expression = { if ([string]$_.title -match '^Release\b') { 0 } else { 1 } } }, @{ Expression = { [int]$_.number } })
     } catch {
       Write-Warning 'Could not parse gambler-task issues; will retry next poll.'
       return
@@ -164,29 +208,77 @@ function Invoke-GamblerTaskQueue {
       }
       $AlreadyStarted = $false
       $LastGamblerStatus = $null
+      $RetryRequested = $false
       foreach ($CommentLine in @($CommentLines)) {
         try { $ExistingComment = ConvertFrom-Json -InputObject $CommentLine } catch { continue }
         if ([string]$ExistingComment.user.login -eq 'cillian1') {
           $ExistingBody = [string]$ExistingComment.body
           if ($ExistingBody -match '(?im)^\s*The Gambler:\s*on it\b') {
             $AlreadyStarted = $true
-            $LastGamblerStatus = [pscustomobject]@{ kind = 'on it'; body = $ExistingBody }
+            $RetryRequested = $false
+            $LastGamblerStatus = [pscustomobject]@{ kind = 'on it'; body = $ExistingBody; created_at = [string]$ExistingComment.created_at }
           } elseif ($AlreadyStarted -and $ExistingBody -match '(?im)^\s*The Gambler:\s*(DONE|BLOCKED):') {
-            $LastGamblerStatus = [pscustomobject]@{ kind = $Matches[1].ToUpperInvariant(); body = $ExistingBody }
+            $LastGamblerStatus = [pscustomobject]@{ kind = $Matches[1].ToUpperInvariant(); body = $ExistingBody; created_at = [string]$ExistingComment.created_at }
+            $RetryRequested = $false
+          } elseif ($LastGamblerStatus -and $LastGamblerStatus.kind -eq 'BLOCKED' -and
+            $ExistingBody -notmatch '(?i)^\s*The Gambler:' -and $ExistingBody -match '(?i)\bretry\b' -and
+            [string]$ExistingComment.created_at -gt [string]$LastGamblerStatus.created_at) {
+            $RetryRequested = $true
           }
         }
       }
+      $ResumeStaleTask = $false
       if ($AlreadyStarted) {
-        if ($Issue.state -ne 'open' -or ($LastGamblerStatus -and $LastGamblerStatus.kind -eq 'BLOCKED')) { continue }
-        if ($LastGamblerStatus -and $LastGamblerStatus.kind -eq 'DONE') {
-          $DonePrMatch = [regex]::Match($LastGamblerStatus.body, 'https://github\.com/[^/]+/[^/]+/pull/(\d+)')
-          if ($DonePrMatch.Success) {
-            $DonePrState = & gh pr view $DonePrMatch.Groups[1].Value --repo $Repo --json state --jq .state 2>&1
-            if ($LASTEXITCODE -eq 0 -and [string]$DonePrState -match '^MERGED$') { continue }
+        if ($Issue.state -ne 'open') { continue }
+        if ($LastGamblerStatus -and $LastGamblerStatus.kind -eq 'BLOCKED') {
+          if (-not $RetryRequested) { continue }
+          $ResumeStaleTask = $true
+        }
+        if (-not $ResumeStaleTask) {
+          if ($LastGamblerStatus -and $LastGamblerStatus.kind -eq 'DONE') {
+            $DonePrMatch = [regex]::Match($LastGamblerStatus.body, 'https://github\.com/[^/]+/[^/]+/pull/(\d+)')
+            if ($DonePrMatch.Success) {
+              $DonePrState = & gh pr view $DonePrMatch.Groups[1].Value --repo $Repo --json state --jq .state 2>&1
+              if ($LASTEXITCODE -eq 0 -and [string]$DonePrState -match '^MERGED$') { continue }
+            }
+            Write-Host "Issue #$IssueNumber has an unfinished DONE handoff; leaving it for review or closure."
+            continue
+          }
+          if (-not $LastGamblerStatus -or $LastGamblerStatus.kind -ne 'on it') { continue }
+          try {
+            $ClaimTime = [DateTimeOffset]::Parse([string]$LastGamblerStatus.created_at).ToUniversalTime()
+          } catch {
+            Write-Warning "Could not read the start time for issue #$IssueNumber; leaving it queued rather than risking duplicate work."
+            return
+          }
+          if (([DateTimeOffset]::UtcNow - $ClaimTime) -lt [TimeSpan]::FromMinutes(30)) {
+            Write-Host "Issue #$IssueNumber is still within its 30-minute claim window; waiting."
+            continue
           }
         }
-        Write-Host "Issue #$IssueNumber is already in progress; waiting for it to finish before starting another task."
-        return
+
+        $OpenPrLines = & gh pr list --repo $Repo --state open --limit 100 --json number,title,body,headRefName 2>&1
+        if ($LASTEXITCODE -ne 0) {
+          Write-Warning "Could not check for an open PR before resuming issue #$IssueNumber; will retry next poll."
+          return
+        }
+        try { $OpenPrs = @(ConvertFrom-Json -InputObject ($OpenPrLines -join "`n")) } catch {
+          Write-Warning "Could not parse open PRs before resuming issue #$IssueNumber; will retry next poll."
+          return
+        }
+        $IssuePr = $OpenPrs | Where-Object {
+          $PrBody = [string]$_.body
+          $PrBranch = [string]$_.headRefName
+          $PrBody -match "(?im)\b(?:closes|fixes|resolves)\s+#$IssueNumber\b" -or
+            $PrBranch -match "(?i)(?:^|/)issue-$IssueNumber(?:[-/]|$)|^gambler/$IssueNumber(?:-|$)"
+        } | Select-Object -First 1
+        if ($IssuePr) {
+          Write-Host "Issue #$IssueNumber already has open PR #$($IssuePr.number); waiting for it to finish."
+          continue
+        }
+
+        $ResumeStaleTask = $true
+        Write-Host "Issue #$IssueNumber has a stale claim and no open PR; resuming it."
       }
 
       $DependencyMatches = [regex]::Matches([string]$Issue.body, '(?i)\bafter\s+#(\d+)')
@@ -208,7 +300,7 @@ function Invoke-GamblerTaskQueue {
           break
         }
       }
-      if ($WaitingForDependency) { return }
+      if ($WaitingForDependency) { continue }
 
       $GitStatus = & git -C $RepoRoot status --porcelain --untracked-files=all
       if ($LASTEXITCODE -ne 0 -or @($GitStatus).Count -gt 0) {
@@ -221,13 +313,10 @@ function Invoke-GamblerTaskQueue {
         return
       }
 
-      $State.started++
       try {
-        Save-GamblerTaskState -Started $State.started
-        Post-GamblerIssueComment -IssueNumber $IssueNumber -Body 'The Gambler: on it'
+        $ClaimComment = if ($ResumeStaleTask) { 'The Gambler: on it (resuming stale claim)' } else { 'The Gambler: on it' }
+        Post-GamblerIssueComment -IssueNumber $IssueNumber -Body $ClaimComment
       } catch {
-        $State.started = [Math]::Max(0, $State.started - 1)
-        try { Save-GamblerTaskState -Started $State.started } catch { }
         Write-Warning "Could not start issue #$IssueNumber; will retry next poll. $_"
         return
       }
@@ -249,10 +338,23 @@ function Invoke-GamblerTaskQueue {
         if ($Slug.Length -gt 55) { $Slug = $Slug.Substring(0, 55).Trim('-') }
         if ([string]::IsNullOrWhiteSpace($Slug)) { $Slug = 'task' }
         $TaskBranch = "gambler/$IssueNumber-$Slug"
+        $TaskStartRef = "origin/$BaseBranch"
+        if ($ResumeStaleTask) {
+          $PreviousBranches = @(
+            (Invoke-GamblerGit @('branch', '--remote', '--list', "origin/*/issue-$IssueNumber")) |
+              ForEach-Object { ([string]$_).Trim() } | Where-Object {
+                $_ -match ('^origin/.+/issue-' + [regex]::Escape([string]$IssueNumber) + '$')
+              }
+          )
+          if ($PreviousBranches.Count -gt 0) {
+            $TaskStartRef = $PreviousBranches[-1]
+          }
+          $TaskBranch = "$TaskBranch-resume-$((Get-Date).ToUniversalTime().ToString('MMddHHmm'))"
+        }
         & git -C $RepoRoot show-ref --verify --quiet "refs/heads/$TaskBranch"
         if ($LASTEXITCODE -eq 0) { throw "Local branch $TaskBranch already exists; refusing to reuse it." }
 
-        Invoke-GamblerGit @('switch', '-c', $TaskBranch, "origin/$BaseBranch") | Out-Null
+        Invoke-GamblerGit @('switch', '-c', $TaskBranch, $TaskStartRef) | Out-Null
         $BranchCreated = $true
 
         $AgentsPath = Join-Path $RepoRoot 'AGENTS.md'
@@ -290,8 +392,8 @@ $($Issue.body)
         if (@($ChangedPaths).Count -eq 0) { throw 'Codex completed without changing any files.' }
 
         Invoke-GamblerGit @('add', '--all') | Out-Null
-        Invoke-GamblerGit @('diff', '--cached', '--check') | Out-Null
-        Invoke-GamblerGit @('commit', '-m', [string]$Issue.title) | Out-Null
+        Assert-GamblerStagedDiff
+        Commit-GamblerTask -Title ([string]$Issue.title)
         $CommitCreated = $true
         Invoke-GamblerGit @('push', '--set-upstream', 'origin', $TaskBranch) | Out-Null
 
@@ -301,8 +403,7 @@ Automated implementation of issue #${IssueNumber}: $($Issue.title)
 
 Closes #$IssueNumber
 "@
-        $PrOutput = & gh pr create --repo $Repo --base $BaseBranch --head $TaskBranch --title ([string]$Issue.title) --body $PrBody 2>&1
-        if ($LASTEXITCODE -ne 0) { throw "Could not create the pull request. $($PrOutput -join ' ')" }
+        $PrOutput = New-GamblerTaskPr -BaseBranch $BaseBranch -TaskBranch $TaskBranch -Title ([string]$Issue.title) -Body $PrBody
         $PrUrl = [string](@($PrOutput) | Where-Object { [string]$_ -match '^https://github\.com/.+/pull/\d+' } | Select-Object -Last 1)
         if ([string]::IsNullOrWhiteSpace($PrUrl)) { throw 'The pull request was created, but its URL was not returned.' }
       } catch {
@@ -311,12 +412,21 @@ Closes #$IssueNumber
         if ($BranchCreated) {
           $CurrentBranch = ([string](& git -C $RepoRoot branch --show-current)).Trim()
           if ($CurrentBranch -eq $TaskBranch) {
-            if (-not $CommitCreated) {
-              & git -C $RepoRoot reset --hard "origin/$BaseBranch" | Out-Null
-              & git -C $RepoRoot clean -fd -- . | Out-Null
+            $CanSwitchBack = $true
+            try {
+              if (-not $CommitCreated) { Save-GamblerTaskCheckpoint -IssueNumber $IssueNumber }
+            } catch {
+              $CanSwitchBack = $false
+              $TaskFailure = "Recovery checkout $RepoRoot on $TaskBranch kept unchanged; checkpoint failed: $($_.Exception.Message). Original failure: $TaskFailure"
             }
-            & git -C $RepoRoot switch $OriginalBranch | Out-Null
-            if (-not $CommitCreated) { & git -C $RepoRoot branch -D $TaskBranch | Out-Null }
+            if ($CanSwitchBack) {
+              if ($TaskFailure) { $TaskFailure = "Recovery branch $TaskBranch in $RepoRoot preserved locally. $TaskFailure" }
+              try {
+                Invoke-GamblerGit @('switch', $OriginalBranch) | Out-Null
+              } catch {
+                $TaskFailure = "Recovery branch $TaskBranch preserved; could not return to $OriginalBranch. $($_.Exception.Message)"
+              }
+            }
           } else {
             Write-Warning "Task runner left branch $CurrentBranch selected instead of $TaskBranch; inspect the workspace before another task."
             if (-not $TaskFailure) { $TaskFailure = 'Codex or a tool changed the active branch unexpectedly.' }
@@ -329,8 +439,7 @@ Closes #$IssueNumber
       } elseif ($PrUrl) {
         try {
           Post-GamblerIssueComment -IssueNumber $IssueNumber -Body "The Gambler: DONE: Opened the requested PR: $PrUrl"
-          & gh issue comment 30 --repo $Repo --body "The Gambler: DONE: #$IssueNumber is up: $PrUrl" | Out-Null
-          if ($LASTEXITCODE -ne 0) { Write-Warning "PR opened for issue #$IssueNumber, but the Banter update failed." }
+          Post-GamblerIssueComment -IssueNumber 30 -Body "The Gambler: DONE: #$IssueNumber is up: $PrUrl"
         } catch {
           Write-Warning "PR $PrUrl is open, but the issue DONE comment failed. $_"
         }
@@ -427,13 +536,13 @@ $CommentData
       continue
     }
 
-    & gh issue comment 30 -R $Repo -b "The Gambler: $Reply"
-    if ($LASTEXITCODE -ne 0) {
-      Write-Warning 'Could not post the reply to Banter.'
+    try {
+      Post-GamblerIssueComment -IssueNumber 30 -Body "The Gambler: $Reply"
+      $ReplyTimes.Enqueue([DateTimeOffset]::UtcNow)
+    } catch {
+      Write-Warning "Could not post the reply to Banter. $_"
       [void]$SeenIds.Remove($CommentId)
       $PollHadFailures = $true
-    } else {
-      $ReplyTimes.Enqueue([DateTimeOffset]::UtcNow)
     }
   }
 

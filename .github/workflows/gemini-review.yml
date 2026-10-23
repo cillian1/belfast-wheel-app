@@ -1,7 +1,7 @@
 # Gemini reviews every PR (Cillian, update 28; all branches incl. main since Oct 22): when a PR is opened or marked
 # ready (or gets new commits), Gemini reads the diff and posts one review comment starting "Verdict: merge"
 # or "Verdict: changes needed". Gemini may merge (Cillian, 2026-10-22): on "merge" with green CI it merges
-# through .github/scripts/bot-merge.sh, which compares author and merger logins and checks release rules. If CI is
+# through .github/scripts/bot-merge.sh, which never merges RolexG's own PRs or anything into main. If CI is
 # still running, the bot-merge job at the end of CI does the merge instead.
 # Runs as pull_request_target so it gets the Google sign-in on Copilot's PRs too. It only reads the diff
 # through the API and never checks out or runs the PR's code (the checkout below is the base branch's scripts).
@@ -9,7 +9,7 @@
 name: Gemini review
 on:
   pull_request_target:
-    types: [opened, ready_for_review, synchronize]
+    types: [opened, ready_for_review, synchronize, edited]
   workflow_dispatch:
     inputs:
       pr:
@@ -31,11 +31,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      HAS_GEMINI_APP: ${{ secrets.GEMINI_APP_ID != '' && secrets.GEMINI_APP_KEY != '' }}
+      HAS_BOT_APP: ${{ secrets.GEMINI_APP_ID != '' && secrets.GEMINI_APP_KEY != '' }}
     steps:
       - name: Mint GEMINI App token
         id: app
-        if: env.HAS_GEMINI_APP == 'true'
+        if: env.HAS_BOT_APP == 'true'
         uses: actions/create-github-app-token@v1
         with:
           app-id: ${{ secrets.GEMINI_APP_ID }}
@@ -55,8 +55,10 @@ jobs:
           create_credentials_file: false
       - name: Ask Gemini to review the diff
         env:
+          BOT_MERGER_LOGIN: ${{ steps.app.outputs.token != '' && format('{0}[bot]', steps.app.outputs.app-slug) || 'github-actions[bot]' }}
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
           REPO: ${{ github.repository }}
+          GEMINI_REVIEW_LOGIN: ${{ steps.app.outputs.token != '' && format('{0}[bot]', steps.app.outputs.app-slug) || vars.GEMINI_BOT_LOGIN || 'belfast-wheel-gemini[bot]' }}
           PR: ${{ github.event.pull_request.number || inputs.pr }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GCP_TOKEN: ${{ steps.gcp.outputs.access_token }}
@@ -76,7 +78,7 @@ jobs:
             select(.filename != "game/index.html" and (.filename | endswith(".apk") | not)) |
             "--- " + .filename + " (" + .status + ")\n" + (.patch // "(no text diff)") + "\n"' | head -c 80000 > diff.txt
           [ -s diff.txt ] || { echo "No source changes to review."; exit 0; }
-          system="You are Gemini, reviewing a pull request for the Belfast Wheel, a spinning wheel web game for a group of friends. Source lives in src/ and is bundled into game/index.html. Real money moves through it, so if the diff changes prizes, odds, stakes, the jackpot or the wallet's credit or charge code (src/wallet/money.js), say so in one bullet, and check the PR has 'money' in its title, a link to its Banter notice in the body, and a fast-sim odds result (payback before and after) in the body; if any is missing the verdict is 'changes needed'. Review the diff for real bugs and broken behaviour on phones 320-440px wide. Only comment on what is in the diff; don't invent files or behaviour. Your review decides whether the PR gets merged. Reply in Markdown. The first line is exactly 'Verdict: merge' if it is safe to merge as it is, or 'Verdict: changes needed' if anything should be fixed first. Then at most 5 bullets, each naming the file and what's wrong and why. If it looks fine, the verdict line plus one short line is enough. No praise, no filler."
+          system="You are Gemini, reviewing a pull request for the Belfast Wheel, a spinning wheel web game for a group of friends. Source lives in src/ and is bundled into game/index.html. Real money moves through it, so if the diff changes prizes, odds, stakes, the jackpot or the wallet's credit or charge code (src/wallet/money.js), say so in one bullet, and check the PR has 'money' in its title, a link to its Banter notice in the body, and a CI payback line in its body showing before and after; if any is missing the verdict is 'changes needed'. For the payback change, flag shifts greater than 2 percentage points or anything that looks mathematically wrong; do not flag smaller shifts by themselves. Review the diff for real bugs and broken behaviour on phones 320-440px wide. Only comment on what is in the diff; don't invent files or behaviour. Your review decides whether the PR gets merged. Reply in Markdown. The first line is exactly 'Verdict: merge' if it is safe to merge as it is, or 'Verdict: changes needed' if anything should be fixed first. Then at most 5 bullets, each naming the file and what's wrong and why. If it looks fine, the verdict line plus one short line is enough. No praise, no filler. When you finish, get blocked, or are waiting on someone, invoke .github/scripts/ping.sh straight away and name exactly what you need. After review, ping the author for changes or the merger when ready to merge."
           prompt="$(cat pr.txt)
 
           Diff:
@@ -91,9 +93,18 @@ jobs:
           gh api "repos/$REPO/issues/$PR/comments" -f body="Gemini review:
 
           $review" > /dev/null
+          if grep -q '^Verdict: changes needed' <<<"$review"; then
+            author=$(gh api "repos/$REPO/pulls/$PR" --jq .user.login)
+            case "$author" in cillian1) target=cillian;; copilot|github-actions\[bot\]) target=copilot;; claude) target=claude;; *) target=claude;; esac
+            PING_FROM=gemini GH_TOKEN="$GH_TOKEN" REPO="$REPO" bash .github/scripts/ping.sh "$target" "$PR" "Please address the requested review changes on PR #$PR." || true
+          else
+            PING_FROM=gemini GH_TOKEN="$GH_TOKEN" REPO="$REPO" bash .github/scripts/ping.sh claude "$PR" "Review is complete; please merge PR #$PR if CI is green." || true
+          fi
       - name: Merge if the verdict is merge and CI is green
         env:
+          BOT_MERGER_LOGIN: ${{ steps.app.outputs.token != '' && format('{0}[bot]', steps.app.outputs.app-slug) || 'github-actions[bot]' }}
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+          GEMINI_REVIEW_LOGIN: ${{ steps.app.outputs.token != '' && format('{0}[bot]', steps.app.outputs.app-slug) || vars.GEMINI_BOT_LOGIN || 'belfast-wheel-gemini[bot]' }}
           REPO: ${{ github.repository }}
           PR: ${{ github.event.pull_request.number || inputs.pr }}
           BOT_MERGE_MAIN: ${{ vars.BOT_MERGE_MAIN }}

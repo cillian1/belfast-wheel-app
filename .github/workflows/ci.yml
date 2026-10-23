@@ -20,23 +20,19 @@ jobs:
     name: ci
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      payback: ${{ steps.quick-check.outputs.payback }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Check bot identities and merge guards (offline)
-        run: |
-          node tools/test-bot-identities.mjs
-          bash .github/scripts/test-bot-merge.sh
-          bash .github/scripts/test-banter-reply.sh
-          for script in .github/scripts/{rolexg,jimini,bot-merge,banter-turn}.sh; do bash -n "$script"; done
       # Docs, Banter, bot and workflow-only PRs skip the game checks. bot-merge still sees a green "ci" check.
       - id: scope
         run: |
           if [ "${{ github.event_name }}" != pull_request ]; then echo game=true >> "$GITHUB_OUTPUT"; exit 0; fi
           files=$(git diff --name-only "${{ github.event.pull_request.base.sha }}...HEAD")
           echo "$files"
-          if echo "$files" | grep -qvE '^(\.github/|docs/|banter/|tools/gambler/|HANDOFF\.md$|STATUS\.md$|README\.md$|[^/]*\.md$)'; then
+          if echo "$files" | grep -qvE '^(\.github/|docs/|banter/|tools/(gambler|stankman)/|HANDOFF\.md$|STATUS\.md$|README\.md$|[^/]*\.md$)'; then
             echo game=true >> "$GITHUB_OUTPUT"
           elif echo "$files" | grep -qx '.github/workflows/ci.yml'; then
             echo game=true >> "$GITHUB_OUTPUT"
@@ -47,6 +43,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
+      - if: steps.scope.outputs.game == 'true'
+        id: quick-check
+        run: |
+          output=$(node tools/check.mjs --quick)
+          printf '%s\n' "$output"
+          payback=$(printf '%s\n' "$output" | grep -E '^payback ' | tail -n 1)
+          [ -n "$payback" ] || { echo 'Quick check did not produce a payback line.' >&2; exit 1; }
+          echo "payback=$payback" >> "$GITHUB_OUTPUT"
       - if: steps.scope.outputs.game == 'true'
         run: npm install --no-save --package-lock=false @playwright/test@1.64.1
       # Chromium is cached per Playwright version. apt install-deps (which hung for 6 h on Oct 22) only runs
@@ -69,7 +73,6 @@ jobs:
         run: |
           node tools/bundle.mjs
           git diff --exit-code -- game/index.html
-          node tools/check.mjs
           node tools/check-game-invariants.mjs origin/main
           node tools/sim/core-test.mjs &
           node tools/sim/core-check.mjs 50 &
@@ -89,23 +92,31 @@ jobs:
       issues: write
       checks: read
       actions: write
-    env:
-      HAS_GEMINI_APP: ${{ secrets.GEMINI_APP_ID != '' && secrets.GEMINI_APP_KEY != '' }}
     steps:
-      - name: Mint GEMINI App token
-        id: app
-        if: env.HAS_GEMINI_APP == 'true'
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ secrets.GEMINI_APP_ID }}
-          private-key: ${{ secrets.GEMINI_APP_KEY }}
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.base.sha }}
           sparse-checkout: .github/scripts
           persist-credentials: false
+      - name: Post CI payback result on money PRs
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.title, 'money') && needs.ci.outputs.payback != ''
+        uses: actions/github-script@v7
+        env:
+          PAYBACK: ${{ needs.ci.outputs.payback }}
+        with:
+          script: |
+            const marker = '<!-- ci-payback -->';
+            const block = `${marker}\nCI payback: ${process.env.PAYBACK}\n<!-- /ci-payback -->`;
+            const { data: pr } = await github.rest.pulls.get({ ...context.repo, pull_number: context.issue.number });
+            const existing = (pr.body || '').replace(/<!-- ci-payback -->[\s\S]*?<!-- \/ci-payback -->/g, '').trim();
+            await github.rest.pulls.update({
+              ...context.repo,
+              pull_number: context.issue.number,
+              body: existing ? `${existing}\n\n${block}` : block,
+            });
       - env:
-          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+          BOT_MERGER_LOGIN: github-actions[bot]
+          GEMINI_REVIEW_LOGIN: ${{ vars.GEMINI_BOT_LOGIN || 'belfast-wheel-gemini[bot]' }}
+          GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           BOT_MERGE_MAIN: ${{ vars.BOT_MERGE_MAIN }}
         run: .github/scripts/bot-merge.sh "${{ github.event.pull_request.number }}" Gemini

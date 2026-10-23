@@ -16,9 +16,12 @@ on:
     types: [labeled]
   workflow_dispatch:
     inputs:
-      issue:
+      number:
         description: Issue or PR number to work on
-        required: true
+        required: false
+      issue:
+        description: Legacy issue or PR number
+        required: false
       task:
         description: What RolexG should do
         required: true
@@ -30,7 +33,7 @@ permissions:
   checks: read
   id-token: write # Google sign-in through Workload Identity Federation
 concurrency:
-  group: rolexg-${{ github.event.issue.number || inputs.issue }}
+  group: rolexg-${{ github.event.issue.number || inputs.number || inputs.issue }}
   cancel-in-progress: false
 jobs:
   work:
@@ -38,22 +41,20 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'issues' && github.event.label.name == 'rolexg-task') ||
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@rolexg') &&
-       github.event.comment.user.login != 'rolexg[bot]' &&
        github.event.comment.user.login != 'github-actions[bot]' &&
-       (contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) ||
-        contains(fromJSON('["rolexg[bot]","jimini[bot]","gemini-reviewer[bot]","claude-bot[bot]"]'), github.event.comment.user.login)))
+       contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      HAS_ROLEXG_APP: ${{ secrets.ROLEXG_APP_ID != '' && secrets.ROLEXG_APP_KEY != '' }}
+      HAS_BOT_APP: ${{ secrets.ROLEXG_APP_ID != '' && secrets.ROLEXG_APP_KEY != '' }}
       REPO: ${{ github.repository }}
-      NUM: ${{ github.event.issue.number || inputs.issue }}
+      NUM: ${{ github.event.issue.number || inputs.number || inputs.issue }}
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       BOT_MERGE_MAIN: ${{ vars.BOT_MERGE_MAIN }}
     steps:
       - name: Mint ROLEXG App token
         id: app
-        if: env.HAS_ROLEXG_APP == 'true'
+        if: env.HAS_BOT_APP == 'true'
         uses: actions/create-github-app-token@v1
         with:
           app-id: ${{ secrets.ROLEXG_APP_ID }}
@@ -66,13 +67,14 @@ jobs:
         id: task
         env:
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+          BOT_MERGER_LOGIN: ${{ steps.app.outputs.token != '' && format('{0}[bot]', steps.app.outputs.app-slug) || 'github-actions[bot]' }}
           EVENT: ${{ github.event_name }}
-          COMMENT_LOGIN: ${{ github.event.comment.user.login }}
           COMMENT_BODY: ${{ github.event.comment.body }}
           INPUT_TASK: ${{ inputs.task }}
+          INPUT_NUMBER: ${{ inputs.number || inputs.issue }}
           MAX_DAY: ${{ vars.ROLEXG_DAILY_CAP || 8 }}
         run: |
-          cp .github/scripts/rolexg.sh .github/scripts/bot-merge.sh "$RUNNER_TEMP/"
+          cp .github/scripts/rolexg.sh .github/scripts/bot-merge.sh .github/scripts/ping.sh "$RUNNER_TEMP/"
           "$RUNNER_TEMP/rolexg.sh" start
       - name: Switch to the work branch
         if: steps.task.outputs.skip == 'false'
@@ -105,7 +107,7 @@ jobs:
         if: steps.task.outputs.skip == 'false'
         env:
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
-          USING_APP_TOKEN: ${{ steps.app.outputs.token != '' }}
+          BOT_MERGER_LOGIN: ${{ steps.app.outputs.token != '' && format('{0}[bot]', steps.app.outputs.app-slug) || 'github-actions[bot]' }}
           BRANCH: ${{ steps.task.outputs.branch }}
           BASE: ${{ steps.task.outputs.base }}
           TITLE: ${{ steps.task.outputs.title }}

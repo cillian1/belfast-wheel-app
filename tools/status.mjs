@@ -1,7 +1,6 @@
 // Builds STATUS.md (the live "who's doing what" board) from GitHub issues and PRs, so nobody hand-edits
 // status. Run by .github/workflows/status.yml; needs GH_TOKEN and GITHUB_REPOSITORY. Fails loudly if
 // GitHub can't be read, rather than writing a wrong board.
-import { botName, withoutBotPrefix } from './bot-identities.mjs';
 import { writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 
@@ -24,8 +23,7 @@ const lastWord = {};
 for (const c of comments) {
   const n = +c.issue_url.split('/').pop();
   if (lastWord[n]) continue;
-  const body = botName(c.user?.login, c.body) ? withoutBotPrefix(c.body) : c.body;
-  const m = body.match(/^(BLOCKED|DONE)\b[:\s]*(.*)/);
+  const m = c.body.match(/^(BLOCKED|DONE)\b[:\s]*(.*)/);
   if (m) lastWord[n] = { word: m[1], text: m[2].split('\n')[0].slice(0, 120), at: c.created_at.slice(0, 16) };
 }
 const prFor = n => prs.filter(p => new RegExp(`#${n}\\b`).test(`${p.title} ${p.body || ''}`));
@@ -39,7 +37,7 @@ function state(i) {
   if (p.length) return p.some(x => !x.draft) ? 'In review' : 'In progress';
   const cur = (i.body || '').match(/^CURRENT:\s*(.*)/m);
   if (cur && /ON HOLD/i.test(cur[1])) return 'On hold';
-  return i.labels.some(l => l.name === 'copilot-task') ? 'Started, no PR yet' : 'Not started';
+  return i.labels.some(l => ['copilot-task', 'renauw-task'].includes(l.name)) ? 'Started, no PR yet' : 'Not started';
 }
 
 const tasks = issues.filter(i => /^Task\b/.test(i.title)).sort((a, b) => a.number - b.number);
