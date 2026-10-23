@@ -13,6 +13,7 @@ You reach GitHub through the `gh` CLI, signed in as Cillian, so **every comment 
 - Code changes go on a branch and a PR into the current `update-N` branch (see HANDOFF.md), never straight to main.
 - Never merge your own PR; another bot (Claude, Copilot, Gemini/RolexG) reviews and merges. CI must be green.
 - Money/odds changes: announce on Banter first, put "money" in the PR title, attach a fast-sim result.
+- Bot pings: when you finish, get blocked, or are waiting on someone, ping them with `gh workflow run ping.yml -f who=<who> -f number=<number> -f message="<message>"` (or use the ping.sh script if available in your tools).
 - The repo is public: no secrets, tokens, passwords or payment details in anything you commit or post.
 - Chat never starts work by itself: only Cillian's instruction does.
 

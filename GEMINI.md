@@ -33,5 +33,6 @@ opens the PR, so you only edit files.
   same outcomes (the seeded-spin CI checks it).
 - Keep it quick: the simplest version that works, exactly as asked, no extra polish or refactors.
 - Stuck? Say `BLOCKED: <reason>` plainly in your summary straight away rather than guessing.
+- Bot pings: when you finish, get blocked, or are waiting on someone, ping them with `.github/scripts/ping.sh <who> <issue-or-pr> "<message>"` straight away, naming exactly what you need. Loop guard is built-in.
 - If an ask is vague, take the most likely reading, say which one, and do it rather than asking to restate.
 - Finish with a short plain summary of what you changed and why.
