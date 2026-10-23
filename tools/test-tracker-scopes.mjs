@@ -61,12 +61,14 @@ assert.deepEqual(result.deliverables[0].prs.map(p => p.number), [21]);
 smallPlan.scopes[0].issues = [11];
 smallPlan.scopes[0].prior = [{ issue: 10, reason: 'Replaced by #11' }];
 smallPlan.scopes[0].deliverables[0].prs = [24];
+smallPlan.scopes[0].deliverables[0].prior.push({ issue: 9, reason: 'Original issue replaced by #11' });
 small = { issues: [{ number: 11, labels: [{ name: 'renauw-task' }], assignees: [{ login: 'Copilot' }] }],
   comments: { 11: [comment('The Gambler: on it.')] }, prs: [pr(24)] };
 result = resolveScopes(smallPlan, small)[0];
 assert.equal(result.id, 'stable', 'Replacing issue and PR preserves scope identity');
 assert.equal(result.description, 'Concrete approved scope');
 assert.equal(result.prior[0].issue, 10);
+assert.equal(result.deliverables[0].prior.find(p => p.issue === 9).reason, 'Original issue replaced by #11');
 assert.equal(result.owner, 'Renauw', 'Task labels take precedence over assignees and claims');
 small.issues[0].labels = [];
 assert.equal(resolveScopes(smallPlan, small)[0].owner, 'Copilot');
@@ -94,6 +96,39 @@ assert.equal(resolveScopes(smallPlan, small)[0].deliverables[0].prs[0].state, 'r
 small.comments[11] = [comment('RolexG: on it.', { user: { login: 'belfast-wheel-rolexg[bot]' } })];
 small.issues[0].assignees = [];
 assert.equal(resolveScopes(smallPlan, small)[0].owner, 'RolexG', 'Recognize actual RolexG App work comments');
+for (const login of ['github-actions[bot]', 'cillian1', 'belfast-wheel-rolexg[bot]']) {
+  small.comments[11] = [comment('RolexG: on it.', { user: { login } })];
+  assert.equal(resolveScopes(smallPlan, small)[0].owner, 'RolexG');
+}
+for (const body of ['RolexG: on it.', 'The Gambler: recovery of #24 underway']) {
+  small.comments[11] = [comment(body, { user: { login: 'stranger' } })];
+  assert.equal(resolveScopes(smallPlan, small)[0].owner, 'Unassigned', 'Third-party prefixes are not ownership evidence');
+}
+for (const body of ['@rolexg please recover #24', 'Claude: @rolexg recover #24',
+  'Copilot: @gambler recovery of #24 please']) {
+  small.comments[11] = [comment(body)];
+  assert.equal(resolveScopes(smallPlan, small)[0].owner, 'Unassigned', 'Coordinator dispatch is not a worker claim');
+}
+small.comments[11] = [comment('The Gambler: recovery of #24 underway')];
+assert.equal(resolveScopes(smallPlan, small)[0].owner, 'The Gambler', 'Actual recovery work establishes ownership');
+small.comments[11] = [];
+smallPlan.scopes[0].deliverables[0] = { ...smallPlan.scopes[0].deliverables[0],
+  status: 'draft-hold', holdAction: 'Resolve HOLD before making ready', nextAction: 'Resolve HOLD' };
+for (const draft of [false, true]) {
+  for (const inMain of [false, true]) {
+    small.prs[0] = pr(24, { ...merged, draft, inMain, body: '## HOLD: stale source-only instruction' });
+    result = resolveScopes(smallPlan, small)[0];
+    assert.equal(result.status, inMain ? 'released' : 'merged-update');
+    assert.equal(result.blocked, false, 'Merged live evidence supersedes stale HOLD body/draft metadata');
+    assert.equal(result.deliverables[0].blocker, '');
+    assert.equal(result.deliverables[0].next.action, inMain ? 'Released on main' :
+      'Include in independently reviewed release to main', 'Release action supersedes explicit stale HOLD action');
+  }
+}
+small.comments[11] = [comment('The Gambler: BLOCKED: recovery still needs coordinator direction')];
+assert.equal(resolveScopes(smallPlan, small)[0].status, 'blocked',
+  'Stale merged draft metadata cannot suppress a newer genuine recovery blocker');
+small.comments[11] = [];
 live.prs.find(p => p.number === 244).inTarget = false;
 assert.equal(resolveScopes(plan, live).find(s => s.id === 'monster-d20').status, 'merged-update', 'Unverified revert is not silently accepted');
 
@@ -126,9 +161,9 @@ const request = async path => {
   if (p === 'pulls') return page === 1 ? noise(2000) : [];
   if (p === 'issues/11') return { number: 11, state: 'closed' };
   if (p === 'issues/11/comments') return page === 1 ? Array.from({ length: 100 }, () => comment('Chat, not work')) :
-    [comment('The Gambler: opened #25 into update-32')];
+    [comment('The Gambler: recovery of #25 into update-32')];
   if (p === 'pulls/24') return pr(24, { ...merged, inTarget: undefined, inMain: undefined });
-  if (p === 'pulls/25') return pr(25, { body: 'Closes #11' });
+  if (p === 'pulls/25') return pr(25);
   if (p === 'issues/24/comments' || p === 'issues/25/comments' || p === 'pulls/25/reviews') return [];
   if (p === 'commits/head-25/check-runs') return { check_runs: page === 1 ?
     Array.from({ length: 100 }, (_, i) => ({ id: i, name: `check-${i}`, status: 'completed', conclusion: 'success' })) :
@@ -143,6 +178,8 @@ assert.equal(fetched.issues.some(i => i.number === 11), true);
 assert.equal(fetched.prs.find(p => p.number === 24).inTarget, true);
 assert.equal(fetched.prs.find(p => p.number === 24).inMain, false);
 assert.equal(fetched.prs.find(p => p.number === 25).ci, 'failing');
+assert.equal(resolveScopes(remotePlan, fetched)[0].deliverables[0].prs[0].number, 25,
+  'Trusted recovery link discovers replacement implementation without closing syntax');
 for (const path of ['branches', 'issues', 'pulls', 'issues/11/comments', 'commits/head-25/check-runs']) {
   assert.ok(calls.some(c => c.startsWith(path + '?') && c.includes('page=2')), `Paginated ${path}`);
 }
@@ -151,6 +188,17 @@ assert.equal(generated.update.branch, 'update-32', 'Do not accidentally follow a
 assert.deepEqual(generated.update.goals, remotePlan.goals);
 assert.equal(generated.update.cutLine, remotePlan.cutLine);
 assert.equal(generated.history[0].number, 31);
+const archivedScopes = resolveScopes(smallPlan, small);
+archivedScopes[0].description = 'Archived scope <snapshot>';
+const future = await generateTracker({ ...remotePlan, update: 33 }, async path => {
+  const response = await request(path);
+  return path.startsWith('branches?') && response.some(b => b.name === 'update-32') ?
+    [...response, { name: 'update-33', commit: { sha: 'target' } }] : response;
+}, { ...generated, scopes: archivedScopes }, generated.history);
+assert.equal(future.history[0].number, 32);
+assert.deepEqual(future.history[0].scopes, archivedScopes, 'Next update archives resolved scope snapshots intact');
+assert.equal(future.history[0].snapshotAt, generated.generatedAt);
+assert.equal(future.history[0].tasks, undefined, 'Scope archive does not depend on legacy tasks');
 const failed = await collectLive(remotePlan, async path => {
   if (path.includes('/check-runs') || path.includes('compare/')) throw Error('403 fixture');
   return request(path);
@@ -183,10 +231,22 @@ assert.ok(!elements.get('tasks').innerHTML.includes('<img'));
 assert.ok(elements.get('tasks').innerHTML.includes('Claude / Copilot'));
 assert.ok(elements.get('tasks').innerHTML.includes('Draft / HOLD'));
 assert.ok(elements.get('tasks').innerHTML.includes('Superseded'));
+assert.equal(elements.get('blocked').style.display, 'block');
+assert.ok(elements.get('blocked-list').innerHTML.includes('source-only instruction conflicts with CI'),
+  'Blocker banner remains explicit even when a multi-deliverable scope is in progress');
 assert.ok(elements.get('evidence').textContent.includes('API evidence unavailable'));
 assert.ok(html.includes('@media(max-width:600px)'));
 vm.runInContext('render(data, [{number:31,releaseDate:"2026-10-23",releasePr:{number:221,url:"https://example.test/221"}}])', context);
 assert.ok(elements.get('history').innerHTML.includes('not live-verified'), 'Legacy inferred release records are not fresh shipping proof');
+context.future = future;
+vm.runInContext('render(future)', context);
+const past = elements.get('history').innerHTML;
+assert.ok(past.includes('Archived scope &lt;snapshot&gt;'), 'Render new archived scope snapshots, escaping descriptions');
+assert.ok(past.includes('The part'), 'Archived deliverables are visible without legacy tasks');
+assert.ok(past.includes('/issues/10">#10</a> — Replaced by #11'), 'Scope-level prior issue renders as an issue link');
+assert.ok(past.includes('/issues/9">#9</a> — Original issue replaced by #11'),
+  'Deliverable-level prior issue renders as an issue link');
+assert.ok(past.includes('/pull/19">#19</a> — Superseded'), 'Prior PR links still render alongside replaced issues');
 vm.runInContext('render({update:{},tasks:[]}, [])', context);
 assert.ok(elements.get('evidence').textContent.includes('has not been published'));
 console.log('Tracker scopes: ownership, replacement, partial/reverted/released states, checks, paginated live evidence and renderer passed.');

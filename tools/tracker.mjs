@@ -22,7 +22,7 @@ function statement(c) {
   if (!m) return null;
   const text = c.body.trim().slice(m[0].length);
   // Requests, mentions, chat and worker-trigger handoffs are not claims.
-  if (!/^(?:on it\b|CLAIMED:|Working on\b|Recovered\b|opened #|pushed to #|BLOCKED:|CURRENT:|DONE:)/i.test(text)) return null;
+  if (!/^(?:on it\b|CLAIMED:|Working on\b|Recover(?:ed|y)\b|opened #|pushed to #|BLOCKED:|CURRENT:|DONE:)/i.test(text)) return null;
   return { owner: canonical(m[1]), text, url: c.html_url, at: c.created_at || '' };
 }
 const newest = xs => [...xs].sort((a, b) => (b.created_at || b.submitted_at || '').localeCompare(a.created_at || a.submitted_at || ''));
@@ -64,7 +64,7 @@ function implementation(p, issueNumbers, comments) {
   return issueNumbers.some(n => new RegExp(`\\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\\s+(?:[\\w.-]+/[\\w.-]+)?#${n}\\b`, 'i').test(p.body || '')) ||
     comments.some(c => {
       const s = statement(c);
-      return s && /^(?:Recovered|opened|pushed to|DONE:)/i.test(s.text) && new RegExp(`#${p.number}\\b`).test(s.text);
+      return s && /^(?:Recover(?:ed|y)\b|opened|pushed to|DONE:)/i.test(s.text) && new RegExp(`#${p.number}\\b`).test(s.text);
     });
 }
 
@@ -131,10 +131,10 @@ export function resolveScopes(plan, live) {
       const work = newest(workComments.concat(chosen.flatMap(p => p.comments || []))).map(statement).find(Boolean);
       let status = states[0] || (/^BLOCKED:/i.test(work?.text || '') ? 'blocked' : 'working');
       if (states.length > 1 && !states.every(s => s === status)) status = 'partial';
-      if (!chosen.some(p => p.draft) && /^BLOCKED:/i.test(work?.text || '') &&
+      if (!chosen.some(p => p.state === 'open' && !p.merged_at && p.draft) && /^BLOCKED:/i.test(work?.text || '') &&
           (!chosen.length || work.at >= chosen.map(p => p.merged_at || p.created_at || '').sort().at(-1))) status = 'blocked';
       const complete = status !== 'blocked' && states.length > 0 && states.every(s => ['released', 'merged-update'].includes(s));
-      const hold = chosen.find(p => p.draft || /\bHOLD\b/.test(p.body || ''));
+      const hold = chosen.find(p => p.state === 'open' && !p.merged_at && (p.draft || /\bHOLD\b/.test(p.body || '')));
       const blocker = hold ? (hold.body || '').match(/(?:^|\n)#{0,3}\s*HOLD[^\n]*/i)?.[0]?.trim() || 'Draft PR — not ready to merge' :
         status === 'blocked' ? (chosen.some(p => p.ci === 'failing') ? 'Latest head has failing checks' : work?.text) :
         status === 'reverted' ? 'Implementation was reverted on the update branch' :
@@ -202,7 +202,7 @@ export async function collectLive(plan, request) {
   // Actual work comments can name replacement PRs outside the list window.
   for (const cs of Object.values(comments)) for (const c of cs) {
     const s = statement(c);
-    if (s && /^(?:Recovered|opened|pushed to|DONE:)/i.test(s.text)) {
+    if (s && /^(?:Recover(?:ed|y)\b|opened|pushed to|DONE:)/i.test(s.text)) {
       for (const m of s.text.matchAll(/#(\d+)\b/g)) explicit.push(+m[1]);
     }
   }
