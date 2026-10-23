@@ -33,7 +33,10 @@ permissions:
   checks: read
   id-token: write # Google sign-in through Workload Identity Federation
 concurrency:
-  group: rolexg-${{ github.event.issue.number || inputs.number || inputs.issue }}
+  # Keep independent tasks from replacing one another in GitHub Actions'
+  # single pending slot for a concurrency group. Numberless dispatches are
+  # isolated by run id instead of sharing the empty "rolexg-" group.
+  group: rolexg-${{ github.event.issue.number || inputs.number || inputs.issue || github.run_id }}
   cancel-in-progress: false
 jobs:
   work:
@@ -46,12 +49,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      GH_TOKEN: ${{ github.token }}
+      HAS_BOT_APP: ${{ secrets.ROLEXG_APP_ID != '' && secrets.ROLEXG_APP_KEY != '' }}
       REPO: ${{ github.repository }}
       NUM: ${{ github.event.issue.number || inputs.number || inputs.issue }}
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       BOT_MERGE_MAIN: ${{ vars.BOT_MERGE_MAIN }}
     steps:
+      - name: Mint ROLEXG App token
+        id: app
+        if: env.HAS_BOT_APP == 'true'
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.ROLEXG_APP_ID }}
+          private-key: ${{ secrets.ROLEXG_APP_KEY }}
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -59,6 +69,8 @@ jobs:
       - name: Read the task and check the limits
         id: task
         env:
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+          BOT_MERGER_LOGIN: ${{ steps.app.outputs.token != '' && format('{0}[bot]', steps.app.outputs.app-slug) || 'github-actions[bot]' }}
           EVENT: ${{ github.event_name }}
           COMMENT_BODY: ${{ github.event.comment.body }}
           INPUT_TASK: ${{ inputs.task }}
@@ -97,6 +109,8 @@ jobs:
       - name: Commit, open the PR and report back
         if: steps.task.outputs.skip == 'false'
         env:
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+          BOT_MERGER_LOGIN: ${{ steps.app.outputs.token != '' && format('{0}[bot]', steps.app.outputs.app-slug) || 'github-actions[bot]' }}
           BRANCH: ${{ steps.task.outputs.branch }}
           BASE: ${{ steps.task.outputs.base }}
           TITLE: ${{ steps.task.outputs.title }}

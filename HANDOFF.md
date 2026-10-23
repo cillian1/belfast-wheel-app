@@ -38,7 +38,7 @@
 **Who does what.** Anyone can do anything above, but by default:
 - **Copilot** builds: features, fixes, refactors, version bumps and release PRs. It picks up `copilot-task` issues in number order, and starts the next one when its PR merges.
 - **RolexG** takes whatever anyone writes `@rolexg <task>` for, on an issue, a PR or Banter, and opens a `rolexg/` PR (docs/rolexg.md). Good for small fixes and second opinions.
-- **The Gambler** and **The Stankman** run in separate local Codex checkouts. Gambler is unlimited and serial; Stankman has a four-task UTC daily cap and the big game/dev lane. His D: setup is in tools/stankman/README.md.
+- **The Gambler** and **The Stankman** run in separate local Codex checkouts. Both have no daily task cap and support parallel tasks in separate worktrees (default three per bot, configurable with `-MaxParallelTasks`). Stankman keeps the big game/dev lane and explicit `gpt-6-luna` model. His D: setup is in tools/stankman/README.md.
 - **Renauw** is the Copilot custom helper agent for small tasks, fixes, docs and tests; route work with `.github/scripts/ping.sh renauw <issue> "<task>"`.
 - **Gemini** reviews every PR into `update-*` (`gemini-review.yml`), posts `Verdict: merge` or `Verdict: changes needed`, and merges on `merge` with green CI.
 - **Claude** coordinates: turns Cillian's asks (on Banter or in his Claude project) into issues, runs the fast odds sim by default, does a quick check of PRs nobody else has merged, merges release PRs it didn't write, and keeps this NOW plan current.
@@ -99,7 +99,7 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 
 ## Bots and limits
 
-- **Banter bots:** Claude (Cillian's plan via `CLAUDE_CODE_OAUTH_TOKEN`, no cap of its own), Copilot (Copilot CLI with Cillian's token, at most 15 a day) and Gemini take turns on #30 as github-actions[bot] with a name prefix: 6 bot replies in a row, 200 a day. They see the first 20 lines of the NOW section, so keep the key rules there.
+- **Banter bots:** Claude (Cillian's plan via `CLAUDE_CODE_OAUTH_TOKEN`, no cap of its own), Copilot (Copilot CLI with Cillian's token, at most 15 a day) and Gemini take turns on #30 as github-actions[bot] with a name prefix. There is no consecutive-reply cap; the shared script allows up to 1,000 bot replies per UTC day, with lower per-seat caps for Claude, RolexG and Jimini and a separate shared Copilot/Renauw cap. They see the first 20 lines of the NOW section, so keep the key rules there.
 - **Gemini sign-in:** Workload Identity Federation (docs/gemini-adc.md) or a `GEMINI_API_KEY` secret.
 - **RolexG:** `ROLEXG_DAILY_CAP` (default 8 a day), 5 rounds per thread, 30 minutes per task. It bills Google, roughly €0.20 to €1.50 a task.
 - Everyone works on a branch and opens a PR; nobody pushes game changes straight to `main`. Pull before starting a branch.
@@ -119,3 +119,21 @@ The Done log is archived in [docs/HANDOFF-ARCHIVE.md](docs/HANDOFF-ARCHIVE.md). 
 | Reviews and merges | Gemini |
 
 When you finish, run/expect claim-next; only claim your lane. See docs/task-claiming.md for sizes, lanes and caps. Phase one is read-only: use tools/claim-next.sh with --dry-run; live claiming and the DONE hook are a follow-up under issue #187's cut line. Game tasks target update-N; non-game tasks target main. Before an update starts, its planner labels every ready issue with one size, its lane and unassigned.
+
+## Update 32 scope — 2026-10-23
+
+The five existing deliverables remain in scope:
+- Wallet/Watch clean recovery work (#209).
+- Live Watch nested-wheel drawing (#199).
+- GAMBLE/COLLECT (#213).
+- Last chicken standing (#200).
+- Remove W/B marks from special-chicken art (#211).
+
+Approved additions:
+- **Austin temporary free-spin rule:** until `2026-10-24T14:00:00Z` (the instant for Saturday 2026-10-24 15:00 Europe/Dublin), spins are free, wins are credited to Austin's wallet, and bets do not contribute to the jackpot. After the cutoff, normal play resumes.
+- **Deeper zoom:** after a first-spin Deeper hit, ease into a zoom framing the whole wheel like a dartboard.
+- **Live Watch regression:** extend #199 to check that opening chat during a live-view spin does not interrupt wheel/ball completion or cause console errors. Do not duplicate the completed #181 keyboard-drawing fix.
+- **Measured lag work (#231):** profile Extra Bonus, WILD and Deeper effects, starting with a performance trace and evidence; reduce measured lag rather than choosing speculative architecture.
+- **Monster Room dice:** regular dice stay white d12s. Special/bonus dice keep their type-specific colors and become d20s; faces 13–20 generate more Monster cans through the existing can/tank flow, not a separate prize table.
+
+No live account or jackpot changes are part of this tracker update. Implementing the temporary free-spin rule or special-d20 flow is money work: announce the change on Banter first, use a `money` PR with the Banter notice linked, include fast-sim/payback evidence, and get an independent review. Do not invent additional payout rules.

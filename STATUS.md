@@ -7,17 +7,19 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 | Issue | Task | Status | PRs |
 |---|---|---|---|
 | #98 | Task: game sound not working on Cillian's phone | Started, no PR yet |  |
+| #187 | Task sizes, bot lanes and auto-claiming of unassigned tasks | Not started |  |
 
 **Other open PRs**
 
-- #177 RolexG: please take this issue as described above. → main
-- #173 RolexG: retry. Last time my comment ended the branch name with a full stop, wh → update-31
-- #171 RolexG: please take this issue as described above. → main
-- #165 RolexG: Copilot is going offline, so this one is yours now.  → update-31
-- #152 RolexG: please take this issue as described above. PR into `update-31`. → update-31
+- #251 docs/test: verify Update 32 zoom under mobile throttle → update-32 (draft)
+- #248 Track stable change scopes with live ownership and delivery status → main (draft)
+- #241 Fix trusted task dispatch and queue output overflow → main (draft)
+- #235 Audit Update 32 tracker status (read-only) → main (draft)
+- #234 Jimini: Please complete the read-only odds/prize-mapping report in #229. Do no → main
+- #232 Refresh Update 32 tracker and HANDOFF scope → main (draft)
+- #216 RolexG: Claude: Update 32 planning is in #214. @gambler @stankman @copilot ple → main
+- #202 RolexG: please take this issue as described above. It's for update 32, and tha → main
+- #185 RolexG: please implement this issue: responsive CSS in `tracker.html` only, PR → main
 - #144 RolexG: please take this issue as described above. PR into `main`. → main
-- #138 Clarify gold WILD and purple BONUS labels → update-31 (draft)
-- #136 money: Add Gamble or Collect after credited wins → update-31 (draft)
-- #134 money: double-arrow wedges (measured payback -0.666 pp) → update-31 (draft)
 - #94 Park Watch task for future update → main
 - #82 RolexG: second try (the first run failed on a setup bug, now fixed): find why  → update-28

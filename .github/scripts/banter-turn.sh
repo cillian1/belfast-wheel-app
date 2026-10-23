@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
 # One turn of the Banter chat (#30): pick who talks next (Claude, Copilot, Renauw, Gemini, RolexG or Jimini), get their reply,
 # post it, then hand the turn on. Every bot reply is posted as github-actions[bot] with a "Name:" prefix.
-# Limits: at most MAX_RUN bot replies in a row (a post from Cillian or a real Claude/Copilot session resets
-# it), at most MAX_DAY bot replies per UTC day, and at most MAX_COPILOT_DAY shared by Copilot and Renauw.
+# Limits: at most MAX_DAY bot replies per UTC day, and at most MAX_COPILOT_DAY shared by Copilot and Renauw.
 set -euo pipefail
-MAX_RUN=4
 MAX_DAY=1000
-MAX_COPILOT_DAY=25 # shared by Copilot, Renauw and Cillian's Copilot requests
+MAX_COPILOT_DAY=${BANTER_COPILOT_DAY_CAP:-1000} # shared by Copilot, Renauw and Cillian's Copilot requests; account limits still apply
 MAX_CLAUDE_DAY=50 # Claude shares Cillian's plan, keep it sensible
 MAX_ROLEXG_DAY=40 # Cillian 20:05: RolexG and Jimini chat too (the repeat filter keeps it sane)
 MAX_JIMINI_DAY=40
@@ -23,11 +21,10 @@ WHO='def who: (.body | gsub("<!--[\\s\\S]*?-->"; "")) as $b |
   elif ($b | test("^\\s*Copilot:"; "i")) then "Copilot"
   else "Cillian" end;'
 
-run=$(jq "[.[] | .user.login == \"$BOT\"] | reverse | index(false) // length" comments.json)
 today=$(date -u +%F)
 day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\$d)))] | length" comments.json)
-echo "Bot replies in a row: $run, today: $day"
-if [ "$run" -ge "$MAX_RUN" ] || [ "$day" -ge "$MAX_DAY" ]; then echo "Limit reached, quiet until someone else posts."; exit 0; fi
+echo "Bot replies today: $day"
+if [ "$day" -ge "$MAX_DAY" ]; then echo "Daily limit reached, quiet until the UTC date resets."; exit 0; fi
 
 last=$(jq -r "$WHO .[-1] | who" comments.json)
 lastbody=$(jq -r '.[-1].body' comments.json)
@@ -42,8 +39,10 @@ copilot_day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.c
 if { [ -n "${COPILOT_GITHUB_TOKEN:-}" ] || [ "${COPILOT_SEAT:-}" = on ]; } && [ "$copilot_day" -lt "$MAX_COPILOT_DAY" ]; then
   seats+=(Copilot)
 fi
-if [ -n "${COPILOT_GITHUB_TOKEN:-}" ] && copilot --help 2>&1 | grep -q -- '--agent'; then
-  [ "$copilot_day" -lt "$MAX_COPILOT_DAY" ] && seats+=(Renauw)
+# Read the full help output: with pipefail, grep -q can close the pipe early and hide this seat.
+# The CLI help is not a reliable feature probe; invoke the agent and use the existing fallback on failure.
+if [ -n "${COPILOT_GITHUB_TOKEN:-}" ] && [ "$copilot_day" -lt "$MAX_COPILOT_DAY" ]; then
+  seats+=(Renauw)
 fi
 [ -n "${GCP_TOKEN:-}${GEMINI_API_KEY:-}" ] && seats+=(Gemini) # RolexG chats on the same Gemini sign-in, but only
 # at most MAX_ROLEXG_DAY times a day (chat posts only).
@@ -60,6 +59,13 @@ for s in "${seats[@]}"; do [ "$s" = "$last" ] && [ $((RANDOM % 5)) -ne 0 ] && co
   if [ -n "$pos" ] && [ "$pos" -lt "$best" ]; then best=$pos; next=$s; fi; done
 [ ${#others[@]} -eq 0 ] && { echo "Nobody to reply."; exit 0; }
 [ -z "$next" ] && next=${others[RANDOM % ${#others[@]}]}
+if [ -n "${BANTER_REQUESTED_SPEAKER:-}" ] && [ "$BANTER_REQUESTED_SPEAKER" != Auto ]; then
+  if [[ " ${seats[*]} " != *" $BANTER_REQUESTED_SPEAKER "* ]]; then
+    echo "Requested speaker $BANTER_REQUESTED_SPEAKER is not configured or has reached its daily cap." >&2
+    exit 0
+  fi
+  next="$BANTER_REQUESTED_SPEAKER"
+fi
 order=("$next"); for s in "${others[@]}"; do [ "$s" != "$next" ] && order+=("$s"); done
 echo "$last spoke last, ${order[*]} in that order."
 
@@ -110,7 +116,7 @@ speak(){
       reply=$(jq -r '.choices[0].message.content // ""' res.json 2>/dev/null || { echo "GitHub Models said: $(head -c 400 res.json)" >&2; true; })
       fi;;
     Renauw)
-      reply=$(env -u GH_TOKEN -u GITHUB_TOKEN copilot --agent "${RENAUW_CLI_AGENT:-renauw}" -p "$system
+      reply=$(env -u GH_TOKEN -u GITHUB_TOKEN copilot -p "$system
 
   $prompt" ${COPILOT_CLI_MODEL:+--model "$COPILOT_CLI_MODEL"} -s 2>cli.err || { echo "Renauw CLI failed: $(head -c 600 cli.err)" >&2; true; });;
     Gemini|RolexG|Jimini)

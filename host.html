@@ -299,9 +299,15 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
     body.innerHTML = `<h2>Gift or adjust ${esc(u.name)}</h2><p>Balance ${eur(u.balance || 0)}. Add or take away, e.g. 5 or -2.50 (cash top-ups go here). Add a message and it pops up on their phone; a message on its own works too.</p>
       <div class="row"><input id="amt" inputmode="decimal" placeholder="Amount"></div>
       <div class="row"><input id="msg" maxlength="140" placeholder="Message (optional)"></div>
-      <div class="row"><button class="gold" id="go" type="button">Send</button><button id="back" type="button">Back</button></div>`;
+      <div class="row"><button class="gold" id="go" type="button">Send</button><button id="back" type="button">Back</button></div>
+      <div class="row" style="margin-top:12px"><button class="small" id="tester" type="button">Set tester pass (until Sat 3pm)</button></div>`;
     document.getElementById('back').onclick = render;
     let sending = false;
+    document.getElementById('tester').onclick = async () => {
+      const until = 1792850400000;
+      await db.patch('users/' + k, { tester: { until } });
+      toast('Tester pass set for ' + u.name); render();
+    };
     document.getElementById('go').onclick = async () => {
       if (sending) return;
       const rawAmount = document.getElementById('amt').value.trim().replace(',', '.'), amount = rawAmount ? Number(rawAmount) : 0;

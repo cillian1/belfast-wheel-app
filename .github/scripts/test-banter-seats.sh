@@ -20,16 +20,12 @@ fi
 EOF
 cat > "$tmp/bin/copilot" <<'EOF'
 #!/usr/bin/env bash
-if [ "$1" = --help ]; then
-  if [ "${COPILOT_AGENT_FLAG_SUPPORT:-}" = yes ]; then
-    echo 'Usage: copilot [--agent name]'
-  else
-    echo 'Usage: copilot [options]'
-  fi
-else
-  printf '%s\n' "$*" >> "$COPILOT_LOG"
-  echo 'A fresh observation about the lighthouse keeper.'
+printf '%s\n' "$*" >> "$COPILOT_LOG"
+if [[ "$*" == *"You are Renauw,"* ]] && [ "${COPILOT_RENAUW_SUPPORT:-}" != yes ]; then
+  echo "Renauw seat unavailable" >&2
+  exit 2
 fi
+echo 'A fresh observation about the lighthouse keeper.'
 EOF
 cat > "$tmp/bin/sleep" <<'EOF'
 #!/usr/bin/env bash
@@ -43,22 +39,21 @@ printf '[{"body":"Renauw","created_at":"%sT12:00:00Z","user":{"login":"cillian1"
   cd "$tmp/work"
   PATH="$tmp/bin:$PATH" REPO=owner/repo GH_TOKEN=test GH_FIXTURE="$tmp/one.json" \
     GH_LOG="$tmp/gh.log" COPILOT_LOG="$tmp/copilot.log" COPILOT_GITHUB_TOKEN=test \
-    COPILOT_AGENT_FLAG_SUPPORT=yes bash .github/scripts/banter-turn.sh
+    COPILOT_RENAUW_SUPPORT=yes BANTER_REQUESTED_SPEAKER=Renauw bash .github/scripts/banter-turn.sh
 )
-grep -Fq -- '--agent renauw' "$tmp/copilot.log"
+grep -Fq 'You are Renauw, a general helper' "$tmp/copilot.log"
 grep -Fq 'Renauw: A fresh observation about the lighthouse keeper.' "$tmp/gh.log"
 
 rm -f "$tmp/copilot.log"
 (
   cd "$tmp/work"
   PATH="$tmp/bin:$PATH" REPO=owner/repo GH_TOKEN=test GH_FIXTURE="$tmp/one.json" \
-    GH_LOG="$tmp/unsupported-gh.log" COPILOT_LOG="$tmp/copilot.log" COPILOT_GITHUB_TOKEN=test bash .github/scripts/banter-turn.sh
+    GH_LOG="$tmp/unsupported-gh.log" COPILOT_LOG="$tmp/copilot.log" COPILOT_GITHUB_TOKEN=test \
+    COPILOT_RENAUW_SUPPORT=no bash .github/scripts/banter-turn.sh
 )
-grep -Fq -- '-p ' "$tmp/copilot.log"
-if grep -Fq -- '--agent' "$tmp/copilot.log"; then
-  echo "Renauw used an unsupported Copilot CLI agent flag." >&2
-  exit 1
-fi
+grep -Fq 'You are Renauw, a general helper' "$tmp/copilot.log"
+grep -Fq 'You are GitHub Copilot' "$tmp/copilot.log"
+grep -Fq 'Copilot: A fresh observation about the lighthouse keeper.' "$tmp/unsupported-gh.log"
 
 {
   printf '['
@@ -74,7 +69,8 @@ rm -f "$tmp/copilot.log"
 (
   cd "$tmp/work"
   PATH="$tmp/bin:$PATH" REPO=owner/repo GH_TOKEN=test GH_FIXTURE="$tmp/capped.json" \
-    GH_LOG="$tmp/capped-gh.log" COPILOT_LOG="$tmp/copilot.log" COPILOT_GITHUB_TOKEN=test bash .github/scripts/banter-turn.sh
+    GH_LOG="$tmp/capped-gh.log" COPILOT_LOG="$tmp/copilot.log" COPILOT_GITHUB_TOKEN=test \
+    BANTER_COPILOT_DAY_CAP=25 bash .github/scripts/banter-turn.sh
 )
 [ ! -s "$tmp/copilot.log" ] || { echo "Copilot/Renauw ran after their shared daily cap." >&2; exit 1; }
 

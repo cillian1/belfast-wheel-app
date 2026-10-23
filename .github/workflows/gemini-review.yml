@@ -30,7 +30,16 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    env:
+      HAS_BOT_APP: ${{ secrets.GEMINI_APP_ID != '' && secrets.GEMINI_APP_KEY != '' }}
     steps:
+      - name: Mint GEMINI App token
+        id: app
+        if: env.HAS_BOT_APP == 'true'
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GEMINI_APP_ID }}
+          private-key: ${{ secrets.GEMINI_APP_KEY }}
       - uses: actions/checkout@v4
         with:
           sparse-checkout: .github/scripts
@@ -46,8 +55,10 @@ jobs:
           create_credentials_file: false
       - name: Ask Gemini to review the diff
         env:
-          GH_TOKEN: ${{ github.token }}
+          BOT_MERGER_LOGIN: ${{ steps.app.outputs.token != '' && format('{0}[bot]', steps.app.outputs.app-slug) || 'github-actions[bot]' }}
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
           REPO: ${{ github.repository }}
+          GEMINI_REVIEW_LOGIN: ${{ steps.app.outputs.token != '' && format('{0}[bot]', steps.app.outputs.app-slug) || vars.GEMINI_BOT_LOGIN || 'belfast-wheel-gemini[bot]' }}
           PR: ${{ github.event.pull_request.number || inputs.pr }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GCP_TOKEN: ${{ steps.gcp.outputs.access_token }}
@@ -91,7 +102,9 @@ jobs:
           fi
       - name: Merge if the verdict is merge and CI is green
         env:
-          GH_TOKEN: ${{ github.token }}
+          BOT_MERGER_LOGIN: ${{ steps.app.outputs.token != '' && format('{0}[bot]', steps.app.outputs.app-slug) || 'github-actions[bot]' }}
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+          GEMINI_REVIEW_LOGIN: ${{ steps.app.outputs.token != '' && format('{0}[bot]', steps.app.outputs.app-slug) || vars.GEMINI_BOT_LOGIN || 'belfast-wheel-gemini[bot]' }}
           REPO: ${{ github.repository }}
           PR: ${{ github.event.pull_request.number || inputs.pr }}
           BOT_MERGE_MAIN: ${{ vars.BOT_MERGE_MAIN }}

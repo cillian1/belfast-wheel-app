@@ -9,8 +9,7 @@ $Repo = 'fixture/repo'
 $RepoRoot = $PSScriptRoot
 $AllowedAuthors = @('cillian1', 'github-actions[bot]')
 $TaskMutex = [Threading.Mutex]::new($false, ('Local\StankmanQueueTest-' + [Guid]::NewGuid().ToString('N')))
-$DailyTaskLimit = 4
-function Get-StankmanTaskState { return [pscustomobject]@{date = [DateTime]::UtcNow.ToString('yyyy-MM-dd'); count = 0} }
+function Get-StankmanTaskState { return [pscustomobject]@{date = [DateTime]::UtcNow.ToString('yyyy-MM-dd'); count = 1000} }
 function Save-StankmanTaskState { param([int]$Count) }
 $Now = [DateTimeOffset]::UtcNow
 function Comment($Body, $Minutes, $Login = 'cillian1') {
@@ -76,6 +75,8 @@ try {
   Check 'bot retry ignored' 2 @((Issue 1), (Issue 2)) @{1 = @($Started, $Blocked, (Comment 'retry' -30 'github-actions[bot]'))}
   Check 'own retry ignored' 2 @((Issue 1), (Issue 2)) @{1 = @($Started, $Blocked, (Comment 'The Stankman: retry' -30))}
   Check 'retry does not duplicate PR' 2 @((Issue 1), (Issue 2)) @{1 = @($Started, $Blocked, $Retry)} @(@{number = 301; body = 'Closes #1'; headRefName = 'stankman/1-task'})
+  Check 'explicit HOLD stays queued' 2 @((Issue 1 'Held' 'HOLD: wait for coordinator'), (Issue 2))
+  Check 'latest comment HOLD stays queued' 2 @((Issue 1), (Issue 2)) @{1 = @((Comment 'HOLD: do not start' -5))}
   Write-Host 'Task queue passed: four wait cases, release priority, explicit retries and duplicate-PR guard.'
 } finally {
   $TaskMutex.Dispose()

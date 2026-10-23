@@ -14,6 +14,26 @@ MAX_ROUNDS=${MAX_ROUNDS:-5} # rounds on one issue or PR before it needs a human 
 say(){ gh api "repos/$REPO/issues/$1/comments" -f body="RolexG: $2" > /dev/null; }
 out(){ local d="EOF_$RANDOM$RANDOM"; { echo "$1<<$d"; echo "$2"; echo "$d"; } >> "$GITHUB_OUTPUT"; }
 
+explicit_base(){
+  grep -oiP '\bbase:\s*`?\K[A-Za-z0-9._/-]+' <<<"$1" | tail -n1 || true
+}
+
+task_base(){
+  local requested declared
+  requested=$(explicit_base "$1"); declared=$(explicit_base "$2")
+  if [ -n "$requested" ] && [ -n "$declared" ] && [ "$requested" != "$declared" ]; then
+    echo "The request says base $requested but the issue says $declared; align the explicit base fields before retrying." >&2
+    return 1
+  fi
+  printf '%s\n' "${requested:-${declared:-$3}}"
+}
+
+publication_base(){
+  local current
+  current=$(task_base '' "$2" "$1") || return 1
+  [ "$current" = "$1" ] || { echo "The issue base changed from $1 to $current during this run." >&2; return 1; }
+}
+
 start(){
   # "@rolexg merge" on a PR is a merge, not a coding task (no Gemini call, doesn't count towards the limits).
   if [ "$EVENT" = issue_comment ] && grep -qiP '^\s*@rolexg\s+merge\b' <<<"$COMMENT_BODY"; then
@@ -52,15 +72,24 @@ $(jq -r '.body // ""' <<<"$issue")";;
     where="pull request #$NUM \"$title\" (branch $head)"
   else
     branch="rolexg/issue-$NUM"
-    # "base: update-28" anywhere in the task picks the branch to work from and open the PR into.
-    base=$(grep -oiP '\bbase:\s*\K[A-Za-z0-9._/-]+' <<<"$task" | head -n1 || true)
-    base=${base:-$default}
+    # A short comment must not hide the issue's canonical base. Conflicts need correction, not a guess.
+    if ! base=$(task_base "$task" "$(jq -r '.body // ""' <<<"$issue")" "$default" 2>&1); then
+      say "$NUM" "BLOCKED: $base"
+      echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0
+    fi
     where="issue #$NUM \"$title\""
   fi
   gh api "repos/$REPO/branches/$base" > /dev/null 2>&1 || { say "$NUM" "I can't find a branch called \`$base\` to work from."; echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0; }
   # Carry on from the branch only while its PR is open; otherwise start fresh from the base (the push
   # then overwrites whatever an earlier, failed run left there).
   open=$(gh api "repos/$REPO/pulls?head=${REPO%%/*}:$branch&state=open" --jq 'length')
+  if [ "$open" -gt 0 ]; then
+    existing_base=$(gh api "repos/$REPO/pulls?head=${REPO%%/*}:$branch&state=open" --jq '.[0].base.ref')
+    if [ "$existing_base" != "$base" ]; then
+      say "$NUM" "BLOCKED: the existing PR targets $existing_base but this task requires $base. Preserve its branch and reconcile the target before retrying."
+      echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0
+    fi
+  fi
   if [ "$open" -gt 0 ]; then from=$branch; else from=$base; fi
 
   # The thread so far, newest last, so RolexG knows what was already said.
@@ -129,6 +158,32 @@ ${dropped_note}"; fi
   git config user.email 41898282+github-actions[bot]@users.noreply.github.com
   git add -A
   git commit -q -m "RolexG: ${TITLE:-task from #$NUM}" -m "Asked for on #$NUM. $RUN_URL"
+
+  # A coordinator can correct the issue while the model works. Preserve the result, but do not publish
+  # a ready PR to the stale target (or update an existing PR whose target changed).
+  publication_blocker=''
+  if ! latest_issue=$(gh api "repos/$REPO/issues/$NUM"); then
+    publication_blocker="I could not re-read the task before publication."
+  elif ! jq -e .pull_request <<<"$latest_issue" > /dev/null; then
+    publication_blocker=$(publication_base "$BASE" "$(jq -r '.body // ""' <<<"$latest_issue")" 2>&1) || true
+    [ "$(jq -r .state <<<"$latest_issue")" = open ] || publication_blocker="The task was closed during this run."
+  fi
+  if ! latest_pr=$(gh api "repos/$REPO/pulls?head=${REPO%%/*}:$BRANCH&state=open"); then
+    publication_blocker="I could not verify the current PR target before publication."
+    latest_pr='[]'
+  fi
+  latest_pr_base=$(jq -r '.[0].base.ref // empty' <<<"$latest_pr")
+  if [ -n "$latest_pr_base" ] && [ "$latest_pr_base" != "$BASE" ]; then
+    publication_blocker="The existing PR now targets $latest_pr_base instead of $BASE."
+  fi
+  if [ -n "$publication_blocker" ]; then
+    recovery_branch="$BRANCH-recovery-${GITHUB_RUN_ID:-$(date -u +%s)}"
+    git push -q "https://x-access-token:$GH_TOKEN@github.com/$REPO.git" "HEAD:refs/heads/$recovery_branch"
+    latest_pr_number=$(jq -r '.[0].number // empty' <<<"$latest_pr")
+    if [ -n "$latest_pr_number" ]; then gh pr ready "$latest_pr_number" -R "$REPO" --undo || true; fi
+    say "$NUM" "BLOCKED: $publication_blocker Work is preserved on \`$recovery_branch\`; no ready PR was published by this run."
+    exit 0
+  fi
   git push -q -f "https://x-access-token:$GH_TOKEN@github.com/$REPO.git" "HEAD:refs/heads/$BRANCH"
 
   pr=$(gh api "repos/$REPO/pulls?head=${REPO%%/*}:$BRANCH&state=open" --jq '.[0].number // empty')
@@ -166,4 +221,4 @@ Checks: $checks."
   fi
 }
 
-"$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then "$@"; fi

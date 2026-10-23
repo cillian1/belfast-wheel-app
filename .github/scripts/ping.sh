@@ -16,8 +16,13 @@ esac
 from=${from,,}
 today=$(date -u +%F)
 comments=$(gh api --paginate "repos/$repo/issues/$number/comments?per_page=100" --jq '[.[] | {body,login:.user.login,created_at}] | .[]')
-day_count=$(gh api --paginate "repos/$repo/issues/comments?since=${today}T00:00:00Z&per_page=100" --jq '[.[] | select(.body | contains(" ??? "))] | length' | awk '{s+=$1} END {print s+0}')
-if (( day_count >= 30 )); then echo "Daily ping limit reached (30)." >&2; exit 0; fi
+# Count canonical handoff comments, not every comment containing the separator.
+# Each ping mirrored to Banter includes "on #N" and must not consume a second slot.
+ping_pattern='^(The Gambler|The Stankman|RolexG|Gemini|Claude|Copilot|Renauw|Jimini|Cillian) [?][?][?] (The Gambler|The Stankman|RolexG|Gemini|Claude|Copilot|Renauw|Jimini|Cillian): '
+MAX_DAILY_HANDOFFS=1000
+day_count=$(gh api --paginate "repos/$repo/issues/comments?since=${today}T00:00:00Z&per_page=100" --jq '.[].body' \
+  | awk -v pattern="$ping_pattern" '$0 ~ pattern { count++ } END { print count+0 }')
+if (( day_count >= MAX_DAILY_HANDOFFS )); then echo "Daily ping limit reached ($MAX_DAILY_HANDOFFS distinct handoffs)." >&2; exit 0; fi
 
 # Human comments reset the pair limit. On PRs, a commit newer than the last ping also resets it.
 case "$from" in rolexg) display_from=RolexG;; jimini) display_from=Jimini;; gemini) display_from=Gemini;; copilot) display_from=Copilot;; renauw) display_from=Renauw;; stankman) display_from=The\ Stankman;; gambler) display_from=The\ Gambler;; claude) display_from=Claude;; cillian) display_from=Cillian;; *) display_from="$from";; esac
