@@ -3297,7 +3297,7 @@ function drawDie3D(g, x, y, s, M, sp) {
     g.globalAlpha = 1;
   });
 }
-// ---------- the bonus round: rollercoaster, the planet wheel, twelve-sided dice, the Monster tank ----------
+// ---------- the bonus round: rollercoaster, the planet wheel, Monster Room dice, the tank ----------
 // Owns bonus-room dice, coaster, planet, and Monster tank behavior.
 const TANK_LEVELS = [{ at: 0, v: 30 }, { at: 68, v: 50 }, { at: 78, v: 80 }, { at: 90, v: 150 }];
 const TANK_CAP = 120;
@@ -3332,6 +3332,34 @@ const D12 = (() => {
   return faces;
 })();
 const D12R = Math.sqrt(3);
+const D20 = (() => {
+  const V = [];
+  for (const a of [-1, 1]) for (const b of [-1, 1]) {
+    V.push([0, a, b * PHI], [a, b * PHI, 0], [a * PHI, 0, b]);
+  }
+  const sub = (a, b) => a.map((x, i) => x - b[i]);
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const edge2 = (a, b) => a.reduce((sum, x, i) => sum + (x - b[i]) ** 2, 0);
+  const faces = [];
+  for (let i = 0; i < V.length; i++) for (let j = i + 1; j < V.length; j++) for (let k = j + 1; k < V.length; k++) {
+    const vs = [V[i], V[j], V[k]];
+    if (Math.abs(edge2(vs[0], vs[1]) - 4) > 1e-6 || Math.abs(edge2(vs[0], vs[2]) - 4) > 1e-6 || Math.abs(edge2(vs[1], vs[2]) - 4) > 1e-6) continue;
+    const C = [0, 1, 2].map(axis => vs.reduce((sum, v) => sum + v[axis], 0) / 3);
+    let n = unit3(cross(sub(vs[1], vs[0]), sub(vs[2], vs[0])));
+    if (n[0] * C[0] + n[1] * C[1] + n[2] * C[2] < 0) n = n.map(x => -x);
+    const u = unit3(sub(vs[0], C)), w = cross(n, u);
+    vs.sort((a, b) => Math.atan2((a[0] - C[0]) * w[0] + (a[1] - C[1]) * w[1] + (a[2] - C[2]) * w[2], (a[0] - C[0]) * u[0] + (a[1] - C[1]) * u[1] + (a[2] - C[2]) * u[2]) - Math.atan2((b[0] - C[0]) * w[0] + (b[1] - C[1]) * w[1] + (b[2] - C[2]) * w[2], (b[0] - C[0]) * u[0] + (b[1] - C[1]) * u[1] + (b[2] - C[2]) * u[2]));
+    faces.push({ n, vs, C, u, w, rp: Math.hypot(...sub(vs[0], C)), val: 0 });
+  }
+  let next = 1;
+  faces.forEach(f => {
+    if (f.val) return;
+    const opp = faces.find(g => !g.val && g !== f && Math.abs(g.n[0] + f.n[0]) + Math.abs(g.n[1] + f.n[1]) + Math.abs(g.n[2] + f.n[2]) < 1e-6);
+    f.val = next; if (opp) opp.val = 21 - next; next++;
+  });
+  return faces;
+})();
+const D20R = Math.sqrt(1 + PHI * PHI);
 function pipLayout(k) {
   const ring = (m, r, off = 0) => Array.from({ length: m }, (_, i) => [Math.cos(off + i * TAU / m) * r, Math.sin(off + i * TAU / m) * r]);
   if (k === 1) return [[0, 0]];
@@ -3340,27 +3368,36 @@ function pipLayout(k) {
   const inner = k >= 11 ? 4 : 3;
   return [...ring(inner, .22, .3), ...ring(k - inner, .6, -Math.PI / 2)];
 }
-function d12Pips(f, x, y, s, M) { // screen spots of the pips on one face
-  const h = s / 2 / D12R, C = mv(M, f.C), U = mv(M, f.u), W = mv(M, f.w), rp = f.rp, pr = f.val > 6 ? .1 : .13;
-  return pipLayout(f.val).map(([a, b]) => ({ x: x + (C[0] + (U[0] * a + W[0] * b) * rp) * h, y: y + (C[1] + (U[1] * a + W[1] * b) * rp) * h, r: pr * rp * h }));
+function d20PipLayout(k) {
+  const rows = Math.ceil(Math.sqrt(k)), cols = Math.ceil(k / rows), gap = .23;
+  return Array.from({ length: k }, (_, i) => {
+    const row = Math.floor(i / cols), inRow = Math.min(cols, k - row * cols);
+    return [(i % cols - (inRow - 1) / 2) * gap, (row - (rows - 1) / 2) * gap];
+  });
 }
-function drawD12(g, x, y, s, M, sp) {
-  const h = s / 2 / D12R;
-  D12.map(f => ({ f, n: mv(M, f.n) })).filter(o => o.n[2] > .02).sort((a, b) => a.n[2] - b.n[2]).forEach(({ f, n }) => {
+function monsterPips(f, x, y, s, M, sp) {
+  const radius = sp ? D20R : D12R, h = s / 2 / radius;
+  const C = mv(M, f.C), U = mv(M, f.u), W = mv(M, f.w), rp = f.rp, pr = f.val > 6 ? .1 : .13;
+  const layout = sp ? d20PipLayout(f.val) : pipLayout(f.val);
+  return layout.map(([a, b]) => ({ x: x + (C[0] + (U[0] * a + W[0] * b) * rp) * h, y: y + (C[1] + (U[1] * a + W[1] * b) * rp) * h, r: pr * rp * h }));
+}
+function drawMonsterDie(g, x, y, s, M, sp) {
+  const faces = sp ? D20 : D12, radius = sp ? D20R : D12R, h = s / 2 / radius;
+  faces.map(f => ({ f, n: mv(M, f.n) })).filter(o => o.n[2] > .02).sort((a, b) => a.n[2] - b.n[2]).forEach(({ f, n }) => {
     const lit = .45 + .55 * Math.max(0, n[2] * .75 - n[0] * .3 - n[1] * .45);
     g.beginPath(); f.vs.forEach((v, i) => { const p = mv(M, v); i ? g.lineTo(x + p[0] * h, y + p[1] * h) : g.moveTo(x + p[0] * h, y + p[1] * h); }); g.closePath();
-    const col = sp === 'W' ? [250, 200, 80] : sp === 'B' ? [130, 50, 220] : [190, 120, 255];
+    const col = sp === 'W' ? [250, 200, 80] : sp === 'B' ? [130, 50, 220] : [250, 252, 255];
     g.fillStyle = `rgb(${Math.round(col[0] * lit)},${Math.round(col[1] * lit)},${Math.round(col[2] * lit)})`; g.fill();
-    g.strokeStyle = sp === 'W' ? 'rgba(70,40,4,.6)' : 'rgba(30,10,50,.55)'; g.lineWidth = Math.max(1, s * .015); g.stroke();
+    g.strokeStyle = sp === 'W' ? 'rgba(70,40,4,.6)' : sp === 'B' ? 'rgba(30,10,50,.55)' : 'rgba(45,55,70,.6)'; g.lineWidth = Math.max(1, s * .015); g.stroke();
     if (n[2] < .35) return;
-    g.globalAlpha = Math.min(1, (n[2] - .35) * 3); g.fillStyle = sp === 'W' ? '#3a2406' : sp === 'B' ? '#ffe28a' : '#fff6dc';
-    d12Pips(f, x, y, s, M).forEach(p => { g.beginPath(); g.arc(p.x, p.y, p.r, 0, TAU); g.fill(); });
+    g.globalAlpha = Math.min(1, (n[2] - .35) * 3); g.fillStyle = sp === 'W' ? '#3a2406' : sp === 'B' ? '#ffe28a' : '#303846';
+    monsterPips(f, x, y, s, M, sp).forEach(p => { g.beginPath(); g.arc(p.x, p.y, p.r, 0, TAU); g.fill(); });
     g.globalAlpha = 1;
   });
 }
-function d12Top(M) { let best = -2, top = D12[0]; D12.forEach(f => { const z = mv(M, f.n)[2]; if (z > best) { best = z; top = f; } }); return top; }
-function d12Snap(M) { // turn the die so its top face looks straight at the camera
-  const n = mv(M, d12Top(M).n), ax = [n[1], -n[0], 0], L = Math.hypot(ax[0], ax[1]);
+function dieTop(M, faces) { let best = -2, top = faces[0]; faces.forEach(f => { const z = mv(M, f.n)[2]; if (z > best) { best = z; top = f; } }); return top; }
+function dieSnap(M, faces) {
+  const n = mv(M, dieTop(M, faces).n), ax = [n[1], -n[0], 0], L = Math.hypot(ax[0], ax[1]);
   if (L < 1e-6) return M;
   return orthonorm(mmul(axisRot([ax[0] / L, ax[1] / L, 0], Math.acos(Math.max(-1, Math.min(1, n[2])))), M));
 }
@@ -3496,7 +3533,7 @@ function drawMonster(now) {
   // the tank
   const x0 = N * .3, x1 = N * .7, y0 = N * .48, y1 = N * .95, H = y1 - y0, lvlY = v => y1 - v / TANK_CAP * H;
   rrect(ctx, x0, y0, x1 - x0, H, N * .02); ctx.fillStyle = 'rgba(160,255,120,.04)'; ctx.fill();
-  const fy = lvlY(M.fill);
+  const fy = lvlY(Math.min(M.fill, TANK_CAP));
   ctx.save(); rrect(ctx, x0, y0, x1 - x0, H, N * .02); ctx.clip();
   const lg = ctx.createLinearGradient(0, fy, 0, y1); lg.addColorStop(0, '#c8ff6a'); lg.addColorStop(.1, '#7cff3a'); lg.addColorStop(1, '#1f7a10');
   ctx.beginPath(); ctx.moveTo(x0, y1); for (let sx = x0; sx <= x1; sx += N / 60) ctx.lineTo(sx, fy + Math.sin(sx / N * 30 + now * .006) * N * .004 * (M.pouring ? 2 : 1)); ctx.lineTo(x1, y1); ctx.fillStyle = lg; ctx.fill();
@@ -3530,7 +3567,7 @@ function drawMonster(now) {
   M.dice.forEach(d => {
     ctx.globalAlpha = d.a ?? 1;
     if (d.sp) { const gx = d.x, gy = d.y - d.z * N * .02, gr = ctx.createRadialGradient(gx, gy, 0, gx, gy, N * .1); gr.addColorStop(0, d.sp === 'W' ? 'rgba(255,214,110,.55)' : 'rgba(180,120,255,.55)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = gr; ctx.fillRect(gx - N * .1, gy - N * .1, N * .2, N * .2); }
-    ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(d.x + d.z * N * .03, d.y + d.z * N * .05, N * .035, N * .026, 0, 0, TAU); ctx.fill(); drawD12(ctx, d.x, d.y - d.z * N * .02, N * .11 * (1 + d.z * .4), d.M, d.sp); ctx.globalAlpha = 1;
+    ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(d.x + d.z * N * .03, d.y + d.z * N * .05, N * .035, N * .026, 0, 0, TAU); ctx.fill(); drawMonsterDie(ctx, d.x, d.y - d.z * N * .02, N * .11 * (1 + d.z * .4), d.M, d.sp); ctx.globalAlpha = 1;
   });
   M.dots.forEach(p => { if (p.gone) return; const gr = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 3.5); gr.addColorStop(0, p.sp === 'W' ? `rgba(255,220,120,${.8 * p.glow})` : p.sp === 'B' ? `rgba(190,130,255,${.8 * p.glow})` : `rgba(200,255,120,${.8 * p.glow})`); gr.addColorStop(1, 'rgba(120,255,60,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 3.5, 0, TAU); ctx.fill(); ctx.fillStyle = '#fff6dc'; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, TAU); ctx.fill(); });
   const cw = faces.can.width, ch = faces.can.height;
@@ -3538,7 +3575,7 @@ function drawMonster(now) {
   ctx.restore();
 }
 
-async function roll12(dice) {
+async function rollMonsterDice(dice) {
   dice.forEach(d => { const a = -Math.PI / 2 + (Math.random() - .5) * 2.6, sp = N * (.35 + Math.random() * .45); d.vx = Math.cos(a) * sp; d.vy = Math.sin(a) * sp + N * .15; d.vz = 2.6 + Math.random() * 1.4; d.w = [(Math.random() - .5) * 18, (Math.random() - .5) * 18, (Math.random() - .5) * 8]; });
   const x0 = N * .06, x1 = N * .94, y0 = N * .06, y1 = N * .42, rad = N * .052;
   let last = performance.now(), calm = 0, el = 0;
@@ -3574,9 +3611,9 @@ async function roll12(dice) {
     }
     requestAnimationFrame(f);
   });
-  const from = dice.map(d => d.M), to = dice.map(d => d12Snap(d.M));
+  const from = dice.map(d => d.M), to = dice.map(d => dieSnap(d.M, d.sp ? D20 : D12));
   await animate(300, t => { dice.forEach((d, i) => d.M = lerpRot(from[i], to[i], easeOut(t))); draw(); });
-  dice.forEach((d, i) => { d.M = to[i]; d.top = d12Top(d.M); });
+  dice.forEach((d, i) => { d.M = to[i]; d.top = dieTop(d.M, d.sp ? D20 : D12); });
   ting();
 }
 // ---------- Phelan's revenge: not one ball in the green ----------
@@ -4196,10 +4233,10 @@ async function monsterRun(steps, w = 0, b = 3) {
   coaster = { x: 0, kind: 2, planet: 0 };
   await crossTo(() => { scene = 'coaster'; }, 1000);
   await animate(5000, t => { coaster.x = N * 7 * easeInOut(t); const sup = Math.floor(coaster.x / (N * .08)); if (sup !== lastSup) { lastSup = sup; tick(.35, 900 - t * 400); } draw(); });
-  // 5. ten twelve-sided dice
+  // 5. ten ordinary d12s and any special d20s
   mon = { dice: [], dots: [], cans: [], fill: 0, poured: 0, pouring: false };
   for (let i = 0; i < 10; i++) mon.dice.push({ x: N * (.12 + (i % 5) * .19), y: N * (.12 + Math.floor(i / 5) * .16), z: 0, vx: 0, vy: 0, vz: 0, M: randRot(), w: [0, 0, 0] });
-  // every Wild you collected and every ankh past three spawns a special gold or purple d12: its number in big Monster cans
+  // every Wild and every ankh past three adds a colored d20; each face pip becomes a big can
   const spec = [...Array(w).fill('W'), ...Array(Math.max(0, b - 3)).fill('B')];
   spec.forEach((k, j) => mon.dice.push({ x: N * (.14 + (j % 5) * .18), y: N * .38, z: 0, vx: 0, vy: 0, vz: 0, M: randRot(), w: [0, 0, 0], sp: k }));
   if (spec.length) { if (!faces.canW || faces.canW.height !== Math.round(N * .066)) { faces.canW = buildCan('W'); faces.canB = buildCan('B'); } setTiles(0, 0); }
@@ -4207,10 +4244,10 @@ async function monsterRun(steps, w = 0, b = 3) {
   setVerdict({ eyebrow: 'Bonus', title: spec.length ? `Ten dice and ${spec.length} special` : 'Ten dice', body: spec.length ? 'Every dot counts. The gold and purple dice pour big cans.' : 'Every dot counts.', steps: steps.slice(), flash: false });
   await wait(600);
   tick(1.4, 900); buzz(25);
-  await roll12(mon.dice);
+  await rollMonsterDice(mon.dice);
   await wait(700);
   // 6. every dot lifts off and turns into a can of Monster
-  mon.dice.forEach(d => d12Pips(d.top, d.x, d.y, N * .11, d.M).forEach(p => mon.dots.push({ x: p.x, y: p.y, x0: p.x, y0: p.y, r: Math.max(D * 1.5, p.r), glow: 0, sp: d.sp })));
+  mon.dice.forEach(d => monsterPips(d.top, d.x, d.y, N * .11, d.M, d.sp).forEach(p => mon.dots.push({ x: p.x, y: p.y, x0: p.x, y: p.y, r: Math.max(D * 1.5, p.r), glow: 0, sp: d.sp })));
   await animate(800, t => { mon.dice.forEach(d => d.a = 1 - t); mon.dots.forEach((p, i) => { p.glow = t; p.y = p.y0 - easeOut(t) * N * (.02 + (i % 4) * .01); }); draw(); });
   mon.dice = [];
   { let at = mon.dots.length * .05 + .8, gap = .42;

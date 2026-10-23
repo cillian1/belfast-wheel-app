@@ -41,6 +41,7 @@ console.log(`Checked ${scripts.length} inline scripts; game version ${version.ga
 
 // 2. Quick odds check
 if (quick) {
+  execFileSync(process.execPath, [resolve(root, 'tools/test-monster-d20.mjs')], { stdio: 'inherit' });
   const TABLES = JSON.parse(readFileSync(resolve(root, 'tools/sim/tables.json'), 'utf8'));
   const RACE_CHANCE = 0.16;
   const AM_AVG = TABLES.AM.reduce((a, b) => a + b, 0) / TABLES.AM.length;
