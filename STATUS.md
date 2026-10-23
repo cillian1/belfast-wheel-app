@@ -7,10 +7,11 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 | Issue | Task | Status | PRs |
 |---|---|---|---|
 | #98 | Task: game sound not working on Cillian's phone | Started, no PR yet |  |
-| #187 | Task sizes, bot lanes and auto-claiming of unassigned tasks | In progress | #235 (draft) → main |
+| #187 | Task sizes, bot lanes and auto-claiming of unassigned tasks | Not started |  |
 
 **Other open PRs**
 
+- #235 Audit Update 32 tracker status (read-only) → main (draft)
 - #234 Jimini: Please complete the read-only odds/prize-mapping report in #229. Do no → main
 - #233 Update 32: reduce lag on Extra Bonus, WILD, and Deeper triggers → update-32
 - #232 Refresh Update 32 tracker and HANDOFF scope → main (draft)
