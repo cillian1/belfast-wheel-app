@@ -1,6 +1,5 @@
-# When Claude posts a comment with "@copilot /go" on an issue labelled copilot-task (and only then: plain
-# @copilot comments are notes, so they don't start a duplicate session), hand the issue to Copilot's
-# coding agent straight away (assigning Copilot starts a session). Needs the COPILOT_ASSIGN_TOKEN
+# When a task is handed to Copilot or Renauw, hand it to Copilot's coding agent straight away
+# (assigning Copilot starts a session). Needs the COPILOT_ASSIGN_TOKEN
 # secret: a fine-grained token from Cillian's account (Copilot can't be assigned with GITHUB_TOKEN).
 name: Copilot dispatch
 on:
@@ -14,6 +13,13 @@ on:
       task:
         description: What Copilot should do
         required: true
+      agent:
+        description: Custom agent profile to use
+        required: false
+        type: choice
+        options:
+          - copilot
+          - renauw
 permissions:
   contents: read
 jobs:
@@ -21,8 +27,10 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (!github.event.issue.pull_request &&
-       contains(github.event.issue.labels.*.name, 'copilot-task') &&
-       contains(github.event.comment.body, '@copilot /go') &&
+       ((contains(github.event.issue.labels.*.name, 'copilot-task') &&
+         contains(github.event.comment.body, '@copilot /go')) ||
+        (contains(github.event.issue.labels.*.name, 'renauw-task') &&
+         contains(github.event.comment.body, '@renauw'))) &&
        !startsWith(github.event.comment.body, 'DONE'))
     runs-on: ubuntu-latest
     steps:
@@ -32,10 +40,25 @@ jobs:
           REPO: ${{ github.repository }}
           ISSUE: ${{ github.event.issue.number }}
           DISPATCH_NUMBER: ${{ inputs.number }}
+          DISPATCH_TASK: ${{ inputs.task }}
+          DISPATCH_AGENT: ${{ inputs.agent }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
           EVENT: ${{ github.event_name }}
         run: |
           if [ -z "$GH_TOKEN" ]; then echo "COPILOT_ASSIGN_TOKEN secret is not set"; exit 1; fi
           ISSUE=${DISPATCH_NUMBER:-$ISSUE}
+          AGENT=${DISPATCH_AGENT:-copilot}
+          if [ "$EVENT" = issue_comment ]; then
+            DISPATCH_TASK=$COMMENT_BODY
+            if [[ "$COMMENT_BODY" == *"@renauw"* ]]; then AGENT=renauw; else AGENT=copilot; fi
+          fi
+          if [ "$AGENT" != copilot ] && [ "$AGENT" != renauw ]; then
+            echo "Unknown custom agent: $AGENT" >&2
+            exit 2
+          fi
           # a fresh assignment is what starts a new Copilot session, so drop it first if it's already there
           gh issue edit "$ISSUE" -R "$REPO" --remove-assignee @copilot || true
           gh issue edit "$ISSUE" -R "$REPO" --add-assignee @copilot
+          if [ "$AGENT" = renauw ]; then
+            gh issue comment "$ISSUE" -R "$REPO" --body "@copilot Use the Renauw custom agent profile at .github/agents/renauw.agent.md for this task: $DISPATCH_TASK"
+          fi

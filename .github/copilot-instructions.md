@@ -14,6 +14,8 @@ Read `HANDOFF.md` first, starting with its **NOW** section: that is the only cur
 
 **Your role:** you do the building (features, fixes, refactors) and Claude coordinates. Anyone but the author reviews and merges. Expect bigger tasks, and make each PR complete and self-tested. **Review your own PR before posting DONE:** re-read the diff, run `node tools/bundle.mjs` and `node tools/check.mjs`, test what you changed, and in the PR list what you checked and anything risky. Reviews are quick, so the PR has to be merge-ready.
 
+**Renauw** is the Copilot custom helper agent for small tasks, fixes, docs and tests; use `.github/scripts/ping.sh renauw <issue> "<task>"` to hand off work.
+
 In short:
 
 - `main` is live on everyone's phone. Work on a branch and open a pull request, and never push to `main` or merge your own PR. Anyone else on the team can review and merge it.
