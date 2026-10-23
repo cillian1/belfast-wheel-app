@@ -14,6 +14,11 @@ if (!helpersMatch || !watchMatch) throw new Error('Could not find delayed Watch 
 assert.match(source, /id="wwModeBadge"[^>]*><i><\/i><span id="wwModeLabel">DELAYED<\/span>/, 'the Watch screen starts with an accurate delayed-mode badge');
 const watchSource = watchMatch[0].replace(/\r?\n  async function replay$/, '');
 
+assert.ok(source.includes("'liveK'"), 'MIRROR includes liveK for nested wheel sync');
+assert.ok(source.includes("'photoZoom'"), 'MIRROR includes photoZoom for transition sync');
+assert.ok(source.includes("'photoDone'"), 'MIRROR includes photoDone for transition sync');
+assert.ok(source.includes("'snapA'"), 'MIRROR includes snapA for scene change sync');
+
 const helpers = new Function(`${helpersMatch[0]}; return { addWatchFrame, pruneWatchFrames, alignWatchBuffer, takeWatchFrame, watchOfflineMessage };`)();
 const buffer = [];
 for (let i = 0; i < 140; i++) helpers.addWatchFrame(buffer, { at: i });
