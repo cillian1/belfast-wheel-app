@@ -118,6 +118,10 @@ function Save-StankmanTaskCheckpoint {
 function Get-StankmanTaskBaseBranch {
   param([string]$IssueBody)
 
+  # Explicit base directives take precedence over a later PR target.
+  $Base = [regex]::Match($IssueBody, '(?im)\bbase(?:\s+branch)?\s*:\s*`?(main|update-\d+)`?\b')
+  if ($Base.Success) { return $Base.Groups[1].Value }
+
   # Accept the explicit branch directives used in issue bodies, whether they
   # appear as a heading, a label, or inline prose (for example "target `main").
   $Match = [regex]::Match($IssueBody, '(?im)(?:^\s*Base\s+branch\s*:?\s*|^\s*Branch from and target\s+|\bfrom\s+and\s+PR\s+into\s+|\btarget\s+)`?(main|update-\d+)`?\b')
@@ -241,40 +245,53 @@ function Invoke-StankmanTaskQueue {
       }
       $AlreadyStarted = $false
       $LastStankmanStatus = $null
+      $RetryRequested = $false
       foreach ($CommentLine in @($CommentLines)) {
         try { $ExistingComment = ConvertFrom-Json -InputObject $CommentLine } catch { continue }
         if ([string]$ExistingComment.user.login -eq 'cillian1') {
           $ExistingBody = [string]$ExistingComment.body
           if ($ExistingBody -match '(?im)^\s*The Stankman:\s*on it\b') {
             $AlreadyStarted = $true
+            $RetryRequested = $false
             $LastStankmanStatus = [pscustomobject]@{ kind = 'on it'; body = $ExistingBody; created_at = [string]$ExistingComment.created_at }
           } elseif ($AlreadyStarted -and $ExistingBody -match '(?im)^\s*The Stankman:\s*(DONE|BLOCKED):') {
             $LastStankmanStatus = [pscustomobject]@{ kind = $Matches[1].ToUpperInvariant(); body = $ExistingBody; created_at = [string]$ExistingComment.created_at }
+            $RetryRequested = $false
+          } elseif ($LastStankmanStatus -and $LastStankmanStatus.kind -eq 'BLOCKED' -and
+            $ExistingBody -notmatch '(?i)^\s*The Stankman:' -and $ExistingBody -match '(?i)\bretry\b' -and
+            [string]$ExistingComment.created_at -gt [string]$LastStankmanStatus.created_at) {
+            $RetryRequested = $true
           }
         }
       }
       $ResumeStaleTask = $false
       if ($AlreadyStarted) {
-        if ($Issue.state -ne 'open' -or ($LastStankmanStatus -and $LastStankmanStatus.kind -eq 'BLOCKED')) { continue }
-        if ($LastStankmanStatus -and $LastStankmanStatus.kind -eq 'DONE') {
-          $DonePrMatch = [regex]::Match($LastStankmanStatus.body, 'https://github\.com/[^/]+/[^/]+/pull/(\d+)')
-          if ($DonePrMatch.Success) {
-            $DonePrState = & gh pr view $DonePrMatch.Groups[1].Value --repo $Repo --json state --jq .state 2>&1
-            if ($LASTEXITCODE -eq 0 -and [string]$DonePrState -match '^MERGED$') { continue }
+        if ($Issue.state -ne 'open') { continue }
+        if ($LastStankmanStatus -and $LastStankmanStatus.kind -eq 'BLOCKED') {
+          if (-not $RetryRequested) { continue }
+          $ResumeStaleTask = $true
+        }
+        if (-not $ResumeStaleTask) {
+          if ($LastStankmanStatus -and $LastStankmanStatus.kind -eq 'DONE') {
+            $DonePrMatch = [regex]::Match($LastStankmanStatus.body, 'https://github\.com/[^/]+/[^/]+/pull/(\d+)')
+            if ($DonePrMatch.Success) {
+              $DonePrState = & gh pr view $DonePrMatch.Groups[1].Value --repo $Repo --json state --jq .state 2>&1
+              if ($LASTEXITCODE -eq 0 -and [string]$DonePrState -match '^MERGED$') { continue }
+            }
+            Write-Host "Issue #$IssueNumber has an unfinished DONE handoff; leaving it for review or closure."
+            continue
           }
-          Write-Host "Issue #$IssueNumber has an unfinished DONE handoff; leaving it for review or closure."
-          return
-        }
-        if (-not $LastStankmanStatus -or $LastStankmanStatus.kind -ne 'on it') { continue }
-        try {
-          $ClaimTime = [DateTimeOffset]::Parse([string]$LastStankmanStatus.created_at).ToUniversalTime()
-        } catch {
-          Write-Warning "Could not read the start time for issue #$IssueNumber; leaving it queued rather than risking duplicate work."
-          return
-        }
-        if (([DateTimeOffset]::UtcNow - $ClaimTime) -lt [TimeSpan]::FromMinutes(30)) {
-          Write-Host "Issue #$IssueNumber is still within its 30-minute claim window; waiting."
-          return
+          if (-not $LastStankmanStatus -or $LastStankmanStatus.kind -ne 'on it') { continue }
+          try {
+            $ClaimTime = [DateTimeOffset]::Parse([string]$LastStankmanStatus.created_at).ToUniversalTime()
+          } catch {
+            Write-Warning "Could not read the start time for issue #$IssueNumber; leaving it queued rather than risking duplicate work."
+            return
+          }
+          if (([DateTimeOffset]::UtcNow - $ClaimTime) -lt [TimeSpan]::FromMinutes(30)) {
+            Write-Host "Issue #$IssueNumber is still within its 30-minute claim window; waiting."
+            continue
+          }
         }
 
         $OpenPrLines = & gh pr list --repo $Repo --state open --limit 100 --json number,title,body,headRefName 2>&1
@@ -294,7 +311,7 @@ function Invoke-StankmanTaskQueue {
         } | Select-Object -First 1
         if ($IssuePr) {
           Write-Host "Issue #$IssueNumber already has open PR #$($IssuePr.number); waiting for it to finish."
-          return
+          continue
         }
 
         $ResumeStaleTask = $true
@@ -325,7 +342,7 @@ function Invoke-StankmanTaskQueue {
           break
         }
       }
-      if ($WaitingForDependency) { return }
+      if ($WaitingForDependency) { continue }
 
       $GitStatus = & git -C $RepoRoot status --porcelain --untracked-files=all
       if ($LASTEXITCODE -ne 0 -or @($GitStatus).Count -gt 0) {
@@ -391,8 +408,8 @@ function Invoke-StankmanTaskQueue {
         Invoke-StankmanGit @('switch', '-c', $TaskBranch, $TaskStartRef) | Out-Null
         $BranchCreated = $true
 
-        $AgentsPath = Join-Path $RepoRoot 'AGENTS.md'
-        $AgentsText = Get-Content -Raw -Encoding UTF8 -LiteralPath $AgentsPath
+        # Persona belongs to the current watcher setup, even when the game base is older.
+        $AgentsText = (Invoke-StankmanGit @('show', 'origin/main:AGENTS.md')) -join "`n"
         $PersonaMatch = [regex]::Match($AgentsText, '(?ms)^## The Stankman\s*\r?\n(?<section>.*?)(?=^## |\z)')
         if (-not $PersonaMatch.Success) { throw 'AGENTS.md has no ## The Stankman section.' }
         $StankmanPersona = $PersonaMatch.Groups['section'].Value.Trim()
