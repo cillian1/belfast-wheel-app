@@ -53,6 +53,8 @@ $body
 Comments so far (oldest first, may be cut):
 $thread
 
+When you finish, get blocked, or are waiting on someone, invoke .github/scripts/ping.sh straight away and name exactly what you need. Ping the author when a change is needed and the merger when a review is ready to merge.
+
 How to work:
 - Read whatever you need: README.md, HANDOFF.md, GEMINI.md, src/, tools/, host.html, chat.html, .github/. Skip game/index.html (a generated bundle of src/).
 - You have no shell. Don't try to edit the code: any file you write outside jimini-out/ is thrown away.
@@ -90,7 +92,9 @@ finish(){
   [ -d jimini-out ] && cp -r jimini-out/. "$keep/"
   git checkout -q -- . && git clean -fdq # whatever else he touched goes
   if [ "$GEMINI_OK" != success ]; then
-    say "$NUM" "I got stuck before finishing, so there's no report this time. The run log has the details: $RUN_URL"; exit 1; fi
+    say "$NUM" "I got stuck before finishing, so there's no report this time. The run log has the details: $RUN_URL"
+    PING_FROM=jimini REPO="$REPO" GH_TOKEN="$GH_TOKEN" bash "$(dirname "$0")/ping.sh" claude "$NUM" "Jimini is blocked on #$NUM; please inspect the run log and unblock the task: $RUN_URL" || true
+    exit 1; fi
   summary=${SUMMARY:-}
   if jq -e . > /dev/null 2>&1 <<<"$summary"; then summary=$(jq -r '.response // ""' <<<"$summary"); fi
   [ -n "${summary// }" ] || summary="Done."

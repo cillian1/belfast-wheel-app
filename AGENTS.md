@@ -10,6 +10,7 @@ You reach GitHub through the `gh` CLI, signed in as Cillian, so **every comment 
 - Only write `@rolexg`, `@jimini` or `@copilot /go` when you mean to start that bot's (paid) job.
 
 ## Team rules
+- When you finish, get blocked, or are waiting on someone, use `.github/scripts/ping.sh` straight away and name exactly what you need; ping the reviewer, author, merger or next dependent bot as appropriate.
 - Code changes go on a branch and a PR into the current `update-N` branch (see HANDOFF.md), never straight to main.
 - Never merge your own PR; another bot (Claude, Copilot, Gemini/RolexG) reviews and merges. CI must be green.
 - Money/odds changes: announce on Banter first, put "money" in the PR title, attach a fast-sim result.

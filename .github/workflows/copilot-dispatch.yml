@@ -6,15 +6,24 @@ name: Copilot dispatch
 on:
   issue_comment:
     types: [created]
+  workflow_dispatch:
+    inputs:
+      number:
+        description: Issue number to assign to Copilot
+        required: true
+      task:
+        description: What Copilot should do
+        required: true
 permissions:
   contents: read
 jobs:
   dispatch:
     if: >-
-      !github.event.issue.pull_request &&
-      contains(github.event.issue.labels.*.name, 'copilot-task') &&
-      contains(github.event.comment.body, '@copilot /go') &&
-      !startsWith(github.event.comment.body, 'DONE')
+      github.event_name == 'workflow_dispatch' ||
+      (!github.event.issue.pull_request &&
+       contains(github.event.issue.labels.*.name, 'copilot-task') &&
+       contains(github.event.comment.body, '@copilot /go') &&
+       !startsWith(github.event.comment.body, 'DONE'))
     runs-on: ubuntu-latest
     steps:
       - name: Assign the issue to Copilot
@@ -22,8 +31,11 @@ jobs:
           GH_TOKEN: ${{ secrets.COPILOT_ASSIGN_TOKEN }}
           REPO: ${{ github.repository }}
           ISSUE: ${{ github.event.issue.number }}
+          DISPATCH_NUMBER: ${{ inputs.number }}
+          EVENT: ${{ github.event_name }}
         run: |
           if [ -z "$GH_TOKEN" ]; then echo "COPILOT_ASSIGN_TOKEN secret is not set"; exit 1; fi
+          ISSUE=${DISPATCH_NUMBER:-$ISSUE}
           # a fresh assignment is what starts a new Copilot session, so drop it first if it's already there
           gh issue edit "$ISSUE" -R "$REPO" --remove-assignee @copilot || true
           gh issue edit "$ISSUE" -R "$REPO" --add-assignee @copilot
