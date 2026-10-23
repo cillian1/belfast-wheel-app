@@ -20,19 +20,16 @@ fi
 EOF
 cat > "$tmp/bin/copilot" <<'EOF'
 #!/usr/bin/env bash
+printf '%s\n' "$*" >> "$COPILOT_LOG"
 if [ "$1" = --help ]; then
-  if [ "${COPILOT_AGENT_FLAG_SUPPORT:-}" = yes ]; then
-    printf '%s\n' 'Usage: copilot [options]'
-    for ((i=0; i<10000; i++)); do
-      printf '  --agent <name>\n'
-    done
-  else
-    echo 'Usage: copilot [options]'
-  fi
-else
-  printf '%s\n' "$*" >> "$COPILOT_LOG"
-  echo 'A fresh observation about the lighthouse keeper.'
+  echo "The Banter turn should not probe help to detect agent availability." >&2
+  exit 99
 fi
+if [ "$1" = --agent ] && [ "${COPILOT_AGENT_FLAG_SUPPORT:-}" != yes ]; then
+  echo "unknown option: --agent" >&2
+  exit 2
+fi
+echo 'A fresh observation about the lighthouse keeper.'
 EOF
 cat > "$tmp/bin/sleep" <<'EOF'
 #!/usr/bin/env bash
@@ -55,13 +52,12 @@ rm -f "$tmp/copilot.log"
 (
   cd "$tmp/work"
   PATH="$tmp/bin:$PATH" REPO=owner/repo GH_TOKEN=test GH_FIXTURE="$tmp/one.json" \
-    GH_LOG="$tmp/unsupported-gh.log" COPILOT_LOG="$tmp/copilot.log" COPILOT_GITHUB_TOKEN=test bash .github/scripts/banter-turn.sh
+    GH_LOG="$tmp/unsupported-gh.log" COPILOT_LOG="$tmp/copilot.log" COPILOT_GITHUB_TOKEN=test \
+    COPILOT_AGENT_FLAG_SUPPORT=no bash .github/scripts/banter-turn.sh
 )
-grep -Fq -- '-p ' "$tmp/copilot.log"
-if grep -Fq -- '--agent' "$tmp/copilot.log"; then
-  echo "Renauw used an unsupported Copilot CLI agent flag." >&2
-  exit 1
-fi
+grep -Fq -- '--agent renauw' "$tmp/copilot.log"
+grep -Eq '^-p ' "$tmp/copilot.log"
+grep -Fq 'Copilot: A fresh observation about the lighthouse keeper.' "$tmp/unsupported-gh.log"
 
 {
   printf '['
