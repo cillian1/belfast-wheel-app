@@ -51,10 +51,8 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
 (function () {
   const CFG = window.WALLET_CFG, app = null, MIN_TOPUP = 100;
   let hostHash = null;
-  const setConnected = () => {};
   // <shared> (also used by host.html, see tools/build.mjs)
   // ---------- small helpers ----------
-  // Owns shared wallet formatting, preferences, and hashing helpers.
   const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const eur = c => { const v = Math.abs(c) / 100, s = Number.isInteger(v) ? String(v) : v.toFixed(2); return (c < 0 ? '−€' : '€') + s; };
@@ -66,20 +64,6 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
     set(k, v) { try { if (app && app.setPref) app.setPref(k, v == null ? '' : v); } catch (e) {} try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} },
   };
   const TEST_KEY = 'test', isTest = () => !!(W.me && W.me.test);
-  const TROPHIES = [
-    { id: 'first', name: 'First spin', icon: '🎡', how: 'Complete your first paid spin.' },
-    { id: 'spins100', name: 'Regular', icon: '🔁', how: 'Complete 100 paid spins.' },
-    { id: 'spins1000', name: 'Lifer', icon: '♾️', how: 'Complete 1,000 paid spins.' },
-    { id: 'stank', name: 'Stank Chamber', icon: '🧪', how: 'Reach the Stank Chamber.' },
-    { id: 'monster', name: 'Monster tank', icon: '🥫', how: 'Reach the Monster tank.' },
-    { id: 'god', name: 'God room', icon: '⚡', how: 'Reach the God room.' },
-    { id: 'pyramid', name: 'Pyramid', icon: '🔺', how: 'Light all six Wild and ankh tiles at once.' },
-    { id: 'tomb', name: "Phelan's Tomb", icon: '🏺', how: "Win the Phelan's Tomb plaque." },
-    { id: 'deep5', name: 'Even deeper', icon: '🌀', how: 'Reach the hidden fifth inner wheel.' },
-    { id: 'golden', name: 'Golden run', icon: '✨', how: 'Trigger a Golden run.' },
-    { id: 'big', name: 'Big winner', icon: '🏆', how: 'Win at least 50× your bet in a single payout.' },
-    { id: 'race', name: 'Chicken Race', icon: '🐔', how: 'Win the Chicken Race.' },
-  ];
   const keyOf = name => name.trim().toLowerCase().replace(/[.#$\[\]\/\s]+/g, '_');
   function sha256(str) { // small pure-JS SHA-256 (crypto.subtle is not always there on file:// pages)
     const K = [], H = [], isP = n => { for (let f = 2; f * f <= n; f++) if (n % f === 0) return false; return true; };
@@ -103,7 +87,6 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
     return H.map(x => (x >>> 0).toString(16).padStart(8, '0')).join('');
   }
   // ---------- Firebase REST ----------
-  // Owns database REST requests and transaction logging.
   // in the app, requests go through Java (no CORS from a file:// page); in a browser, plain fetch
   const waiting = {}; let reqN = 0;
   window.__httpDone = id => { const raw = app.httpTake(id), w = waiting[id]; delete waiting[id]; if (!w) return;
@@ -111,15 +94,11 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
     if (!status) return w.no(new TypeError('offline'));
     w.ok({ ok: status >= 200 && status < 300, status, headers: { get: k => /etag/i.test(k) ? tag || null : null }, json: async () => JSON.parse(body || 'null') });
   };
-  const rawFetch = (app && app.http) ? (url, o = {}) => new Promise((ok, no) => {
+  const fetch = (app && app.http) ? (url, o = {}) => new Promise((ok, no) => {
     const id = 'r' + (++reqN), h = o.headers || {};
     waiting[id] = { ok, no };
     app.http(id, o.method || 'GET', url, h['if-match'] || '', !!h['X-Firebase-ETag'], o.body == null ? null : o.body);
   }) : window.fetch.bind(window);
-  const fetch = async (...args) => {
-    try { const response = await rawFetch(...args); setConnected(true); return response; }
-    catch (e) { setConnected(false); throw e; }
-  };
   const db = {
     url: p => CFG.db.replace(/\/$/, '') + '/' + p + '.json',
     async get(p, q = '') { const r = await fetch(db.url(p) + q, { cache: 'no-store' }); if (!r.ok) throw new Error('db ' + r.status); return r.json(); },
@@ -322,17 +301,29 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
       <div class="row"><input id="msg" maxlength="140" placeholder="Message (optional)"></div>
       <div class="row"><button class="gold" id="go" type="button">Send</button><button id="back" type="button">Back</button></div>`;
     document.getElementById('back').onclick = render;
+    let sending = false;
     document.getElementById('go').onclick = async () => {
-      const a = Math.round((parseFloat(document.getElementById('amt').value.replace(',', '.')) || 0) * 100), msg = document.getElementById('msg').value.trim().slice(0, 140);
+      if (sending) return;
+      const rawAmount = document.getElementById('amt').value.trim().replace(',', '.'), amount = rawAmount ? Number(rawAmount) : 0;
+      if (!Number.isFinite(amount)) return toast('Enter a valid amount.');
+      const a = Math.round(amount * 100), msg = document.getElementById('msg').value.trim().slice(0, 140);
       if (!a && !msg) return;
       if (Math.abs(a) > 50000) return toast('Too much! Max €500 at once.');
-      if (a) {
-        await db.txn('users/' + k, u => { u.balance = (u.balance || 0) + a; if (a > 0) u.topped = (u.topped || 0) + a; return u; });
-        await log(k, a > 0 ? 'topup' : 'adjust', a, { what: 'by host' });
+      sending = true;
+      document.getElementById('go').disabled = true;
+      try {
+        if (a) {
+          await db.txn('users/' + k, u => { u.balance = (u.balance || 0) + a; if (a > 0) u.topped = (u.topped || 0) + a; return u; });
+          await log(k, a > 0 ? 'topup' : 'adjust', a, { what: 'by host' });
+        }
+        // what pops up on their phone: a gift and/or the message
+        if (msg || a > 0) await db.push('notes/' + k, { amt: a > 0 ? a : 0, text: msg, at: now() }).catch(() => {});
+        toast(msg ? 'Sent' : 'Done'); render();
+      } catch (e) {
+        toast('Update status unclear. Check balance before retrying.');
+        render();
       }
-      // what pops up on their phone: a gift and/or the message
-      if (msg || a > 0) await db.push('notes/' + k, { amt: a > 0 ? a : 0, text: msg, at: now() }).catch(() => {});
-      toast(msg ? 'Sent' : 'Done'); render();
+      finally { sending = false; }
     };
   }
   gate();

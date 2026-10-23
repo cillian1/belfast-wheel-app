@@ -2,11 +2,22 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import vm from 'node:vm';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const source = readFileSync(resolve(root, 'src/wallet/db.js'), 'utf8');
 const match = source.match(/  const db = \{[\s\S]*?\n  \};/);
 if (!match) throw new Error('Could not find db in src/wallet/db.js');
+const hostSource = readFileSync(resolve(root, 'host.html'), 'utf8');
+const hostMatch = hostSource.match(/  const db = \{[\s\S]*?\n  \};/);
+if (!hostMatch) throw new Error('Could not find db in host.html');
+for (const [index, script] of [...hostSource.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi)].entries()) {
+  new vm.Script(script[1], { filename: `host.html:inline-script-${index + 1}.js` });
+}
+assert.match(hostSource, /let hostHash = null;/);
+assert.doesNotMatch(hostSource, /sessionStorage/);
+assert.match(hostSource, /Math\.abs\(a\) > 50000/);
+assert.match(hostSource, /if \(sending\) return;/);
 
 const response = (value, tag = '"v1"', status = 200) => ({
   ok: status >= 200 && status < 300,
@@ -14,7 +25,7 @@ const response = (value, tag = '"v1"', status = 200) => ({
   headers: { get: key => key === 'ETag' ? tag : null },
   json: async () => value,
 });
-function createDb(replies) {
+function createDb(replies, dbSource = match[0]) {
   const calls = [];
   const fetch = async (url, options) => {
     calls.push({ url, ...options });
@@ -23,9 +34,19 @@ function createDb(replies) {
     if (reply instanceof Error) throw reply;
     return reply;
   };
-  const db = new Function('fetch', 'CFG', `${match[0]}; return db;`)(fetch, { db: 'https://example.invalid' });
+  const db = new Function('fetch', 'CFG', `${dbSource}; return db;`)(fetch, { db: 'https://example.invalid' });
   return { db, calls };
 }
+
+const hostRetryPut = createDb([
+  response(100, '"host-v1"'), new TypeError('network'),
+  response(100, '"host-v2"'), response(null),
+], hostMatch[0]);
+assert.equal(await hostRetryPut.db.txn('users/test/balance', value => value + 10), 110);
+assert.deepEqual(hostRetryPut.calls.filter(call => call.method === 'PUT').map(call => call.headers), [
+  { 'if-match': '"host-v1"' }, { 'if-match': '"host-v2"' },
+]);
+assert.notEqual(hostRetryPut.db.tags, false, 'host retries must preserve ETag protection after a failed PUT');
 
 const retryPut = createDb([
   response(100, '"v1"'), new TypeError('network'),
@@ -91,4 +112,4 @@ const abort = createDb([response(100)]);
 assert.equal(await abort.db.txn('users/test/balance', () => undefined), 100);
 assert.equal(abort.calls.length, 1, 'an aborted transaction must not write');
 
-console.log('Wallet transactions retain ETags after network failures, refresh retries, and stop after eight attempts.');
+console.log('Wallet and host transactions retain ETags after network failures, refresh retries, and stop after eight attempts.');
