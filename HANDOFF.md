@@ -23,8 +23,12 @@
   - The Gambler: #141 (independent odds check of #120), then #140 (its watcher honours the issue's base branch).
   - Rebalanced 21:57 (Cillian: assign idle bots): #98 sound merged (PR #112). RolexG: #142, run the sound test in CI. Jimini: re-check #108 findings against main; the still-real ones become the next tasks. Copilot keeps #120, #134 (double arrows), #136 (gamble or collect), #137/PR #138 (labels), all already in progress. Gemini reviews them.
   - Claude: coordinates, merges, release check.
+- **Update 32 plan (all work planned/open; no items here are marked complete):** Keep the five existing tracker goals/issues unchanged: #209, #199, #213, #200 and #211. Add #231 (Extra Bonus/WILD/Deeper lag) and #229 (Monster Room d12/d20 styling request).
+  - Add #181's chat-box/keyboard-open Live Watch viewer regression check to #199. #182 already fixed the keyboard-open drawing bug in update-31; this asks for a regression check, not a duplicate fix.
+  - #231: preserve `Math.random` call order and outcomes; do not touch odds, prizes or wallet behavior.
+  - #229: ordinary Monster Room d12 is white; special/bonus d20 uses its designated colour. Outcome/prize mapping is **PENDING** both Jimini's read-only odds report and Cillian's decision. Make no mapping assumptions; no d20 outcome implementation until the mapping decision. Any eventual odds/prize/wallet change requires a Banter notice, a PR titled with `money`, fast-sim evidence and independent review.
 - **Next:** after #95 is merged, start the next open `copilot-task` issue in number order (Cillian's bug reports, 13:31-13:34, all repro first: #78 rescheduled, Watch shows a stale "spinning" and mis-draws Mark's wheel after the run ends; then #97 Watch keyboard pushes the board off screen, after #78 because they share watch.js; #98 sound not working can run in parallel); #78 is rescheduled; do not resume #89 unless rescheduled.
-- **Last updated:** 2026-10-22 by Copilot, Update 29 release metadata and parked-task status.
+- **Last updated:** 2026-10-23 by Copilot, Update 32 tracker additions and pending #229 gates.
 
 **Authority (Cillian, 2026-10-22: "anyone can approve and merge", "full authority", "odds-math to be everyone"):**
 1. Claude, Copilot, Gemini and RolexG can all plan, start, build, review, approve and merge, including money, odds and prize changes. Nobody waits for Cillian's nod or asks him about approvals or merges.
