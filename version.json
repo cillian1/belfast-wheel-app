@@ -1,9 +1,9 @@
 {
-  "game": 30,
+  "game": 31,
   "apk": 3,
-  "gameBuild": 67,
-  "notes": "Live Watch fixed (no freeze, Mark's wheel shows, keyboard no longer hides the board); free spins only at 10c; safer wallet saves",
+  "gameBuild": 68,
+  "notes": "Gamble or collect after a win (red/black, up to 5 doubles); double arrows on the wheels; clear WILD/BONUS labels; Mark's farm gold chicken odds fixed; Live Watch board stays intact with the keyboard open",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk",
-  "name": "Watch Party"
+  "name": "Double or Nothing"
 }
