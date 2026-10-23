@@ -6,9 +6,6 @@ $SeenIds = [System.Collections.Generic.HashSet[string]]::new()
 $ReplyTimes = [System.Collections.Generic.Queue[DateTimeOffset]]::new()
 $LastCheck = [DateTimeOffset]::UtcNow
 $RepoRoot = (& git rev-parse --show-toplevel).Trim()
-$DailyTaskLimit = 4
-$TaskStateDirectory = if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA 'TheGambler' } else { Join-Path $env:TEMP 'TheGambler' }
-$TaskStateFile = Join-Path $TaskStateDirectory 'task-state.json'
 $TaskMutex = [System.Threading.Mutex]::new($false, 'Local\BelfastWheelGamblerTask')
 
 # Make GitHub CLI available in fresh PowerShell windows after a winget install.
@@ -40,31 +37,6 @@ function Invoke-GamblerGit {
     throw "git $($GitArgs -join ' ') failed. $($Output -join ' ')"
   }
   return $Output
-}
-
-function Get-GamblerTaskState {
-  $Today = Get-Date -Format 'yyyy-MM-dd'
-  if (-not (Test-Path -LiteralPath $TaskStateFile)) {
-    return [pscustomobject]@{ date = $Today; started = 0 }
-  }
-
-  try {
-    $Saved = Get-Content -Raw -Encoding UTF8 -LiteralPath $TaskStateFile | ConvertFrom-Json
-    if ($Saved.date -eq $Today -and $Saved.PSObject.Properties['started'] -and [int]$Saved.started -ge 0) {
-      return [pscustomobject]@{ date = $Today; started = [int]$Saved.started }
-    }
-    return [pscustomobject]@{ date = $Today; started = 0 }
-  } catch {
-    Write-Warning 'Could not read the Gambler task counter; refusing to start tasks until its state is repaired.'
-    return $null
-  }
-}
-
-function Save-GamblerTaskState {
-  param([int]$Started)
-  New-Item -ItemType Directory -Path $TaskStateDirectory -Force | Out-Null
-  [pscustomobject]@{ date = (Get-Date -Format 'yyyy-MM-dd'); started = $Started } |
-    ConvertTo-Json -Compress | Set-Content -Encoding UTF8 -LiteralPath $TaskStateFile
 }
 
 function Get-GamblerTaskBaseBranch {
@@ -113,10 +85,6 @@ function Invoke-GamblerTaskQueue {
       Write-Host 'Another Gambler task is already running; this poll will not start a second one.'
       return
     }
-
-    $State = Get-GamblerTaskState
-    if ($null -eq $State) { return }
-    $AtDailyLimit = $State.started -ge $DailyTaskLimit
 
     $IssueListLines = & gh issue list --repo $Repo --state open --label gambler-task --limit 100 --json number,title,author,createdAt 2>&1
     if ($LASTEXITCODE -ne 0) {
@@ -219,9 +187,6 @@ function Invoke-GamblerTaskQueue {
 
         $ResumeStaleTask = $true
         Write-Host "Issue #$IssueNumber has a stale claim and no open PR; resuming it."
-      } elseif ($AtDailyLimit) {
-        Write-Host "Daily Gambler task limit reached ($DailyTaskLimit); leaving labelled issues for tomorrow."
-        return
       }
 
       $DependencyMatches = [regex]::Matches([string]$Issue.body, '(?i)\bafter\s+#(\d+)')
@@ -256,16 +221,10 @@ function Invoke-GamblerTaskQueue {
         return
       }
 
-      if (-not $ResumeStaleTask) { $State.started++ }
       try {
-        if (-not $ResumeStaleTask) { Save-GamblerTaskState -Started $State.started }
         $ClaimComment = if ($ResumeStaleTask) { 'The Gambler: on it (resuming stale claim)' } else { 'The Gambler: on it' }
         Post-GamblerIssueComment -IssueNumber $IssueNumber -Body $ClaimComment
       } catch {
-        if (-not $ResumeStaleTask) {
-          $State.started = [Math]::Max(0, $State.started - 1)
-          try { Save-GamblerTaskState -Started $State.started } catch { }
-        }
         Write-Warning "Could not start issue #$IssueNumber; will retry next poll. $_"
         return
       }
