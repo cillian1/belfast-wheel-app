@@ -110,6 +110,10 @@ function Save-GamblerTaskCheckpoint {
 function Get-GamblerTaskBaseBranch {
   param([string]$IssueBody)
 
+  # Explicit base directives take precedence over a later PR target.
+  $Base = [regex]::Match($IssueBody, '(?im)\bbase(?:\s+branch)?\s*:\s*`?(main|update-\d+)`?\b')
+  if ($Base.Success) { return $Base.Groups[1].Value }
+
   # Accept the explicit branch directives used in issue bodies, whether they
   # appear as a heading, a label, or inline prose (for example "target `main").
   $Match = [regex]::Match($IssueBody, '(?im)(?:^\s*Branch from and target|\bfrom\s+and\s+PR\s+into|\btarget)\s+`?(main|update-\d+)`?\b')
