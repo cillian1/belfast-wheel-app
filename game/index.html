@@ -1633,6 +1633,7 @@ function draw() {
 }
 // everything fits on one screen: the wheel takes whatever height the rest of the page leaves
 function fitStage() {
+  if (typeof viewing !== 'undefined' && viewing) return;
   const st = $('.stage'), app = $('.app'); if (!st || !app) return;
   const cs = getComputedStyle(document.body), gap = parseFloat(getComputedStyle(app).rowGap) || 0;
   let used = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom), n = 0;
@@ -1663,6 +1664,7 @@ function syncCanvasQuality(preserve = true) {
 Perf.onCanvasQualityChange(syncCanvasQuality);
 function resize() {
   const w = cv.clientWidth; if (!w) return;
+  if (typeof viewing !== 'undefined' && viewing) return;
   D = Math.min(2, window.devicePixelRatio || 1);
   const n = Math.round(w * D); if (n === N) { syncCanvasQuality(false); return; }
   const old = B ? { N } : null;
@@ -6501,7 +6503,7 @@ header>span{flex-wrap:wrap}
   // the watcher's own game sits idle underneath; it borrows its canvas to draw the other phone's state, then reloads
   const lerpAng = (a, b, t) => { const d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + d * t; };
   function mirApply(st, prev, t) {
-    if (st.N && st.N !== N) { cv.width = cv.height = st.N; }
+    if (st.N && st.N !== N) { N = st.N; cv.width = cv.height = N; c = N / 2; R = N / 2 * .935 * .82; }
     for (const n in st) {
       if (!mirGet[n]) continue;
       let v = st[n];

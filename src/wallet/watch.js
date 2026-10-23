@@ -269,7 +269,7 @@
   // the watcher's own game sits idle underneath; it borrows its canvas to draw the other phone's state, then reloads
   const lerpAng = (a, b, t) => { const d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + d * t; };
   function mirApply(st, prev, t) {
-    if (st.N && st.N !== N) { cv.width = cv.height = st.N; }
+    if (st.N && st.N !== N) { N = st.N; cv.width = cv.height = N; c = N / 2; R = N / 2 * .935 * .82; }
     for (const n in st) {
       if (!mirGet[n]) continue;
       let v = st[n];

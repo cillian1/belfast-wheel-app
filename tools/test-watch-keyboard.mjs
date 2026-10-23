@@ -65,13 +65,16 @@ try {
   await B.page.locator('#wwMode').click(); // Go live: no three-second delay in the test
   await B.page.waitForFunction(() => document.querySelector('#wwT').textContent === 'Rooftop bar', null, { timeout: 15000 });
   const open = await layout(B.page, 780);
+  const openConsts = await B.page.evaluate(() => ({ N, c, R }));
   if (shots) await B.page.screenshot({ path: `${shots}-780.png` });
   // the keyboard opens: the visible height drops to 430px
   await B.page.locator('#wwSay').focus();
   await B.page.setViewportSize({ width: 360, height: 430 });
   const kb = await layout(B.page, 430, true);
+  const kbConsts = await B.page.evaluate(() => ({ N, c, R }));
   if (shots) await B.page.screenshot({ path: `${shots}-430.png` });
   assert.ok(kb.scr.height < open.scr.height, 'the board shrinks to fit above the keyboard');
+  assert.deepEqual(kbConsts, openConsts, 'drawing constants (N, c, R) stay the same even when the container shrinks, to match the mirrored state');
   // and closes again: back to normal
   await B.page.setViewportSize({ width: 360, height: 780 });
   const back = await layout(B.page, 780);

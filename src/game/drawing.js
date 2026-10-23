@@ -325,6 +325,7 @@ function draw() {
 }
 // everything fits on one screen: the wheel takes whatever height the rest of the page leaves
 function fitStage() {
+  if (typeof viewing !== 'undefined' && viewing) return;
   const st = $('.stage'), app = $('.app'); if (!st || !app) return;
   const cs = getComputedStyle(document.body), gap = parseFloat(getComputedStyle(app).rowGap) || 0;
   let used = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom), n = 0;
@@ -355,6 +356,7 @@ function syncCanvasQuality(preserve = true) {
 Perf.onCanvasQualityChange(syncCanvasQuality);
 function resize() {
   const w = cv.clientWidth; if (!w) return;
+  if (typeof viewing !== 'undefined' && viewing) return;
   D = Math.min(2, window.devicePixelRatio || 1);
   const n = Math.round(w * D); if (n === N) { syncCanvasQuality(false); return; }
   const old = B ? { N } : null;
