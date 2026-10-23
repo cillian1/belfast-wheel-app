@@ -11,6 +11,7 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
+- #252 RolexG: honor issue bases and stop stale-target publication → main
 - #251 docs/test: verify Update 32 zoom under mobile throttle → update-32 (draft)
 - #248 [WIP] Fix updater ownership bug and improve tracker for stable scopes → main (draft)
 - #241 Fix trusted task dispatch and queue output overflow → main (draft)
