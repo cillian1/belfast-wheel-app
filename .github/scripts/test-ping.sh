@@ -48,8 +48,20 @@ grep -Fq 'Claude ??? Renauw: Please take the small docs task.' "$tmp/gh.log"
 grep -Fq 'repos/owner/repo/issues/183/labels -f labels[]=renauw-task' "$tmp/gh.log"
 grep -Fq 'workflow run copilot-dispatch.yml -R owner/repo -f number=183 -f task=Please take the small docs task. -f agent=renauw' "$tmp/gh.log"
 
-# Thirty actual handoffs still hit the guard, regardless of mirrors and quotes.
+# Thirty handoffs should not block ordinary team coordination anymore.
 make_fixture 30 30 5
+: > "$tmp/gh.log"
+if PATH="$tmp/bin:$PATH" GH_LOG="$tmp/gh.log" GH_TOKEN=test REPO=owner/repo PING_FROM=claude \
+  bash "$script_dir/ping.sh" renauw 183 "This handoff should proceed." 2> "$tmp/cap.err"; then
+  :
+else
+  echo "Thirty handoffs should remain below the daily guard." >&2
+  exit 1
+fi
+grep -Fq 'workflow run copilot-dispatch.yml' "$tmp/gh.log"
+
+# The generous shared ceiling still stops a runaway handoff loop.
+make_fixture 1000 1000 5
 : > "$tmp/gh.log"
 if PATH="$tmp/bin:$PATH" GH_LOG="$tmp/gh.log" GH_TOKEN=test REPO=owner/repo PING_FROM=claude \
   bash "$script_dir/ping.sh" renauw 183 "This must be capped." 2> "$tmp/cap.err"; then
@@ -58,7 +70,7 @@ else
   echo "The daily ping limit should stop cleanly." >&2
   exit 1
 fi
-grep -Fq 'Daily ping limit reached (30 distinct handoffs).' "$tmp/cap.err"
+grep -Fq 'Daily ping limit reached (1000 distinct handoffs).' "$tmp/cap.err"
 ! grep -Fq 'workflow run copilot-dispatch.yml' "$tmp/gh.log"
 
 echo "Ping target tests passed."
