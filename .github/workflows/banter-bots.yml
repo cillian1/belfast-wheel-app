@@ -12,6 +12,19 @@ on:
   issue_comment:
     types: [created]
   workflow_dispatch:
+    inputs:
+      speaker:
+        description: "Bot to take this turn (Auto follows the chat's normal turn order)"
+        type: choice
+        options:
+          - Auto
+          - Claude
+          - Copilot
+          - Renauw
+          - Gemini
+          - RolexG
+          - Jimini
+        default: Auto
 permissions:
   contents: write # the bots update banter.json themselves, so the page sees replies sooner
   issues: write
@@ -72,5 +85,6 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GCP_TOKEN: ${{ steps.gcp.outputs.access_token }}
           GCP_PROJECT: ${{ vars.GCP_PROJECT }}
+          BANTER_REQUESTED_SPEAKER: ${{ inputs.speaker }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL || (vars.GCP_WIF_PROVIDER != '' && 'gemini-3-flash-preview') || 'gemini-flash-latest' }}
         run: .github/scripts/banter-turn.sh
