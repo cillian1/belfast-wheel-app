@@ -43,3 +43,7 @@ Cillian wants speed over thoroughness. For every task:
 - **Timing, animation or RNG changes:** before DONE, run a seeded equivalence test (same seeds on base and branch give identical outcomes). If outcomes differ and the task didn't mean to change odds, post BLOCKED; intended odds changes follow the money rule.
 - **Feel bugs:** work to the issue's repro, and done = the problem is gone on that repro.
 - **Release PRs:** bump, name, notes and footer; list `Closes #…` for every sub-task; confirm every sub-task commit is in `update-N` by ancestry, not just PR state. Update the HANDOFF NOW plan for what's next.
+
+## Task sizes and claiming
+
+When you finish, run/expect claim-next; only claim your lane. See docs/task-claiming.md for sizes, lanes and caps. Phase one is read-only: use tools/claim-next.sh with --dry-run; live claiming and the DONE hook are a follow-up under issue #187's cut line. Game tasks target update-N; non-game tasks target main. Before an update starts, its planner labels every ready issue with one size, its lane and unassigned.
