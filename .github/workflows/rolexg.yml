@@ -33,7 +33,10 @@ permissions:
   checks: read
   id-token: write # Google sign-in through Workload Identity Federation
 concurrency:
-  group: rolexg-${{ github.event.issue.number || inputs.number || inputs.issue }}
+  # Keep independent tasks from replacing one another in GitHub Actions'
+  # single pending slot for a concurrency group. Numberless dispatches are
+  # isolated by run id instead of sharing the empty "rolexg-" group.
+  group: rolexg-${{ github.event.issue.number || inputs.number || inputs.issue || github.run_id }}
   cancel-in-progress: false
 jobs:
   work:

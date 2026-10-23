@@ -29,7 +29,10 @@ permissions:
   actions: write # refreshes the Banter feed
   id-token: write # Google sign-in through Workload Identity Federation
 concurrency:
-  group: jimini
+  # Keep each issue/PR independent. A single global group lets a burst of
+  # unrelated requests replace one another in GitHub Actions' pending slot.
+  # Dispatches without an issue number get their own run group.
+  group: jimini-${{ github.event.issue.number || inputs.number || github.run_id }}
   cancel-in-progress: false
 jobs:
   report:
