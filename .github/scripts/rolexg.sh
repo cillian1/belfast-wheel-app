@@ -69,6 +69,7 @@ $(jq -r '.body // ""' <<<"$issue")";;
   body=$(jq -r '.body // ""' <<<"$issue" | head -c 6000)
 
   prompt="You are RolexG, a coding agent built on Gemini, working in this repository (the Belfast Wheel). GEMINI.md has the house rules: follow them.
+When you finish, get blocked, or are waiting on someone, invoke .github/scripts/ping.sh straight away and name exactly what you need. Ping Gemini for review when you open a PR, and Jimini too for money PRs; ping the author or merger when a review or merge is needed.
 
 You were asked for this on $where:
 ---
@@ -101,7 +102,9 @@ finish(){
   # (the workflow token can't push workflow changes anyway).
   rm -rf .gemini gemini-artifacts gha-creds-*.json; git checkout -- .github 2>/dev/null || true; git clean -fdq -- .github
   if [ "$GEMINI_OK" != success ]; then
-    say "$NUM" "I got stuck before finishing, so I've changed nothing. The run log has the details: $RUN_URL"; exit 1; fi
+    say "$NUM" "I got stuck before finishing, so I've changed nothing. The run log has the details: $RUN_URL"
+    PING_FROM=rolexg REPO="$REPO" GH_TOKEN="$GH_TOKEN" bash "$(dirname "$0")/ping.sh" claude "$NUM" "RolexG is blocked on #$NUM; please inspect the run log and unblock the task: $RUN_URL" || true
+    exit 1; fi
   node tools/bundle.mjs
   summary=${SUMMARY:-}
   # With no final text, the action hands over the CLI's raw JSON instead; keep only its response.
@@ -134,7 +137,8 @@ Run: $RUN_URL" --jq .number) || {
   else msg="pushed to #$pr."; fi
   # PRs and pushes made with the workflow token don't start other workflows, so start CI by hand.
   gh workflow run ci.yml -R "$REPO" --ref "$BRANCH" || true
-  gh workflow run gemini-review.yml -R "$REPO" -f pr="$pr" || true
+  PING_FROM=rolexg REPO="$REPO" GH_TOKEN="$GH_TOKEN" bash "$(dirname "$0")/ping.sh" gemini "$pr" "Please review PR #$pr; merge it if the verdict is merge and CI is green." || true
+  if [[ "$TITLE" =~ [Mm]oney ]]; then PING_FROM=rolexg REPO="$REPO" GH_TOKEN="$GH_TOKEN" bash "$(dirname "$0")/ping.sh" jimini "$pr" "Please check the money changes and report any concerns." || true; fi
 
   say "$NUM" "$msg
 

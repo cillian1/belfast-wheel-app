@@ -1,4 +1,4 @@
-# Gemini reviews update PRs (Cillian, update 28): when a PR into an update-N branch is opened or marked
+# Gemini reviews every PR (Cillian, update 28; all branches incl. main since Oct 22): when a PR is opened or marked
 # ready (or gets new commits), Gemini reads the diff and posts one review comment starting "Verdict: merge"
 # or "Verdict: changes needed". Gemini may merge (Cillian, 2026-10-22): on "merge" with green CI it merges
 # through .github/scripts/bot-merge.sh, which never merges RolexG's own PRs or anything into main. If CI is
@@ -9,8 +9,7 @@
 name: Gemini review
 on:
   pull_request_target:
-    types: [opened, ready_for_review, synchronize]
-    branches: ['update-*']
+    types: [opened, ready_for_review, synchronize, edited]
   workflow_dispatch:
     inputs:
       pr:
@@ -30,6 +29,7 @@ jobs:
   review:
     if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
         with:
@@ -67,20 +67,28 @@ jobs:
             select(.filename != "game/index.html" and (.filename | endswith(".apk") | not)) |
             "--- " + .filename + " (" + .status + ")\n" + (.patch // "(no text diff)") + "\n"' | head -c 80000 > diff.txt
           [ -s diff.txt ] || { echo "No source changes to review."; exit 0; }
-          system="You are Gemini, reviewing a pull request for the Belfast Wheel, a spinning wheel web game for a group of friends. Source lives in src/ and is bundled into game/index.html. Real money moves through it, so if the diff changes prizes, odds, stakes, the jackpot or the wallet's credit or charge code (src/wallet/money.js), say so in one bullet, and check the PR has 'money' in its title, a link to its Banter notice in the body, and a fast-sim odds result (payback before and after) in the body; if any is missing the verdict is 'changes needed'. Review the diff for real bugs and broken behaviour on phones 320-440px wide. Only comment on what is in the diff; don't invent files or behaviour. Your review decides whether the PR gets merged. Reply in Markdown. The first line is exactly 'Verdict: merge' if it is safe to merge as it is, or 'Verdict: changes needed' if anything should be fixed first. Then at most 5 bullets, each naming the file and what's wrong and why. If it looks fine, the verdict line plus one short line is enough. No praise, no filler."
+          system="You are Gemini, reviewing a pull request for the Belfast Wheel, a spinning wheel web game for a group of friends. Source lives in src/ and is bundled into game/index.html. Real money moves through it, so if the diff changes prizes, odds, stakes, the jackpot or the wallet's credit or charge code (src/wallet/money.js), say so in one bullet, and check the PR has 'money' in its title, a link to its Banter notice in the body, and a CI payback line in its body showing before and after; if any is missing the verdict is 'changes needed'. For the payback change, flag shifts greater than 2 percentage points or anything that looks mathematically wrong; do not flag smaller shifts by themselves. Review the diff for real bugs and broken behaviour on phones 320-440px wide. Only comment on what is in the diff; don't invent files or behaviour. Your review decides whether the PR gets merged. Reply in Markdown. The first line is exactly 'Verdict: merge' if it is safe to merge as it is, or 'Verdict: changes needed' if anything should be fixed first. Then at most 5 bullets, each naming the file and what's wrong and why. If it looks fine, the verdict line plus one short line is enough. No praise, no filler. When you finish, get blocked, or are waiting on someone, invoke .github/scripts/ping.sh straight away and name exactly what you need. After review, ping the author for changes or the merger when ready to merge."
           prompt="$(cat pr.txt)
 
           Diff:
           $(cat diff.txt)"
           jq -n --arg s "$system" --arg p "$prompt" '{systemInstruction: {parts: [{text: $s}]}, contents: [{role: "user", parts: [{text: $p}]}],
             generationConfig: {temperature: 0.2, maxOutputTokens: 2000, thinkingConfig: {thinkingBudget: 0}}}' > req.json
-          curl -sS -f "$url" -H "$auth" -H 'Content-Type: application/json' -d @req.json > res.json
+          # Google sometimes errors for a few minutes (curl exit 22 on Oct 22), so retry before giving up
+          curl -sS -f --retry 3 --retry-all-errors --retry-delay 5 --max-time 90 "$url" -H "$auth" -H 'Content-Type: application/json' -d @req.json > res.json
           review=$(jq -r '[.candidates[0].content.parts[]?.text] | join("")' res.json)
           # A 200 with no text is a failure, not a pass, so it shows up red instead of looking like a clean review.
           [ -n "${review// }" ] || { echo "Gemini sent no review: $(head -c 600 res.json)" >&2; exit 1; }
           gh api "repos/$REPO/issues/$PR/comments" -f body="Gemini review:
 
           $review" > /dev/null
+          if grep -q '^Verdict: changes needed' <<<"$review"; then
+            author=$(gh api "repos/$REPO/pulls/$PR" --jq .user.login)
+            case "$author" in cillian1) target=cillian;; copilot|github-actions\[bot\]) target=copilot;; claude) target=claude;; *) target=claude;; esac
+            PING_FROM=gemini GH_TOKEN="$GH_TOKEN" REPO="$REPO" bash .github/scripts/ping.sh "$target" "$PR" "Please address the requested review changes on PR #$PR." || true
+          else
+            PING_FROM=gemini GH_TOKEN="$GH_TOKEN" REPO="$REPO" bash .github/scripts/ping.sh claude "$PR" "Review is complete; please merge PR #$PR if CI is green." || true
+          fi
       - name: Merge if the verdict is merge and CI is green
         env:
           GH_TOKEN: ${{ github.token }}

@@ -16,7 +16,7 @@ on:
     types: [labeled]
   workflow_dispatch:
     inputs:
-      issue:
+      number:
         description: Issue or PR number to report on
         required: true
       task:
@@ -43,7 +43,7 @@ jobs:
     timeout-minutes: 40
     env:
       REPO: ${{ github.repository }}
-      NUM: ${{ github.event.issue.number || inputs.issue }}
+      NUM: ${{ github.event.issue.number || inputs.number }}
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
     steps:
       - uses: actions/checkout@v4
@@ -57,6 +57,7 @@ jobs:
           EVENT: ${{ github.event_name }}
           COMMENT_BODY: ${{ github.event.comment.body }}
           INPUT_TASK: ${{ inputs.task }}
+          INPUT_NUMBER: ${{ inputs.number }}
           MAX_DAY: ${{ vars.JIMINI_DAILY_CAP || 4 }}
         run: |
           cp .github/scripts/jimini.sh "$RUNNER_TEMP/"
