@@ -23,7 +23,7 @@
   // which room, balls, dice, chickens, doors...) several times a second, and the watcher's phone draws it with
   // the same game code, so it looks exactly like the real thing. Only small JSON goes over the wire:
   // livef/{key}/base holds the whole state (refreshed every few seconds), livef/{key}/d only what changed since.
-  const MIRROR = ['N', 'c', 'R', 'D', 'scene', 'zoom', 'fade', 'DEPTH', 'evenA', 'FINAL', 'B', 'dice', 'rotF', 'flatT', 'balls', 'ballR', 'counts', 'winner', 'banner',
+  const MIRROR = ['N', 'c', 'R', 'D', 'scene', 'zoom', 'fade', 'DEPTH', 'evenA', 'FINAL', 'B', 'dice', 'rotF', 'flatT', 'balls', 'ballR', 'counts', 'winner', 'banner', 'achievement',
     'rotP', 'hi', 'hiA', 'domeBulge', 'pAng', 'ghost', 'ghostSay', 'dots', 'boostA', 'boostNew', 'wellBalls', 'introT', 'camT', 'hallZ', 'doorT', 'flash', 'rotS',
     'bingo', 'ballSpeed', 'ballPhase', 'pickIdx', 'handT', 'liftT', 'handClosed', 'prize', 'roul', 'vault', 'coaster', 'planet', 'mon', 'rotC', 'zena', 'god', 'pyr',
     'pipes', 'carried', 'd6', 'd6Sum', 'chickens', 'arrows', 'fires', 'feathers', 'camX', 'markItems', 'rotM', 'formT', 'showMark', 'chainNote', 'raceLine',
@@ -359,6 +359,14 @@
       const v = st.v || {}; $w('wwE').textContent = v.e || ''; $w('wwT').textContent = v.t || ''; $w('wwB').textContent = v.b || ''; $w('wwC').textContent = st.cap || '';
       const fin = $w('wwFin'), fl = st.fin; fin.hidden = !fl; if (fl) fin.innerHTML = fl.map(x => `<li>${esc(x)}</li>`).join('');
       renderGamble($w('wwGamble'), parse(st.gamble) || null, true);
+      const ach = parse(st.achievement);
+      if (ach && ach.id !== S.achId) {
+        S.achId = ach.id;
+        const b = el('div', 'wbanner');
+        b.innerHTML = `<b class="wbig">${esc(ach.title)}</b><p>${esc(ach.sub)}</p>`;
+        $w('wwCv').parentNode.appendChild(b);
+        setTimeout(() => { b.style.opacity = '0'; b.style.transition = 'opacity 0.5s'; setTimeout(() => b.remove(), 500); }, 2500);
+      }
       const tw = +st.tw || 0, tb = +st.tb || 0;
       $w('wwTiles').innerHTML = `<span class="g">${'●'.repeat(Math.min(tw, 9))}${'○'.repeat(Math.max(0, 3 - tw))} WILDS</span><span class="p">${'●'.repeat(Math.min(tb, 9))}${'○'.repeat(Math.max(0, 3 - tb))} BONUS</span>`;
       const vk = [v.e, v.t, v.b, st.cap, JSON.stringify(st.gamble)].join('|'); if (vk !== S.vk) { S.vk = vk; fitWatch(); } // refit only when the verdict text changes

@@ -1321,7 +1321,7 @@ function addSpecialDice(kinds) {
   clearSpecialDice();
   return kinds.map((sp, j) => { const [a, rr] = SP_SLOTS[j % SP_SLOTS.length], d = { hx: Math.cos(a) * rr, hy: Math.sin(a) * rr, x: Math.cos(a) * rr, y: Math.sin(a) * rr, a: (Math.random() - .5) * .3, v: 1, sp, swell: 0, born: 0 }; dice.push(d); return d; });
 }
-let rotF = 0, flatT = 0, balls = [], ballR = 0, counts = null, winner = -1, banner = '';
+let rotF = 0, flatT = 0, balls = [], ballR = 0, counts = null, winner = -1, banner = '', achievement = null;
 let rotP = 0, hi = null, hiA = 0;
 
 // keep physics positions valid when the canvas is resized mid-drop
@@ -4866,6 +4866,9 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
     chickens.forEach(ch => { if (ch.alive) ch.peck = Math.max(0, Math.sin(el * 8 + ch.x) * .6); });
   });
   let alive = chickens.filter(ch => ch.alive);
+  if (alive.length === 1 && typeof W !== 'undefined' && W.awardAchievement) {
+    W.awardAchievement('last-chicken', '🏆 Last chicken standing', 'One bird. One meteor. Respect.');
+  }
   setVerdict({ eyebrow: 'Going deeper', title: alive.length ? 'Some made it' : 'None of them made it', body: alive.length ? 'They head for the farm.' : 'The fire got every one.', steps: steps.slice(), flash: false });
   if (!alive.length) {
     await wait(1500);
@@ -5872,6 +5875,29 @@ header>span{flex-wrap:wrap}
     }).finally(() => pendingTrophies.delete(pendingId));
   }
 
+  function showAchievementBanner(title, sub) {
+    const b = el('div', 'wbanner');
+    b.innerHTML = `<b class="wbig">${esc(title)}</b><p>${esc(sub)}</p>`;
+    document.body.appendChild(b);
+    setTimeout(() => { b.style.opacity = '0'; b.style.transition = 'opacity 0.5s'; setTimeout(() => b.remove(), 500); }, 2500);
+  }
+
+  W.awardAchievement = function(id, title, sub) {
+    const me = W.me, user = W.user;
+    if (!me || !user) return;
+    const earned = me.achievements && me.achievements[id];
+    if (earned) {
+      toast(`${title} (again)`, true);
+      return;
+    }
+    const earnedAt = now();
+    me.achievements = Object.assign({}, me.achievements || {}, { [id]: earnedAt });
+    db.put('users/' + user + '/achievements/' + id, earnedAt).catch(() => {});
+    showAchievementBanner(title, sub);
+    achievement = { id, title, sub, at: earnedAt }; // global for watchers
+    setTimeout(() => { if (achievement && achievement.id === id) achievement = null; }, 3000);
+  };
+
   function paint() {
     const me = W.me;
     $w('wWho').innerHTML = `<small>${me ? (me.test ? 'TEST' : esc(me.name)) : 'Log in'}</small><b>${eur(me ? me.balance || 0 : 0)}</b>`;
@@ -6494,7 +6520,7 @@ header>span{flex-wrap:wrap}
   // which room, balls, dice, chickens, doors...) several times a second, and the watcher's phone draws it with
   // the same game code, so it looks exactly like the real thing. Only small JSON goes over the wire:
   // livef/{key}/base holds the whole state (refreshed every few seconds), livef/{key}/d only what changed since.
-  const MIRROR = ['N', 'c', 'R', 'D', 'scene', 'zoom', 'fade', 'DEPTH', 'evenA', 'FINAL', 'B', 'dice', 'rotF', 'flatT', 'balls', 'ballR', 'counts', 'winner', 'banner',
+  const MIRROR = ['N', 'c', 'R', 'D', 'scene', 'zoom', 'fade', 'DEPTH', 'evenA', 'FINAL', 'B', 'dice', 'rotF', 'flatT', 'balls', 'ballR', 'counts', 'winner', 'banner', 'achievement',
     'rotP', 'hi', 'hiA', 'domeBulge', 'pAng', 'ghost', 'ghostSay', 'dots', 'boostA', 'boostNew', 'wellBalls', 'introT', 'camT', 'hallZ', 'doorT', 'flash', 'rotS',
     'bingo', 'ballSpeed', 'ballPhase', 'pickIdx', 'handT', 'liftT', 'handClosed', 'prize', 'roul', 'vault', 'coaster', 'planet', 'mon', 'rotC', 'zena', 'god', 'pyr',
     'pipes', 'carried', 'd6', 'd6Sum', 'chickens', 'arrows', 'fires', 'feathers', 'camX', 'markItems', 'rotM', 'formT', 'showMark', 'chainNote', 'raceLine',
@@ -6830,6 +6856,14 @@ header>span{flex-wrap:wrap}
       const v = st.v || {}; $w('wwE').textContent = v.e || ''; $w('wwT').textContent = v.t || ''; $w('wwB').textContent = v.b || ''; $w('wwC').textContent = st.cap || '';
       const fin = $w('wwFin'), fl = st.fin; fin.hidden = !fl; if (fl) fin.innerHTML = fl.map(x => `<li>${esc(x)}</li>`).join('');
       renderGamble($w('wwGamble'), parse(st.gamble) || null, true);
+      const ach = parse(st.achievement);
+      if (ach && ach.id !== S.achId) {
+        S.achId = ach.id;
+        const b = el('div', 'wbanner');
+        b.innerHTML = `<b class="wbig">${esc(ach.title)}</b><p>${esc(ach.sub)}</p>`;
+        $w('wwCv').parentNode.appendChild(b);
+        setTimeout(() => { b.style.opacity = '0'; b.style.transition = 'opacity 0.5s'; setTimeout(() => b.remove(), 500); }, 2500);
+      }
       const tw = +st.tw || 0, tb = +st.tb || 0;
       $w('wwTiles').innerHTML = `<span class="g">${'●'.repeat(Math.min(tw, 9))}${'○'.repeat(Math.max(0, 3 - tw))} WILDS</span><span class="p">${'●'.repeat(Math.min(tb, 9))}${'○'.repeat(Math.max(0, 3 - tb))} BONUS</span>`;
       const vk = [v.e, v.t, v.b, st.cap, JSON.stringify(st.gamble)].join('|'); if (vk !== S.vk) { S.vk = vk; fitWatch(); } // refit only when the verdict text changes

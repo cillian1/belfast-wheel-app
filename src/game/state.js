@@ -15,7 +15,7 @@ function addSpecialDice(kinds) {
   clearSpecialDice();
   return kinds.map((sp, j) => { const [a, rr] = SP_SLOTS[j % SP_SLOTS.length], d = { hx: Math.cos(a) * rr, hy: Math.sin(a) * rr, x: Math.cos(a) * rr, y: Math.sin(a) * rr, a: (Math.random() - .5) * .3, v: 1, sp, swell: 0, born: 0 }; dice.push(d); return d; });
 }
-let rotF = 0, flatT = 0, balls = [], ballR = 0, counts = null, winner = -1, banner = '';
+let rotF = 0, flatT = 0, balls = [], ballR = 0, counts = null, winner = -1, banner = '', achievement = null;
 let rotP = 0, hi = null, hiA = 0;
 
 // keep physics positions valid when the canvas is resized mid-drop

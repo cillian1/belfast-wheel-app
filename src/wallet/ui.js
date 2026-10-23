@@ -315,6 +315,29 @@ header>span{flex-wrap:wrap}
     }).finally(() => pendingTrophies.delete(pendingId));
   }
 
+  function showAchievementBanner(title, sub) {
+    const b = el('div', 'wbanner');
+    b.innerHTML = `<b class="wbig">${esc(title)}</b><p>${esc(sub)}</p>`;
+    document.body.appendChild(b);
+    setTimeout(() => { b.style.opacity = '0'; b.style.transition = 'opacity 0.5s'; setTimeout(() => b.remove(), 500); }, 2500);
+  }
+
+  W.awardAchievement = function(id, title, sub) {
+    const me = W.me, user = W.user;
+    if (!me || !user) return;
+    const earned = me.achievements && me.achievements[id];
+    if (earned) {
+      toast(`${title} (again)`, true);
+      return;
+    }
+    const earnedAt = now();
+    me.achievements = Object.assign({}, me.achievements || {}, { [id]: earnedAt });
+    db.put('users/' + user + '/achievements/' + id, earnedAt).catch(() => {});
+    showAchievementBanner(title, sub);
+    achievement = { id, title, sub, at: earnedAt }; // global for watchers
+    setTimeout(() => { if (achievement && achievement.id === id) achievement = null; }, 3000);
+  };
+
   function paint() {
     const me = W.me;
     $w('wWho').innerHTML = `<small>${me ? (me.test ? 'TEST' : esc(me.name)) : 'Log in'}</small><b>${eur(me ? me.balance || 0 : 0)}</b>`;
