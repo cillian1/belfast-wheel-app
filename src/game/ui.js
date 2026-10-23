@@ -13,7 +13,12 @@ function setVerdict({ eyebrow = 'The wheel says', title, body = '', steps = null
   $('#vObj').hidden = !q; if (q) $('#oQuote').textContent = q;
   $('#showActions').hidden = !show; $('#photoActions').hidden = !photo;
   if (plate.classList.contains('need') !== (show || photo)) { plate.classList.toggle('need', show || photo); fitStage(); }
-  if (flash) { plate.classList.remove('landed'); void plate.offsetWidth; plate.classList.add('landed'); }
+  if (flash && !reduce && typeof plate.animate === 'function') {
+    plate.animate([
+      { boxShadow: 'inset 0 1px 0 rgba(255,255,255,.08), 0 0 0 2px var(--ti-b), 0 0 40px rgba(157,114,219,.45)' },
+      { boxShadow: 'inset 0 1px 0 rgba(255,255,255,.08), 0 10px 30px rgba(0,0,0,.4)' },
+    ], { duration: 700, easing: 'ease-out' });
+  }
   const win = /^Final answer · €([\d.]+)/.exec(eyebrow), stake = window.W && (W.run ? W.run.stake : W.stake);
   if (win && stake && parseFloat(win[1]) >= Math.max(1, stake / 10)) ghostReact('cheer');
 }
