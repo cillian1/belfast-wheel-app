@@ -21,12 +21,8 @@ EOF
 cat > "$tmp/bin/copilot" <<'EOF'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >> "$COPILOT_LOG"
-if [ "$1" = --help ]; then
-  echo "The Banter turn should not probe help to detect agent availability." >&2
-  exit 99
-fi
-if [[ "$1" == --agent=* ]] && [ "${COPILOT_AGENT_FLAG_SUPPORT:-}" != yes ]; then
-  echo "unknown option: --agent" >&2
+if [[ "$*" == *"You are Renauw,"* ]] && [ "${COPILOT_RENAUW_SUPPORT:-}" != yes ]; then
+  echo "Renauw seat unavailable" >&2
   exit 2
 fi
 echo 'A fresh observation about the lighthouse keeper.'
@@ -43,9 +39,9 @@ printf '[{"body":"Renauw","created_at":"%sT12:00:00Z","user":{"login":"cillian1"
   cd "$tmp/work"
   PATH="$tmp/bin:$PATH" REPO=owner/repo GH_TOKEN=test GH_FIXTURE="$tmp/one.json" \
     GH_LOG="$tmp/gh.log" COPILOT_LOG="$tmp/copilot.log" COPILOT_GITHUB_TOKEN=test \
-    COPILOT_AGENT_FLAG_SUPPORT=yes bash .github/scripts/banter-turn.sh
+    COPILOT_RENAUW_SUPPORT=yes bash .github/scripts/banter-turn.sh
 )
-grep -Fq -- '--agent=renauw' "$tmp/copilot.log"
+grep -Fq 'You are Renauw, a general helper' "$tmp/copilot.log"
 grep -Fq 'Renauw: A fresh observation about the lighthouse keeper.' "$tmp/gh.log"
 
 rm -f "$tmp/copilot.log"
@@ -53,10 +49,10 @@ rm -f "$tmp/copilot.log"
   cd "$tmp/work"
   PATH="$tmp/bin:$PATH" REPO=owner/repo GH_TOKEN=test GH_FIXTURE="$tmp/one.json" \
     GH_LOG="$tmp/unsupported-gh.log" COPILOT_LOG="$tmp/copilot.log" COPILOT_GITHUB_TOKEN=test \
-    COPILOT_AGENT_FLAG_SUPPORT=no bash .github/scripts/banter-turn.sh
+    COPILOT_RENAUW_SUPPORT=no bash .github/scripts/banter-turn.sh
 )
-grep -Fq -- '--agent=renauw' "$tmp/copilot.log"
-grep -Eq '^-p ' "$tmp/copilot.log"
+grep -Fq 'You are Renauw, a general helper' "$tmp/copilot.log"
+grep -Fq 'You are GitHub Copilot' "$tmp/copilot.log"
 grep -Fq 'Copilot: A fresh observation about the lighthouse keeper.' "$tmp/unsupported-gh.log"
 
 {
