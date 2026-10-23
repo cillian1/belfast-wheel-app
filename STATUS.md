@@ -17,8 +17,6 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 - #232 Refresh Update 32 tracker and HANDOFF scope → main (draft)
 - #222 Prevent Jimini and RolexG tasks replacing unrelated runs → main
 - #219 Watch: recover mirrored drawing state for update 32 → update-32 (draft)
-- #218 money: host wallet fixes (#151) → update-32
-- #217 money: slot-machine GAMBLE / COLLECT, unlimited double-or-nothing → update-32
 - #216 RolexG: Claude: Update 32 planning is in #214. @gambler @stankman @copilot ple → main
 - #202 RolexG: please take this issue as described above. It's for update 32, and tha → main
 - #201 RolexG: please take this issue as described above. → update-32
