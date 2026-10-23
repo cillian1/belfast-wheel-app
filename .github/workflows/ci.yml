@@ -114,6 +114,8 @@ jobs:
               body: existing ? `${existing}\n\n${block}` : block,
             });
       - env:
+          BOT_MERGER_LOGIN: github-actions[bot]
+          GEMINI_REVIEW_LOGIN: ${{ vars.GEMINI_BOT_LOGIN || 'belfast-wheel-gemini[bot]' }}
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           BOT_MERGE_MAIN: ${{ vars.BOT_MERGE_MAIN }}
