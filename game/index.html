@@ -5608,7 +5608,7 @@ if (document.fonts && document.fonts.load) {
 .wgamble .offered{animation:gambleGlow .7s infinite}
 .wgamble .gslot:disabled{cursor:default}
 .wgamble .gladder{display:flex;gap:8px;justify-content:center;margin:12px 0;--double:.45;--lose:.45}
-.gladder>div{flex:1;padding:14px 4px;border:3px solid;border-radius:8px;font-size:24px;font-weight:900;background:#17110a;overflow-wrap:anywhere}
+.gladder>div{flex:1;min-width:0;box-sizing:border-box;padding:14px 4px;border:3px solid;border-radius:8px;font-size:24px;font-weight:900;background:#17110a;overflow-wrap:anywhere}
 .gdouble{color:#ffe268;opacity:var(--double)}.glose{color:#ff6767;opacity:var(--lose)}
 .gladder.running{animation:gambleLadder 1.5s linear both}
 .gladder.won{--double:1;--lose:.2}.gladder.lost{--double:.2;--lose:1}
