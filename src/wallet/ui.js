@@ -341,8 +341,9 @@ header>span{flex-wrap:wrap}
       if (W.user !== user) return;
       W.me.achievements = Object.assign({}, W.me.achievements || {}, { [id]: earnedAt });
       showAchievementBanner(title, sub);
-      achievement = { id, title, sub, at: earnedAt }; // global for watchers
-      setTimeout(() => { if (achievement && achievement.id === id) achievement = null; }, 3000);
+      const liveAchievement = { user, id, title, sub, at: earnedAt };
+      achievement = liveAchievement; // scoped to this player for Live Watch
+      setTimeout(() => { if (achievement === liveAchievement) achievement = null; }, 3000);
     }).catch(() => {
       if (W.user === user) toast(`Could not save ${title}. Try again when online.`);
     }).finally(() => pendingAchievements.delete(pendingId));
@@ -416,6 +417,10 @@ header>span{flex-wrap:wrap}
           if (!u) return ($w('wErr').textContent = 'No account with that name. Tap New account.');
           if (u.pass !== h) return ($w('wErr').textContent = 'Wrong password.');
         }
+        if (W.user !== k) {
+          achievement = null;
+          document.querySelectorAll('.wbanner.wachievement').forEach(b => b.remove());
+        }
         W.user = k; pref.set('wol.user', k); pref.set('wol.pass', h);
         login.hidden = true; await refresh(); toast(isNew ? 'Welcome, ' + name + '. Top up to start spinning.' : 'Welcome back, ' + (W.me ? W.me.name : name), true);
       } catch (e) { $w('wErr').textContent = 'No connection to the wheel. Check your internet and try again.'; }
@@ -432,7 +437,7 @@ header>span{flex-wrap:wrap}
       paint();
     } catch (e) {}
   }
-  function logout() { if (gambleBusy) return toast('Wait for the card.'); collectGamble(); if (W.run) W.run.gambleClosed = true; W.user = W.me = null; pref.set('wol.user', null); pref.set('wol.pass', null); paint(); closeSheet(); showLogin(); }
+  function logout() { if (gambleBusy) return toast('Wait for the card.'); collectGamble(); if (W.run) W.run.gambleClosed = true; achievement = null; document.querySelectorAll('.wbanner.wachievement').forEach(b => b.remove()); W.user = W.me = null; pref.set('wol.user', null); pref.set('wol.pass', null); paint(); closeSheet(); showLogin(); }
   // ---------- top up (player pays Cillian on Revolut and confirms; the host page can reverse) ----------
   // Owns the top-up confirmation sheets.
   function topupSheet(msg) {

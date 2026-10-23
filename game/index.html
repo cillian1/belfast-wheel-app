@@ -5920,8 +5920,9 @@ header>span{flex-wrap:wrap}
       if (W.user !== user) return;
       W.me.achievements = Object.assign({}, W.me.achievements || {}, { [id]: earnedAt });
       showAchievementBanner(title, sub);
-      achievement = { id, title, sub, at: earnedAt }; // global for watchers
-      setTimeout(() => { if (achievement && achievement.id === id) achievement = null; }, 3000);
+      const liveAchievement = { user, id, title, sub, at: earnedAt };
+      achievement = liveAchievement; // scoped to this player for Live Watch
+      setTimeout(() => { if (achievement === liveAchievement) achievement = null; }, 3000);
     }).catch(() => {
       if (W.user === user) toast(`Could not save ${title}. Try again when online.`);
     }).finally(() => pendingAchievements.delete(pendingId));
@@ -5995,6 +5996,10 @@ header>span{flex-wrap:wrap}
           if (!u) return ($w('wErr').textContent = 'No account with that name. Tap New account.');
           if (u.pass !== h) return ($w('wErr').textContent = 'Wrong password.');
         }
+        if (W.user !== k) {
+          achievement = null;
+          document.querySelectorAll('.wbanner.wachievement').forEach(b => b.remove());
+        }
         W.user = k; pref.set('wol.user', k); pref.set('wol.pass', h);
         login.hidden = true; await refresh(); toast(isNew ? 'Welcome, ' + name + '. Top up to start spinning.' : 'Welcome back, ' + (W.me ? W.me.name : name), true);
       } catch (e) { $w('wErr').textContent = 'No connection to the wheel. Check your internet and try again.'; }
@@ -6011,7 +6016,7 @@ header>span{flex-wrap:wrap}
       paint();
     } catch (e) {}
   }
-  function logout() { if (gambleBusy) return toast('Wait for the card.'); collectGamble(); if (W.run) W.run.gambleClosed = true; W.user = W.me = null; pref.set('wol.user', null); pref.set('wol.pass', null); paint(); closeSheet(); showLogin(); }
+  function logout() { if (gambleBusy) return toast('Wait for the card.'); collectGamble(); if (W.run) W.run.gambleClosed = true; achievement = null; document.querySelectorAll('.wbanner.wachievement').forEach(b => b.remove()); W.user = W.me = null; pref.set('wol.user', null); pref.set('wol.pass', null); paint(); closeSheet(); showLogin(); }
   // ---------- top up (player pays Cillian on Revolut and confirms; the host page can reverse) ----------
   // Owns the top-up confirmation sheets.
   function topupSheet(msg) {
@@ -6561,7 +6566,11 @@ header>span{flex-wrap:wrap}
   // the game right now, one JSON string per piece of state
   function capture() {
     const st = {};
-    for (const n in mirGet) { try { const j = JSON.stringify(mirGet[n](), slim); if (j !== undefined) st[n] = j; } catch (e) {} }
+    for (const n in mirGet) { try {
+      let value = mirGet[n]();
+      if (n === 'achievement' && value && typeof value === 'object' && value.user !== W.user) value = null;
+      const j = JSON.stringify(value, slim); if (j !== undefined) st[n] = j;
+    } catch (e) {} }
     st.ord = JSON.stringify(typeof runOrders !== 'undefined' ? runOrders : null);
     const tiles = [...document.querySelectorAll('.wilds .wt')];
     st.tw = String(tiles.slice(0, 3).filter(t => t.classList.contains('lit')).length); st.tb = String(tiles.slice(3).filter(t => t.classList.contains('lit')).length);
@@ -6574,24 +6583,28 @@ header>span{flex-wrap:wrap}
   const join = (st, keys) => '{' + keys.map(k => JSON.stringify(k) + ':' + st[k]).join(',') + '}';
   const changed = (a, b) => Object.keys(a).filter(k => a[k] !== (b && b[k]));
   const pause = ms => new Promise(r => setTimeout(r, ms));
-  let liveBase = null, liveBaseId = 0, liveBaseAt = 0, liveI = 0, liveSent = '', liveSentAt = 0;
-  async function sendLive(st, playing) {
+  let liveBase = null, liveBaseId = 0, liveBaseAt = 0, liveI = 0, liveSent = '', liveSentAt = 0, liveUser = null;
+  async function sendLive(st, playing, user) {
+    if (!user || W.user !== user) return;
+    if (liveUser !== user) { liveUser = user; liveBase = null; liveBaseId = liveI = 0; liveSent = ''; }
     const capEl = document.getElementById('caption');
     if (!liveBase || SLOW.some(k => st[k] !== liveBase[k]) || now() - liveBaseAt > 5000) {
       liveBase = st; liveBaseId++; liveBaseAt = now();
-      await db.put('livef/' + W.user + '/base', { id: liveBaseId, st: join(st, Object.keys(st)) });
+      await db.put('livef/' + user + '/base', { id: liveBaseId, st: join(st, Object.keys(st)) });
     }
+    if (W.user !== user) return;
     const d = join(st, changed(st, liveBase)), extra = JSON.stringify([lastVerdict, capEl ? capEl.textContent : '', W.run && W.run.live ? W.run.stake : W.stake, W.me ? W.me.balance || 0 : 0, playing]);
     if (d + extra === liveSent && now() - liveSentAt < 4000) return; // nothing moved (still resent now and then, so watchers know we're here)
     liveSent = d + extra; liveSentAt = now();
-    await db.put('livef/' + W.user + '/d', { i: ++liveI, b: liveBaseId, at: now(), d, v: lastVerdict, cap: capEl ? capEl.textContent : '', s: W.run && W.run.live ? W.run.stake : W.stake, bal: W.me ? W.me.balance || 0 : 0, play: playing });
+    if (W.user !== user) return;
+    await db.put('livef/' + user + '/d', { i: ++liveI, b: liveBaseId, at: now(), d, v: lastVerdict, cap: capEl ? capEl.textContent : '', s: W.run && W.run.live ? W.run.stake : W.stake, bal: W.me ? W.me.balance || 0 : 0, play: playing });
   }
   async function streamLoop() {
     streaming = true; let sinceCheck = now(), sinceMsg = now();
     try {
       while (watchers && !document.hidden && W.user) {
-        const t0 = now(), playing = typeof busy !== 'undefined' && busy;
-        try { await sendLive(capture(), playing); } catch (e) { await pause(1500); }
+        const t0 = now(), playing = typeof busy !== 'undefined' && busy, user = W.user;
+        try { await sendLive(capture(), playing, user); } catch (e) { await pause(1500); }
         const gap = (playing ? 90 : 700) - (now() - t0); if (gap > 0) await pause(gap);
         if (now() - sinceMsg > 2000) { sinceMsg = now(); await checkMsgs(); }
         if (now() - sinceCheck > 5000) { sinceCheck = now(); await heartbeat(); }

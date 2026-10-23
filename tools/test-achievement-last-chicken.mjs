@@ -124,6 +124,35 @@ try {
   const toastText = await A.page.locator('.wtoast').textContent();
   assert.match(toastText, /🏆 Last chicken standing \(again\)/);
 
+  // 3. An account switch must not publish the previous player's achievement.
+  console.log('Testing achievement isolation after account switch...');
+  await A.page.locator('#wWho').click();
+  await A.page.locator('#wOut').click();
+  await A.page.waitForFunction(() => !W.user);
+  assert.equal(await A.page.locator('.wachievement').count(), 0, 'logout clears the previous player visible achievement');
+  await A.page.locator('#wName').fill('watch-b');
+  await A.page.locator('#wPass').fill('farm-test');
+  await A.page.locator('#wNew').click();
+  await A.page.waitForFunction(() => W.user === 'watch-b');
+  const secondKey = await A.page.evaluate(() => W.user);
+  const C = await phone(`/?watch=${encodeURIComponent(secondKey)}&name=WatchB`);
+  await C.page.locator('#wwMode').click();
+  await C.page.waitForFunction(() => document.querySelector('#wwT').textContent === 'Ready for achievement', null, { timeout: 15000 });
+  await A.page.waitForTimeout(900);
+  const secondBase = await new Promise((resolve, reject) => {
+    const deadline = Date.now() + 6000;
+    const poll = () => {
+      const value = tree(`livef/${secondKey}/base`);
+      if (value) return resolve(value);
+      if (Date.now() >= deadline) return reject(new Error('second account Live Watch base was not published'));
+      setTimeout(poll, 100);
+    };
+    poll();
+  });
+  const secondState = JSON.parse(secondBase.st);
+  assert.equal(secondState.achievement, null, 'second account does not inherit the previous player achievement');
+  assert.equal(await C.page.locator('.wachievement').count(), 0, 'second account Watch receives no previous player achievement');
+
   console.log('SUCCESS: Achievement fires, shows banner/toast, and persists.');
 } finally {
   await browser.close();
