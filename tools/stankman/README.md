@@ -14,3 +14,7 @@ powershell -NoExit -ExecutionPolicy Bypass -File tools\stankman\stankman-loop.ps
 ```
 
 The watcher stores its four-per-day task counter in `D:\bots\stankman\state\task-state.json`. Override that path with `$env:STANKMAN_STATE_DIR` before starting it. It polls every two minutes, handles one task at a time and supports `-DryRun` to show the oldest eligible issue without claiming it or invoking Codex.
+
+Extra blank lines at EOF are repaired once. Other failures keep a local task-branch checkpoint, named in the BLOCKED comment. If checkpointing fails, the checkout is left intact. Run powershell -NoProfile -ExecutionPolicy Bypass -File tools\stankman\test-task-recovery.ps1 to check these recovery paths.
+
+The shared claim preview supports stankman in the big game/dev lane. Live DONE-trigger claiming remains the documented follow-up from #187; this watcher handles stankman-task issues independently.

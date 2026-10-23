@@ -44,6 +44,45 @@ function Invoke-StankmanGit {
   return $Output
 }
 
+function Assert-StankmanStagedDiff {
+  $CheckOutput = & git -C $RepoRoot diff --cached --check 2>&1
+  if ($LASTEXITCODE -eq 0) { return }
+
+  # Retry only the harmless EOF error that used to discard a whole task.
+  $FixedPaths = @()
+  foreach ($Line in @($CheckOutput)) {
+    if ([string]$Line -match '^(.+):\d+: new blank line at EOF\.$') {
+      $RelativePath = $Matches[1]
+      $FullPath = [IO.Path]::GetFullPath((Join-Path $RepoRoot $RelativePath))
+      $RootPrefix = $RepoRoot.TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
+      if (-not $FullPath.StartsWith($RootPrefix, [StringComparison]::OrdinalIgnoreCase)) { continue }
+      $Item = Get-Item -LiteralPath $FullPath -ErrorAction Stop
+      if ($Item.Attributes -band [IO.FileAttributes]::ReparsePoint) { continue }
+      $Bytes = [IO.File]::ReadAllBytes($FullPath)
+      $HasBom = $Bytes.Length -ge 3 -and $Bytes[0] -eq 239 -and $Bytes[1] -eq 187 -and $Bytes[2] -eq 191
+      $Encoding = [Text.UTF8Encoding]::new($HasBom, $true)
+      $Text = [IO.File]::ReadAllText($FullPath, $Encoding)
+      $Ending = if ($Text.Contains("`r`n")) { "`r`n" } else { "`n" }
+      $Text = [regex]::Replace($Text, '(?:\r?\n[\t ]*)+\z', '') + $Ending
+      [IO.File]::WriteAllText($FullPath, $Text, $Encoding)
+      $FixedPaths += $RelativePath
+    }
+  }
+  if ($FixedPaths.Count -gt 0) {
+    Invoke-StankmanGit (@('add', '--') + $FixedPaths) | Out-Null
+    Write-Host 'Removed extra blank lines at EOF; retrying the staged whitespace check once.'
+  }
+  Invoke-StankmanGit @('diff', '--cached', '--check') | Out-Null
+}
+
+function Save-StankmanTaskCheckpoint {
+  param([int]$IssueNumber)
+  $Dirty = @(Invoke-StankmanGit @('status', '--porcelain', '--untracked-files=all'))
+  if ($Dirty.Count -eq 0) { return }
+  Invoke-StankmanGit @('add', '--all') | Out-Null
+  Invoke-StankmanGit @('commit', '-m', "WIP #${IssueNumber}: preserve failed task for recovery") | Out-Null
+}
+
 function Get-StankmanTaskBaseBranch {
   param([string]$IssueBody)
 
@@ -351,7 +390,7 @@ $($Issue.body)
         if (@($ChangedPaths).Count -eq 0) { throw 'Codex completed without changing any files.' }
 
         Invoke-StankmanGit @('add', '--all') | Out-Null
-        Invoke-StankmanGit @('diff', '--cached', '--check') | Out-Null
+        Assert-StankmanStagedDiff
         Invoke-StankmanGit @('commit', '-m', [string]$Issue.title) | Out-Null
         $CommitCreated = $true
         Invoke-StankmanGit @('push', '--set-upstream', 'origin', $TaskBranch) | Out-Null
@@ -372,12 +411,21 @@ Closes #$IssueNumber
         if ($BranchCreated) {
           $CurrentBranch = ([string](& git -C $RepoRoot branch --show-current)).Trim()
           if ($CurrentBranch -eq $TaskBranch) {
-            if (-not $CommitCreated) {
-              & git -C $RepoRoot reset --hard "origin/$BaseBranch" | Out-Null
-              & git -C $RepoRoot clean -fd -- . | Out-Null
+            $CanSwitchBack = $true
+            try {
+              if (-not $CommitCreated) { Save-StankmanTaskCheckpoint -IssueNumber $IssueNumber }
+            } catch {
+              $CanSwitchBack = $false
+              $TaskFailure = "Recovery checkout $RepoRoot on $TaskBranch kept unchanged; checkpoint failed: $($_.Exception.Message). Original failure: $TaskFailure"
             }
-            & git -C $RepoRoot switch $OriginalBranch | Out-Null
-            if (-not $CommitCreated) { & git -C $RepoRoot branch -D $TaskBranch | Out-Null }
+            if ($CanSwitchBack) {
+              if ($TaskFailure) { $TaskFailure = "Recovery branch $TaskBranch in $RepoRoot preserved locally. $TaskFailure" }
+              try {
+                Invoke-StankmanGit @('switch', $OriginalBranch) | Out-Null
+              } catch {
+                $TaskFailure = "Recovery branch $TaskBranch preserved; could not return to $OriginalBranch. $($_.Exception.Message)"
+              }
+            }
           } else {
             Write-Warning "Task runner left branch $CurrentBranch selected instead of $TaskBranch; inspect the workspace before another task."
             if (-not $TaskFailure) { $TaskFailure = 'Codex or a tool changed the active branch unexpectedly.' }
