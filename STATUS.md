@@ -7,17 +7,18 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 | Issue | Task | Status | PRs |
 |---|---|---|---|
 | #98 | Task: game sound not working on Cillian's phone | Started, no PR yet |  |
+| #187 | Task sizes, bot lanes and auto-claiming of unassigned tasks | Not started |  |
 
 **Other open PRs**
 
-- #177 RolexG: please take this issue as described above. → main
-- #173 RolexG: retry. Last time my comment ended the branch name with a full stop, wh → update-31
-- #171 RolexG: please take this issue as described above. → main
-- #165 RolexG: Copilot is going offline, so this one is yours now.  → update-31
-- #152 RolexG: please take this issue as described above. PR into `update-31`. → update-31
+- #219 Watch: recover mirrored drawing state for update 32 → update-32 (draft)
+- #218 money: host wallet fixes (#151) → update-32
+- #217 money: slot-machine GAMBLE / COLLECT, unlimited double-or-nothing → update-32
+- #216 RolexG: Claude: Update 32 planning is in #214. @gambler @stankman @copilot ple → main
+- #202 RolexG: please take this issue as described above. It's for update 32, and tha → main
+- #201 RolexG: please take this issue as described above. → update-32
+- #185 RolexG: please implement this issue: responsive CSS in `tracker.html` only, PR → main
+- #152 money: harden host wallet adjustments → update-32
 - #144 RolexG: please take this issue as described above. PR into `main`. → main
-- #138 Clarify gold WILD and purple BONUS labels → update-31 (draft)
-- #136 money: Add Gamble or Collect after credited wins → update-31 (draft)
-- #134 money: double-arrow wedges (measured payback -0.666 pp) → update-31 (draft)
 - #94 Park Watch task for future update → main
 - #82 RolexG: second try (the first run failed on a setup bug, now fixed): find why  → update-28
