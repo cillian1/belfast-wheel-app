@@ -86,8 +86,32 @@ try {
   const again = await layout(B.page, 430, true);
   assert.equal(again.scr.height, kb.scr.height, 'the second keyboard opening fits like the first');
   assert.ok(await B.page.evaluate(() => getComputedStyle(document.querySelector('.wwatch .wvd')).display === 'none'), 'the verdict steps aside again on the second opening');
+  // Replay the same held drawing states on the player and delayed viewer. This
+  // exercises the real capture/transport/mirApply path, not just MIRROR strings.
+  await B.page.locator('#wwMode').click(); // restore the reported DELAYED mode
+  await A.page.evaluate(() => { window.requestAnimationFrame = () => 0; });
+  await A.page.waitForTimeout(100); // drain the one already scheduled game frame
+  for (const phase of ['nested', 'final']) {
+    const expected = await A.page.evaluate(phase => {
+      scene = phase; zoom = 8; wheelZoom = 1.14; liveK = 3;
+      photoZoom = .3; photoDone = true; snapA = 0;
+      streak = .25; sweepOn = false; sweepA = 0;
+      rot.fill(.2);
+      draw();
+      setVerdict({ eyebrow: phase === 'nested' ? 'Going deeper' : 'Final answer', title: `watch-${phase}`, body: 'Drawing-state regression' });
+      return { N, c, R, D, scene, zoom, wheelZoom, liveK, photoZoom, photoDone, snapA, streak, sweepOn, sweepA, rot: [...rot] };
+    }, phase);
+    await B.page.waitForFunction(title => document.querySelector('#wwT').textContent === title, `watch-${phase}`, { timeout: 15000 });
+    await B.page.waitForTimeout(700); // let the last interpolation finish
+    const actual = await B.page.evaluate(() => ({ N, c, R, D, scene, zoom, wheelZoom, liveK, photoZoom, photoDone, snapA, streak, sweepOn, sweepA, rot: [...rot] }));
+    for (const [name, value] of Object.entries(expected)) {
+      if (typeof value === 'number') assert.ok(Math.abs(actual[name] - value) < .002, `${phase}: Watch ${name} matches player (${actual[name]} vs ${value})`);
+      else assert.deepEqual(actual[name], value, `${phase}: Watch ${name} matches player`);
+    }
+  }
   assert.deepEqual(B.errors.filter(e => !/favicon/.test(e)), [], 'viewer console errors');
-  console.log('Live Watch fits the board, message box and Stop watching on screen with the keyboard open and closed.');
+  assert.deepEqual(A.errors.filter(e => !/favicon/.test(e)), [], 'player console errors');
+  console.log('Live Watch fits with the keyboard open/closed; delayed nested/final drawing state matches the same player state.');
 } finally {
   await browser.close();
   await new Promise(resolve => server.close(resolve));

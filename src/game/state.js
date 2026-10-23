@@ -1,6 +1,6 @@
 // ---------- state ----------
 // Owns mutable game state helpers and special dice.
-var scene = 'nested', zoom = 1;
+var scene = 'nested', zoom = 1, wheelZoom = 1;
 let busy = false, fade = 0;
 var rot = Array(MAXD + 1).fill(0);
 var dice = [];

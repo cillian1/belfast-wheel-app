@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const source = readFileSync(resolve(root, 'src/wallet/watch.js'), 'utf8');
+assert.match(source, /'scene', 'zoom', 'wheelZoom', 'fade'/, 'whole-wheel camera zoom is included in live Watch state');
+assert.match(source, /n === 'wheelZoom' && typeof prev\.wheelZoom === 'number'/, 'live Watch interpolates the whole-wheel camera zoom');
 assert.match(source, /renderGamble\(\$w\('wwGamble'\), parse\(st\.gamble\) \|\| null, true\)/, 'serialized gamble state is decoded before the Watch renderer receives it');
 const helpersMatch = source.match(/  const WATCH_DELAY_MS = 3000,[\s\S]*?function watchOfflineMessage\(name, lastI, got, at\) \{[\s\S]*?\n  \}/);
 const watchMatch = source.match(/  async function watch\(key, name\) \{[\s\S]*?\r?\n  \}\r?\n  async function replay/);

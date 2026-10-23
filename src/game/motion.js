@@ -198,6 +198,11 @@ async function zoomTo(z, dur) {
   await animate(dur, t => { zoom = from * Math.pow(z / from, easeInOut(t)); draw(); });
   zoom = z; draw();
 }
+async function zoomWheelTo(z, dur) {
+  const from = wheelZoom;
+  await animate(dur, t => { wheelZoom = from * Math.pow(z / from, easeInOut(t)); draw(); });
+  wheelZoom = z; draw();
+}
 // smooth scene change: the last frame melts away over the new scene, never through black
 let snap = null; var snapA = 0; var dots = []; var godParts = []; var boostA = Array(MAXD + 1).fill(0); var boostNew = [];
 // More Wilds / More Bonus: icons pour into the wheels further in, which flash and come back with extra slices

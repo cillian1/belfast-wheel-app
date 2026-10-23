@@ -533,7 +533,7 @@ const REPLACE = ['F', 'L', 'R', 'B', 'NL', 'NR', 'X', 'C'];
 // dead variants: 'W' = Wilds greyed, 'B' = Bonus greyed, 'WB' = both
 const DEAD_KEYS = ['W', 'B', 'WB'];
 const MAXD = LAYER_ORDERS.length; // every inner wheel, the hidden fifth included
-let DEPTH = MAXD - 1; // inner wheels this run; the dice well sits in the last one (Go even deeper adds the fifth)
+var DEPTH = MAXD - 1; // inner wheels this run; the dice well sits in the last one (Go even deeper adds the fifth)
 const DEAD_ORDERS = {};
 DEAD_KEYS.forEach(v => DEAD_ORDERS[v] = LAYER_ORDERS.map((o, k) => { let j = k * 3; return o.map(key => (key === 'WD' && v.includes('W')) || (key === 'BN' && v.includes('B')) ? REPLACE[j++ % REPLACE.length] + (key === 'WD' ? '*' : '#') : key); }));
 const STANK = [
@@ -649,7 +649,7 @@ const S = .56; // each nested wheel is this much smaller than the one around it
 // ---------- canvas helpers ----------
 // Owns reusable canvas paths, wheel decoration, and dart sprites.
 const cv = $('#wheel'); let ctx = cv.getContext('2d');
-let N = 0, c = 0, R = 0, D = 1;
+var N = 0, c = 0, R = 0, D = 1;
 let faces = {};
 
 function mk(w = N, h = N) { const k = document.createElement('canvas'); k.width = w; k.height = h; return k; }
@@ -1306,9 +1306,10 @@ function build() {
 }
 // ---------- state ----------
 // Owns mutable game state helpers and special dice.
-let scene = 'nested', zoom = 1, busy = false, fade = 0;
-const rot = Array(MAXD + 1).fill(0);
-let dice = [];
+var scene = 'nested', zoom = 1, wheelZoom = 1;
+let busy = false, fade = 0;
+var rot = Array(MAXD + 1).fill(0);
+var dice = [];
 for (let i = 0; i < 12; i++) { // ten six-sided dice: two in the middle, eight round the edge (slots 0 and 2 are kept for special dice)
   if (i === 0 || i === 2) continue;
   const a = i < 4 ? i * TAU / 4 + .4 : (i - 4) * TAU / 8, rr = i < 4 ? .13 : .32;
@@ -1321,8 +1322,8 @@ function addSpecialDice(kinds) {
   clearSpecialDice();
   return kinds.map((sp, j) => { const [a, rr] = SP_SLOTS[j % SP_SLOTS.length], d = { hx: Math.cos(a) * rr, hy: Math.sin(a) * rr, x: Math.cos(a) * rr, y: Math.sin(a) * rr, a: (Math.random() - .5) * .3, v: 1, sp, swell: 0, born: 0 }; dice.push(d); return d; });
 }
-let rotF = 0, flatT = 0, balls = [], ballR = 0, counts = null, winner = -1, banner = '';
-let rotP = 0, hi = null, hiA = 0;
+var rotF = 0, flatT = 0, balls = [], ballR = 0, counts = null, winner = -1, banner = '';
+var rotP = 0, hi = null, hiA = 0;
 
 // keep physics positions valid when the canvas is resized mid-drop
 function rescaleBalls(oldB) {
@@ -1438,7 +1439,8 @@ document.addEventListener('visibilitychange', () => {
   else if (!document.hidden && !idleRaf) idleRaf = requestAnimationFrame(idle);
 });
 if (!document.hidden) idleRaf = requestAnimationFrame(idle);
-let liveK = -1, navCache = null, evenA = 1;
+var liveK = -1;
+let navCache = null, evenA = 1;
 function navCacheMatches(cache) {
   if (!cache || cache.N !== N || cache.DEPTH !== DEPTH || cache.zoom !== zoom || cache.liveK !== liveK) return false;
   if (cache.rotations.length !== rot.length) return false;
@@ -1543,7 +1545,7 @@ function drawNested() {
   }
   drawPointer(faces.pointer, 1);
 }
-let photoZoom = 0, photoDone = false;
+var photoZoom = 0, photoDone = false;
 function drawPhoto() {
   ctx.save();
   if (photoZoom > 0 && hi !== null) {
@@ -1624,34 +1626,40 @@ function draw() {
     if (!N) return;
     updatePointer(performance.now());
     ctx.clearRect(0, 0, N, N);
-    const now = performance.now();
-    if (scene === 'final') drawFinal(); else if (scene === 'photo') drawPhoto();
-    else if (scene === 'intro') drawIntro(now); else if (scene === 'building') drawBuilding(now);
-    else if (scene === 'hall') drawHall(); else if (scene === 'stank') drawStank(now);
-    else if (scene === 'pipes') drawPipes(); else if (scene === 'farm') drawFarm(now);
-    else if (scene === 'coaster') drawCoaster(now); else if (scene === 'planet') drawPlanetScene(now); else if (scene === 'monster') drawMonster(now);
-    else if (scene === 'pyramid' && pyr) drawPyramid(now); else if (scene === 'god' && god) drawGodRoom(now); else if (scene === 'zena' && zena) drawZena(now);
-    else if (scene === 'roul' && roul) drawRoul(now); else if (scene === 'vault' && vault) drawVault(now);
-    else if (scene === 'pyramid' || scene === 'god' || scene === 'zena' || scene === 'roul' || scene === 'vault') {}
-    else drawNested();
-    if (snapA > 0 && snap) { ctx.globalAlpha = snapA; ctx.drawImage(snap, 0, 0); ctx.globalAlpha = 1; }
-    if (scene === 'pipes' && pipes) pipes.balls.forEach(b => { if (b.state === 'pre') ctx.drawImage(ballImg(b), b.x - b.pr, b.y - b.pr, b.pr * 2, b.pr * 2); });
-    if (ghost && scene !== 'pyramid' && scene !== 'god' && scene !== 'zena') { drawGhost(); if (ghostSay) bubble(ctx, ghostSay, ghost.x, ghost.y - R * .22); }
-    for (let i = 0; i < godParts.length; i++) {
-      if (Perf.low && i % 2) continue;
-      const p = godParts[i], sz = p.s;
-      ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, p.life)); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.drawImage(p.img, -sz / 2, -sz / 2, sz, sz); ctx.restore();
-    }
-    for (let i = 0; i < dots.length; i++) {
-      if (Perf.low && i % 2) continue;
-      const p = dots[i]; // die pips on their way to becoming chickens
-      if (p.hide) continue;
-      const r = p.r * (1 + p.glow * .6);
-      if (!Perf.low) {
-        const gr = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 3.2); gr.addColorStop(0, `rgba(255,240,190,${.7 * p.glow})`); gr.addColorStop(1, 'rgba(255,200,90,0)');
-        ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(p.x, p.y, r * 3.2, 0, TAU); ctx.fill();
+    const zoomWheel = scene === 'nested' && wheelZoom !== 1;
+    if (zoomWheel) { ctx.save(); ctx.translate(c, c); ctx.scale(wheelZoom, wheelZoom); ctx.translate(-c, -c); }
+    try {
+      const now = performance.now();
+      if (scene === 'final') drawFinal(); else if (scene === 'photo') drawPhoto();
+      else if (scene === 'intro') drawIntro(now); else if (scene === 'building') drawBuilding(now);
+      else if (scene === 'hall') drawHall(); else if (scene === 'stank') drawStank(now);
+      else if (scene === 'pipes') drawPipes(); else if (scene === 'farm') drawFarm(now);
+      else if (scene === 'coaster') drawCoaster(now); else if (scene === 'planet') drawPlanetScene(now); else if (scene === 'monster') drawMonster(now);
+      else if (scene === 'pyramid' && pyr) drawPyramid(now); else if (scene === 'god' && god) drawGodRoom(now); else if (scene === 'zena' && zena) drawZena(now);
+      else if (scene === 'roul' && roul) drawRoul(now); else if (scene === 'vault' && vault) drawVault(now);
+      else if (scene === 'pyramid' || scene === 'god' || scene === 'zena' || scene === 'roul' || scene === 'vault') {}
+      else drawNested();
+      if (snapA > 0 && snap) { ctx.globalAlpha = snapA; ctx.drawImage(snap, 0, 0); ctx.globalAlpha = 1; }
+      if (scene === 'pipes' && pipes) pipes.balls.forEach(b => { if (b.state === 'pre') ctx.drawImage(ballImg(b), b.x - b.pr, b.y - b.pr, b.pr * 2, b.pr * 2); });
+      if (ghost && scene !== 'pyramid' && scene !== 'god' && scene !== 'zena') { drawGhost(); if (ghostSay) bubble(ctx, ghostSay, ghost.x, ghost.y - R * .22); }
+      for (let i = 0; i < godParts.length; i++) {
+        if (Perf.low && i % 2) continue;
+        const p = godParts[i], sz = p.s;
+        ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, p.life)); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.drawImage(p.img, -sz / 2, -sz / 2, sz, sz); ctx.restore();
       }
-      ctx.fillStyle = p.red ? '#d0202f' : (p.glow > .5 ? '#fff6dc' : '#1b1a19'); ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, TAU); ctx.fill();
+      for (let i = 0; i < dots.length; i++) {
+        if (Perf.low && i % 2) continue;
+        const p = dots[i]; // die pips on their way to becoming chickens
+        if (p.hide) continue;
+        const r = p.r * (1 + p.glow * .6);
+        if (!Perf.low) {
+          const gr = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 3.2); gr.addColorStop(0, `rgba(255,240,190,${.7 * p.glow})`); gr.addColorStop(1, 'rgba(255,200,90,0)');
+          ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(p.x, p.y, r * 3.2, 0, TAU); ctx.fill();
+        }
+        ctx.fillStyle = p.red ? '#d0202f' : (p.glow > .5 ? '#fff6dc' : '#1b1a19'); ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, TAU); ctx.fill();
+      }
+    } finally {
+      if (zoomWheel) ctx.restore();
     }
     if (fade > 0) { ctx.fillStyle = `rgba(10,12,15,${fade})`; ctx.fillRect(0, 0, N, N); }
   } finally {
@@ -1938,7 +1946,8 @@ addEventListener('pointerdown', () => { const now = performance.now(); pendingWa
 const sliceAt = (r, n) => Math.floor(mod(-r, TAU) / (TAU / n)) % n;
 function target(n) { const i = Math.floor(Math.random() * n); return { i, a: (i + .15 + Math.random() * .7) * TAU / n }; }
 
-let sweepOn = false, sweepA = 0, winGlow = null;
+var sweepOn = false, sweepA = 0;
+let winGlow = null;
 async function spinLayer(k, dur, dir) {
   liveK = k; sweepOn = true; winGlow = null;
   try { const i = await spinLayerRun(k, dur, dir); winGlow = { k, i, t0: performance.now() }; return i; } finally { liveK = -1; sweepOn = false; }
@@ -2082,7 +2091,7 @@ function drawGhost() {
   g.restore();
 }
 // the dive between wheels: a wind-up, a drum roll that speeds up, speed lines, a little overshoot and a crash
-let streak = 0;
+var streak = 0;
 async function dive(z) {
   const from = zoom; whoosh(true);
   await animate(450, t => { zoom = from * (1 - .05 * Math.sin(t * Math.PI)); draw(); });
@@ -2101,8 +2110,13 @@ async function zoomTo(z, dur) {
   await animate(dur, t => { zoom = from * Math.pow(z / from, easeInOut(t)); draw(); });
   zoom = z; draw();
 }
+async function zoomWheelTo(z, dur) {
+  const from = wheelZoom;
+  await animate(dur, t => { wheelZoom = from * Math.pow(z / from, easeInOut(t)); draw(); });
+  wheelZoom = z; draw();
+}
 // smooth scene change: the last frame melts away over the new scene, never through black
-let snap = null, snapA = 0, dots = [], godParts = [], boostA = Array(MAXD + 1).fill(0), boostNew = [];
+let snap = null; var snapA = 0; var dots = []; var godParts = []; var boostA = Array(MAXD + 1).fill(0); var boostNew = [];
 // More Wilds / More Bonus: icons pour into the wheels further in, which flash and come back with extra slices
 function boostedOrder(order, kind, extra, k) {
   const o = order.slice(), sp = x => ['WD', 'BN', 'GD', 'MW', 'MB', 'UP', 'UW', 'UB'].includes(x);
@@ -2421,7 +2435,12 @@ function setVerdict({ eyebrow = 'The wheel says', title, body = '', steps = null
   $('#vObj').hidden = !q; if (q) $('#oQuote').textContent = q;
   $('#showActions').hidden = !show; $('#photoActions').hidden = !photo;
   if (plate.classList.contains('need') !== (show || photo)) { plate.classList.toggle('need', show || photo); fitStage(); }
-  if (flash) { plate.classList.remove('landed'); void plate.offsetWidth; plate.classList.add('landed'); }
+  if (flash && !reduce && typeof plate.animate === 'function') {
+    plate.animate([
+      { boxShadow: 'inset 0 1px 0 rgba(255,255,255,.08), 0 0 0 2px var(--ti-b), 0 0 40px rgba(157,114,219,.45)' },
+      { boxShadow: 'inset 0 1px 0 rgba(255,255,255,.08), 0 10px 30px rgba(0,0,0,.4)' },
+    ], { duration: 700, easing: 'ease-out' });
+  }
   const win = /^Final answer · €([\d.]+)/.exec(eyebrow), stake = window.W && (W.run ? W.run.stake : W.stake);
   if (win && stake && parseFloat(win[1]) >= Math.max(1, stake / 10)) ghostReact('cheer');
 }
@@ -2437,7 +2456,7 @@ function finalSpeech(m, moves, dest) {
 }
 
 async function backToMain() {
-  winGlow = null; ghost = null; ghostSay = ''; doorPick = null; tapPick = null; $('.stage').classList.remove('pick');
+  winGlow = null; ghost = null; ghostSay = ''; doorPick = null; tapPick = null; wheelZoom = 1; $('.stage').classList.remove('pick');
   hideFinal(); sayLast = null; try { speechSynthesis.cancel(); } catch (e) {}
   if (scene !== 'nested' && scene !== 'photo') {
     // the room keeps drawing while it fades out, so its state is only cleared once the main wheel is back
@@ -2473,6 +2492,7 @@ async function runMain() {
   // Go deeper: three move wheels, ten dice, the ball drop
   const steps = []; let wilds = 0, bonus = 0;
   setVerdict({ eyebrow: 'The wheel says', title: 'Go deeper', body: 'Hold on.' });
+  await zoomWheelTo(1.14, 1800);
   let wMiss = 0, bMiss = 0, ups = 0, godHit = false;
   if (Math.random() < GOLDEN_CHANCE) await goldenRun();
   else if (store.get('hope', false)) { store.set('hope', false); await wait(400); await boostRun('W', 0); }
@@ -4575,7 +4595,6 @@ function drawChicken(g, x, y, s, dir, ph, peck, flash, kind) {
   if (kind) g.restore();
   g.beginPath(); g.moveTo(-.26, -.1); g.lineTo(-.44, -.36); g.lineTo(-.2, -.24); g.fill();
   g.fillStyle = wing; g.beginPath(); g.ellipse(-.04, -.04, .17, .1, -.2, 0, TAU); g.fill();
-  if (kind) { g.save(); g.scale(dir, 1); g.drawImage(specialMark(kind), -.18, -.22, .36, .36); g.restore(); }
   const hx = .24 + peck * .1, hy = -.3 + peck * .3;
   g.fillStyle = body; g.beginPath(); g.arc(hx, hy, .13, 0, TAU); g.fill();
   g.fillStyle = '#d62a20'; [[-.04, -.13], [.03, -.15], [.09, -.12]].forEach(([a, b]) => { g.beginPath(); g.arc(hx + a, hy + b, .05, 0, TAU); g.fill(); });
@@ -5140,7 +5159,7 @@ async function spin() {
     }
   } catch (err) {
     console.error(String(err && err.stack || err));
-    scene = 'nested'; zoom = 1; fade = 0; balls = []; counts = null; winner = -1; flatT = 0; banner = ''; draw();
+    scene = 'nested'; zoom = 1; wheelZoom = 1; fade = 0; balls = []; counts = null; winner = -1; flatT = 0; banner = ''; draw();
     setVerdict({ title: 'That run broke halfway', body: 'Something went wrong mid-spin. Tap Spin to start again from the top.' });
     setBtn('Spin', false);
   } finally { lock(false); }
@@ -5600,6 +5619,18 @@ if (document.fonts && document.fonts.load) {
   .wgamble p{margin:2px 0}
   .wgamble .wrow{gap:4px}
 }
+@keyframes gambleGlow{50%{filter:brightness(1.55);box-shadow:0 0 20px #ffc43d}}
+@keyframes gambleLadder{0%,8%,16%,26%,38%,54%,76%{--double:1;--lose:.2}4%,12%,21%,32%,46%,65%,88%,100%{--double:.2;--lose:1}}
+.wgamble .gslot{flex:1;min-width:0;min-height:64px;font-size:20px;font-weight:900;border:3px outset #ffe298;border-radius:12px;box-shadow:inset 0 2px 4px #fff8,0 5px 0 #392507,0 0 12px #f9b52d80;color:#251600}
+.wgamble .ggamb{background:linear-gradient(#ffe56c,#e99309)}
+.wgamble .gcollect{background:linear-gradient(#afff9c,#37a94b);border-color:#b8ffa6}
+.wgamble .offered{animation:gambleGlow .7s infinite}
+.wgamble .gslot:disabled{cursor:default}
+.wgamble .gladder{display:flex;gap:8px;justify-content:center;margin:12px 0;--double:.45;--lose:.45}
+.gladder>div{flex:1;min-width:0;box-sizing:border-box;padding:14px 4px;border:3px solid;border-radius:8px;font-size:24px;font-weight:900;background:#17110a;overflow-wrap:anywhere}
+.gdouble{color:#ffe268;opacity:var(--double)}.glose{color:#ff6767;opacity:var(--lose)}
+.gladder.running{animation:gambleLadder 1.5s linear both}
+.gladder.won{--double:1;--lose:.2}.gladder.lost{--double:.2;--lose:1}
 .wgamble p{margin:6px 0}
 .wgamble .wdealer{display:flex;align-items:center;justify-content:center;gap:12px}
 .wgamble .wdealer[hidden]{display:none}
@@ -5786,30 +5817,19 @@ header>span{flex-wrap:wrap}
     box.hidden = !g;
     if (box === gambleBox) document.getElementById('finalCard').classList.toggle('wgambling', !!g);
     if (!g) { box.innerHTML = ''; return; }
-    box.classList.toggle('flipping', g.phase === 'flipping');
-    const offering = g.phase === 'offer', choosing = g.phase === 'pick';
+    const offering = g.phase === 'offer';
     const locked = ['settling', 'flipping', 'reveal'].includes(g.phase);
-    const message = g.phase === 'settling' || g.phase === 'flipping' ? 'Card coming…'
-      : g.phase === 'pick' ? 'Pick RED or BLACK · 50/50'
-      : g.won === false ? 'Phelan laughs. Gamble lost.'
-      : g.won ? `Gamble won! ${eur(g.amount)} banked.` : `${eur(g.amount)} banked. Gamble or collect?`;
-    if (!box.querySelector('canvas')) box.innerHTML = `<b></b>
-      <div class="wdealer"><img alt="Ghost Phelan"><canvas width="180" height="252"></canvas></div>
-      <p class="gmessage"></p><p class="gpick"></p><div class="gactions"></div>`;
-    box.querySelector('b').textContent = `Ghost Phelan’s gamble · ${g.count}/5`;
-    box.querySelector('.gmessage').textContent = message;
-    box.querySelector('.gpick').textContent = g.pick ? `Picked ${g.pick.toUpperCase()}${g.colour ? ` · ${g.colour.toUpperCase()}` : ''}` : '';
-    box.querySelector('.gactions').innerHTML = spectator ? '' : `<div class="wrow">${offering ? '<button type="button" class="wbtn gold" data-gamble="deal">GAMBLE</button>' : ''}
-      ${choosing ? '<button type="button" class="wbtn red" data-gamble="red">RED</button><button type="button" class="wbtn" data-gamble="black">BLACK</button>' : ''}
-      ${!locked ? '<button type="button" class="wbtn" data-gamble="collect">COLLECT</button>' : ''}</div>
-      ${!locked ? '<p><small>Already banked · collects automatically in 15s · max €20 at risk</small></p>' : ''}`;
-    box.querySelector('img').src = GHOST_IMAGE.src;
-    box.querySelector('.wdealer').hidden = !g.pick && g.phase === 'offer';
-    const canvas = box.querySelector('canvas'), ctx = canvas.getContext('2d');
-    canvas.setAttribute('aria-label', g.colour ? g.colour + ' card' : 'Face-down card');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawCard(ctx, 90, 126, 140, g.card || { r: 14, s: '♥' }, !!g.colour, '#4a2a6b');
+    if (!box.querySelector('.gladder')) box.innerHTML = '<b></b><div class="gladder"><div class="gdouble"></div><div class="glose">LOSE · €0.00</div></div><p class="gmessage"></p><div class="gactions"></div>';
+    const wins = g.count - (g.won === false ? 1 : 0);
+    box.querySelector('b').textContent = 'Ghost Phelan’s gamble · x' + (2 ** wins) + ' · ' + wins + ' wins';
+    box.querySelector('.gmessage').textContent = locked ? (g.phase === 'reveal' ? (g.won ? 'Gamble won!' : 'Phelan laughs. Gamble lost.') : 'Double or nothing…') : eur(g.amount) + ' banked · collects automatically in 15s';
+    const ladder = box.querySelector('.gladder');
+    ladder.className = 'gladder' + (g.phase === 'flipping' ? ' running' : g.won === undefined ? '' : g.won ? ' won' : ' lost');
+    ladder.style.animationDelay = Math.min(0, (g.revealAt || now()) - now() - 1500) + 'ms';
+    box.querySelector('.gdouble').textContent = eur(g.phase === 'flipping' ? g.ladderAmount : g.won ? g.amount : g.amount * 2);
+    box.querySelector('.gactions').innerHTML = '<div class="wrow"><button type="button" class="wbtn gslot ggamb' + (offering ? ' offered' : '') + '" data-gamble="deal" ' + (spectator || !offering ? 'disabled' : '') + '>GAMBLE</button><button type="button" class="wbtn gslot gcollect" data-gamble="collect" ' + (spectator || locked ? 'disabled' : '') + '>COLLECT</button></div>';
   }
+
   appEl.insertBefore(bar, appEl.querySelector('.stage'));
   const $w = id => document.getElementById(id);
 
@@ -6332,7 +6352,7 @@ header>span{flex-wrap:wrap}
   }
   // ---------- a separate, fair wager on money already banked ----------
   function gambleAllowed(amount, count) {
-    return Number.isSafeInteger(amount) && amount > 0 && amount <= 2000 && Number.isInteger(count) && count >= 0 && count < 5;
+    return Number.isSafeInteger(amount) && amount > 0;
   }
   function gambleEligible(run, current, auto) {
     return !!run && current === run && !run.live && !run.auto && !auto && !run.gambleClosed && gambleAllowed(run.gambleCredit, 0);
@@ -6393,18 +6413,12 @@ header>span{flex-wrap:wrap}
     W.gamble = { amount: run.gambleCredit, count: 0, phase: 'offer', user: W.user };
     armGamble();
   }
-  function dealGamble() {
+  async function dealGamble() {
     const g = W.gamble;
-    if (!g || gambleBusy || autoOn || busy || g.user !== W.user || g.phase !== 'offer' || !gambleAllowed(g.amount, g.count)) return;
+    if (!g || gambleBusy || autoOn || busy || g.user !== W.user || g.phase !== 'offer' || !gambleAllowed(g.amount)) return;
     if (now() >= g.expiresAt) return collectGamble();
     phelanStop();
-    g.phase = 'pick'; g.pick = null; g.colour = null;
-    armGamble();
-  }
-  async function pickGamble(pick) {
-    const g = W.gamble;
-    if (!g || gambleBusy || g.phase !== 'pick' || g.user !== W.user || autoOn || busy) return;
-    if (now() >= g.expiresAt) return collectGamble();
+    const pick = 'red'; // Fixed fair coin flip; no player colour selection.
     if (W.connected === false) { collectGamble(); return toast('No connection. Keep your banked win.'); }
     const user = W.user, test = isTest(), amount = g.amount;
     let bet;
@@ -6424,8 +6438,9 @@ header>span{flex-wrap:wrap}
       const delta = bet.won ? amount : -amount, what = bet.won ? 'Gamble win' : 'Gamble lose';
       log(user, 'gamble', delta, { what, pick, colour: result.colour, gambleId: bet.id });
       if (!test) db.txn('stats', st => updateGambleStats(st, bet, test)).catch(() => {});
-      g.phase = 'flipping'; renderGamble(gambleBox, g);
-      await new Promise(resolve => setTimeout(resolve, 350));
+      g.phase = 'flipping'; g.ladderAmount = amount * 2; g.revealAt = now() + 1500;
+      renderGamble(gambleBox, g);
+      await new Promise(resolve => setTimeout(resolve, 1500));
       g.card = result.card; g.colour = result.colour; g.won = bet.won; g.count++; g.amount = bet.won ? amount * 2 : 0;
       g.phase = 'reveal'; renderGamble(gambleBox, g);
       if (!bet.won) {
@@ -6441,7 +6456,7 @@ header>span{flex-wrap:wrap}
       await new Promise(resolve => setTimeout(resolve, 900));
       gambleBusy = false;
       g.phase = bet.won && gambleAllowed(g.amount, g.count) ? 'offer' : 'done';
-      armGamble();
+      if (g.phase === 'done') collectGamble(); else armGamble();
     } catch (e) {
       gambleBusy = false; collectGamble();
       toast(bet ? 'Connection interrupted. Check your balance/history before playing again.' : 'Card unavailable. Keep your banked win.');
@@ -6451,7 +6466,6 @@ header>span{flex-wrap:wrap}
     const action = e.target.dataset.gamble;
     if (action === 'collect') collectGamble();
     else if (action === 'deal') dealGamble();
-    else if (action === 'red' || action === 'black') pickGamble(action);
   });
   function leaveGamble(e) {
     if (gambleBusy) { e.preventDefault(); e.stopImmediatePropagation(); return toast('Wait for the card.'); }
@@ -6494,11 +6508,11 @@ header>span{flex-wrap:wrap}
   // which room, balls, dice, chickens, doors...) several times a second, and the watcher's phone draws it with
   // the same game code, so it looks exactly like the real thing. Only small JSON goes over the wire:
   // livef/{key}/base holds the whole state (refreshed every few seconds), livef/{key}/d only what changed since.
-  const MIRROR = ['N', 'c', 'R', 'D', 'scene', 'zoom', 'fade', 'DEPTH', 'evenA', 'FINAL', 'B', 'dice', 'rotF', 'flatT', 'balls', 'ballR', 'counts', 'winner', 'banner',
+  const MIRROR = ['N', 'c', 'R', 'D', 'scene', 'zoom', 'wheelZoom', 'fade', 'DEPTH', 'evenA', 'FINAL', 'B', 'dice', 'rotF', 'flatT', 'balls', 'ballR', 'counts', 'winner', 'banner',
     'rotP', 'hi', 'hiA', 'domeBulge', 'pAng', 'ghost', 'ghostSay', 'dots', 'boostA', 'boostNew', 'wellBalls', 'introT', 'camT', 'hallZ', 'doorT', 'flash', 'rotS',
     'bingo', 'ballSpeed', 'ballPhase', 'pickIdx', 'handT', 'liftT', 'handClosed', 'prize', 'roul', 'vault', 'coaster', 'planet', 'mon', 'rotC', 'zena', 'god', 'pyr',
     'pipes', 'carried', 'd6', 'd6Sum', 'chickens', 'arrows', 'fires', 'feathers', 'camX', 'markItems', 'rotM', 'formT', 'showMark', 'chainNote', 'raceLine',
-    'rot', 'deadA', 'deadTo', 'deadFrom', 'markSpinning', 'markWin', 'liveK'];
+    'rot', 'deadA', 'deadTo', 'deadFrom', 'markSpinning', 'markWin', 'liveK', 'photoZoom', 'photoDone', 'snapA', 'streak', 'sweepOn', 'sweepA'];
   const SLOW = ['N', 'c', 'R', 'D', 'FINAL', 'B', 'ord', 'boostNew', 'markItems'];
   const ANGLES = ['rotF', 'rotP', 'rotS', 'rotC', 'rotM', 'pAng'];
   const ROOMS = { stank: 'the Stank Chamber', roul: 'the Stank Chamber', vault: 'the golden locksafe', pyramid: "Phelan's Pyramid", god: 'the God room', zena: 'the God room', coaster: 'the Monster bonus', planet: 'the Monster bonus', monster: 'the Monster tank', pipes: "Mark's farm", farm: "Mark's farm" };
@@ -6741,6 +6755,7 @@ header>span{flex-wrap:wrap}
   // the watcher's own game sits idle underneath; it borrows its canvas to draw the other phone's state, then reloads
   const lerpAng = (a, b, t) => { const d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + d * t; };
   function mirApply(st, prev, t) {
+    const oldN = typeof N !== 'undefined' ? N : 0, oldD = typeof D !== 'undefined' ? D : 0;
     if (st.N && st.N !== N) { N = st.N; cv.width = cv.height = N; c = N / 2; R = N / 2 * .935 * .82; }
     for (const n in st) {
       if (!mirGet[n]) continue;
@@ -6749,11 +6764,17 @@ header>span{flex-wrap:wrap}
         if (ANGLES.includes(n) && typeof prev[n] === 'number') v = lerpAng(prev[n], v, t);
         else if (n === 'rot' && Array.isArray(prev.rot) && Array.isArray(v)) v = v.map((a, k) => typeof prev.rot[k] === 'number' ? lerpAng(prev.rot[k], a, t) : a);
         else if (n === 'zoom' && typeof prev.zoom === 'number' && prev.zoom > 0 && v > 0) v = prev.zoom * Math.pow(v / prev.zoom, t);
+        else if (n === 'photoZoom' && typeof prev.photoZoom === 'number') v = prev.photoZoom + (v - prev.photoZoom) * t;
+        else if (n === 'wheelZoom' && typeof prev.wheelZoom === 'number' && prev.wheelZoom > 0 && v > 0) v = prev.wheelZoom * Math.pow(v / prev.wheelZoom, t);
         else if (n === 'camX' && typeof prev.camX === 'number') v = prev.camX + (v - prev.camX) * t;
       }
       const cur = mirGet[n]();
       if (Array.isArray(cur) && Array.isArray(v) && (!mirSet[n] || n === 'rot' || n === 'deadA' || n === 'deadTo' || n === 'deadFrom')) { v.forEach((x, k) => cur[k] = x); continue; }
       try { mirSet[n](v); } catch (e) {}
+    }
+    if ((typeof N !== 'undefined' && N !== oldN) || (typeof D !== 'undefined' && D !== oldD)) {
+      if (typeof syncCanvasQuality !== 'undefined') syncCanvasQuality(false);
+      else if (st.N) { cv.width = cv.height = st.N; }
     }
   }
   // the faces each room needs are built on the watcher's phone the first time it shows that room
