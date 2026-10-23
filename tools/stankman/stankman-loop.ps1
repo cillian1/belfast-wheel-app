@@ -32,9 +32,38 @@ if (-not $DryRun -and -not (Get-Command codex -ErrorAction SilentlyContinue)) {
 
 function Post-StankmanIssueComment {
   param([int]$IssueNumber, [string]$Body)
-  $Output = & gh issue comment $IssueNumber --repo $Repo --body $Body 2>&1
-  if ($LASTEXITCODE -ne 0) {
-    throw "Could not post a comment on issue #$IssueNumber. $($Output -join ' ')"
+  $BodyFile = Join-Path $env:TEMP ('stankman-comment-' + [Guid]::NewGuid().ToString('N') + '.txt')
+  try {
+    [IO.File]::WriteAllText($BodyFile, $Body, [Text.UTF8Encoding]::new($false))
+    $Output = & gh issue comment $IssueNumber --repo $Repo --body-file $BodyFile 2>&1
+    if ($LASTEXITCODE -ne 0) { throw "Could not post a comment on issue #$IssueNumber. $($Output -join ' ')" }
+  } finally {
+    if (Test-Path -LiteralPath $BodyFile) { Remove-Item -LiteralPath $BodyFile -Force }
+  }
+}
+
+function Commit-StankmanTask {
+  param([string]$Title)
+  $MessageFile = Join-Path $env:TEMP ('stankman-commit-' + [Guid]::NewGuid().ToString('N') + '.txt')
+  try {
+    [IO.File]::WriteAllText($MessageFile, $Title, [Text.UTF8Encoding]::new($false))
+    Invoke-StankmanGit @('commit', '--file', $MessageFile) | Out-Null
+  } finally {
+    if (Test-Path -LiteralPath $MessageFile) { Remove-Item -LiteralPath $MessageFile -Force }
+  }
+}
+
+function New-StankmanTaskPr {
+  param([string]$BaseBranch, [string]$TaskBranch, [string]$Title, [string]$Body)
+  $RequestFile = Join-Path $env:TEMP ('stankman-pr-' + [Guid]::NewGuid().ToString('N') + '.json')
+  try {
+    $Request = @{ base = $BaseBranch; head = $TaskBranch; title = $Title; body = $Body } | ConvertTo-Json
+    [IO.File]::WriteAllText($RequestFile, $Request, [Text.UTF8Encoding]::new($false))
+    $Output = & gh api --method POST "repos/$Repo/pulls" --input $RequestFile --jq .html_url 2>&1
+    if ($LASTEXITCODE -ne 0) { throw "Could not create the pull request. $($Output -join ' ')" }
+    return $Output
+  } finally {
+    if (Test-Path -LiteralPath $RequestFile) { Remove-Item -LiteralPath $RequestFile -Force }
   }
 }
 
@@ -135,6 +164,13 @@ function Save-StankmanTaskState {
 
 function Write-StankmanTaskBlocked {
   param([int]$IssueNumber, [string]$Reason)
+  try {
+    $FailureDir = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'BelfastWheelStankman\failures'
+    [void](New-Item -ItemType Directory -Path $FailureDir -Force)
+    $FailureFile = Join-Path $FailureDir "issue-$IssueNumber.txt"
+    [IO.File]::WriteAllText($FailureFile, $Reason, [Text.UTF8Encoding]::new($false))
+    Write-Host "Task failure saved to $FailureFile"
+  } catch { Write-Warning "Could not save the task failure locally. $_" }
   $OneLine = ($Reason -replace '[\r\n]+', ' ').Trim()
   if ($OneLine.Length -gt 350) { $OneLine = $OneLine.Substring(0, 350) }
   try {
@@ -394,7 +430,7 @@ $($Issue.body)
 
         Invoke-StankmanGit @('add', '--all') | Out-Null
         Assert-StankmanStagedDiff
-        Invoke-StankmanGit @('commit', '-m', [string]$Issue.title) | Out-Null
+        Commit-StankmanTask -Title ([string]$Issue.title)
         $CommitCreated = $true
         Invoke-StankmanGit @('push', '--set-upstream', 'origin', $TaskBranch) | Out-Null
 
@@ -404,8 +440,7 @@ Automated implementation of issue #${IssueNumber}: $($Issue.title)
 
 Closes #$IssueNumber
 "@
-        $PrOutput = & gh pr create --repo $Repo --base $BaseBranch --head $TaskBranch --title ([string]$Issue.title) --body $PrBody 2>&1
-        if ($LASTEXITCODE -ne 0) { throw "Could not create the pull request. $($PrOutput -join ' ')" }
+        $PrOutput = New-StankmanTaskPr -BaseBranch $BaseBranch -TaskBranch $TaskBranch -Title ([string]$Issue.title) -Body $PrBody
         $PrUrl = [string](@($PrOutput) | Where-Object { [string]$_ -match '^https://github\.com/.+/pull/\d+' } | Select-Object -Last 1)
         if ([string]::IsNullOrWhiteSpace($PrUrl)) { throw 'The pull request was created, but its URL was not returned.' }
       } catch {
@@ -441,8 +476,7 @@ Closes #$IssueNumber
       } elseif ($PrUrl) {
         try {
           Post-StankmanIssueComment -IssueNumber $IssueNumber -Body "The Stankman: DONE: Opened the requested PR: $PrUrl"
-          & gh issue comment 30 --repo $Repo --body "The Stankman: DONE: #$IssueNumber is up: $PrUrl" | Out-Null
-          if ($LASTEXITCODE -ne 0) { Write-Warning "PR opened for issue #$IssueNumber, but the Banter update failed." }
+          Post-StankmanIssueComment -IssueNumber 30 -Body "The Stankman: DONE: #$IssueNumber is up: $PrUrl"
         } catch {
           Write-Warning "PR $PrUrl is open, but the issue DONE comment failed. $_"
         }
@@ -545,13 +579,13 @@ $CommentData
       continue
     }
 
-    & gh issue comment 30 -R $Repo -b "The Stankman: $Reply"
-    if ($LASTEXITCODE -ne 0) {
-      Write-Warning 'Could not post the reply to Banter.'
+    try {
+      Post-StankmanIssueComment -IssueNumber 30 -Body "The Stankman: $Reply"
+      $ReplyTimes.Enqueue([DateTimeOffset]::UtcNow)
+    } catch {
+      Write-Warning "Could not post the reply to Banter. $_"
       [void]$SeenIds.Remove($CommentId)
       $PollHadFailures = $true
-    } else {
-      $ReplyTimes.Enqueue([DateTimeOffset]::UtcNow)
     }
   }
 
