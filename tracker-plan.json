@@ -1,6 +1,17 @@
 {
   "update": 32,
   "name": "Update 32",
-  "goals": ["Wallet/Watch clean recovery work (#209)", "Live Watch nested-wheel drawing (#199)", "GAMBLE/COLLECT (#213)", "Last chicken standing (#200)", "Remove W/B marks from special-chicken art (#211)"],
-  "issues": [209, 199, 213, 200, 211]
+  "goals": [
+    "Wallet/Watch clean recovery work (#209)",
+    "Live Watch nested-wheel drawing (#199)",
+    "GAMBLE/COLLECT (#213)",
+    "Last chicken standing (#200)",
+    "Remove W/B marks from special-chicken art (#211)",
+    "Reduce Extra Bonus, WILD, and Deeper-trigger lag (#231): begin with a performance trace and evidence; reduce measured lag without speculative architecture.",
+    "After a first-spin Deeper hit, ease into a zoom that frames the whole wheel like a dartboard.",
+    "Live Watch (#199): opening chat during a live-view spin must not interrupt wheel/ball completion or cause console errors; do not duplicate the completed #181 keyboard-drawing fix.",
+    "Monster Room dice: regular dice stay white d12s; special/bonus dice retain type-specific colors and become d20s. Faces 13-20 generate more Monster cans through the existing can/tank flow, not a separate prize table. Before implementation, require a Banter notice, money PR linked to that notice, fast-sim/payback evidence, and an independent review."
+  ],
+  "cutLine": "Austin temporary free-spin rule ends at 2026-10-24T14:00:00Z, the instant for Saturday 2026-10-24 15:00 Europe/Dublin: spins are free, wins go to Austin's wallet, and bets do not contribute to the jackpot; afterward normal play resumes. No live account or jackpot changes in this tracker update.",
+  "issues": [209, 199, 213, 200, 211, 231]
 }

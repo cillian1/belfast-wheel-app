@@ -119,3 +119,21 @@ The Done log is archived in [docs/HANDOFF-ARCHIVE.md](docs/HANDOFF-ARCHIVE.md). 
 | Reviews and merges | Gemini |
 
 When you finish, run/expect claim-next; only claim your lane. See docs/task-claiming.md for sizes, lanes and caps. Phase one is read-only: use tools/claim-next.sh with --dry-run; live claiming and the DONE hook are a follow-up under issue #187's cut line. Game tasks target update-N; non-game tasks target main. Before an update starts, its planner labels every ready issue with one size, its lane and unassigned.
+
+## Update 32 scope — 2026-10-23
+
+The five existing deliverables remain in scope:
+- Wallet/Watch clean recovery work (#209).
+- Live Watch nested-wheel drawing (#199).
+- GAMBLE/COLLECT (#213).
+- Last chicken standing (#200).
+- Remove W/B marks from special-chicken art (#211).
+
+Approved additions:
+- **Austin temporary free-spin rule:** until `2026-10-24T14:00:00Z` (the instant for Saturday 2026-10-24 15:00 Europe/Dublin), spins are free, wins are credited to Austin's wallet, and bets do not contribute to the jackpot. After the cutoff, normal play resumes.
+- **Deeper zoom:** after a first-spin Deeper hit, ease into a zoom framing the whole wheel like a dartboard.
+- **Live Watch regression:** extend #199 to check that opening chat during a live-view spin does not interrupt wheel/ball completion or cause console errors. Do not duplicate the completed #181 keyboard-drawing fix.
+- **Measured lag work (#231):** profile Extra Bonus, WILD and Deeper effects, starting with a performance trace and evidence; reduce measured lag rather than choosing speculative architecture.
+- **Monster Room dice:** regular dice stay white d12s. Special/bonus dice keep their type-specific colors and become d20s; faces 13–20 generate more Monster cans through the existing can/tank flow, not a separate prize table.
+
+No live account or jackpot changes are part of this tracker update. Implementing the temporary free-spin rule or special-d20 flow is money work: announce the change on Banter first, use a `money` PR with the Banter notice linked, include fast-sim/payback evidence, and get an independent review. Do not invent additional payout rules.
