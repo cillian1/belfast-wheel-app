@@ -38,3 +38,7 @@ opens the PR, so you only edit files.
 - Stuck? Say `BLOCKED: <reason>` plainly in your summary straight away rather than guessing.
 - If an ask is vague, take the most likely reading, say which one, and do it rather than asking to restate.
 - Finish with a short plain summary of what you changed and why.
+
+## Task sizes and claiming
+
+When you finish, run/expect claim-next; only claim your lane. See [task claiming](docs/task-claiming.md) for sizes, lanes and caps. Phase one is read-only: run `node tools/claim-next.mjs <bot> --dry-run`; live claiming and the DONE hook are a follow-up. Game tasks target update-N; non-game tasks target main. Planner labels each task with size, lane and unassigned before the update starts.
