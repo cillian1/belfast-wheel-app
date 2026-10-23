@@ -1,8 +1,8 @@
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { createCore } from './sim/core.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -103,7 +103,7 @@ if (quick) {
   }
 
   async function calculate(sources, cfg) {
-    const spin = createCore(sources);
+    const spin = createCore(sources, { full: true });
     let total = 0, count = 1000;
     for (let i = 1; i <= count; i++) {
       total += getEV(await spin(i));
@@ -118,21 +118,17 @@ if (quick) {
   ]));
   const currentCfg = JSON.parse(readFileSync(resolve(root, 'src/config.json'), 'utf8'));
 
-  try {
-    const baseSources = Object.fromEntries(modules.map(name => [
-      name, execSync(`git show main:src/game/${name}.js`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }),
-    ]));
-    const baseCfg = JSON.parse(execSync('git show main:src/config.json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
+  const baseRef = `origin/${process.env.GITHUB_BASE_REF || process.env.PAYBACK_BASE_REF || 'main'}`;
+  const baseSources = Object.fromEntries(modules.map(name => [
+    name, execFileSync('git', ['show', `${baseRef}:src/game/${name}.js`], { encoding: 'utf8' }),
+  ]));
+  const baseCfg = JSON.parse(execFileSync('git', ['show', `${baseRef}:src/config.json`], { encoding: 'utf8' }));
 
-    const [pbCurrent, pbBase] = await Promise.all([
-      calculate(currentSources, currentCfg),
-      calculate(baseSources, baseCfg)
-    ]);
+  const [pbCurrent, pbBase] = await Promise.all([
+    calculate(currentSources, currentCfg),
+    calculate(baseSources, baseCfg)
+  ]);
 
-    const diff = pbCurrent - pbBase;
-    console.log(`payback ${(pbBase * 100).toFixed(1)}% → ${(pbCurrent * 100).toFixed(1)}% (${diff >= 0 ? '+' : ''}${(diff * 100).toFixed(1)} pp)`);
-  } catch (e) {
-    const pbCurrent = await calculate(currentSources, currentCfg);
-    console.log(`payback (current) ${(pbCurrent * 100).toFixed(1)}%`);
-  }
+  const diff = pbCurrent - pbBase;
+  console.log(`payback ${(pbBase * 100).toFixed(1)}% → ${(pbCurrent * 100).toFixed(1)}% (${diff >= 0 ? '+' : ''}${(diff * 100).toFixed(1)} pp)`);
 }

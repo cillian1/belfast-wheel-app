@@ -20,6 +20,8 @@ jobs:
     name: ci
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      payback: ${{ steps.quick-check.outputs.payback }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,6 +44,14 @@ jobs:
         with:
           node-version: 24
       - if: steps.scope.outputs.game == 'true'
+        id: quick-check
+        run: |
+          output=$(node tools/check.mjs --quick)
+          printf '%s\n' "$output"
+          payback=$(printf '%s\n' "$output" | grep -E '^payback ' | tail -n 1)
+          [ -n "$payback" ] || { echo 'Quick check did not produce a payback line.' >&2; exit 1; }
+          echo "payback=$payback" >> "$GITHUB_OUTPUT"
+      - if: steps.scope.outputs.game == 'true'
         run: npm install --no-save --package-lock=false @playwright/test@1.64.1
       # Chromium is cached per Playwright version. apt install-deps (which hung for 6 h on Oct 22) only runs
       # if the runner is actually missing a library the browser needs.
@@ -63,7 +73,6 @@ jobs:
         run: |
           node tools/bundle.mjs
           git diff --exit-code -- game/index.html
-          node tools/check.mjs
           node tools/check-game-invariants.mjs origin/main
           node tools/sim/core-test.mjs &
           node tools/sim/core-check.mjs 50 &
@@ -88,6 +97,22 @@ jobs:
         with:
           sparse-checkout: .github/scripts
           persist-credentials: false
+      - name: Post CI payback result on money PRs
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.title, 'money') && needs.ci.outputs.payback != ''
+        uses: actions/github-script@v7
+        env:
+          PAYBACK: ${{ needs.ci.outputs.payback }}
+        with:
+          script: |
+            const marker = '<!-- ci-payback -->';
+            const block = `${marker}\nCI payback: ${process.env.PAYBACK}\n<!-- /ci-payback -->`;
+            const { data: pr } = await github.rest.pulls.get({ ...context.repo, pull_number: context.issue.number });
+            const existing = (pr.body || '').replace(/<!-- ci-payback -->[\s\S]*?<!-- \/ci-payback -->/g, '').trim();
+            await github.rest.pulls.update({
+              ...context.repo,
+              pull_number: context.issue.number,
+              body: existing ? `${existing}\n\n${block}` : block,
+            });
       - env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
