@@ -43,6 +43,18 @@
   .wgamble p{margin:2px 0}
   .wgamble .wrow{gap:4px}
 }
+@keyframes gambleGlow{50%{filter:brightness(1.55);box-shadow:0 0 20px #ffc43d}}
+@keyframes gambleLadder{0%,8%,16%,26%,38%,54%,76%{--double:1;--lose:.2}4%,12%,21%,32%,46%,65%,88%,100%{--double:.2;--lose:1}}
+.wgamble .gslot{flex:1;min-width:0;min-height:64px;font-size:20px;font-weight:900;border:3px outset #ffe298;border-radius:12px;box-shadow:inset 0 2px 4px #fff8,0 5px 0 #392507,0 0 12px #f9b52d80;color:#251600}
+.wgamble .ggamb{background:linear-gradient(#ffe56c,#e99309)}
+.wgamble .gcollect{background:linear-gradient(#afff9c,#37a94b);border-color:#b8ffa6}
+.wgamble .offered{animation:gambleGlow .7s infinite}
+.wgamble .gslot:disabled{cursor:default}
+.wgamble .gladder{display:flex;gap:8px;justify-content:center;margin:12px 0;--double:.45;--lose:.45}
+.gladder>div{flex:1;min-width:0;box-sizing:border-box;padding:14px 4px;border:3px solid;border-radius:8px;font-size:24px;font-weight:900;background:#17110a;overflow-wrap:anywhere}
+.gdouble{color:#ffe268;opacity:var(--double)}.glose{color:#ff6767;opacity:var(--lose)}
+.gladder.running{animation:gambleLadder 1.5s linear both}
+.gladder.won{--double:1;--lose:.2}.gladder.lost{--double:.2;--lose:1}
 .wgamble p{margin:6px 0}
 .wgamble .wdealer{display:flex;align-items:center;justify-content:center;gap:12px}
 .wgamble .wdealer[hidden]{display:none}
@@ -106,6 +118,7 @@ body{box-sizing:border-box;margin:0}
 .wbanner .wrow{gap:10px}
 .wbanner .wrow .wbtn:not(.wbig){font-size:17px;flex:1}
 .wbanner[hidden]{display:none}
+.wbanner.wachievement{pointer-events:none;max-width:536px;margin-inline:auto;overflow-wrap:anywhere}
 .wnote{position:fixed;left:16px;right:16px;top:calc(70px + env(safe-area-inset-top,0px));z-index:45;max-width:420px;margin:0 auto;padding:18px;border-radius:18px;background:#2a2312;border:2px solid #f5d27a;color:#f8e4a6;text-align:center;display:flex;flex-direction:column;gap:8px;box-shadow:0 10px 40px rgba(0,0,0,.7),0 0 30px rgba(245,210,122,.35);animation:wnIn .4s ease-out}
 .wnote small{letter-spacing:.18em;text-transform:uppercase;font-size:11px;color:#c9a85a}.wnote b{font-size:32px;color:#fff1b8}.wnote p{margin:0;font-size:18px;line-height:1.35}
 @keyframes wnIn{from{transform:translateY(-20px);opacity:0}}
@@ -229,30 +242,19 @@ header>span{flex-wrap:wrap}
     box.hidden = !g;
     if (box === gambleBox) document.getElementById('finalCard').classList.toggle('wgambling', !!g);
     if (!g) { box.innerHTML = ''; return; }
-    box.classList.toggle('flipping', g.phase === 'flipping');
-    const offering = g.phase === 'offer', choosing = g.phase === 'pick';
+    const offering = g.phase === 'offer';
     const locked = ['settling', 'flipping', 'reveal'].includes(g.phase);
-    const message = g.phase === 'settling' || g.phase === 'flipping' ? 'Card coming…'
-      : g.phase === 'pick' ? 'Pick RED or BLACK · 50/50'
-      : g.won === false ? 'Phelan laughs. Gamble lost.'
-      : g.won ? `Gamble won! ${eur(g.amount)} banked.` : `${eur(g.amount)} banked. Gamble or collect?`;
-    if (!box.querySelector('canvas')) box.innerHTML = `<b></b>
-      <div class="wdealer"><img alt="Ghost Phelan"><canvas width="180" height="252"></canvas></div>
-      <p class="gmessage"></p><p class="gpick"></p><div class="gactions"></div>`;
-    box.querySelector('b').textContent = `Ghost Phelan’s gamble · ${g.count}/5`;
-    box.querySelector('.gmessage').textContent = message;
-    box.querySelector('.gpick').textContent = g.pick ? `Picked ${g.pick.toUpperCase()}${g.colour ? ` · ${g.colour.toUpperCase()}` : ''}` : '';
-    box.querySelector('.gactions').innerHTML = spectator ? '' : `<div class="wrow">${offering ? '<button type="button" class="wbtn gold" data-gamble="deal">GAMBLE</button>' : ''}
-      ${choosing ? '<button type="button" class="wbtn red" data-gamble="red">RED</button><button type="button" class="wbtn" data-gamble="black">BLACK</button>' : ''}
-      ${!locked ? '<button type="button" class="wbtn" data-gamble="collect">COLLECT</button>' : ''}</div>
-      ${!locked ? '<p><small>Already banked · collects automatically in 15s · max €20 at risk</small></p>' : ''}`;
-    box.querySelector('img').src = GHOST_IMAGE.src;
-    box.querySelector('.wdealer').hidden = !g.pick && g.phase === 'offer';
-    const canvas = box.querySelector('canvas'), ctx = canvas.getContext('2d');
-    canvas.setAttribute('aria-label', g.colour ? g.colour + ' card' : 'Face-down card');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawCard(ctx, 90, 126, 140, g.card || { r: 14, s: '♥' }, !!g.colour, '#4a2a6b');
+    if (!box.querySelector('.gladder')) box.innerHTML = '<b></b><div class="gladder"><div class="gdouble"></div><div class="glose">LOSE · €0.00</div></div><p class="gmessage"></p><div class="gactions"></div>';
+    const wins = g.count - (g.won === false ? 1 : 0);
+    box.querySelector('b').textContent = 'Ghost Phelan’s gamble · x' + (2 ** wins) + ' · ' + wins + ' wins';
+    box.querySelector('.gmessage').textContent = locked ? (g.phase === 'reveal' ? (g.won ? 'Gamble won!' : 'Phelan laughs. Gamble lost.') : 'Double or nothing…') : eur(g.amount) + ' banked · collects automatically in 15s';
+    const ladder = box.querySelector('.gladder');
+    ladder.className = 'gladder' + (g.phase === 'flipping' ? ' running' : g.won === undefined ? '' : g.won ? ' won' : ' lost');
+    ladder.style.animationDelay = Math.min(0, (g.revealAt || now()) - now() - 1500) + 'ms';
+    box.querySelector('.gdouble').textContent = eur(g.phase === 'flipping' ? g.ladderAmount : g.won ? g.amount : g.amount * 2);
+    box.querySelector('.gactions').innerHTML = '<div class="wrow"><button type="button" class="wbtn gslot ggamb' + (offering ? ' offered' : '') + '" data-gamble="deal" ' + (spectator || !offering ? 'disabled' : '') + '>GAMBLE</button><button type="button" class="wbtn gslot gcollect" data-gamble="collect" ' + (spectator || locked ? 'disabled' : '') + '>COLLECT</button></div>';
   }
+
   appEl.insertBefore(bar, appEl.querySelector('.stage'));
   const $w = id => document.getElementById(id);
 
@@ -314,6 +316,38 @@ header>span{flex-wrap:wrap}
       toast(`Could not save ${trophy.name}. Try again when online.`);
     }).finally(() => pendingTrophies.delete(pendingId));
   }
+
+  function showAchievementBanner(title, sub) {
+    const b = el('div', 'wbanner wachievement');
+    b.innerHTML = `<b class="wbig">${esc(title)}</b><p>${esc(sub)}</p>`;
+    document.body.appendChild(b);
+    setTimeout(() => { b.style.opacity = '0'; b.style.transition = 'opacity 0.5s'; setTimeout(() => b.remove(), 500); }, 2500);
+  }
+
+  const pendingAchievements = new Set();
+  W.awardAchievement = function(id, title, sub) {
+    const me = W.me, user = W.user;
+    if (!me || !user) return;
+    const earned = me.achievements && me.achievements[id];
+    if (earned) {
+      toast(`${title} (again)`, true);
+      return;
+    }
+    const pendingId = user + '/' + id;
+    if (pendingAchievements.has(pendingId)) return;
+    const earnedAt = now();
+    pendingAchievements.add(pendingId);
+    db.put('users/' + user + '/achievements/' + id, earnedAt).then(() => {
+      if (W.user !== user) return;
+      W.me.achievements = Object.assign({}, W.me.achievements || {}, { [id]: earnedAt });
+      showAchievementBanner(title, sub);
+      const liveAchievement = { user, id, title, sub, at: earnedAt };
+      achievement = liveAchievement; // scoped to this player for Live Watch
+      setTimeout(() => { if (achievement === liveAchievement) achievement = null; }, 3000);
+    }).catch(() => {
+      if (W.user === user) toast(`Could not save ${title}. Try again when online.`);
+    }).finally(() => pendingAchievements.delete(pendingId));
+  };
 
   function paint() {
     const me = W.me;
@@ -387,6 +421,10 @@ header>span{flex-wrap:wrap}
           if (!u) return ($w('wErr').textContent = 'No account with that name. Tap New account.');
           if (u.pass !== h) return ($w('wErr').textContent = 'Wrong password.');
         }
+        if (W.user !== k) {
+          achievement = null;
+          document.querySelectorAll('.wbanner.wachievement').forEach(b => b.remove());
+        }
         W.user = k; pref.set('wol.user', k); pref.set('wol.pass', h);
         login.hidden = true; await refresh(); toast(isNew ? 'Welcome, ' + name + '. Top up to start spinning.' : 'Welcome back, ' + (W.me ? W.me.name : name), true);
       } catch (e) { $w('wErr').textContent = 'No connection to the wheel. Check your internet and try again.'; }
@@ -403,7 +441,7 @@ header>span{flex-wrap:wrap}
       paint();
     } catch (e) {}
   }
-  function logout() { if (gambleBusy) return toast('Wait for the card.'); collectGamble(); if (W.run) W.run.gambleClosed = true; W.user = W.me = null; pref.set('wol.user', null); pref.set('wol.pass', null); paint(); closeSheet(); showLogin(); }
+  function logout() { if (gambleBusy) return toast('Wait for the card.'); collectGamble(); if (W.run) W.run.gambleClosed = true; achievement = null; document.querySelectorAll('.wbanner.wachievement').forEach(b => b.remove()); W.user = W.me = null; pref.set('wol.user', null); pref.set('wol.pass', null); paint(); closeSheet(); showLogin(); }
   // ---------- top up (player pays Cillian on Revolut and confirms; the host page can reverse) ----------
   // Owns the top-up confirmation sheets.
   function topupSheet(msg) {

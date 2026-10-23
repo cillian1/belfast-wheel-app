@@ -13,7 +13,12 @@ function setVerdict({ eyebrow = 'The wheel says', title, body = '', steps = null
   $('#vObj').hidden = !q; if (q) $('#oQuote').textContent = q;
   $('#showActions').hidden = !show; $('#photoActions').hidden = !photo;
   if (plate.classList.contains('need') !== (show || photo)) { plate.classList.toggle('need', show || photo); fitStage(); }
-  if (flash) { plate.classList.remove('landed'); void plate.offsetWidth; plate.classList.add('landed'); }
+  if (flash && !reduce && typeof plate.animate === 'function') {
+    plate.animate([
+      { boxShadow: 'inset 0 1px 0 rgba(255,255,255,.08), 0 0 0 2px var(--ti-b), 0 0 40px rgba(157,114,219,.45)' },
+      { boxShadow: 'inset 0 1px 0 rgba(255,255,255,.08), 0 10px 30px rgba(0,0,0,.4)' },
+    ], { duration: 700, easing: 'ease-out' });
+  }
   const win = /^Final answer · €([\d.]+)/.exec(eyebrow), stake = window.W && (W.run ? W.run.stake : W.stake);
   if (win && stake && parseFloat(win[1]) >= Math.max(1, stake / 10)) ghostReact('cheer');
 }
@@ -29,7 +34,7 @@ function finalSpeech(m, moves, dest) {
 }
 
 async function backToMain() {
-  winGlow = null; ghost = null; ghostSay = ''; doorPick = null; tapPick = null; $('.stage').classList.remove('pick');
+  winGlow = null; ghost = null; ghostSay = ''; doorPick = null; tapPick = null; wheelZoom = 1; $('.stage').classList.remove('pick');
   hideFinal(); sayLast = null; try { speechSynthesis.cancel(); } catch (e) {}
   if (scene !== 'nested' && scene !== 'photo') {
     // the room keeps drawing while it fades out, so its state is only cleared once the main wheel is back
@@ -65,6 +70,7 @@ async function runMain() {
   // Go deeper: three move wheels, ten dice, the ball drop
   const steps = []; let wilds = 0, bonus = 0;
   setVerdict({ eyebrow: 'The wheel says', title: 'Go deeper', body: 'Hold on.' });
+  await zoomWheelTo(1.14, 1800);
   let wMiss = 0, bMiss = 0, ups = 0, godHit = false;
   if (Math.random() < GOLDEN_CHANCE) await goldenRun();
   else if (store.get('hope', false)) { store.set('hope', false); await wait(400); await boostRun('W', 0); }

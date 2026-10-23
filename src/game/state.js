@@ -1,8 +1,9 @@
 // ---------- state ----------
 // Owns mutable game state helpers and special dice.
-let scene = 'nested', zoom = 1, busy = false, fade = 0;
-const rot = Array(MAXD + 1).fill(0);
-let dice = [];
+var scene = 'nested', zoom = 1, wheelZoom = 1;
+let busy = false, fade = 0;
+var rot = Array(MAXD + 1).fill(0);
+var dice = [];
 for (let i = 0; i < 12; i++) { // ten six-sided dice: two in the middle, eight round the edge (slots 0 and 2 are kept for special dice)
   if (i === 0 || i === 2) continue;
   const a = i < 4 ? i * TAU / 4 + .4 : (i - 4) * TAU / 8, rr = i < 4 ? .13 : .32;
@@ -15,8 +16,8 @@ function addSpecialDice(kinds) {
   clearSpecialDice();
   return kinds.map((sp, j) => { const [a, rr] = SP_SLOTS[j % SP_SLOTS.length], d = { hx: Math.cos(a) * rr, hy: Math.sin(a) * rr, x: Math.cos(a) * rr, y: Math.sin(a) * rr, a: (Math.random() - .5) * .3, v: 1, sp, swell: 0, born: 0 }; dice.push(d); return d; });
 }
-let rotF = 0, flatT = 0, balls = [], ballR = 0, counts = null, winner = -1, banner = '';
-let rotP = 0, hi = null, hiA = 0;
+var rotF = 0, flatT = 0, balls = [], ballR = 0, counts = null, winner = -1, banner = '', achievement = null;
+var rotP = 0, hi = null, hiA = 0;
 
 // keep physics positions valid when the canvas is resized mid-drop
 function rescaleBalls(oldB) {

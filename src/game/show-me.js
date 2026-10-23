@@ -78,7 +78,7 @@ async function spin() {
     }
   } catch (err) {
     console.error(String(err && err.stack || err));
-    scene = 'nested'; zoom = 1; fade = 0; balls = []; counts = null; winner = -1; flatT = 0; banner = ''; draw();
+    scene = 'nested'; zoom = 1; wheelZoom = 1; fade = 0; balls = []; counts = null; winner = -1; flatT = 0; banner = ''; draw();
     setVerdict({ title: 'That run broke halfway', body: 'Something went wrong mid-spin. Tap Spin to start again from the top.' });
     setBtn('Spin', false);
   } finally { lock(false); }

@@ -50,6 +50,7 @@ li span{color:var(--mute);font-size:13px}
 window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app","revolut":"cillian9bw","gameVersion":10,"ev":10,"edge":0.99,"stakes":[10,20,30,40,50,60,70,80,90,100],"updateUrl":"https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/version.json"};
 (function () {
   const CFG = window.WALLET_CFG, app = null, MIN_TOPUP = 100;
+  let hostHash = null;
   // <shared> (also used by host.html, see tools/build.mjs)
   // ---------- small helpers ----------
   const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
@@ -63,7 +64,6 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
     set(k, v) { try { if (app && app.setPref) app.setPref(k, v == null ? '' : v); } catch (e) {} try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} },
   };
   const TEST_KEY = 'test', isTest = () => !!(W.me && W.me.test);
-  const isTester = u => u && u.tester && u.tester.until > now();
   const keyOf = name => name.trim().toLowerCase().replace(/[.#$\[\]\/\s]+/g, '_');
   function sha256(str) { // small pure-JS SHA-256 (crypto.subtle is not always there on file:// pages)
     const K = [], H = [], isP = n => { for (let f = 2; f * f <= n; f++) if (n % f === 0) return false; return true; };
@@ -86,7 +86,6 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
     }
     return H.map(x => (x >>> 0).toString(16).padStart(8, '0')).join('');
   }
-
   // ---------- Firebase REST ----------
   // in the app, requests go through Java (no CORS from a file:// page); in a browser, plain fetch
   const waiting = {}; let reqN = 0;
@@ -112,12 +111,15 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
       for (let i = 0; i < 8; i++) {
         let r;
         try { r = await fetch(db.url(p), { headers: tags ? { 'X-Firebase-ETag': 'true' } : {}, cache: 'no-store' }); }
-        catch (e) { if (!tags) throw e; db.tags = tags = false; i--; continue; } // the ETag header was refused (CORS): plain read-then-write
+        catch (e) { if (!tags) throw e; continue; }
         if (!r.ok) throw new Error('db ' + r.status);
-        const tag = tags && r.headers.get('ETag'), cur = await r.json(), next = fn(cur);
+        const tag = tags && r.headers.get('ETag');
+        if (tag) db.tagSeen = true;
+        if (tags && !tag) db.tags = tags = false;
+        const cur = await r.json(), next = fn(cur);
         if (next === undefined) return cur; // fn said abort
         const w = await fetch(db.url(p), { method: 'PUT', headers: tag ? { 'if-match': tag } : {}, body: JSON.stringify(next) }).catch(() => null);
-        if (!w) { if (!tag) throw new Error('offline'); db.tags = tags = false; continue; }
+        if (!w) throw new Error('transaction outcome unknown; verify before retrying');
         if (w.ok) return next;
         if (w.status !== 412) throw new Error('db ' + w.status);
       }
@@ -125,8 +127,8 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
     },
   };
   const log = (k, t, a, extra) => db.push('tx/' + k, Object.assign({ t, a, at: now() }, extra || {})).catch(() => {});
+  // </shared>
 
-  
   const main = document.getElementById('main');
   const toast = msg => { const t = document.getElementById('toast'); t.textContent = msg; t.style.opacity = 1; clearTimeout(toast.t); toast.t = setTimeout(() => { t.style.opacity = 0; }, 2600); };
   function showLoadError(target, retry) {
@@ -153,7 +155,7 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
     const timer = setTimeout(() => showLoadError(main, () => gate()), 10000);
     try { cfg = await db.get('config') || {}; } catch (e) { showLoadError(main, () => gate()); return; }
     finally { clearTimeout(timer); }
-    if (sessionStorage.getItem('host') === cfg.pin && cfg.pin) return render();
+    if (hostHash === cfg.pin && cfg.pin) return render();
     const first = !cfg.pin;
     main.innerHTML = `<h1>Wheel Host</h1><p>${first ? 'Set your host PIN (4 to 8 digits). You need it every time you open this page.' : 'Enter your host PIN.'}</p>
       <input id="pin" type="password" inputmode="numeric" maxlength="8" placeholder="PIN" autofocus>
@@ -164,8 +166,7 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
       const h = sha256('host:' + pin);
       if (first) await db.patch('config', { pin: h });
       else if (h !== cfg.pin) return (document.getElementById('err').textContent = 'Wrong PIN.');
-      try { sessionStorage.setItem('host', h); } catch (e) {}
-      cfg.pin = h; render();
+      hostHash = h; render();
     };
     document.getElementById('go').onclick = go;
     document.getElementById('pin').onkeydown = e => { if (e.key === 'Enter') go(); };
@@ -252,9 +253,9 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
       };
       document.getElementById('pinGo').onclick = async () => {
         const pin = document.getElementById('newPin').value; if (pin.length < 4) return toast('Use 4 to 8 digits');
-        const h = sha256('host:' + pin); await db.patch('config', { pin: h }); cfg.pin = h; try { sessionStorage.setItem('host', h); } catch (e) {} toast('PIN changed');
+        const h = sha256('host:' + pin); await db.patch('config', { pin: h }); cfg.pin = h; hostHash = h; toast('PIN changed');
       };
-      document.getElementById('lock').onclick = () => { try { sessionStorage.removeItem('host'); } catch (e) {} gate(); };
+      document.getElementById('lock').onclick = () => { hostHash = null; gate(); };
     }
     const twice = (b, fn) => { if (b.dataset.armed) fn(); else { b.dataset.armed = 1; b.textContent = 'Sure?'; } };
     body.querySelectorAll('[data-rev]').forEach(b => b.onclick = () => window.open('https://revolut.me/' + b.dataset.rev, '_blank'));
@@ -301,21 +302,34 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
       <div class="row"><button class="gold" id="go" type="button">Send</button><button id="back" type="button">Back</button></div>
       <div class="row" style="margin-top:12px"><button class="small" id="tester" type="button">Set tester pass (until Sat 3pm)</button></div>`;
     document.getElementById('back').onclick = render;
+    let sending = false;
     document.getElementById('tester').onclick = async () => {
       const until = 1792850400000;
       await db.patch('users/' + k, { tester: { until } });
       toast('Tester pass set for ' + u.name); render();
     };
     document.getElementById('go').onclick = async () => {
-      const a = Math.round((parseFloat(document.getElementById('amt').value.replace(',', '.')) || 0) * 100), msg = document.getElementById('msg').value.trim().slice(0, 140);
+      if (sending) return;
+      const rawAmount = document.getElementById('amt').value.trim().replace(',', '.'), amount = rawAmount ? Number(rawAmount) : 0;
+      if (!Number.isFinite(amount)) return toast('Enter a valid amount.');
+      const a = Math.round(amount * 100), msg = document.getElementById('msg').value.trim().slice(0, 140);
       if (!a && !msg) return;
-      if (a) {
-        await db.txn('users/' + k, u => { u.balance = (u.balance || 0) + a; if (a > 0) u.topped = (u.topped || 0) + a; return u; });
-        await log(k, a > 0 ? 'topup' : 'adjust', a, { what: 'by host' });
+      if (Math.abs(a) > 50000) return toast('Too much! Max €500 at once.');
+      sending = true;
+      document.getElementById('go').disabled = true;
+      try {
+        if (a) {
+          await db.txn('users/' + k, u => { u.balance = (u.balance || 0) + a; if (a > 0) u.topped = (u.topped || 0) + a; return u; });
+          await log(k, a > 0 ? 'topup' : 'adjust', a, { what: 'by host' });
+        }
+        // what pops up on their phone: a gift and/or the message
+        if (msg || a > 0) await db.push('notes/' + k, { amt: a > 0 ? a : 0, text: msg, at: now() }).catch(() => {});
+        toast(msg ? 'Sent' : 'Done'); render();
+      } catch (e) {
+        toast('Update status unclear. Check balance before retrying.');
+        render();
       }
-      // what pops up on their phone: a gift and/or the message
-      if (msg || a > 0) await db.push('notes/' + k, { amt: a > 0 ? a : 0, text: msg, at: now() }).catch(() => {});
-      toast(msg ? 'Sent' : 'Done'); render();
+      finally { sending = false; }
     };
   }
   gate();

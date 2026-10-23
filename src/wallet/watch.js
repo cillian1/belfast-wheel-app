@@ -23,11 +23,11 @@
   // which room, balls, dice, chickens, doors...) several times a second, and the watcher's phone draws it with
   // the same game code, so it looks exactly like the real thing. Only small JSON goes over the wire:
   // livef/{key}/base holds the whole state (refreshed every few seconds), livef/{key}/d only what changed since.
-  const MIRROR = ['N', 'c', 'R', 'D', 'scene', 'zoom', 'fade', 'DEPTH', 'evenA', 'FINAL', 'B', 'dice', 'rotF', 'flatT', 'balls', 'ballR', 'counts', 'winner', 'banner',
+  const MIRROR = ['N', 'c', 'R', 'D', 'scene', 'zoom', 'wheelZoom', 'fade', 'DEPTH', 'evenA', 'FINAL', 'B', 'dice', 'rotF', 'flatT', 'balls', 'ballR', 'counts', 'winner', 'banner', 'achievement',
     'rotP', 'hi', 'hiA', 'domeBulge', 'pAng', 'ghost', 'ghostSay', 'dots', 'boostA', 'boostNew', 'wellBalls', 'introT', 'camT', 'hallZ', 'doorT', 'flash', 'rotS',
     'bingo', 'ballSpeed', 'ballPhase', 'pickIdx', 'handT', 'liftT', 'handClosed', 'prize', 'roul', 'vault', 'coaster', 'planet', 'mon', 'rotC', 'zena', 'god', 'pyr',
     'pipes', 'carried', 'd6', 'd6Sum', 'chickens', 'arrows', 'fires', 'feathers', 'camX', 'markItems', 'rotM', 'formT', 'showMark', 'chainNote', 'raceLine',
-    'rot', 'deadA', 'deadTo', 'deadFrom', 'markSpinning', 'markWin', 'liveK'];
+    'rot', 'deadA', 'deadTo', 'deadFrom', 'markSpinning', 'markWin', 'liveK', 'photoZoom', 'photoDone', 'snapA', 'streak', 'sweepOn', 'sweepA'];
   const SLOW = ['N', 'c', 'R', 'D', 'FINAL', 'B', 'ord', 'boostNew', 'markItems'];
   const ANGLES = ['rotF', 'rotP', 'rotS', 'rotC', 'rotM', 'pAng'];
   const ROOMS = { stank: 'the Stank Chamber', roul: 'the Stank Chamber', vault: 'the golden locksafe', pyramid: "Phelan's Pyramid", god: 'the God room', zena: 'the God room', coaster: 'the Monster bonus', planet: 'the Monster bonus', monster: 'the Monster tank', pipes: "Mark's farm", farm: "Mark's farm" };
@@ -41,7 +41,11 @@
   // the game right now, one JSON string per piece of state
   function capture() {
     const st = {};
-    for (const n in mirGet) { try { const j = JSON.stringify(mirGet[n](), slim); if (j !== undefined) st[n] = j; } catch (e) {} }
+    for (const n in mirGet) { try {
+      let value = mirGet[n]();
+      if (n === 'achievement' && value && typeof value === 'object' && value.user !== W.user) value = null;
+      const j = JSON.stringify(value, slim); if (j !== undefined) st[n] = j;
+    } catch (e) {} }
     st.ord = JSON.stringify(typeof runOrders !== 'undefined' ? runOrders : null);
     const tiles = [...document.querySelectorAll('.wilds .wt')];
     st.tw = String(tiles.slice(0, 3).filter(t => t.classList.contains('lit')).length); st.tb = String(tiles.slice(3).filter(t => t.classList.contains('lit')).length);
@@ -54,24 +58,28 @@
   const join = (st, keys) => '{' + keys.map(k => JSON.stringify(k) + ':' + st[k]).join(',') + '}';
   const changed = (a, b) => Object.keys(a).filter(k => a[k] !== (b && b[k]));
   const pause = ms => new Promise(r => setTimeout(r, ms));
-  let liveBase = null, liveBaseId = 0, liveBaseAt = 0, liveI = 0, liveSent = '', liveSentAt = 0;
-  async function sendLive(st, playing) {
+  let liveBase = null, liveBaseId = 0, liveBaseAt = 0, liveI = 0, liveSent = '', liveSentAt = 0, liveUser = null;
+  async function sendLive(st, playing, user) {
+    if (!user || W.user !== user) return;
+    if (liveUser !== user) { liveUser = user; liveBase = null; liveBaseId = liveI = 0; liveSent = ''; }
     const capEl = document.getElementById('caption');
     if (!liveBase || SLOW.some(k => st[k] !== liveBase[k]) || now() - liveBaseAt > 5000) {
       liveBase = st; liveBaseId++; liveBaseAt = now();
-      await db.put('livef/' + W.user + '/base', { id: liveBaseId, st: join(st, Object.keys(st)) });
+      await db.put('livef/' + user + '/base', { id: liveBaseId, st: join(st, Object.keys(st)) });
     }
+    if (W.user !== user) return;
     const d = join(st, changed(st, liveBase)), extra = JSON.stringify([lastVerdict, capEl ? capEl.textContent : '', W.run && W.run.live ? W.run.stake : W.stake, W.me ? W.me.balance || 0 : 0, playing]);
     if (d + extra === liveSent && now() - liveSentAt < 4000) return; // nothing moved (still resent now and then, so watchers know we're here)
     liveSent = d + extra; liveSentAt = now();
-    await db.put('livef/' + W.user + '/d', { i: ++liveI, b: liveBaseId, at: now(), d, v: lastVerdict, cap: capEl ? capEl.textContent : '', s: W.run && W.run.live ? W.run.stake : W.stake, bal: W.me ? W.me.balance || 0 : 0, play: playing });
+    if (W.user !== user) return;
+    await db.put('livef/' + user + '/d', { i: ++liveI, b: liveBaseId, at: now(), d, v: lastVerdict, cap: capEl ? capEl.textContent : '', s: W.run && W.run.live ? W.run.stake : W.stake, bal: W.me ? W.me.balance || 0 : 0, play: playing });
   }
   async function streamLoop() {
     streaming = true; let sinceCheck = now(), sinceMsg = now();
     try {
       while (watchers && !document.hidden && W.user) {
-        const t0 = now(), playing = typeof busy !== 'undefined' && busy;
-        try { await sendLive(capture(), playing); } catch (e) { await pause(1500); }
+        const t0 = now(), playing = typeof busy !== 'undefined' && busy, user = W.user;
+        try { await sendLive(capture(), playing, user); } catch (e) { await pause(1500); }
         const gap = (playing ? 90 : 700) - (now() - t0); if (gap > 0) await pause(gap);
         if (now() - sinceMsg > 2000) { sinceMsg = now(); await checkMsgs(); }
         if (now() - sinceCheck > 5000) { sinceCheck = now(); await heartbeat(); }
@@ -270,6 +278,7 @@
   // the watcher's own game sits idle underneath; it borrows its canvas to draw the other phone's state, then reloads
   const lerpAng = (a, b, t) => { const d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + d * t; };
   function mirApply(st, prev, t) {
+    const oldN = typeof N !== 'undefined' ? N : 0, oldD = typeof D !== 'undefined' ? D : 0;
     if (st.N && st.N !== N) { N = st.N; cv.width = cv.height = N; c = N / 2; R = N / 2 * .935 * .82; }
     for (const n in st) {
       if (!mirGet[n]) continue;
@@ -278,11 +287,17 @@
         if (ANGLES.includes(n) && typeof prev[n] === 'number') v = lerpAng(prev[n], v, t);
         else if (n === 'rot' && Array.isArray(prev.rot) && Array.isArray(v)) v = v.map((a, k) => typeof prev.rot[k] === 'number' ? lerpAng(prev.rot[k], a, t) : a);
         else if (n === 'zoom' && typeof prev.zoom === 'number' && prev.zoom > 0 && v > 0) v = prev.zoom * Math.pow(v / prev.zoom, t);
+        else if (n === 'photoZoom' && typeof prev.photoZoom === 'number') v = prev.photoZoom + (v - prev.photoZoom) * t;
+        else if (n === 'wheelZoom' && typeof prev.wheelZoom === 'number' && prev.wheelZoom > 0 && v > 0) v = prev.wheelZoom * Math.pow(v / prev.wheelZoom, t);
         else if (n === 'camX' && typeof prev.camX === 'number') v = prev.camX + (v - prev.camX) * t;
       }
       const cur = mirGet[n]();
       if (Array.isArray(cur) && Array.isArray(v) && (!mirSet[n] || n === 'rot' || n === 'deadA' || n === 'deadTo' || n === 'deadFrom')) { v.forEach((x, k) => cur[k] = x); continue; }
       try { mirSet[n](v); } catch (e) {}
+    }
+    if ((typeof N !== 'undefined' && N !== oldN) || (typeof D !== 'undefined' && D !== oldD)) {
+      if (typeof syncCanvasQuality !== 'undefined') syncCanvasQuality(false);
+      else if (st.N) { cv.width = cv.height = st.N; }
     }
   }
   // the faces each room needs are built on the watcher's phone the first time it shows that room
@@ -359,6 +374,14 @@
       const v = st.v || {}; $w('wwE').textContent = v.e || ''; $w('wwT').textContent = v.t || ''; $w('wwB').textContent = v.b || ''; $w('wwC').textContent = st.cap || '';
       const fin = $w('wwFin'), fl = st.fin; fin.hidden = !fl; if (fl) fin.innerHTML = fl.map(x => `<li>${esc(x)}</li>`).join('');
       renderGamble($w('wwGamble'), parse(st.gamble) || null, true);
+      const ach = typeof st.achievement === 'string' ? parse(st.achievement) : st.achievement;
+      if (ach && ach.id !== S.achId) {
+        S.achId = ach.id;
+        const b = el('div', 'wbanner wachievement');
+        b.innerHTML = `<b class="wbig">${esc(ach.title)}</b><p>${esc(ach.sub)}</p>`;
+        view.appendChild(b); // outside the clipped canvas and its paragraph styles
+        setTimeout(() => { b.style.opacity = '0'; b.style.transition = 'opacity 0.5s'; setTimeout(() => b.remove(), 500); }, 2500);
+      }
       const tw = +st.tw || 0, tb = +st.tb || 0;
       $w('wwTiles').innerHTML = `<span class="g">${'●'.repeat(Math.min(tw, 9))}${'○'.repeat(Math.max(0, 3 - tw))} WILDS</span><span class="p">${'●'.repeat(Math.min(tb, 9))}${'○'.repeat(Math.max(0, 3 - tb))} BONUS</span>`;
       const vk = [v.e, v.t, v.b, st.cap, JSON.stringify(st.gamble)].join('|'); if (vk !== S.vk) { S.vk = vk; fitWatch(); } // refit only when the verdict text changes

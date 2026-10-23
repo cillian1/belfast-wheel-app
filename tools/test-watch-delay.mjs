@@ -5,12 +5,19 @@ import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const source = readFileSync(resolve(root, 'src/wallet/watch.js'), 'utf8');
+assert.match(source, /'scene', 'zoom', 'wheelZoom', 'fade'/, 'whole-wheel camera zoom is included in live Watch state');
+assert.match(source, /n === 'wheelZoom' && typeof prev\.wheelZoom === 'number'/, 'live Watch interpolates the whole-wheel camera zoom');
 assert.match(source, /renderGamble\(\$w\('wwGamble'\), parse\(st\.gamble\) \|\| null, true\)/, 'serialized gamble state is decoded before the Watch renderer receives it');
 const helpersMatch = source.match(/  const WATCH_DELAY_MS = 3000,[\s\S]*?function watchOfflineMessage\(name, lastI, got, at\) \{[\s\S]*?\n  \}/);
 const watchMatch = source.match(/  async function watch\(key, name\) \{[\s\S]*?\r?\n  \}\r?\n  async function replay/);
 if (!helpersMatch || !watchMatch) throw new Error('Could not find delayed Watch helpers in src/wallet/watch.js');
 assert.match(source, /id="wwModeBadge"[^>]*><i><\/i><span id="wwModeLabel">DELAYED<\/span>/, 'the Watch screen starts with an accurate delayed-mode badge');
 const watchSource = watchMatch[0].replace(/\r?\n  async function replay$/, '');
+
+assert.ok(source.includes("'liveK'"), 'MIRROR includes liveK for nested wheel sync');
+assert.ok(source.includes("'photoZoom'"), 'MIRROR includes photoZoom for transition sync');
+assert.ok(source.includes("'photoDone'"), 'MIRROR includes photoDone for transition sync');
+assert.ok(source.includes("'snapA'"), 'MIRROR includes snapA for scene change sync');
 
 const helpers = new Function(`${helpersMatch[0]}; return { addWatchFrame, pruneWatchFrames, alignWatchBuffer, takeWatchFrame, watchOfflineMessage };`)();
 const buffer = [];

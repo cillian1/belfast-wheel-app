@@ -332,7 +332,6 @@ function drawChicken(g, x, y, s, dir, ph, peck, flash, kind) {
   if (kind) g.restore();
   g.beginPath(); g.moveTo(-.26, -.1); g.lineTo(-.44, -.36); g.lineTo(-.2, -.24); g.fill();
   g.fillStyle = wing; g.beginPath(); g.ellipse(-.04, -.04, .17, .1, -.2, 0, TAU); g.fill();
-  if (kind) { g.save(); g.scale(dir, 1); g.drawImage(specialMark(kind), -.18, -.22, .36, .36); g.restore(); }
   const hx = .24 + peck * .1, hy = -.3 + peck * .3;
   g.fillStyle = body; g.beginPath(); g.arc(hx, hy, .13, 0, TAU); g.fill();
   g.fillStyle = '#d62a20'; [[-.04, -.13], [.03, -.15], [.09, -.12]].forEach(([a, b]) => { g.beginPath(); g.arc(hx + a, hy + b, .05, 0, TAU); g.fill(); });
@@ -623,6 +622,9 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
     chickens.forEach(ch => { if (ch.alive) ch.peck = Math.max(0, Math.sin(el * 8 + ch.x) * .6); });
   });
   let alive = chickens.filter(ch => ch.alive);
+  if (alive.length === 1 && typeof W !== 'undefined' && W.awardAchievement) {
+    W.awardAchievement('last-chicken', '🏆 Last chicken standing', 'One bird. One meteor. Respect.');
+  }
   setVerdict({ eyebrow: 'Going deeper', title: alive.length ? 'Some made it' : 'None of them made it', body: alive.length ? 'They head for the farm.' : 'The fire got every one.', steps: steps.slice(), flash: false });
   if (!alive.length) {
     await wait(1500);

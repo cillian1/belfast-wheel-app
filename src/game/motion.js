@@ -34,7 +34,8 @@ addEventListener('pointerdown', () => { const now = performance.now(); pendingWa
 const sliceAt = (r, n) => Math.floor(mod(-r, TAU) / (TAU / n)) % n;
 function target(n) { const i = Math.floor(Math.random() * n); return { i, a: (i + .15 + Math.random() * .7) * TAU / n }; }
 
-let sweepOn = false, sweepA = 0, winGlow = null;
+var sweepOn = false, sweepA = 0;
+let winGlow = null;
 async function spinLayer(k, dur, dir) {
   liveK = k; sweepOn = true; winGlow = null;
   try { const i = await spinLayerRun(k, dur, dir); winGlow = { k, i, t0: performance.now() }; return i; } finally { liveK = -1; sweepOn = false; }
@@ -178,7 +179,7 @@ function drawGhost() {
   g.restore();
 }
 // the dive between wheels: a wind-up, a drum roll that speeds up, speed lines, a little overshoot and a crash
-let streak = 0;
+var streak = 0;
 async function dive(z) {
   const from = zoom; whoosh(true);
   await animate(450, t => { zoom = from * (1 - .05 * Math.sin(t * Math.PI)); draw(); });
@@ -197,8 +198,13 @@ async function zoomTo(z, dur) {
   await animate(dur, t => { zoom = from * Math.pow(z / from, easeInOut(t)); draw(); });
   zoom = z; draw();
 }
+async function zoomWheelTo(z, dur) {
+  const from = wheelZoom;
+  await animate(dur, t => { wheelZoom = from * Math.pow(z / from, easeInOut(t)); draw(); });
+  wheelZoom = z; draw();
+}
 // smooth scene change: the last frame melts away over the new scene, never through black
-let snap = null, snapA = 0, dots = [], godParts = [], boostA = Array(MAXD + 1).fill(0), boostNew = [];
+let snap = null; var snapA = 0; var dots = []; var godParts = []; var boostA = Array(MAXD + 1).fill(0); var boostNew = [];
 // More Wilds / More Bonus: icons pour into the wheels further in, which flash and come back with extra slices
 function boostedOrder(order, kind, extra, k) {
   const o = order.slice(), sp = x => ['WD', 'BN', 'GD', 'MW', 'MB', 'UP', 'UW', 'UB'].includes(x);
