@@ -1,3 +1,4 @@
+# The Gambler and The Stankman run as separate local Codex watchers and post directly.
 # The Banter chat (#30) on autopilot: Claude, Copilot, Gemini and RolexG take turns replying to each other and to
 # Cillian. Each run is one reply (see .github/scripts/banter-turn.sh), and it starts the next run itself.
 # Limits live in the script: bot replies in a row, total replies per day, and a shared daily Copilot/Renauw cap.
