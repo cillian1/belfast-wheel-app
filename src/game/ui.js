@@ -74,8 +74,19 @@ async function runMain() {
     await dive(1 / Math.pow(S, k));
     const idx = await spinLayer(k, 4300, k % 2 ? -1 : 1);
     const it = (deadTo[k] ? DEAD_LAYERS[deadTo[k]] : LAYERS)[k][idx];
+    if (k === 0) {
+      if (!it.deep) {
+        const r = it.go();
+        setVerdict({ eyebrow: 'Final answer', title: r.t, body: r.b, q: quote(), steps: steps.slice() });
+        speak(['Final answer', r.t, r.b]);
+        logMove(steps.length ? steps.map(s => s.text.replace(/^And /, '')).join(' · ') + ' · ' + r.t : r.t);
+        return;
+      }
+      steps.push({ text: 'Back to the start' });
+      continue;
+    }
     const wildLive = wMiss < 2, bonusLive = bMiss < 2;
-    if (it.up) { // back out one wheel and spin that one again; everything collected stays
+    if (it.up) { // back out one or two wheels and spin that one again; everything collected stays
       if (it.wild || it.bonus) { // the hybrid ones pay out first
         if (it.wild) wilds++; else bonus++;
         buzz([20, 30, 20, 30, 80]); Music.sting(Math.max(wilds, bonus)); Music.setLevel(Math.max(wilds, bonus));
@@ -87,13 +98,21 @@ async function runMain() {
           body = (it.wild ? 'Gold Cleopatra = WILD. ' : 'Purple ankh = BONUS. ') + 'Collect 3 of a kind.';
           store.set('wildHint', true);
         }
-        setVerdict({ eyebrow: 'Going deeper', title: it.wild ? 'Wild, go back up' : it.bonus ? 'Bonus, go back up' : 'Go back up', body, steps: steps.slice(), flash: true });
+        const dist = it.up === 2 ? 2 : 1, targetK = Math.max(0, k - dist);
+        setVerdict({ eyebrow: 'Going deeper', title: it.up === 2 ? 'Go two levels up' : it.wild ? 'Wild, go back up' : it.bonus ? 'Bonus, go back up' : 'Go back up', body, steps: steps.slice(), flash: true });
         playSfx('back');
         Music.sting(1); buzz([30, 30, 30]); await wait(500);
-        await dive(1 / Math.pow(S, k - 1));
-        k -= 2; continue;
+        await dive(1 / Math.pow(S, targetK));
+        k = targetK - 1; continue;
       }
       continue;
+    }
+    if (it.deep === 2) { // jump two wheels deeper
+      const targetK = Math.min(DEPTH, k + 2);
+      setVerdict({ eyebrow: 'Going deeper', title: 'Go two levels deeper', body: '', steps: steps.slice(), flash: true });
+      Music.sting(1); buzz([30, 30, 30]); await wait(500);
+      await dive(1 / Math.pow(S, targetK));
+      k = targetK - 1; continue;
     }
     if (it.even) { // Go even deeper: a fifth wheel rises out of the dice well, and the well sinks into its centre (not a direction, so not a step)
       if (DEPTH < MAXD) {

@@ -476,20 +476,20 @@ const Perf = (() => {
 // Owns wheel content, run text, and move selection data.
 const MAIN = [
   { lbl: ['FORWARD', '? M'], go: () => ({ t: `Forward ${metres()} metres`, b: "Straight ahead, whatever way you’re facing. A big stride is about a metre." }) },
-  { lbl: ['GO', 'DEEPER'], deep: true },
+  { lbl: ['GO', 'DEEPER'], deep: true, go: () => 'go deeper' },
   { lbl: ['NEXT', 'LEFT'], go: () => ({ t: 'Take the next left', b: 'The very next left you reach. Street, alley, arcade, doorway. Whatever comes first.' }) },
-  { lbl: ['SHOW ME', 'JUST FOR FUN'], show: true },
-  { lbl: ['GO', 'DEEPER'], deep: true },
+  { lbl: ['SHOW ME', 'JUST FOR FUN'], show: true, go: () => 'show me' },
+  { lbl: ['GO', 'DEEPER'], deep: true, go: () => 'go deeper' },
   { lbl: ['RIGHT', '? M'], go: () => ({ t: `Right ${metres()} metres`, b: 'Turn to your right and walk it. If something is in the way, go round it and keep counting.' }) },
-  { lbl: ['GO', 'DEEPER'], deep: true },
+  { lbl: ['GO', 'DEEPER'], deep: true, go: () => 'go deeper' },
   { lbl: ['INTO THAT', 'BUILDING'], go: () => ({ t: 'Go into that building', b: 'The nearest building with an open door. Everyone goes in, and you stay at least five minutes.' }) },
-  { lbl: ['GO', 'DEEPER'], deep: true },
+  { lbl: ['GO', 'DEEPER'], deep: true, go: () => 'go deeper' },
   { lbl: ['BACK', '? M'], go: () => ({ t: `Back ${metres()} metres`, b: 'Turn round and walk back the way you came.' }) },
-  { lbl: ['GO', 'DEEPER'], deep: true },
-  { lbl: ['SHOW ME', 'JUST FOR FUN'], show: true },
-  { lbl: ['GO', 'DEEPER'], deep: true },
+  { lbl: ['GO', 'DEEPER'], deep: true, go: () => 'go deeper' },
+  { lbl: ['SHOW ME', 'JUST FOR FUN'], show: true, go: () => 'show me' },
+  { lbl: ['GO', 'DEEPER'], deep: true, go: () => 'go deeper' },
   { lbl: ['ASK A', 'LOCAL'], go: () => ({ t: 'Ask a local', b: 'Stop the next local and ask where they would go right now. That is where you are going.' }) },
-  { lbl: ['GO', 'DEEPER'], deep: true },
+  { lbl: ['GO', 'DEEPER'], deep: true, go: () => 'go deeper' },
   { lbl: ['NEXT', 'RIGHT'], go: () => ({ t: 'Take the next right', b: 'The very next right you reach. No skipping one because it looks boring.' }) },
 ];
 
@@ -512,6 +512,8 @@ const MOVE_DEFS = {
   MW: { lbl: ['MORE', 'WILDS'], boost: 'W', go: () => 'More Wilds: no move from this wheel' },
   MB: { lbl: ['MORE', 'BONUS'], boost: 'B', go: () => 'More Bonus: no move from this wheel' },
   ED: { lbl: ['EVEN', 'DEEPER'], deep: true, even: true, go: () => 'Go even deeper' },
+  D2: { lbl: [], deep: 2, go: () => 'go two levels deeper' },
+  U2: { lbl: [], up: 2, go: () => 'go back up two levels' },
 };
 // Wilds (gold, Cleopatra) and Bonus slices (purple, ankh). Wild on all three inner wheels is
 // the ultra bonus; Bonus on all three is the bonus round. Four inner wheels, and you need three of a kind:
@@ -520,12 +522,12 @@ const MOVE_DEFS = {
 // it sends you to whichever room you hold two of, else the kind you have more of, else a coin flip. Every Wild and Bonus has a
 // normal slice on both sides, wrap-around included. Miss either kind and that kind goes grey on every wheel further in.
 const LAYER_ORDERS = [
-  ['BN', 'B', 'MW', 'F', 'C', 'WD', 'NL', 'X', 'BN', 'NR', 'F', 'WD', 'C', 'R', 'BN', 'X', 'L', 'WD', 'F', 'B', 'BN', 'R', 'NL', 'MB', 'L', 'BN', 'L', 'NR', 'WD', 'B', 'C', 'BN', 'NL', 'X', 'WD', 'NR', 'F', 'BN', 'C', 'R', 'WD', 'X', 'BN', 'NR'],
-  ['BN', 'NL', 'X', 'WD', 'NR', 'MW', 'F', 'BN', 'C', 'R', 'WD', 'X', 'UP', 'BN', 'F', 'B', 'WD', 'R', 'MB', 'NL', 'BN', 'L'],
-  ['BN', 'NR', 'F', 'WD', 'C', 'R', 'BN', 'UP', 'L', 'WD', 'F', 'B', 'BN', 'R', 'X', 'C', 'NL', 'WD', 'L', 'UP', 'BN', 'B'],
-  ['BN', 'C', 'ED', 'R', 'WD', 'X', 'UP', 'BN', 'F', 'B', 'WD', 'R', 'UP', 'BN', 'L', 'GD', 'F', 'NR', 'WD', 'B', 'UP', 'BN', 'NL'],
+  ['BN', 'B', 'MW', 'F', 'C', 'WD', 'U2', 'X', 'BN', 'NR', 'F', 'WD', 'C', 'R', 'BN', 'X', 'L', 'WD', 'F', 'B', 'BN', 'R', 'NL', 'MB', 'L', 'BN', 'L', 'NR', 'WD', 'B', 'C', 'BN', 'NL', 'X', 'WD', 'NR', 'F', 'BN', 'C', 'R', 'WD', 'X', 'BN', 'NR'],
+  ['BN', 'NL', 'X', 'WD', 'NR', 'MW', 'F', 'BN', 'C', 'R', 'WD', 'X', 'U2', 'BN', 'F', 'B', 'WD', 'R', 'MB', 'NL', 'BN', 'L'],
+  ['BN', 'NR', 'F', 'WD', 'C', 'R', 'BN', 'UP', 'L', 'WD', 'F', 'B', 'BN', 'R', 'X', 'D2', 'NL', 'WD', 'L', 'U2', 'BN', 'B'],
+  ['BN', 'C', 'ED', 'R', 'WD', 'X', 'UP', 'BN', 'F', 'B', 'WD', 'R', 'UP', 'BN', 'L', 'GD', 'F', 'NR', 'WD', 'B', 'U2', 'BN', 'NL'],
   // the hidden fifth wheel, only reached through Go even deeper on the last wheel: more Wilds and ankhs than any other wheel
-  ['BN', 'C', 'WD', 'R', 'BN', 'X', 'WD', 'F', 'BN', 'B', 'GD', 'NL', 'WD', 'L', 'BN', 'NR', 'WD', 'F', 'BN', 'X', 'WD', 'R', 'BN', 'C', 'WD', 'L', 'BN', 'B'],
+  ['BN', 'C', 'WD', 'R', 'BN', 'X', 'WD', 'F', 'BN', 'B', 'GD', 'U2', 'WD', 'L', 'BN', 'NR', 'WD', 'F', 'BN', 'X', 'WD', 'R', 'BN', 'C', 'WD', 'L', 'BN', 'B'],
 ];
 const REPLACE = ['F', 'L', 'R', 'B', 'NL', 'NR', 'X', 'C'];
 // dead variants: 'W' = Wilds greyed, 'B' = Bonus greyed, 'WB' = both
@@ -982,7 +984,7 @@ function buildSweep() {
   return k;
 }
 // Go back up: three chevrons pointing out toward the wheel above
-function upChevrons(g, am, a, ph = -1, rs = [R * .66, R * .75, R * .84]) {
+function upChevrons(g, am, a, ph = -1, rs = [R * .66, R * .75, R * .84], double = false) {
   const tx = -Math.sin(am), ty = Math.cos(am), w = R * .045;
   g.save(); g.lineCap = 'round'; g.lineJoin = 'round';
   rs.forEach((r, j) => {
@@ -990,6 +992,26 @@ function upChevrons(g, am, a, ph = -1, rs = [R * .66, R * .75, R * .84]) {
     const tip = r + R * .03, bx = c + Math.cos(am) * r, by = c + Math.sin(am) * r;
     g.strokeStyle = `rgba(150,255,225,${al})`; g.shadowColor = 'rgba(80,255,200,.9)'; g.shadowBlur = ph < 0 ? 0 : R * .04; g.lineWidth = R * .016;
     g.beginPath(); g.moveTo(bx + tx * w, by + ty * w); g.lineTo(c + Math.cos(am) * tip, c + Math.sin(am) * tip); g.lineTo(bx - tx * w, by - ty * w); g.stroke();
+    if (double) {
+      const r2 = r - R * .02, tip2 = tip - R * .02, bx2 = c + Math.cos(am) * r2, by2 = c + Math.sin(am) * r2;
+      g.beginPath(); g.moveTo(bx2 + tx * w, by2 + ty * w); g.lineTo(c + Math.cos(am) * tip2, c + Math.sin(am) * tip2); g.lineTo(bx2 - tx * w, by2 - ty * w); g.stroke();
+    }
+  });
+  g.restore();
+}
+// Go deeper: three chevrons pointing in toward the centre
+function downChevrons(g, am, a, ph = -1, rs = [R * .84, R * .75, R * .66], double = false) {
+  const tx = -Math.sin(am), ty = Math.cos(am), w = R * .045;
+  g.save(); g.lineCap = 'round'; g.lineJoin = 'round';
+  rs.forEach((r, j) => {
+    const al = ph < 0 ? a : a * (.25 + .75 * Math.max(0, Math.sin(ph - j * 1.1)));
+    const tip = r - R * .03, bx = c + Math.cos(am) * r, by = c + Math.sin(am) * r;
+    g.strokeStyle = `rgba(170,190,255,${al})`; g.shadowColor = 'rgba(100,150,255,.9)'; g.shadowBlur = ph < 0 ? 0 : R * .04; g.lineWidth = R * .016;
+    g.beginPath(); g.moveTo(bx + tx * w, by + ty * w); g.lineTo(c + Math.cos(am) * tip, c + Math.sin(am) * tip); g.lineTo(bx - tx * w, by - ty * w); g.stroke();
+    if (double) {
+      const r2 = r + R * .02, tip2 = tip + R * .02, bx2 = c + Math.cos(am) * r2, by2 = c + Math.sin(am) * r2;
+      g.beginPath(); g.moveTo(bx2 + tx * w, by2 + ty * w); g.lineTo(c + Math.cos(am) * tip2, c + Math.sin(am) * tip2); g.lineTo(bx2 - tx * w, by2 - ty * w); g.stroke();
+    }
   });
   g.restore();
 }
@@ -1048,7 +1070,8 @@ function buildRing(items, pal) {
       wedgeText(g, am, R * .88, label, fsFor(label, R * .88) * .8, R * .1, s.wild ? 'light' : 'dark');
       return;
     }
-    if (s.up) { upChevrons(g, BASE + (i + .5) * seg, .55); return; }
+    if (s.up) { upChevrons(g, BASE + (i + .5) * seg, .55, -1, undefined, s.up === 2); return; }
+    if (s.deep === 2) { downChevrons(g, BASE + (i + .5) * seg, .55, -1, undefined, true); return; }
     if (s.god) {
       const am = BASE + (i + .5) * seg;
       eyeOfHorus(g, c + Math.cos(am) * R * .68, c + Math.sin(am) * R * .68, am, R * .15 * icon);
@@ -1443,10 +1466,14 @@ function drawLayer(g, k, sc) {
   if (boostA[k] > 0 && faces['boost' + k]) { ctx.globalAlpha = boostA[k]; drawScaled(faces['boost' + k], rot[k], sc); ctx.globalAlpha = 1; }
   if (k && deadFrom[k]) drawScaled(deadFace(deadFrom[k], k), rot[k], sc);
   if (k && deadA[k] > 0 && deadTo[k]) { ctx.globalAlpha = deadA[k]; drawScaled(deadFace(deadTo[k], k), rot[k], sc); ctx.globalAlpha = 1; }
-  if (k > 0 && LAYERS[k].some(it => it.up)) { // the chevrons flash in a wave, outward
+  if (k > 0 && LAYERS[k].some(it => it.up || it.deep === 2)) { // the chevrons flash in a wave
     const ph = performance.now() / 180, n = LAYERS[k].length;
     ctx.save(); ctx.translate(c, c); ctx.scale(sc, sc); ctx.rotate(rot[k]); ctx.translate(-c, -c); ctx.globalCompositeOperation = 'lighter';
-    LAYERS[k].forEach((it, i) => { if (it.up) upChevrons(ctx, BASE + (i + .5) * TAU / n, 1, ph, it.wild || it.bonus ? [R * .6, R * .67] : undefined); });
+    LAYERS[k].forEach((it, i) => {
+      const am = BASE + (i + .5) * TAU / n;
+      if (it.up) upChevrons(ctx, am, 1, ph, it.wild || it.bonus ? [R * .6, R * .67] : undefined, it.up === 2);
+      if (it.deep === 2) downChevrons(ctx, am, 1, ph, undefined, true);
+    });
     ctx.restore();
   }
   if (k === 0 && sc < 1.6) drawDeepGlow(sc);
@@ -2455,8 +2482,19 @@ async function runMain() {
     await dive(1 / Math.pow(S, k));
     const idx = await spinLayer(k, 4300, k % 2 ? -1 : 1);
     const it = (deadTo[k] ? DEAD_LAYERS[deadTo[k]] : LAYERS)[k][idx];
+    if (k === 0) {
+      if (!it.deep) {
+        const r = it.go();
+        setVerdict({ eyebrow: 'Final answer', title: r.t, body: r.b, q: quote(), steps: steps.slice() });
+        speak(['Final answer', r.t, r.b]);
+        logMove(steps.length ? steps.map(s => s.text.replace(/^And /, '')).join(' · ') + ' · ' + r.t : r.t);
+        return;
+      }
+      steps.push({ text: 'Back to the start' });
+      continue;
+    }
     const wildLive = wMiss < 2, bonusLive = bMiss < 2;
-    if (it.up) { // back out one wheel and spin that one again; everything collected stays
+    if (it.up) { // back out one or two wheels and spin that one again; everything collected stays
       if (it.wild || it.bonus) { // the hybrid ones pay out first
         if (it.wild) wilds++; else bonus++;
         buzz([20, 30, 20, 30, 80]); Music.sting(Math.max(wilds, bonus)); Music.setLevel(Math.max(wilds, bonus));
@@ -2468,13 +2506,21 @@ async function runMain() {
           body = (it.wild ? 'Gold Cleopatra = WILD. ' : 'Purple ankh = BONUS. ') + 'Collect 3 of a kind.';
           store.set('wildHint', true);
         }
-        setVerdict({ eyebrow: 'Going deeper', title: it.wild ? 'Wild, go back up' : it.bonus ? 'Bonus, go back up' : 'Go back up', body, steps: steps.slice(), flash: true });
+        const dist = it.up === 2 ? 2 : 1, targetK = Math.max(0, k - dist);
+        setVerdict({ eyebrow: 'Going deeper', title: it.up === 2 ? 'Go two levels up' : it.wild ? 'Wild, go back up' : it.bonus ? 'Bonus, go back up' : 'Go back up', body, steps: steps.slice(), flash: true });
         playSfx('back');
         Music.sting(1); buzz([30, 30, 30]); await wait(500);
-        await dive(1 / Math.pow(S, k - 1));
-        k -= 2; continue;
+        await dive(1 / Math.pow(S, targetK));
+        k = targetK - 1; continue;
       }
       continue;
+    }
+    if (it.deep === 2) { // jump two wheels deeper
+      const targetK = Math.min(DEPTH, k + 2);
+      setVerdict({ eyebrow: 'Going deeper', title: 'Go two levels deeper', body: '', steps: steps.slice(), flash: true });
+      Music.sting(1); buzz([30, 30, 30]); await wait(500);
+      await dive(1 / Math.pow(S, targetK));
+      k = targetK - 1; continue;
     }
     if (it.even) { // Go even deeper: a fifth wheel rises out of the dice well, and the well sinks into its centre (not a direction, so not a step)
       if (DEPTH < MAXD) {
@@ -6261,7 +6307,7 @@ header>span{flex-wrap:wrap}
     'rotP', 'hi', 'hiA', 'domeBulge', 'pAng', 'ghost', 'ghostSay', 'dots', 'boostA', 'boostNew', 'wellBalls', 'introT', 'camT', 'hallZ', 'doorT', 'flash', 'rotS',
     'bingo', 'ballSpeed', 'ballPhase', 'pickIdx', 'handT', 'liftT', 'handClosed', 'prize', 'roul', 'vault', 'coaster', 'planet', 'mon', 'rotC', 'zena', 'god', 'pyr',
     'pipes', 'carried', 'd6', 'd6Sum', 'chickens', 'arrows', 'fires', 'feathers', 'camX', 'markItems', 'rotM', 'formT', 'showMark', 'chainNote', 'raceLine',
-    'rot', 'deadA', 'deadTo', 'deadFrom', 'markSpinning', 'markWin'];
+    'rot', 'deadA', 'deadTo', 'deadFrom', 'markSpinning', 'markWin', 'liveK'];
   const SLOW = ['N', 'c', 'R', 'D', 'FINAL', 'B', 'ord', 'boostNew', 'markItems'];
   const ANGLES = ['rotF', 'rotP', 'rotS', 'rotC', 'rotM', 'pAng'];
   const ROOMS = { stank: 'the Stank Chamber', roul: 'the Stank Chamber', vault: 'the golden locksafe', pyramid: "Phelan's Pyramid", god: 'the God room', zena: 'the God room', coaster: 'the Monster bonus', planet: 'the Monster bonus', monster: 'the Monster tank', pipes: "Mark's farm", farm: "Mark's farm" };
