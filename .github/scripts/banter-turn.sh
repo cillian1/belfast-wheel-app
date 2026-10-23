@@ -43,8 +43,9 @@ if { [ -n "${COPILOT_GITHUB_TOKEN:-}" ] || [ "${COPILOT_SEAT:-}" = on ]; } && [ 
   seats+=(Copilot)
 fi
 # Read the full help output: with pipefail, grep -q can close the pipe early and hide this seat.
-if [ -n "${COPILOT_GITHUB_TOKEN:-}" ] && copilot --help 2>&1 | grep -F -- '--agent' >/dev/null; then
-  [ "$copilot_day" -lt "$MAX_COPILOT_DAY" ] && seats+=(Renauw)
+# The CLI help is not a reliable feature probe; invoke the agent and use the existing fallback on failure.
+if [ -n "${COPILOT_GITHUB_TOKEN:-}" ] && [ "$copilot_day" -lt "$MAX_COPILOT_DAY" ]; then
+  seats+=(Renauw)
 fi
 [ -n "${GCP_TOKEN:-}${GEMINI_API_KEY:-}" ] && seats+=(Gemini) # RolexG chats on the same Gemini sign-in, but only
 # at most MAX_ROLEXG_DAY times a day (chat posts only).
