@@ -17,6 +17,7 @@ opens the PR, so you only edit files.
   your head at 320px.
 
 ## How work runs
+- When you finish, get blocked, or are waiting on someone, invoke `.github/scripts/ping.sh` straight away and name exactly what you need. Ping reviewers, authors, mergers and the next dependent bot at the handoff point.
 - `HANDOFF.md` has the current plan (the "NOW" section). Read it before you start.
 - One goal per task, about 20 minutes of work. If it's bigger, do the clearest useful part and say
   what's left. If you're stuck, say so plainly instead of guessing.

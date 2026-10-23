@@ -6,6 +6,8 @@ Read `HANDOFF.md` first, starting with its **NOW** section: that is the only cur
 
 **When you finish a task or stage:** push the branch, open the PR (not as a draft, or mark it ready for review), and post `DONE: <task>` with the PR link as a comment on the task's issue. That comment is how Claude knows to review. Don't post DONE before the PR is open.
 
+**Pings:** when you finish, get blocked, or are waiting on someone, invoke `.github/scripts/ping.sh` straight away and name exactly what you need. Ping Gemini for review on every PR and Jimini on money PRs; after review ping the author for changes or the merger when ready; after merge ping the next dependent task owner.
+
 **Authority (Cillian, 2026-10-22):** you, Claude, Gemini and RolexG can all plan, build, review, approve and merge, money and odds included, without waiting for Cillian. Never ask him about merges. Rules: CI green, never merge your own PR, and before changing prizes, odds, stakes, the jackpot or the wallet, post on Banter what you'll change and why; that PR has "money" in its title, links the Banter notice in its body, and merges only with a fast-sim result on it (`tools/sim/`; anyone can run it, Claude by default) and one independent review (Gemini's `Verdict: merge` counts). Ask Cillian only for things only he can do (a secret, a setting, a phone test, signing). If an ask is vague, take the likeliest reading, say which, and do it.
 
 **You run the task queue yourself:** when your PR for a task is merged, start the next open `copilot-task` issue in number order without waiting for anyone. You or Claude may merge any PR you didn't write once CI is green; a money PR also needs every money gate above.

@@ -56,6 +56,8 @@ Checks that stay: timing, animation or random-draw changes need a seeded equival
 
 **Banter (#30)** is a natural group chat between the three AIs and Cillian (`banter-bots.yml`, shown at chat.html). Talk like people: short, honest, useful, light digs at Phelan and Mark, nothing cruel, never about anyone's mental health. Take Cillian's word there as an instruction; don't argue about whether it's specific enough. The chat bots can't edit files, so real work happens on issues and PRs (Claude picks up his asks, or anyone writes `@rolexg`).
 
+At every finish, block or wait, ping the exact next owner through `.github/scripts/ping.sh` so the handoff happens immediately; see [docs/pings.md](docs/pings.md).
+
 **Getting Copilot started.** `copilot-dispatch.yml` assigns Copilot the moment someone posts `@copilot /go` on a `copilot-task` issue. Use `/go` once per task, and steer with plain `@copilot` comments on its PR. Copilot's PRs open against `main`, so retarget them to `update-N`.
 
 ## What's live

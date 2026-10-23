@@ -67,7 +67,7 @@ jobs:
             select(.filename != "game/index.html" and (.filename | endswith(".apk") | not)) |
             "--- " + .filename + " (" + .status + ")\n" + (.patch // "(no text diff)") + "\n"' | head -c 80000 > diff.txt
           [ -s diff.txt ] || { echo "No source changes to review."; exit 0; }
-          system="You are Gemini, reviewing a pull request for the Belfast Wheel, a spinning wheel web game for a group of friends. Source lives in src/ and is bundled into game/index.html. Real money moves through it, so if the diff changes prizes, odds, stakes, the jackpot or the wallet's credit or charge code (src/wallet/money.js), say so in one bullet, and check the PR has 'money' in its title, a link to its Banter notice in the body, and a fast-sim odds result (payback before and after) in the body; if any is missing the verdict is 'changes needed'. Review the diff for real bugs and broken behaviour on phones 320-440px wide. Only comment on what is in the diff; don't invent files or behaviour. Your review decides whether the PR gets merged. Reply in Markdown. The first line is exactly 'Verdict: merge' if it is safe to merge as it is, or 'Verdict: changes needed' if anything should be fixed first. Then at most 5 bullets, each naming the file and what's wrong and why. If it looks fine, the verdict line plus one short line is enough. No praise, no filler."
+          system="You are Gemini, reviewing a pull request for the Belfast Wheel, a spinning wheel web game for a group of friends. Source lives in src/ and is bundled into game/index.html. Real money moves through it, so if the diff changes prizes, odds, stakes, the jackpot or the wallet's credit or charge code (src/wallet/money.js), say so in one bullet, and check the PR has 'money' in its title, a link to its Banter notice in the body, and a fast-sim odds result (payback before and after) in the body; if any is missing the verdict is 'changes needed'. Review the diff for real bugs and broken behaviour on phones 320-440px wide. Only comment on what is in the diff; don't invent files or behaviour. Your review decides whether the PR gets merged. Reply in Markdown. The first line is exactly 'Verdict: merge' if it is safe to merge as it is, or 'Verdict: changes needed' if anything should be fixed first. Then at most 5 bullets, each naming the file and what's wrong and why. If it looks fine, the verdict line plus one short line is enough. No praise, no filler. When you finish, get blocked, or are waiting on someone, invoke .github/scripts/ping.sh straight away and name exactly what you need. After review, ping the author for changes or the merger when ready to merge."
           prompt="$(cat pr.txt)
 
           Diff:
@@ -82,6 +82,13 @@ jobs:
           gh api "repos/$REPO/issues/$PR/comments" -f body="Gemini review:
 
           $review" > /dev/null
+          if grep -q '^Verdict: changes needed' <<<"$review"; then
+            author=$(gh api "repos/$REPO/pulls/$PR" --jq .user.login)
+            case "$author" in cillian1) target=cillian;; copilot|github-actions\[bot\]) target=copilot;; claude) target=claude;; *) target=claude;; esac
+            PING_FROM=gemini GH_TOKEN="$GH_TOKEN" REPO="$REPO" bash .github/scripts/ping.sh "$target" "$PR" "Please address the requested review changes on PR #$PR." || true
+          else
+            PING_FROM=gemini GH_TOKEN="$GH_TOKEN" REPO="$REPO" bash .github/scripts/ping.sh claude "$PR" "Review is complete; please merge PR #$PR if CI is green." || true
+          fi
       - name: Merge if the verdict is merge and CI is green
         env:
           GH_TOKEN: ${{ github.token }}
