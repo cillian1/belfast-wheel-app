@@ -27,7 +27,7 @@
     'rotP', 'hi', 'hiA', 'domeBulge', 'pAng', 'ghost', 'ghostSay', 'dots', 'boostA', 'boostNew', 'wellBalls', 'introT', 'camT', 'hallZ', 'doorT', 'flash', 'rotS',
     'bingo', 'ballSpeed', 'ballPhase', 'pickIdx', 'handT', 'liftT', 'handClosed', 'prize', 'roul', 'vault', 'coaster', 'planet', 'mon', 'rotC', 'zena', 'god', 'pyr',
     'pipes', 'carried', 'd6', 'd6Sum', 'chickens', 'arrows', 'fires', 'feathers', 'camX', 'markItems', 'rotM', 'formT', 'showMark', 'chainNote', 'raceLine',
-    'rot', 'deadA', 'deadTo', 'deadFrom', 'markSpinning', 'markWin', 'liveK'];
+    'rot', 'deadA', 'deadTo', 'deadFrom', 'markSpinning', 'markWin', 'liveK', 'photoZoom', 'photoDone', 'snapA', 'streak', 'sweepOn', 'sweepA'];
   const SLOW = ['N', 'c', 'R', 'D', 'FINAL', 'B', 'ord', 'boostNew', 'markItems'];
   const ANGLES = ['rotF', 'rotP', 'rotS', 'rotC', 'rotM', 'pAng'];
   const ROOMS = { stank: 'the Stank Chamber', roul: 'the Stank Chamber', vault: 'the golden locksafe', pyramid: "Phelan's Pyramid", god: 'the God room', zena: 'the God room', coaster: 'the Monster bonus', planet: 'the Monster bonus', monster: 'the Monster tank', pipes: "Mark's farm", farm: "Mark's farm" };
@@ -270,6 +270,7 @@
   // the watcher's own game sits idle underneath; it borrows its canvas to draw the other phone's state, then reloads
   const lerpAng = (a, b, t) => { const d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + d * t; };
   function mirApply(st, prev, t) {
+    const oldN = typeof N !== 'undefined' ? N : 0, oldD = typeof D !== 'undefined' ? D : 0;
     if (st.N && st.N !== N) { N = st.N; cv.width = cv.height = N; c = N / 2; R = N / 2 * .935 * .82; }
     for (const n in st) {
       if (!mirGet[n]) continue;
@@ -278,11 +279,16 @@
         if (ANGLES.includes(n) && typeof prev[n] === 'number') v = lerpAng(prev[n], v, t);
         else if (n === 'rot' && Array.isArray(prev.rot) && Array.isArray(v)) v = v.map((a, k) => typeof prev.rot[k] === 'number' ? lerpAng(prev.rot[k], a, t) : a);
         else if (n === 'zoom' && typeof prev.zoom === 'number' && prev.zoom > 0 && v > 0) v = prev.zoom * Math.pow(v / prev.zoom, t);
+        else if (n === 'photoZoom' && typeof prev.photoZoom === 'number') v = prev.photoZoom + (v - prev.photoZoom) * t;
         else if (n === 'camX' && typeof prev.camX === 'number') v = prev.camX + (v - prev.camX) * t;
       }
       const cur = mirGet[n]();
       if (Array.isArray(cur) && Array.isArray(v) && (!mirSet[n] || n === 'rot' || n === 'deadA' || n === 'deadTo' || n === 'deadFrom')) { v.forEach((x, k) => cur[k] = x); continue; }
       try { mirSet[n](v); } catch (e) {}
+    }
+    if ((typeof N !== 'undefined' && N !== oldN) || (typeof D !== 'undefined' && D !== oldD)) {
+      if (typeof syncCanvasQuality !== 'undefined') syncCanvasQuality(false);
+      else if (st.N) { cv.width = cv.height = st.N; }
     }
   }
   // the faces each room needs are built on the watcher's phone the first time it shows that room

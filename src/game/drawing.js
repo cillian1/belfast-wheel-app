@@ -107,7 +107,8 @@ document.addEventListener('visibilitychange', () => {
   else if (!document.hidden && !idleRaf) idleRaf = requestAnimationFrame(idle);
 });
 if (!document.hidden) idleRaf = requestAnimationFrame(idle);
-let liveK = -1, navCache = null, evenA = 1;
+var liveK = -1;
+let navCache = null, evenA = 1;
 function navCacheMatches(cache) {
   if (!cache || cache.N !== N || cache.DEPTH !== DEPTH || cache.zoom !== zoom || cache.liveK !== liveK) return false;
   if (cache.rotations.length !== rot.length) return false;
@@ -212,7 +213,7 @@ function drawNested() {
   }
   drawPointer(faces.pointer, 1);
 }
-let photoZoom = 0, photoDone = false;
+var photoZoom = 0, photoDone = false;
 function drawPhoto() {
   ctx.save();
   if (photoZoom > 0 && hi !== null) {
