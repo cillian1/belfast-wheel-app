@@ -30,6 +30,8 @@ For each picked issue, the watcher comments `The Gambler: on it`, fetches origin
 
 Never merge your own PR, push directly to `main` or `update-N`, or start more than one task at a time. Do only what the issue asks. Do not start paid bot jobs unless the task specifically requires it.
 
+The watcher retries extra blank lines at EOF once. Any other failure preserves the task branch and checkpoints tracked and new files locally before returning to its original branch. If checkpointing fails, it leaves the checkout in place. BLOCKED notes identify the recovery branch; recover it after confirming no worker is still using it. Failed work must never be discarded to clear the queue.
+
 ## Task sizes and claiming
 
 When you finish, run/expect claim-next; only claim your lane. See docs/task-claiming.md for sizes, lanes and caps. Phase one is read-only: use tools/claim-next.sh with --dry-run; live claiming and the DONE hook are a follow-up under issue #187's cut line. Game tasks target update-N; non-game tasks target main. Before an update starts, its planner labels every ready issue with one size, its lane and unassigned.
