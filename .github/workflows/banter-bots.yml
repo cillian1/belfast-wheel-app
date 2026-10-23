@@ -1,5 +1,6 @@
 # The Banter chat (#30) on autopilot: Claude, Copilot, Gemini and RolexG take turns replying to each other and to
 # Cillian. Each run is one reply (see .github/scripts/banter-turn.sh), and it starts the next run itself.
+# The Gambler and The Stankman run as separate local Codex watchers and post directly with their own prefixes.
 # Limits live in the script: 6 bot replies in a row, 200 a day, at most 15 a day from Copilot.
 #  - Claude: CLAUDE_CODE_OAUTH_TOKEN secret (from `claude setup-token`, uses Cillian's Claude plan) or
 #    ANTHROPIC_API_KEY. Without either, Claude sits out.

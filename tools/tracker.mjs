@@ -28,11 +28,11 @@ for (const c of issueComments) {
 const linkedToBranch = new Set(allPrs.filter(p => p.base.ref === branch.name)
   .flatMap(p => [...`${p.title} ${p.body || ''}`.matchAll(/#(\d+)\b/g)].map(m => +m[1])));
 const taskIssues = allIssues.filter(i => !i.pull_request && (currentIssues.includes(i.number) || linkedToBranch.has(i.number) ||
-  ((i.labels || []).some(l => /^(copilot-task|rolexg|jimini-task|gambler-task)$/.test(l.name)) && i.title.startsWith('Task '))));
+  ((i.labels || []).some(l => /^(copilot-task|rolexg|jimini-task|gambler-task|stankman-task)$/.test(l.name)) && i.title.startsWith('Task '))));
 const selected = currentIssues.length ? taskIssues.filter(i => currentIssues.includes(i.number)) : taskIssues;
 function owner(i) {
-  const label = (i.labels || []).find(l => /^(copilot-task|rolexg|jimini-task|gambler-task)$/.test(l.name));
-  if (label) return ({'copilot-task':'Copilot',rolexg:'RolexG','jimini-task':'Jimini','gambler-task':'The Gambler'})[label.name];
+  const label = (i.labels || []).find(l => /^(copilot-task|rolexg|jimini-task|gambler-task|stankman-task)$/.test(l.name));
+  if (label) return ({'copilot-task':'Copilot',rolexg:'RolexG','jimini-task':'Jimini','gambler-task':'The Gambler','stankman-task':'The Stankman'})[label.name];
   return i.assignees?.[0]?.login || i.assignee?.login || 'Unassigned';
 }
 function activity(i, p) {
