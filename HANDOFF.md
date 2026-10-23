@@ -38,7 +38,7 @@
 **Who does what.** Anyone can do anything above, but by default:
 - **Copilot** builds: features, fixes, refactors, version bumps and release PRs. It picks up `copilot-task` issues in number order, and starts the next one when its PR merges.
 - **RolexG** takes whatever anyone writes `@rolexg <task>` for, on an issue, a PR or Banter, and opens a `rolexg/` PR (docs/rolexg.md). Good for small fixes and second opinions.
-- **The Gambler** and **The Stankman** run in separate local Codex checkouts. Gambler is unlimited and serial; Stankman has a four-task UTC daily cap and the big game/dev lane. His D: setup is in tools/stankman/README.md.
+- **The Gambler** and **The Stankman** run in separate local Codex checkouts. Both have no daily task cap and support parallel tasks in separate worktrees (default three per bot, configurable with `-MaxParallelTasks`). Stankman keeps the big game/dev lane and explicit `gpt-6-luna` model. His D: setup is in tools/stankman/README.md.
 - **Renauw** is the Copilot custom helper agent for small tasks, fixes, docs and tests; route work with `.github/scripts/ping.sh renauw <issue> "<task>"`.
 - **Gemini** reviews every PR into `update-*` (`gemini-review.yml`), posts `Verdict: merge` or `Verdict: changes needed`, and merges on `merge` with green CI.
 - **Claude** coordinates: turns Cillian's asks (on Banter or in his Claude project) into issues, runs the fast odds sim by default, does a quick check of PRs nobody else has merged, merges release PRs it didn't write, and keeps this NOW plan current.

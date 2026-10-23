@@ -1,3 +1,5 @@
+param([switch]$TaskWorker, [string]$WorkerRoot, [int]$WorkerSlot, [ValidateRange(1,32)][int]$MaxParallelTasks = 3)
+
 # Keeps The Gambler in Banter (#30). Run from the repo folder.
 $Repo = 'cillian1/belfast-wheel-app'
 $PollSeconds = 120
@@ -5,8 +7,16 @@ $AllowedAuthors = @('cillian1', 'github-actions[bot]')
 $SeenIds = [System.Collections.Generic.HashSet[string]]::new()
 $ReplyTimes = [System.Collections.Generic.Queue[DateTimeOffset]]::new()
 $LastCheck = [DateTimeOffset]::UtcNow
-$RepoRoot = (& git rev-parse --show-toplevel).Trim()
-$TaskMutex = [System.Threading.Mutex]::new($false, 'Local\BelfastWheelGamblerTask')
+$RepoRoot = if ($TaskWorker) { [IO.Path]::GetFullPath($WorkerRoot) } else { (& git rev-parse --show-toplevel).Trim() }
+if ($TaskWorker) {
+  if ($WorkerSlot -lt 1 -or [string]::IsNullOrWhiteSpace($WorkerRoot)) { throw 'Worker requires a slot and worktree.' }
+  $WorkerMutex = [Threading.Mutex]::new($false, "Local\BelfastWheel-gambler-Slot$WorkerSlot")
+  try { $HasWorkerLock = $WorkerMutex.WaitOne(0) } catch [Threading.AbandonedMutexException] { $HasWorkerLock = $true }
+  if (-not $HasWorkerLock) { throw 'This worker slot is already running.' }
+  Set-Location -LiteralPath $RepoRoot
+}
+. (Join-Path $PSScriptRoot '../watcher-parallel.ps1')
+$TaskMutex = [System.Threading.Mutex]::new($false, 'Local\BelfastWheelTaskClaim')
 
 # Make GitHub CLI available in fresh PowerShell windows after a winget install.
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
@@ -191,6 +201,8 @@ function Write-GamblerTaskBlocked {
 
 function Invoke-GamblerTaskQueue {
   $HasLock = $false
+  $IssueLock = $null
+  $HasIssueLock = $false
   try {
     try {
       $HasLock = $TaskMutex.WaitOne(0)
@@ -244,6 +256,17 @@ function Invoke-GamblerTaskQueue {
         Write-Warning "Could not check existing comments on issue #$IssueNumber; will retry next poll."
         return
       }
+      # An explicit HOLD remains in force until a later explicit READY/RESUME.
+      $Held = [string]$Issue.body -match '(?im)^\s*(?:CURRENT:\s*)?HOLD\b'
+      foreach ($Line in @($CommentLines)) {
+        $Directive = $Line | ConvertFrom-Json
+        if ($AllowedAuthors -notcontains [string]$Directive.user.login) { continue }
+        if ([string]$Directive.body -match '(?im)^\s*(?:(?:Claude|Copilot|Renauw|The Gambler|The Stankman):\s*)?(HOLD|READY|RESUME)\b') {
+          $Held = $Matches[1] -eq 'HOLD'
+        }
+      }
+      if ($Held) { Write-Host "Issue #$IssueNumber is on HOLD; leaving it queued."; continue }
+      $TaskComments = (@($CommentLines) | ForEach-Object { ($_ | ConvertFrom-Json).body }) -join "`n---`n"
       $AlreadyStarted = $false
       $LastGamblerStatus = $null
       $RetryRequested = $false
@@ -351,6 +374,11 @@ function Invoke-GamblerTaskQueue {
         return
       }
 
+      # A per-issue lock spans both bot roles after the short claim lock is released.
+      $IssueLock = [Threading.Mutex]::new($false, "Local\BelfastWheelIssue$IssueNumber")
+      try { $HasIssueLock = $IssueLock.WaitOne(0) } catch [Threading.AbandonedMutexException] { $HasIssueLock = $true }
+      if (-not $HasIssueLock) { $IssueLock.Dispose(); $IssueLock = $null; continue }
+
       try {
         $ClaimComment = if ($ResumeStaleTask) { 'The Gambler: on it (resuming stale claim)' } else { 'The Gambler: on it' }
         Post-GamblerIssueComment -IssueNumber $IssueNumber -Body $ClaimComment
@@ -394,6 +422,9 @@ function Invoke-GamblerTaskQueue {
 
         Invoke-GamblerGit @('switch', '-c', $TaskBranch, $TaskStartRef) | Out-Null
         $BranchCreated = $true
+        # Work now runs in this worker's worktree; allow another claim.
+        [void]$TaskMutex.ReleaseMutex()
+        $HasLock = $false
 
         $AgentsPath = Join-Path $RepoRoot 'AGENTS.md'
         $AgentsText = Get-Content -Raw -Encoding UTF8 -LiteralPath $AgentsPath
@@ -428,6 +459,10 @@ Issue #$IssueNumber body:
 ---
 $($Issue.body)
 ---
+All issue comments (latest instructions take precedence):
+---
+$TaskComments
+---
 "@
         $AgentOutputFile = Join-Path $env:TEMP "gambler-task-$IssueNumber-$([Guid]::NewGuid().ToString('N')).txt"
         try {
@@ -446,12 +481,14 @@ $($Issue.body)
         if ($LASTEXITCODE -ne 0) { throw 'Could not inspect the task diff.' }
         Assert-GamblerTaskHasChanges -ReportOnly $ReportOnly -ChangedPathCount (@($ChangedPaths).Count)
         if ($ReportOnly) {
+          Assert-WatcherTaskUnchanged -IssueNumber $IssueNumber -OriginalIssue ($IssueLines -join "`n") -OriginalComments @($CommentLines) -Persona 'The Gambler'
           $TaskReport = ConvertFrom-GamblerReportOutput -Output $AgentOutput
         } else {
           Invoke-GamblerGit @('add', '--all') | Out-Null
           Assert-GamblerStagedDiff
           Commit-GamblerTask -Title ([string]$Issue.title)
           $CommitCreated = $true
+          Assert-WatcherTaskUnchanged -IssueNumber $IssueNumber -OriginalIssue ($IssueLines -join "`n") -OriginalComments @($CommentLines) -Persona 'The Gambler'
           Invoke-GamblerGit @('push', '--set-upstream', 'origin', $TaskBranch) | Out-Null
         }
 
@@ -462,6 +499,7 @@ Automated implementation of issue #${IssueNumber}: $($Issue.title)
 
 Closes #$IssueNumber
 "@
+          Assert-WatcherTaskUnchanged -IssueNumber $IssueNumber -OriginalIssue ($IssueLines -join "`n") -OriginalComments @($CommentLines) -Persona 'The Gambler'
           $PrOutput = New-GamblerTaskPr -BaseBranch $BaseBranch -TaskBranch $TaskBranch -Title ([string]$Issue.title) -Body $PrBody
           $PrUrl = [string](@($PrOutput) | Where-Object { [string]$_ -match '^https://github\.com/.+/pull/\d+' } | Select-Object -Last 1)
           if ([string]::IsNullOrWhiteSpace($PrUrl)) { throw 'The pull request was created, but its URL was not returned.' }
@@ -509,11 +547,20 @@ Closes #$IssueNumber
       return
     }
   } finally {
+    if ($HasIssueLock) { [void]$IssueLock.ReleaseMutex() }
+    if ($IssueLock) { $IssueLock.Dispose() }
     if ($HasLock) { [void]$TaskMutex.ReleaseMutex() }
   }
 }
 
+if ($TaskWorker) { Invoke-GamblerTaskQueue; exit 0 }
+$SupervisorMutex = [Threading.Mutex]::new($false, 'Local\BelfastWheelGamblerSupervisor')
+try { $HasSupervisorLock = $SupervisorMutex.WaitOne(0) } catch [Threading.AbandonedMutexException] { $HasSupervisorLock = $true }
+if (-not $HasSupervisorLock) { throw 'A Gambler supervisor is already running.' }
+$ParallelWorkers = @{}
+
 while ($true) {
+  Start-WatcherWorkers -Role 'gambler' -ScriptPath $PSCommandPath -Model $null -MaxParallelTasks $MaxParallelTasks -Workers $ParallelWorkers
   $CheckStarted = [DateTimeOffset]::UtcNow
   $QuerySince = $LastCheck.AddSeconds(-2)
   $SinceText = [Uri]::EscapeDataString($QuerySince.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'"))
@@ -607,8 +654,6 @@ $CommentData
       $PollHadFailures = $true
     }
   }
-
-  Invoke-GamblerTaskQueue
 
   if (-not $PollHadFailures) { $LastCheck = $CheckStarted }
   Start-Sleep -Seconds $PollSeconds
