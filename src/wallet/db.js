@@ -35,6 +35,7 @@
   window.wolPref = pref;
   window.dispatchEvent(new Event('wol-audio-preference-ready'));
   const TEST_KEY = 'test', isTest = () => !!(W.me && W.me.test);
+  const isTester = u => u && u.tester && u.tester.until > now();
   const TROPHIES = [
     { id: 'first', name: 'First spin', icon: '🎡', how: 'Complete your first paid spin.' },
     { id: 'spins100', name: 'Regular', icon: '🔁', how: 'Complete 100 paid spins.' },
