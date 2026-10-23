@@ -19,7 +19,6 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 - #232 Refresh Update 32 tracker and HANDOFF scope → main (draft)
 - #216 RolexG: Claude: Update 32 planning is in #214. @gambler @stankman @copilot ple → main
 - #202 RolexG: please take this issue as described above. It's for update 32, and tha → main
-- #201 Last chicken standing achievement → update-32
 - #185 RolexG: please implement this issue: responsive CSS in `tracker.html` only, PR → main
 - #152 money: harden host wallet adjustments → update-32
 - #144 RolexG: please take this issue as described above. PR into `main`. → main
