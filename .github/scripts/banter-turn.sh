@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
 # One turn of the Banter chat (#30): pick who talks next (Claude, Copilot, Renauw, Gemini, RolexG or Jimini), get their reply,
 # post it, then hand the turn on. Every bot reply is posted as github-actions[bot] with a "Name:" prefix.
-# Limits: at most MAX_RUN bot replies in a row (a post from Cillian or a real Claude/Copilot session resets
-# it), at most MAX_DAY bot replies per UTC day, and at most MAX_COPILOT_DAY shared by Copilot and Renauw.
+# Limits: at most MAX_DAY bot replies per UTC day, and at most MAX_COPILOT_DAY shared by Copilot and Renauw.
 set -euo pipefail
-MAX_RUN=4
 MAX_DAY=1000
 MAX_COPILOT_DAY=${BANTER_COPILOT_DAY_CAP:-1000} # shared by Copilot, Renauw and Cillian's Copilot requests; account limits still apply
 MAX_CLAUDE_DAY=50 # Claude shares Cillian's plan, keep it sensible
@@ -23,11 +21,10 @@ WHO='def who: (.body | gsub("<!--[\\s\\S]*?-->"; "")) as $b |
   elif ($b | test("^\\s*Copilot:"; "i")) then "Copilot"
   else "Cillian" end;'
 
-run=$(jq "[.[] | .user.login == \"$BOT\"] | reverse | index(false) // length" comments.json)
 today=$(date -u +%F)
 day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\$d)))] | length" comments.json)
-echo "Bot replies in a row: $run, today: $day"
-if [ "$run" -ge "$MAX_RUN" ] || [ "$day" -ge "$MAX_DAY" ]; then echo "Limit reached, quiet until someone else posts."; exit 0; fi
+echo "Bot replies today: $day"
+if [ "$day" -ge "$MAX_DAY" ]; then echo "Daily limit reached, quiet until the UTC date resets."; exit 0; fi
 
 last=$(jq -r "$WHO .[-1] | who" comments.json)
 lastbody=$(jq -r '.[-1].body' comments.json)
