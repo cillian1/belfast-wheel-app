@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { selectNext, bots, main } from './claim-next.mjs';
+import { selectNext, bots, main, API_OUTPUT_LIMIT_BYTES, captureApiResponse } from './claim-next.mjs';
+import { execPath } from 'node:process';
 const now = Date.parse('2026-10-23T12:00:00Z');
 const issue = (number, labels, extra = {}) => ({ number, labels: ['unassigned', ...labels], created_at: '2026-10-23T11:00:00Z', comments: [], linkedPRs: [], ...extra });
 const big = issue(1, ['size:big']);
@@ -29,4 +30,17 @@ assert.equal(selectNext([...stankmanClaims, big], 'stankman', now), null);
 assert.equal(selectNext([big], 'gambler', now, { gambler: 0 }), null);
 assert.equal(selectNext([issue(9, [])], 'copilot', now), null);
 assert.throws(() => main(['gambler']), /Live claiming is a follow-up/);
-console.log('claim-next: lane, age, PR, recent claim, active task, cap and read-only checks passed');
+
+const largeOutputBytes = 2 * 1024 * 1024;
+const largeOutput = captureApiResponse(
+  execPath,
+  ['-e', `process.stdout.write('x'.repeat(${largeOutputBytes}))`],
+);
+assert.equal(largeOutput.length, largeOutputBytes, 'projected API output larger than Node’s default buffer is supported');
+assert.equal(API_OUTPUT_LIMIT_BYTES, 8 * 1024 * 1024, 'API output has a fixed upper bound');
+assert.throws(
+  () => captureApiResponse(execPath, ['-e', "process.stdout.write('x'.repeat(2048))"], 1024),
+  /GitHub API output exceeded its 1024-byte safety limit/,
+  'oversized API output fails with a bounded, actionable error',
+);
+console.log('claim-next: lane, age, PR, recent claim, active task, cap, read-only and bounded API output checks passed');

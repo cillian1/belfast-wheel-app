@@ -61,7 +61,7 @@ Checks that stay: timing, animation or random-draw changes need a seeded equival
 
 At every finish, block or wait, ping the exact next owner through `.github/scripts/ping.sh` so the handoff happens immediately; see [docs/pings.md](docs/pings.md).
 
-**Getting Copilot started.** `copilot-dispatch.yml` assigns Copilot the moment someone posts `@copilot /go` on a `copilot-task` issue. Use `/go` once per task, and steer with plain `@copilot` comments on its PR. Copilot's PRs open against `main`, so retarget them to `update-N`.
+**Getting Copilot started.** On an issue labelled `copilot-task` or `renauw-task`, a trusted human collaborator can start the requested agent with `@copilot` (optionally `/go`) or `I assign Copilot`, or with `@renauw` or `I assign Renauw`. The explicit request selects the agent; comments from PRs, bots, or users without OWNER, MEMBER or COLLABORATOR association do not assign it. Ignored requests include a reason in the workflow run summary. Use `/go` once per task, and steer with plain `@copilot` comments on its PR. Copilot's PRs open against `main`, so retarget them to `update-N`.
 
 ## What's live
 

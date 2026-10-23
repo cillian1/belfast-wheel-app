@@ -3,7 +3,26 @@ import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
 export const bots = ['copilot', 'gambler', 'stankman', 'rolexg', 'renauw', 'jimini'];
+export const API_OUTPUT_LIMIT_BYTES = 8 * 1024 * 1024;
 const owner = body => body.match(/(?:^|\n)(?:The Gambler: )?CLAIMED: (copilot|gambler|stankman|rolexg|renauw|jimini)\b/i)?.[1].toLowerCase();
+const claimPattern = String.raw`(^|\n)(The Gambler: )?CLAIMED: (copilot|gambler|stankman|rolexg|renauw|jimini)\\b`;
+const donePattern = String.raw`(^|\n)([^\n:]+: )?DONE:`;
+const allStatusComments = `map(select(((.body // "") | test("${claimPattern}"; "i")) or ((.body // "") | test("${donePattern}"; "m"))) | {body, created_at}) | @json`;
+const claimComments = `map(select((.body // "") | test("${claimPattern}"; "i")) | {body, created_at}) | @json`;
+const issueFields = 'map({number, state, created_at, updated_at, is_pull_request: (.pull_request != null), labels: [.labels[].name]}) | @json';
+const linkedPullRequests = 'map(select(.source.issue.pull_request != null) | {state: .source.issue.state}) | @json';
+
+export function captureApiResponse(command, args, maxBuffer = API_OUTPUT_LIMIT_BYTES) {
+  try {
+    return execFileSync(command, args, { encoding: 'utf8', maxBuffer });
+  } catch (error) {
+    if (error.code === 'ENOBUFS') {
+      throw new Error(`GitHub API output exceeded its ${maxBuffer}-byte safety limit; narrow the projected response.`);
+    }
+    throw error;
+  }
+}
+
 export function selectNext(issues, bot, now = Date.now(), caps = {}) {
   if (!bots.includes(bot)) throw new Error(`Unknown bot: ${bot}`);
   const today = new Date(now).toISOString().slice(0, 10);
@@ -28,18 +47,29 @@ export function selectNext(issues, bot, now = Date.now(), caps = {}) {
   }).sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at) || a.number - b.number)[0] ?? null;
 }
 
-function api(repo, endpoint) {
-  return JSON.parse(execFileSync('gh', ['api', '--paginate', '--slurp', `repos/${repo}/${endpoint}`], { encoding: 'utf8' })).flat();
+function api(repo, endpoint, projection) {
+  const output = captureApiResponse('gh', ['api', '--paginate', '--jq', projection, `repos/${repo}/${endpoint}`]);
+  return output.split(/\r?\n/).filter(line => line.trim()).flatMap(page => JSON.parse(page));
 }
-function snapshot(repo) {
-  // Include closed issues for today's claim count; paginate every collection.
-  return api(repo, 'issues?state=all&per_page=100').filter(i => !i.pull_request).map(i => ({
-    number: i.number, state: i.state, created_at: i.created_at,
-    labels: i.labels.map(l => l.name),
-    comments: api(repo, `issues/${i.number}/comments?per_page=100`),
-    linkedPRs: api(repo, `issues/${i.number}/timeline?per_page=100`)
-      .filter(e => e.source?.issue?.pull_request).map(e => e.source.issue),
-  }));
+function snapshot(repo, now = Date.now()) {
+  const today = new Date(now).toISOString().slice(0, 10);
+  const since = `${today}T00:00:00Z`;
+  return api(repo, 'issues?state=all&per_page=100', issueFields)
+    .filter(i => !i.is_pull_request && (i.state === 'open' || i.updated_at >= since))
+    .map(i => {
+      const closed = i.state === 'closed';
+      const comments = api(
+        repo,
+        `issues/${i.number}/comments?per_page=100${closed ? `&since=${encodeURIComponent(since)}` : ''}`,
+        closed ? claimComments : allStatusComments,
+      );
+      const hasTaskLabel = i.labels.includes('unassigned') ||
+        i.labels.some(label => bots.some(bot => label === `${bot}-task`));
+      const linkedPRs = !closed && (hasTaskLabel || comments.some(comment => owner(comment.body)))
+        ? api(repo, `issues/${i.number}/timeline?per_page=100`, linkedPullRequests)
+        : [];
+      return { ...i, comments, linkedPRs };
+    });
 }
 export function main(args) {
   const bot = args[0];

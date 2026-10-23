@@ -26,39 +26,47 @@ jobs:
   dispatch:
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (!github.event.issue.pull_request &&
-       ((contains(github.event.issue.labels.*.name, 'copilot-task') &&
-         contains(github.event.comment.body, '@copilot /go')) ||
-        (contains(github.event.issue.labels.*.name, 'renauw-task') &&
-         contains(github.event.comment.body, '@renauw'))) &&
-       !startsWith(github.event.comment.body, 'DONE'))
+      github.event_name == 'issue_comment'
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check the assignment request
+        id: policy
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_IS_PULL_REQUEST: ${{ github.event.issue.pull_request != null }}
+          ISSUE_LABELS: ${{ toJSON(github.event.issue.labels) }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_AUTHOR_ASSOCIATION: ${{ github.event.comment.author_association }}
+          COMMENT_AUTHOR_LOGIN: ${{ github.event.comment.user.login }}
+          COMMENT_AUTHOR_TYPE: ${{ github.event.comment.user.type }}
+          INPUT_NUMBER: ${{ inputs.number }}
+          INPUT_TASK: ${{ inputs.task }}
+          INPUT_AGENT: ${{ inputs.agent }}
+        run: node tools/copilot-dispatch-policy.mjs
       - name: Assign the issue to Copilot
+        if: steps.policy.outputs.dispatch == 'true'
         env:
           GH_TOKEN: ${{ secrets.COPILOT_ASSIGN_TOKEN }}
           REPO: ${{ github.repository }}
-          ISSUE: ${{ github.event.issue.number }}
-          DISPATCH_NUMBER: ${{ inputs.number }}
-          DISPATCH_TASK: ${{ inputs.task }}
-          DISPATCH_AGENT: ${{ inputs.agent }}
-          COMMENT_BODY: ${{ github.event.comment.body }}
-          EVENT: ${{ github.event_name }}
+          ISSUE: ${{ steps.policy.outputs.issue }}
+          DISPATCH_TASK: ${{ steps.policy.outputs.task }}
+          DISPATCH_AGENT: ${{ steps.policy.outputs.agent }}
         run: |
-          if [ -z "$GH_TOKEN" ]; then echo "COPILOT_ASSIGN_TOKEN secret is not set"; exit 1; fi
-          ISSUE=${DISPATCH_NUMBER:-$ISSUE}
-          AGENT=${DISPATCH_AGENT:-copilot}
-          if [ "$EVENT" = issue_comment ]; then
-            DISPATCH_TASK=$COMMENT_BODY
-            if [[ "$COMMENT_BODY" == *"@renauw"* ]]; then AGENT=renauw; else AGENT=copilot; fi
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error title=Missing dispatch secret::COPILOT_ASSIGN_TOKEN secret is not set"
+            echo "Dispatch failed: the COPILOT_ASSIGN_TOKEN repository secret is not set." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
           fi
-          if [ "$AGENT" != copilot ] && [ "$AGENT" != renauw ]; then
-            echo "Unknown custom agent: $AGENT" >&2
-            exit 2
-          fi
+          ASSIGNEES=$(gh issue view "$ISSUE" -R "$REPO" --json assignees --jq '.assignees[].login')
           # a fresh assignment is what starts a new Copilot session, so drop it first if it's already there
-          gh issue edit "$ISSUE" -R "$REPO" --remove-assignee @copilot || true
+          if printf '%s\n' "$ASSIGNEES" | grep -Fxqi Copilot; then
+            gh issue edit "$ISSUE" -R "$REPO" --remove-assignee @copilot
+          fi
           gh issue edit "$ISSUE" -R "$REPO" --add-assignee @copilot
-          if [ "$AGENT" = renauw ]; then
-            gh issue comment "$ISSUE" -R "$REPO" --body "@copilot Use the Renauw custom agent profile at .github/agents/renauw.agent.md for this task: $DISPATCH_TASK"
+          if [ "$DISPATCH_AGENT" = renauw ]; then
+            gh issue comment "$ISSUE" -R "$REPO" --body "<!-- copilot-dispatch:profile-handoff --> @copilot Use the Renauw custom agent profile at .github/agents/renauw.agent.md for this task: $DISPATCH_TASK"
           fi
