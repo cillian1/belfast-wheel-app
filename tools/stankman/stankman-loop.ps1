@@ -1,4 +1,7 @@
-param([switch]$DryRun)
+param(
+  [switch]$DryRun,
+  [ValidateNotNullOrEmpty()][string]$Model = 'gpt-6-luna'
+)
 
 # Keeps The Stankman in Banter (#30). Run from the repo folder.
 $Repo = 'cillian1/belfast-wheel-app'
@@ -378,7 +381,7 @@ $($Issue.body)
 "@
         $AgentOutputFile = Join-Path $env:TEMP "stankman-task-$IssueNumber-$([Guid]::NewGuid().ToString('N')).txt"
         try {
-          $TaskPrompt | & codex exec --sandbox workspace-write --ephemeral --output-last-message $AgentOutputFile -
+          $TaskPrompt | & codex exec --model $Model --sandbox workspace-write --ephemeral --output-last-message $AgentOutputFile -
           $CodexExitCode = $LASTEXITCODE
           if ($CodexExitCode -ne 0) { throw "Codex exited with status $CodexExitCode." }
         } finally {
@@ -515,7 +518,7 @@ $CommentData
 
     $ReplyFile = Join-Path $env:TEMP ("stankman-reply-$([Guid]::NewGuid().ToString('N')).txt")
     try {
-      $Prompt | & codex exec --sandbox read-only --ephemeral --output-last-message $ReplyFile -
+      $Prompt | & codex exec --model $Model --sandbox read-only --ephemeral --output-last-message $ReplyFile -
       if ($LASTEXITCODE -ne 0) {
         Write-Warning 'Codex could not draft a reply; skipping this mention.'
         [void]$SeenIds.Remove($CommentId)
