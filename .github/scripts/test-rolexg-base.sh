@@ -49,7 +49,8 @@ check_finish(){
     git(){
       case "$*" in
         'status --porcelain -- .github') :;;
-        'status --porcelain') echo ' M src/wallet/money.js';;
+        # Synthetic changed-file output only; this test never edits game or wallet files.
+        'status --porcelain') echo ' M src/fixture.js';;
         'push '*) printf 'FIXTURE_PUSH %s\n' "$*" >&2;;
         *) :;;
       esac
