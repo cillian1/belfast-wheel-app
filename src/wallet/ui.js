@@ -332,7 +332,11 @@ header>span{flex-wrap:wrap}
     const row = document.getElementById('resetRow'); if (row && freeTag.parentNode !== row) row.prepend(freeTag);
     const n = W.me && W.freeLeft ? W.freeLeft(W.me) : 0;
     freeTag.hidden = !W.me; freeTag.classList.toggle('none', !n);
-    freeTag.textContent = !n ? 'Free spins back at midnight' : W.stake === W.freeStake ? `${n} of 5 free spins left today` : `${n} free 10c spins: set bet to 10c`;
+    if (isTester(W.me)) {
+      freeTag.textContent = 'Tester: free spins until Sat 3pm';
+    } else {
+      freeTag.textContent = !n ? 'Free spins back at midnight' : W.stake === W.freeStake ? `${n} of 5 free spins left today` : `${n} free 10c spins: set bet to 10c`;
+    }
   }
   setInterval(() => { if (W.me) paintFree(); }, 60000); // ticks over at midnight
   function setStake(c) {

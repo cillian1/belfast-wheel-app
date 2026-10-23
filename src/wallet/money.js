@@ -25,7 +25,11 @@
   // 5 free spins a day per player (Cillian, update 27): a real 10c spin that can win the jackpot but doesn't feed it
   const FREE_SPINS = 5, FREE_STAKE = 10; W.freeStake = FREE_STAKE;
   const today = () => new Date().toLocaleDateString('en-CA');
-  W.freeLeft = u => !u ? 0 : Math.max(0, FREE_SPINS - (u.free && u.free.day === today() ? u.free.used || 0 : 0));
+  W.freeLeft = u => {
+    if (!u) return 0;
+    if (isTester(u)) return 999;
+    return Math.max(0, FREE_SPINS - (u.free && u.free.day === today() ? u.free.used || 0 : 0));
+  };
   const dropPrizeFaces = () => { try { faces.godWheel = null; faces.cosmic = null; } catch (e) {} };
   const gameSpin = spin;
   let charging = false;
@@ -68,8 +72,11 @@
       let none = false;
       const u = await db.txn('users/' + W.user, u => {
         if (!u || W.freeLeft(u) <= 0) { none = true; return undefined; }
-        const used = u.free && u.free.day === today() ? u.free.used || 0 : 0;
-        u.free = { day: today(), used: used + 1 }; u.spins = (u.spins || 0) + 1; u.last = now(); return u;
+        if (!isTester(u)) {
+          const used = u.free && u.free.day === today() ? u.free.used || 0 : 0;
+          u.free = { day: today(), used: used + 1 };
+        }
+        u.spins = (u.spins || 0) + 1; u.last = now(); return u;
       });
       if (none) { if (u) W.me = u; paint(); setBtn('Spin', false); charging = false; return spin(); }
       W.me = u; paint();
@@ -79,7 +86,7 @@
       log(W.user, 'spin', 0, { what: 'Free spin' });
       if (!isTest()) db.txn('stats', st => { st = st || {}; st.spins = (st.spins || 0) + 1; st.free = (st.free || 0) + 1; return st; }).catch(() => {});
     } catch (e) { setBtn('Spin', false); charging = false; toast('No connection. Free spin not used.'); return; }
-    toast(`Free spin! ${W.freeLeft(W.me)} left today.`);
+    toast(isTester(W.me) ? 'Tester: free spins until Sat 3pm' : `Free spin! ${W.freeLeft(W.me)} left today.`);
     if (W.stake !== s) dropPrizeFaces(); // prizes on the wheels show at 10c for this run
     W.run = { stake: s, paid: false, live: true, free: true, auto: autoOn }; paint();
     charging = false;

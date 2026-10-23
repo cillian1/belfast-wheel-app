@@ -63,6 +63,7 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
     set(k, v) { try { if (app && app.setPref) app.setPref(k, v == null ? '' : v); } catch (e) {} try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} },
   };
   const TEST_KEY = 'test', isTest = () => !!(W.me && W.me.test);
+  const isTester = u => u && u.tester && u.tester.until > now();
   const keyOf = name => name.trim().toLowerCase().replace(/[.#$\[\]\/\s]+/g, '_');
   function sha256(str) { // small pure-JS SHA-256 (crypto.subtle is not always there on file:// pages)
     const K = [], H = [], isP = n => { for (let f = 2; f * f <= n; f++) if (n % f === 0) return false; return true; };
@@ -297,8 +298,14 @@ window.WALLET_CFG = {"db":"https://belfast-wheel-default-rtdb.europe-west1.fireb
     body.innerHTML = `<h2>Gift or adjust ${esc(u.name)}</h2><p>Balance ${eur(u.balance || 0)}. Add or take away, e.g. 5 or -2.50 (cash top-ups go here). Add a message and it pops up on their phone; a message on its own works too.</p>
       <div class="row"><input id="amt" inputmode="decimal" placeholder="Amount"></div>
       <div class="row"><input id="msg" maxlength="140" placeholder="Message (optional)"></div>
-      <div class="row"><button class="gold" id="go" type="button">Send</button><button id="back" type="button">Back</button></div>`;
+      <div class="row"><button class="gold" id="go" type="button">Send</button><button id="back" type="button">Back</button></div>
+      <div class="row" style="margin-top:12px"><button class="small" id="tester" type="button">Set tester pass (until Sat 3pm)</button></div>`;
     document.getElementById('back').onclick = render;
+    document.getElementById('tester').onclick = async () => {
+      const until = 1792850400000;
+      await db.patch('users/' + k, { tester: { until } });
+      toast('Tester pass set for ' + u.name); render();
+    };
     document.getElementById('go').onclick = async () => {
       const a = Math.round((parseFloat(document.getElementById('amt').value.replace(',', '.')) || 0) * 100), msg = document.getElementById('msg').value.trim().slice(0, 140);
       if (!a && !msg) return;
