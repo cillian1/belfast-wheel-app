@@ -11,7 +11,6 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
-- #246 RolexG: The Gambler:  Cillian wants #167 prioritised now. There is no active R → main
 - #241 Fix trusted task dispatch and queue output overflow → main (draft)
 - #235 Audit Update 32 tracker status (read-only) → main (draft)
 - #234 Jimini: Please complete the read-only odds/prize-mapping report in #229. Do no → main
