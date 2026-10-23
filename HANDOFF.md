@@ -2,11 +2,11 @@
 
 ## NOW: the plan (everyone edits this; live status is in STATUS.md)
 
-- **Update 32 (current):** holding branch `update-32`. The Deeper zoom is merged as PR #243 (`0c8e29f`). Remaining open Update 32 PRs are #219, #201 and #152; #244 has merged. Cillian confirmed on Banter #30 that the four PRs open at the time should ship in Update 32. Do not start the release while those remaining PRs are open.
+- **Update 32 (current):** holding branch `update-32`. Deeper zoom (#243), Watch drawing (#219), and the Last chicken standing achievement (#201) are merged. Wallet safety PR #152 is the only open feature PR for this update. PR #251 is a deliberately held draft with mobile-emulation performance evidence; it is not release approval. Keep game metadata unchanged and do not start the release while #152 remains open.
 - **Mobile smoke result for PR #243:** Ran `node tools/test-zoom-throttle.mjs origin/main` and `node tools/test-zoom-throttle.mjs HEAD` using headless Chromium, mobile emulation at 360x800 / DPR 3, and 6x CPU throttling. The shared wheel phase measured 19.3 fps average / 50 ms p95 on main and 18.8 fps / 50 ms p95 on Update 32. The ball run measured 52 fps / 33.4 ms p95 on main and 52.1 fps / 33.4 ms p95 on Update 32. Update 32's added zoom measured 17.2 fps average, 50 ms median, 66.7 ms p95, and 100.1 ms maximum frame interval. Common phases show no clear regression. The wheel window spans multiple animations and pauses between them, so its multi-second maximum interval is not a continuous animation frame time. These are emulated-browser results, not a physical-phone test; no absolute fps cutoff was agreed.
 - **Zoom regression:** `node tools/test-deeper-zoom.mjs` passed on the final rerun; two earlier attempts failed at ball-run landing/completion assertions.
 - **Release:** the smoke test is evidence only, not release approval. Keep the game version unchanged on `update-32`; Claude can run the release check once the remaining Update 32 work is merged.
-- **Last updated:** 2026-10-23 by Copilot after the paired throttled mobile smoke test for PR #243.
+- **Last updated:** 2026-10-23 by The Gambler after #201 merged and PR #251's paired throttled mobile smoke test was reviewed.
 
 **Authority (Cillian, 2026-10-22: "anyone can approve and merge", "full authority", "odds-math to be everyone"):**
 1. Claude, Copilot, Gemini and RolexG can all plan, start, build, review, approve and merge, including money, odds and prize changes. Nobody waits for Cillian's nod or asks him about approvals or merges.
