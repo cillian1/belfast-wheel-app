@@ -4,14 +4,13 @@
 import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
 import fs from 'fs';
 const [file, runs = '1000', tip = '.25', pages = '3'] = process.argv.slice(2);
-let html = fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
+let html = fs.readFileSync(file, 'utf8');
 const a = html.indexOf('const wait = ms => new Promise(r => {'), z = html.indexOf('pendingWaits.add(w);\n});', a);
 if (a < 0 || z < 0) throw new Error('wait() changed');
 html = html.slice(0, a) + 'const wait = ms => new Promise(r => { __now += ms; setTimeout(r, 0); });' + html.slice(z + 'pendingWaits.add(w);\n});'.length);
 const wl = html.indexOf('<script>window.WALLET_CFG'); if (wl > 0) html = html.slice(0, wl) + '<script>window.$m = v => v;</script></body></html>';
-const raceChance = html.match(/const RACE_CHANCE = [\d.]+/);
-if (!raceChance) throw new Error('race changed'); html = html.replace(raceChance[0], 'const RACE_CHANCE = 1');
-const b = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium', args: ['--disable-renderer-backgrounding', '--disable-background-timer-throttling'] });
+if (!html.includes('const RACE_CHANCE = .25')) throw new Error('race changed'); html = html.replace('const RACE_CHANCE = .25', 'const RACE_CHANCE = 1');
+const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', args: ['--disable-renderer-backgrounding', '--disable-background-timer-throttling'] });
 async function worker(n) {
   const p = await b.newPage({ viewport: { width: 400, height: 800 } });
   await p.route('**/*', r => r.request().url().startsWith('http://sim/') ? r.fulfill({ body: Buffer.from(html), contentType: 'text/html; charset=utf-8' }) : r.abort());

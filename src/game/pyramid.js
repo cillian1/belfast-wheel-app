@@ -307,10 +307,10 @@ async function monsterRun(steps, w = 0, b = 3) {
   coaster = { x: 0, kind: 2, planet: 0 };
   await crossTo(() => { scene = 'coaster'; }, 1000);
   await animate(5000, t => { coaster.x = N * 7 * easeInOut(t); const sup = Math.floor(coaster.x / (N * .08)); if (sup !== lastSup) { lastSup = sup; tick(.35, 900 - t * 400); } draw(); });
-  // 5. ten ordinary d12s and any special d20s
+  // 5. ten twelve-sided dice
   mon = { dice: [], dots: [], cans: [], fill: 0, poured: 0, pouring: false };
   for (let i = 0; i < 10; i++) mon.dice.push({ x: N * (.12 + (i % 5) * .19), y: N * (.12 + Math.floor(i / 5) * .16), z: 0, vx: 0, vy: 0, vz: 0, M: randRot(), w: [0, 0, 0] });
-  // every Wild and every ankh past three adds a colored d20; each face pip becomes a big can
+  // every Wild you collected and every ankh past three spawns a special gold or purple d12: its number in big Monster cans
   const spec = [...Array(w).fill('W'), ...Array(Math.max(0, b - 3)).fill('B')];
   spec.forEach((k, j) => mon.dice.push({ x: N * (.14 + (j % 5) * .18), y: N * .38, z: 0, vx: 0, vy: 0, vz: 0, M: randRot(), w: [0, 0, 0], sp: k }));
   if (spec.length) { if (!faces.canW || faces.canW.height !== Math.round(N * .066)) { faces.canW = buildCan('W'); faces.canB = buildCan('B'); } setTiles(0, 0); }
@@ -318,10 +318,10 @@ async function monsterRun(steps, w = 0, b = 3) {
   setVerdict({ eyebrow: 'Bonus', title: spec.length ? `Ten dice and ${spec.length} special` : 'Ten dice', body: spec.length ? 'Every dot counts. The gold and purple dice pour big cans.' : 'Every dot counts.', steps: steps.slice(), flash: false });
   await wait(600);
   tick(1.4, 900); buzz(25);
-  await rollMonsterDice(mon.dice);
+  await roll12(mon.dice);
   await wait(700);
   // 6. every dot lifts off and turns into a can of Monster
-  mon.dice.forEach(d => monsterPips(d.top, d.x, d.y, N * .11, d.M, d.sp).forEach(p => mon.dots.push({ x: p.x, y: p.y, x0: p.x, y: p.y, r: Math.max(D * 1.5, p.r), glow: 0, sp: d.sp })));
+  mon.dice.forEach(d => d12Pips(d.top, d.x, d.y, N * .11, d.M).forEach(p => mon.dots.push({ x: p.x, y: p.y, x0: p.x, y0: p.y, r: Math.max(D * 1.5, p.r), glow: 0, sp: d.sp })));
   await animate(800, t => { mon.dice.forEach(d => d.a = 1 - t); mon.dots.forEach((p, i) => { p.glow = t; p.y = p.y0 - easeOut(t) * N * (.02 + (i % 4) * .01); }); draw(); });
   mon.dice = [];
   { let at = mon.dots.length * .05 + .8, gap = .42;

@@ -56,10 +56,7 @@ Use this for every odds or prize check. Never time real-game runs.
 - `fastsim.mjs` swaps the game's `wait()` for fake time, strips the wallet script and stubs `$m`, forces `RACE_CHANCE` to 1
   (race.py weights races back to the real chance) and stubs every room so it stops as soon as the room is known.
   It throws "wait() changed" / "race changed" if those lines move.
-  Set `CHROMIUM_PATH` to use a local Chromium-compatible browser instead of `/opt/pw-browsers/chromium`.
 - `rooms.js` draws prizes from the room tables in `tables.json` (keep them in step with the game).
-- Use the same `SEED` and full-path records with `MONSTER_SPECIAL_SIDES=12` and `20` for paired Monster Tank odds; the simulator defaults to 20.
-- Its JSON includes the Monster Tank sample count, physical-can mean, weighted-fill mean, and rates at each tank threshold.
 - `race.py` scores races and Mark's wheel from the recorded chickens (`sw`/`sb` = gold/purple special chickens).
   Payback = total base per spin × edge / ev (src/config.json).
 - Noise: the Pyramid (about 1 in 250 spins, prizes up to 2500 base) dominates the spread, so a 10k-spin total is only
