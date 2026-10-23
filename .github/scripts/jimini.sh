@@ -4,7 +4,7 @@
 #   jimini.sh finish  keep only jimini-out/, publish the report and wiki pages, report back
 # Jimini never changes the game: everything outside jimini-out/ is thrown away, and nothing is pushed to
 # main. Reports go to issues, wiki pages to the GitHub wiki (or the jimini-docs branch as a fallback).
-# His comments are posted as github-actions[bot] with "Jimini:" in front.
+# App comments post as jimini[bot]; legacy shared-token comments retain the prefix.
 set -euo pipefail
 BOT=github-actions[bot]
 MAX_DAY=${MAX_DAY:-4} # tasks per UTC day (repo variable JIMINI_DAILY_CAP)
@@ -14,9 +14,16 @@ say(){ gh api "repos/$REPO/issues/$1/comments" -f body="Jimini: $2" > /dev/null;
 out(){ local d="EOF_$RANDOM$RANDOM"; { echo "$1<<$d"; echo "$2"; echo "$d"; } >> "$GITHUB_OUTPUT"; }
 
 start(){
+  if [ "${EVENT:-}" = issue_comment ] && { [ "${COMMENT_LOGIN:-}" = 'jimini[bot]' ] || { [ "${COMMENT_LOGIN:-}" = 'github-actions[bot]' ] && [[ ${COMMENT_BODY:-} == 'Jimini:'* ]]; }; }; then
+    echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0
+  fi
+  rounds=$(gh api --paginate "repos/$REPO/issues/$NUM/comments?per_page=100" --jq '[.[] | select((.user.login == "jimini[bot]" or .user.login == "github-actions[bot]") and (.body | startswith("Jimini: on it")))] | length' | awk '{s+=$1} END {print s+0}')
+  if [ "$rounds" -ge "${MAX_ROUNDS:-5}" ]; then
+    echo "Thread ping limit reached"; echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0
+  fi
   today=$(date -u +%F)
   day=$(gh api --paginate "repos/$REPO/issues/comments?since=${today}T00:00:00Z&per_page=100" --jq \
-    "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\"$today\")) and (.body | startswith(\"Jimini: on it\")))] | length" \
+    "[.[] | select((.user.login == \"$BOT\" or .user.login == \"jimini[bot]\") and (.created_at | startswith(\"$today\")) and (.body | startswith(\"Jimini: on it\")))] | length" \
     | awk '{s+=$1} END {print s+0}')
   echo "Jimini tasks today: $day/$MAX_DAY"
   if [ "$day" -ge "$MAX_DAY" ]; then

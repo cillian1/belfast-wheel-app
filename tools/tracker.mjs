@@ -1,5 +1,6 @@
 // Generates tracker.json and preserves the previous update's final snapshot in tracker-history.json.
 // The workflow publishes these files on the tracker branch for GitHub Pages.
+import { botName } from './bot-identities.mjs';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 
 const repo = process.env.GITHUB_REPOSITORY || 'cillian1/belfast-wheel-app';
@@ -31,10 +32,12 @@ const taskIssues = allIssues.filter(i => !i.pull_request && (currentIssues.inclu
   ((i.labels || []).some(l => /^(copilot-task|rolexg|jimini-task|gambler-task)$/.test(l.name)) && i.title.startsWith('Task '))));
 const selected = currentIssues.length ? taskIssues.filter(i => currentIssues.includes(i.number)) : taskIssues;
 function owner(i) {
+  const assigned = i.assignees?.[0]?.login || i.assignee?.login;
+  if (botName(assigned)) return botName(assigned);
   const label = (i.labels || []).find(l => /^(copilot-task|rolexg|jimini-task|gambler-task)$/.test(l.name));
   if (label) return ({'copilot-task':'Copilot',rolexg:'RolexG','jimini-task':'Jimini','gambler-task':'The Gambler'})[label.name];
   const login = i.assignees?.[0]?.login || i.assignee?.login || 'Unassigned';
-  return ({'rolexg[bot]':'RolexG', 'jimini[bot]':'Jimini', 'gemini-reviewer[bot]':'Gemini', 'claude-bot[bot]':'Claude', 'copilot[bot]':'Copilot'})[login] || login;
+  return botName(login, i.title) || login;
 }
 function activity(i, p) {
   const dates = [i.updated_at, ...(commentsByIssue.get(i.number) || []).map(c => c.updated_at), ...p.map(x => x.updated_at)];
@@ -71,7 +74,7 @@ if (updates.length > 1) {
   const oldTasks = oldPrs.map(p => {
     const n = +(`${p.title} ${p.body || ''}`.match(/#(\d+)\b/) || [])[1];
     const issue = allIssues.find(i => i.number === n);
-    return { owner:issue ? owner(issue) : p.user?.login || 'Unassigned', issue:n || null,
+    return { owner:issue ? owner(issue) : botName(p.user?.login, p.title) || p.user?.login || 'Unassigned', issue:n || null,
       pr:p.number,title:p.title,url:p.html_url };
   });
   const oldEntry = { number:old.n, name:plan.previousName || `Update ${old.n}`, build:plan.previousBuild || null,
@@ -82,10 +85,9 @@ if (updates.length > 1) {
 }
 history.sort((a,b)=>b.number-a.number);
 const completed = tasks.filter(t=>t.prState==='merged' || (t.prState==='none' && allIssues.find(i=>i.number===t.issue)?.state==='closed')).length;
-const botNames = {'rolexg[bot]':'RolexG', 'jimini[bot]':'Jimini', 'gemini-reviewer[bot]':'Gemini', 'claude-bot[bot]':'Claude', 'copilot[bot]':'Copilot'};
 const data = { generatedAt:new Date().toISOString(), update:{number:branch.n,name:plan.name||`Update ${branch.n}`,branch:branch.name,
   goals:plan.goals||[],cutLine:plan.cutLine||'',progress:{done:completed,total:tasks.length}}, tasks,
-  merges:merged.map(p=>({number:p.number,title:p.title,url:p.html_url,mergedAt:p.merged_at,owner:botNames[p.user?.login]||p.user?.login||''})), history };
+  merges:merged.map(p=>({number:p.number,title:p.title,url:p.html_url,mergedAt:p.merged_at,owner:botName(p.user?.login, p.title)||p.user?.login||''})), history };
 writeFileSync('tracker.json', JSON.stringify(data,null,2)+'\n');
 writeFileSync('tracker-history.json', JSON.stringify(history,null,2)+'\n');
 console.log(`tracker.json: update ${branch.n}, ${tasks.length} tasks, ${merged.length} merges, ${history.length} history entries`);

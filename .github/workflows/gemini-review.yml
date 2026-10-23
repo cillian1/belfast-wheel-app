@@ -1,7 +1,7 @@
 # Gemini reviews every PR (Cillian, update 28; all branches incl. main since Oct 22): when a PR is opened or marked
 # ready (or gets new commits), Gemini reads the diff and posts one review comment starting "Verdict: merge"
 # or "Verdict: changes needed". Gemini may merge (Cillian, 2026-10-22): on "merge" with green CI it merges
-# through .github/scripts/bot-merge.sh, which never merges RolexG's own PRs or anything into main. If CI is
+# through .github/scripts/bot-merge.sh, which compares author and merger logins and checks release rules. If CI is
 # still running, the bot-merge job at the end of CI does the merge instead.
 # Runs as pull_request_target so it gets the Google sign-in on Copilot's PRs too. It only reads the diff
 # through the API and never checks out or runs the PR's code (the checkout below is the base branch's scripts).
@@ -30,7 +30,16 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    env:
+      HAS_GEMINI_APP: ${{ secrets.GEMINI_APP_ID != '' && secrets.GEMINI_APP_KEY != '' }}
     steps:
+      - name: Mint GEMINI App token
+        id: app
+        if: env.HAS_GEMINI_APP == 'true'
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GEMINI_APP_ID }}
+          private-key: ${{ secrets.GEMINI_APP_KEY }}
       - uses: actions/checkout@v4
         with:
           sparse-checkout: .github/scripts
@@ -46,7 +55,7 @@ jobs:
           create_credentials_file: false
       - name: Ask Gemini to review the diff
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
           REPO: ${{ github.repository }}
           PR: ${{ github.event.pull_request.number || inputs.pr }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -84,7 +93,7 @@ jobs:
           $review" > /dev/null
       - name: Merge if the verdict is merge and CI is green
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
           REPO: ${{ github.repository }}
           PR: ${{ github.event.pull_request.number || inputs.pr }}
           BOT_MERGE_MAIN: ${{ vars.BOT_MERGE_MAIN }}

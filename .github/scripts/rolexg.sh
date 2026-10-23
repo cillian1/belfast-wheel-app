@@ -4,8 +4,8 @@
 #   rolexg.sh finish  rebuild the bundle, commit, push, open or update the PR, report back
 # RolexG never merges its own PRs. "@rolexg merge" on someone else's PR merges it through
 # .github/scripts/bot-merge.sh (green CI, not into main).
-# Its comments are posted as github-actions[bot] with "RolexG:" in front. Comments made with the
-# workflow's own token never start workflows, so RolexG can't set itself off.
+# App comments post as rolexg[bot]; legacy shared-token comments retain the prefix.
+# The workflow and start guard reject self mentions.
 set -euo pipefail
 BOT=github-actions[bot]
 MAX_DAY=${MAX_DAY:-8}       # tasks per UTC day, across the whole repo (repo variable ROLEXG_DAILY_CAP)
@@ -15,16 +15,19 @@ say(){ gh api "repos/$REPO/issues/$1/comments" -f body="RolexG: $2" > /dev/null;
 out(){ local d="EOF_$RANDOM$RANDOM"; { echo "$1<<$d"; echo "$2"; echo "$d"; } >> "$GITHUB_OUTPUT"; }
 
 start(){
+  if [ "${EVENT:-}" = issue_comment ] && { [ "${COMMENT_LOGIN:-}" = 'rolexg[bot]' ] || { [ "${COMMENT_LOGIN:-}" = 'github-actions[bot]' ] && [[ ${COMMENT_BODY:-} == 'RolexG:'* ]]; }; }; then
+    echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0
+  fi
   # "@rolexg merge" on a PR is a merge, not a coding task (no Gemini call, doesn't count towards the limits).
   if [ "$EVENT" = issue_comment ] && grep -qiP '^\s*@rolexg\s+merge\b' <<<"$COMMENT_BODY"; then
     echo "skip=true" >> "$GITHUB_OUTPUT"
     "$(dirname "$0")/bot-merge.sh" "$NUM" RolexG; exit 0; fi
   today=$(date -u +%F)
   day=$(gh api --paginate "repos/$REPO/issues/comments?since=${today}T00:00:00Z&per_page=100" --jq \
-    "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\"$today\")) and (.body | startswith(\"RolexG: on it\")))] | length" \
+    "[.[] | select((.user.login == \"$BOT\" or .user.login == \"rolexg[bot]\") and (.created_at | startswith(\"$today\")) and (.body | startswith(\"RolexG: on it\")))] | length" \
     | awk '{s+=$1} END {print s+0}')
   rounds=$(gh api --paginate "repos/$REPO/issues/$NUM/comments?per_page=100" --jq \
-    "[.[] | select(.user.login == \"$BOT\" and (.body | startswith(\"RolexG: on it\")))] | length" | awk '{s+=$1} END {print s+0}')
+    "[.[] | select((.user.login == \"$BOT\" or .user.login == \"rolexg[bot]\") and (.body | startswith(\"RolexG: on it\")))] | length" | awk '{s+=$1} END {print s+0}')
   echo "RolexG tasks today: $day/$MAX_DAY, rounds on #$NUM: $rounds/$MAX_ROUNDS"
   if [ "$day" -ge "$MAX_DAY" ]; then
     say "$NUM" "I've hit today's limit of $MAX_DAY tasks, so I'm leaving this one. Ask again after midnight UTC, or raise the ROLEXG_DAILY_CAP repo variable."
@@ -132,9 +135,11 @@ Run: $RUN_URL" --jq .number) || {
     gh api "repos/$REPO/issues/$pr/labels" -f "labels[]=rolexg" > /dev/null || true
     msg="opened #$pr into \`$BASE\`."
   else msg="pushed to #$pr."; fi
-  # PRs and pushes made with the workflow token don't start other workflows, so start CI by hand.
-  gh workflow run ci.yml -R "$REPO" --ref "$BRANCH" || true
-  gh workflow run gemini-review.yml -R "$REPO" -f pr="$pr" || true
+  # App pushes/PRs already trigger CI and review. Only dispatch for the fallback token.
+  if [ "${USING_APP_TOKEN:-false}" != true ]; then
+    gh workflow run ci.yml -R "$REPO" --ref "$BRANCH" || true
+    gh workflow run gemini-review.yml -R "$REPO" -f pr="$pr" || true
+  fi
 
   say "$NUM" "$msg
 

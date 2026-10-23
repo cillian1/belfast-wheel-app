@@ -38,17 +38,26 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'issues' && github.event.label.name == 'rolexg-task') ||
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@rolexg') &&
+       github.event.comment.user.login != 'rolexg[bot]' &&
        github.event.comment.user.login != 'github-actions[bot]' &&
-       contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
+       (contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) ||
+        contains(fromJSON('["rolexg[bot]","jimini[bot]","gemini-reviewer[bot]","claude-bot[bot]"]'), github.event.comment.user.login)))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      GH_TOKEN: ${{ github.token }}
+      HAS_ROLEXG_APP: ${{ secrets.ROLEXG_APP_ID != '' && secrets.ROLEXG_APP_KEY != '' }}
       REPO: ${{ github.repository }}
       NUM: ${{ github.event.issue.number || inputs.issue }}
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       BOT_MERGE_MAIN: ${{ vars.BOT_MERGE_MAIN }}
     steps:
+      - name: Mint ROLEXG App token
+        id: app
+        if: env.HAS_ROLEXG_APP == 'true'
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.ROLEXG_APP_ID }}
+          private-key: ${{ secrets.ROLEXG_APP_KEY }}
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -56,7 +65,9 @@ jobs:
       - name: Read the task and check the limits
         id: task
         env:
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
           EVENT: ${{ github.event_name }}
+          COMMENT_LOGIN: ${{ github.event.comment.user.login }}
           COMMENT_BODY: ${{ github.event.comment.body }}
           INPUT_TASK: ${{ inputs.task }}
           MAX_DAY: ${{ vars.ROLEXG_DAILY_CAP || 8 }}
@@ -93,6 +104,8 @@ jobs:
       - name: Commit, open the PR and report back
         if: steps.task.outputs.skip == 'false'
         env:
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+          USING_APP_TOKEN: ${{ steps.app.outputs.token != '' }}
           BRANCH: ${{ steps.task.outputs.branch }}
           BASE: ${{ steps.task.outputs.base }}
           TITLE: ${{ steps.task.outputs.title }}
