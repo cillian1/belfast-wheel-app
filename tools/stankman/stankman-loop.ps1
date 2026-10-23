@@ -142,6 +142,14 @@ function Get-StankmanTaskBaseBranch {
   return $Updates[0].name
 }
 
+function Get-StankmanPersona {
+  # Use the installed watcher role even when a game's holding branch is older.
+  $AgentsText = (Invoke-StankmanGit @('show', 'origin/main:AGENTS.md')) -join "`n"
+  $PersonaMatch = [regex]::Match($AgentsText, '(?ms)^## The Stankman\s*\r?\n(?<section>.*?)(?=^## |\z)')
+  if (-not $PersonaMatch.Success) { throw 'AGENTS.md on origin/main has no ## The Stankman section.' }
+  return $PersonaMatch.Groups['section'].Value.Trim()
+}
+
 function Get-StankmanTaskState {
   $Today = [DateTime]::UtcNow.ToString('yyyy-MM-dd')
   if (-not (Test-Path -LiteralPath $TaskStateFile)) {
@@ -408,11 +416,7 @@ function Invoke-StankmanTaskQueue {
         Invoke-StankmanGit @('switch', '-c', $TaskBranch, $TaskStartRef) | Out-Null
         $BranchCreated = $true
 
-        # Persona belongs to the current watcher setup, even when the game base is older.
-        $AgentsText = (Invoke-StankmanGit @('show', 'origin/main:AGENTS.md')) -join "`n"
-        $PersonaMatch = [regex]::Match($AgentsText, '(?ms)^## The Stankman\s*\r?\n(?<section>.*?)(?=^## |\z)')
-        if (-not $PersonaMatch.Success) { throw 'AGENTS.md has no ## The Stankman section.' }
-        $StankmanPersona = $PersonaMatch.Groups['section'].Value.Trim()
+        $StankmanPersona = Get-StankmanPersona
         $TaskPrompt = @"
 You are The Stankman implementing one repository issue in $Repo.
 Follow this Stankman persona and the issue's requirements. Implement only this task and run every check the issue names before finishing.

@@ -23,4 +23,12 @@ foreach ($Bot in @('Gambler', 'Stankman')) {
     if ($Actual -ne $Case[1]) { throw "$Bot selected $Actual instead of $($Case[1]) for $($Case[0])" }
   }
 }
+ $PersonaFunction = $Ast.Find({ param($Node) $Node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $Node.Name -eq 'Get-StankmanPersona' }, $false)
+Invoke-Expression $PersonaFunction.Extent.Text
+function Invoke-StankmanGit {
+  param([string[]]$GitArgs)
+  if (($GitArgs -join ' ') -ne 'show origin/main:AGENTS.md') { throw 'Persona must come from the current setup.' }
+  return @('# Gambler instructions', 'Do not include this.', '## The Stankman', 'Only his role.', '## Another role', 'Do not include this either.')
+}
+if ((Get-StankmanPersona) -cne 'Only his role.') { throw 'Stankman received another persona section.' }
 Write-Host 'Task bases passed for both watchers: inline base, punctuation, Markdown, base precedence and numeric fallback.'
