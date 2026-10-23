@@ -29,7 +29,7 @@ function finalSpeech(m, moves, dest) {
 }
 
 async function backToMain() {
-  winGlow = null; ghost = null; ghostSay = ''; doorPick = null; tapPick = null; $('.stage').classList.remove('pick');
+  winGlow = null; ghost = null; ghostSay = ''; doorPick = null; tapPick = null; wheelZoom = 1; $('.stage').classList.remove('pick');
   hideFinal(); sayLast = null; try { speechSynthesis.cancel(); } catch (e) {}
   if (scene !== 'nested' && scene !== 'photo') {
     // the room keeps drawing while it fades out, so its state is only cleared once the main wheel is back
@@ -65,6 +65,7 @@ async function runMain() {
   // Go deeper: three move wheels, ten dice, the ball drop
   const steps = []; let wilds = 0, bonus = 0;
   setVerdict({ eyebrow: 'The wheel says', title: 'Go deeper', body: 'Hold on.' });
+  await zoomWheelTo(1.14, 1800);
   let wMiss = 0, bMiss = 0, ups = 0, godHit = false;
   if (Math.random() < GOLDEN_CHANCE) await goldenRun();
   else if (store.get('hope', false)) { store.set('hope', false); await wait(400); await boostRun('W', 0); }

@@ -1,6 +1,6 @@
 // ---------- state ----------
 // Owns mutable game state helpers and special dice.
-let scene = 'nested', zoom = 1, busy = false, fade = 0;
+let scene = 'nested', zoom = 1, wheelZoom = 1, busy = false, fade = 0;
 const rot = Array(MAXD + 1).fill(0);
 let dice = [];
 for (let i = 0; i < 12; i++) { // ten six-sided dice: two in the middle, eight round the edge (slots 0 and 2 are kept for special dice)
