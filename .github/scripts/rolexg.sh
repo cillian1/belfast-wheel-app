@@ -100,6 +100,10 @@ When you're done, end with a short summary for the humans: what you changed and 
 finish(){
   # The CLI's settings file and anything under .github never go in RolexG's commits
   # (the workflow token can't push workflow changes anyway).
+  dropped_github=$(git status --porcelain -- .github | sed -E 's/^...//')
+  if [ -n "$dropped_github" ]; then
+    dropped_note="I couldn't change .github files ($dropped_github); ping The Gambler."
+  fi
   rm -rf .gemini gemini-artifacts gha-creds-*.json; git checkout -- .github 2>/dev/null || true; git clean -fdq -- .github
   if [ "$GEMINI_OK" != success ]; then
     say "$NUM" "I got stuck before finishing, so I've changed nothing. The run log has the details: $RUN_URL"
@@ -110,7 +114,14 @@ finish(){
   # With no final text, the action hands over the CLI's raw JSON instead; keep only its response.
   if jq -e . > /dev/null 2>&1 <<<"$summary"; then summary=$(jq -r '.response // ""' <<<"$summary"); fi
   [ -n "${summary// }" ] || summary="I didn't write a summary this time. Changed: $(git status --porcelain | awk '{print $2}' | grep -v '^game/index.html$' | tr '\n' ' ')"
-  if [ -z "$(git status --porcelain)" ]; then say "$NUM" "$summary"; exit 0; fi
+  if [ -n "$dropped_github" ]; then summary="${summary}
+
+${dropped_note}"; fi
+  if [ -z "$(git status --porcelain)" ]; then
+    say "$NUM" "$summary"
+    if [ -n "$dropped_github" ]; then PING_FROM=rolexg REPO="$REPO" GH_TOKEN="$GH_TOKEN" bash "$(dirname "$0")/ping.sh" gambler "$NUM" "$dropped_note" || true; fi
+    exit 0
+  fi
 
   checks="passed"; node tools/check.mjs > check.log 2>&1 || checks="FAILED (see the run log)"
   cat check.log; rm -f check.log
@@ -138,6 +149,9 @@ Run: $RUN_URL" --jq .number) || {
   # PRs and pushes made with the workflow token don't start other workflows, so start CI by hand.
   gh workflow run ci.yml -R "$REPO" --ref "$BRANCH" || true
   PING_FROM=rolexg REPO="$REPO" GH_TOKEN="$GH_TOKEN" bash "$(dirname "$0")/ping.sh" gemini "$pr" "Please review PR #$pr; merge it if the verdict is merge and CI is green." || true
+  if [ -n "$dropped_github" ]; then
+    PING_FROM=rolexg REPO="$REPO" GH_TOKEN="$GH_TOKEN" bash "$(dirname "$0")/ping.sh" gambler "$NUM" "$dropped_note" || true
+  fi
   if [[ "$TITLE" =~ [Mm]oney ]]; then PING_FROM=rolexg REPO="$REPO" GH_TOKEN="$GH_TOKEN" bash "$(dirname "$0")/ping.sh" jimini "$pr" "Please check the money changes and report any concerns." || true; fi
 
   say "$NUM" "$msg
