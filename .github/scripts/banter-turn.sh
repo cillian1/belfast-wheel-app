@@ -6,7 +6,7 @@
 set -euo pipefail
 MAX_RUN=4
 MAX_DAY=1000
-MAX_COPILOT_DAY=25 # shared by Copilot, Renauw and Cillian's Copilot requests
+MAX_COPILOT_DAY=1000 # shared by Copilot, Renauw and Cillian's Copilot requests; GitHub/Copilot account limits still apply
 MAX_CLAUDE_DAY=50 # Claude shares Cillian's plan, keep it sensible
 MAX_ROLEXG_DAY=40 # Cillian 20:05: RolexG and Jimini chat too (the repeat filter keeps it sane)
 MAX_JIMINI_DAY=40
@@ -62,6 +62,13 @@ for s in "${seats[@]}"; do [ "$s" = "$last" ] && [ $((RANDOM % 5)) -ne 0 ] && co
   if [ -n "$pos" ] && [ "$pos" -lt "$best" ]; then best=$pos; next=$s; fi; done
 [ ${#others[@]} -eq 0 ] && { echo "Nobody to reply."; exit 0; }
 [ -z "$next" ] && next=${others[RANDOM % ${#others[@]}]}
+if [ -n "${BANTER_REQUESTED_SPEAKER:-}" ] && [ "$BANTER_REQUESTED_SPEAKER" != Auto ]; then
+  if [[ " ${seats[*]} " != *" $BANTER_REQUESTED_SPEAKER "* ]]; then
+    echo "Requested speaker $BANTER_REQUESTED_SPEAKER is not configured or has reached its daily cap." >&2
+    exit 0
+  fi
+  next="$BANTER_REQUESTED_SPEAKER"
+fi
 order=("$next"); for s in "${others[@]}"; do [ "$s" != "$next" ] && order+=("$s"); done
 echo "$last spoke last, ${order[*]} in that order."
 
