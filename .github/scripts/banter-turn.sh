@@ -42,7 +42,8 @@ copilot_day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.c
 if { [ -n "${COPILOT_GITHUB_TOKEN:-}" ] || [ "${COPILOT_SEAT:-}" = on ]; } && [ "$copilot_day" -lt "$MAX_COPILOT_DAY" ]; then
   seats+=(Copilot)
 fi
-if [ -n "${COPILOT_GITHUB_TOKEN:-}" ] && copilot --help 2>&1 | grep -q -- '--agent'; then
+# Read the full help output: with pipefail, grep -q can close the pipe early and hide this seat.
+if [ -n "${COPILOT_GITHUB_TOKEN:-}" ] && copilot --help 2>&1 | grep -F -- '--agent' >/dev/null; then
   [ "$copilot_day" -lt "$MAX_COPILOT_DAY" ] && seats+=(Renauw)
 fi
 [ -n "${GCP_TOKEN:-}${GEMINI_API_KEY:-}" ] && seats+=(Gemini) # RolexG chats on the same Gemini sign-in, but only

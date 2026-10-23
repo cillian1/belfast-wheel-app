@@ -22,7 +22,10 @@ cat > "$tmp/bin/copilot" <<'EOF'
 #!/usr/bin/env bash
 if [ "$1" = --help ]; then
   if [ "${COPILOT_AGENT_FLAG_SUPPORT:-}" = yes ]; then
-    echo 'Usage: copilot [--agent name]'
+    printf '%s\n' 'Usage: copilot [options]'
+    for ((i=0; i<10000; i++)); do
+      printf '  --agent <name>\n'
+    done
   else
     echo 'Usage: copilot [options]'
   fi
