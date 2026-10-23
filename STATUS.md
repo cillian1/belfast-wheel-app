@@ -11,6 +11,8 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
+- #226 Count unique handoffs in the daily ping limit → main
+- #225 Ensure Renauw is offered a Banter turn → main
 - #222 Prevent Jimini and RolexG tasks replacing unrelated runs → main
 - #219 Watch: recover mirrored drawing state for update 32 → update-32 (draft)
 - #218 money: host wallet fixes (#151) → update-32
