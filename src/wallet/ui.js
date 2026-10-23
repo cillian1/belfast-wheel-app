@@ -118,6 +118,7 @@ body{box-sizing:border-box;margin:0}
 .wbanner .wrow{gap:10px}
 .wbanner .wrow .wbtn:not(.wbig){font-size:17px;flex:1}
 .wbanner[hidden]{display:none}
+.wbanner.wachievement{pointer-events:none;max-width:536px;margin-inline:auto;overflow-wrap:anywhere}
 .wnote{position:fixed;left:16px;right:16px;top:calc(70px + env(safe-area-inset-top,0px));z-index:45;max-width:420px;margin:0 auto;padding:18px;border-radius:18px;background:#2a2312;border:2px solid #f5d27a;color:#f8e4a6;text-align:center;display:flex;flex-direction:column;gap:8px;box-shadow:0 10px 40px rgba(0,0,0,.7),0 0 30px rgba(245,210,122,.35);animation:wnIn .4s ease-out}
 .wnote small{letter-spacing:.18em;text-transform:uppercase;font-size:11px;color:#c9a85a}.wnote b{font-size:32px;color:#fff1b8}.wnote p{margin:0;font-size:18px;line-height:1.35}
 @keyframes wnIn{from{transform:translateY(-20px);opacity:0}}
@@ -317,7 +318,7 @@ header>span{flex-wrap:wrap}
   }
 
   function showAchievementBanner(title, sub) {
-    const b = el('div', 'wbanner');
+    const b = el('div', 'wbanner wachievement');
     b.innerHTML = `<b class="wbig">${esc(title)}</b><p>${esc(sub)}</p>`;
     document.body.appendChild(b);
     setTimeout(() => { b.style.opacity = '0'; b.style.transition = 'opacity 0.5s'; setTimeout(() => b.remove(), 500); }, 2500);

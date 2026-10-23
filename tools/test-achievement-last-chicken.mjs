@@ -43,6 +43,14 @@ try {
   await A.page.locator('#wPass').fill('farm-test');
   await A.page.locator('#wNew').click();
   await A.page.locator('.wlogin').waitFor({ state: 'hidden' });
+  await A.page.setViewportSize({ width: 320, height: 700 });
+  await A.page.waitForFunction(() => W.user);
+  await A.page.evaluate(() => { busy = true; setVerdict({ eyebrow: 'Spinning', title: 'Ready for achievement', body: 'Watch fixture' }); });
+  const key = await A.page.evaluate(() => W.user);
+  const B = await phone(`/?watch=${encodeURIComponent(key)}&name=Tatious`);
+  await B.page.setViewportSize({ width: 390, height: 780 });
+  await B.page.locator('#wwMode').click(); // use Live to observe the short banner
+  await B.page.waitForFunction(() => document.querySelector('#wwT').textContent === 'Ready for achievement', null, { timeout: 15000 });
 
   // 1. Force a one-chicken ending
   console.log('Testing first-time achievement banner...');
@@ -65,6 +73,21 @@ try {
   assert.equal(bannerText, '🏆 Last chicken standing');
   const bannerSub = await A.page.locator('.wbanner p').textContent();
   assert.equal(bannerSub, 'One bird. One meteor. Respect.');
+  await B.page.locator('.wachievement').waitFor({ state: 'visible' });
+  for (const phone of [A, B]) {
+    const visible = await phone.page.locator('.wachievement').evaluate(element => {
+      const r = element.getBoundingClientRect(), style = getComputedStyle(element);
+      return { left:r.left, right:r.right, top:r.top, bottom:r.bottom, width:innerWidth, height:innerHeight,
+        position:style.position, pointerEvents:style.pointerEvents,
+        clippedByCanvas:!!element.closest('.wscr') };
+    });
+    assert.ok(visible.left >= 0 && visible.right <= visible.width && visible.top >= 0 && visible.bottom <= visible.height, `mobile banner fits: ${JSON.stringify(visible)}`);
+    assert.equal(visible.position, 'fixed', 'existing banner CSS positions the achievement');
+    assert.equal(visible.pointerEvents, 'none', 'the cosmetic banner does not block game or Watch controls');
+    assert.equal(visible.clippedByCanvas, false, 'Watch canvas clipping does not affect the banner');
+    // pointer-events:none makes hit testing intentionally pass through it.
+  }
+  assert.deepEqual(B.errors.filter(error => !/favicon/.test(error)), [], 'Watch has no rendering errors');
 
   // Check if saved in DB
   await A.page.waitForFunction(() => W.me.achievements && W.me.achievements['last-chicken']);

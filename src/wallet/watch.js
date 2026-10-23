@@ -366,12 +366,12 @@
       const v = st.v || {}; $w('wwE').textContent = v.e || ''; $w('wwT').textContent = v.t || ''; $w('wwB').textContent = v.b || ''; $w('wwC').textContent = st.cap || '';
       const fin = $w('wwFin'), fl = st.fin; fin.hidden = !fl; if (fl) fin.innerHTML = fl.map(x => `<li>${esc(x)}</li>`).join('');
       renderGamble($w('wwGamble'), parse(st.gamble) || null, true);
-      const ach = parse(st.achievement);
+      const ach = typeof st.achievement === 'string' ? parse(st.achievement) : st.achievement;
       if (ach && ach.id !== S.achId) {
         S.achId = ach.id;
-        const b = el('div', 'wbanner');
+        const b = el('div', 'wbanner wachievement');
         b.innerHTML = `<b class="wbig">${esc(ach.title)}</b><p>${esc(ach.sub)}</p>`;
-        $w('wwCv').parentNode.appendChild(b);
+        view.appendChild(b); // outside the clipped canvas and its paragraph styles
         setTimeout(() => { b.style.opacity = '0'; b.style.transition = 'opacity 0.5s'; setTimeout(() => b.remove(), 500); }, 2500);
       }
       const tw = +st.tw || 0, tb = +st.tb || 0;
