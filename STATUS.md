@@ -11,6 +11,7 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
+- #242 money: Monster Room special dice become d20s → update-32
 - #241 Fix trusted task dispatch and queue output overflow → main (draft)
 - #235 Audit Update 32 tracker status (read-only) → main (draft)
 - #234 Jimini: Please complete the read-only odds/prize-mapping report in #229. Do no → main
