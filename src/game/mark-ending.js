@@ -622,6 +622,9 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
     chickens.forEach(ch => { if (ch.alive) ch.peck = Math.max(0, Math.sin(el * 8 + ch.x) * .6); });
   });
   let alive = chickens.filter(ch => ch.alive);
+  if (alive.length === 1 && typeof W !== 'undefined' && W.awardAchievement) {
+    W.awardAchievement('last-chicken', '🏆 Last chicken standing', 'One bird. One meteor. Respect.');
+  }
   setVerdict({ eyebrow: 'Going deeper', title: alive.length ? 'Some made it' : 'None of them made it', body: alive.length ? 'They head for the farm.' : 'The fire got every one.', steps: steps.slice(), flash: false });
   if (!alive.length) {
     await wait(1500);

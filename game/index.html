@@ -1322,7 +1322,7 @@ function addSpecialDice(kinds) {
   clearSpecialDice();
   return kinds.map((sp, j) => { const [a, rr] = SP_SLOTS[j % SP_SLOTS.length], d = { hx: Math.cos(a) * rr, hy: Math.sin(a) * rr, x: Math.cos(a) * rr, y: Math.sin(a) * rr, a: (Math.random() - .5) * .3, v: 1, sp, swell: 0, born: 0 }; dice.push(d); return d; });
 }
-var rotF = 0, flatT = 0, balls = [], ballR = 0, counts = null, winner = -1, banner = '';
+var rotF = 0, flatT = 0, balls = [], ballR = 0, counts = null, winner = -1, banner = '', achievement = null;
 var rotP = 0, hi = null, hiA = 0;
 
 // keep physics positions valid when the canvas is resized mid-drop
@@ -4885,6 +4885,9 @@ async function markChain(steps, dest, held = { W: 0, B: 0 }) {
     chickens.forEach(ch => { if (ch.alive) ch.peck = Math.max(0, Math.sin(el * 8 + ch.x) * .6); });
   });
   let alive = chickens.filter(ch => ch.alive);
+  if (alive.length === 1 && typeof W !== 'undefined' && W.awardAchievement) {
+    W.awardAchievement('last-chicken', '🏆 Last chicken standing', 'One bird. One meteor. Respect.');
+  }
   setVerdict({ eyebrow: 'Going deeper', title: alive.length ? 'Some made it' : 'None of them made it', body: alive.length ? 'They head for the farm.' : 'The fire got every one.', steps: steps.slice(), flash: false });
   if (!alive.length) {
     await wait(1500);
@@ -5694,6 +5697,7 @@ body{box-sizing:border-box;margin:0}
 .wbanner .wrow{gap:10px}
 .wbanner .wrow .wbtn:not(.wbig){font-size:17px;flex:1}
 .wbanner[hidden]{display:none}
+.wbanner.wachievement{pointer-events:none;max-width:536px;margin-inline:auto;overflow-wrap:anywhere}
 .wnote{position:fixed;left:16px;right:16px;top:calc(70px + env(safe-area-inset-top,0px));z-index:45;max-width:420px;margin:0 auto;padding:18px;border-radius:18px;background:#2a2312;border:2px solid #f5d27a;color:#f8e4a6;text-align:center;display:flex;flex-direction:column;gap:8px;box-shadow:0 10px 40px rgba(0,0,0,.7),0 0 30px rgba(245,210,122,.35);animation:wnIn .4s ease-out}
 .wnote small{letter-spacing:.18em;text-transform:uppercase;font-size:11px;color:#c9a85a}.wnote b{font-size:32px;color:#fff1b8}.wnote p{margin:0;font-size:18px;line-height:1.35}
 @keyframes wnIn{from{transform:translateY(-20px);opacity:0}}
@@ -5892,6 +5896,38 @@ header>span{flex-wrap:wrap}
     }).finally(() => pendingTrophies.delete(pendingId));
   }
 
+  function showAchievementBanner(title, sub) {
+    const b = el('div', 'wbanner wachievement');
+    b.innerHTML = `<b class="wbig">${esc(title)}</b><p>${esc(sub)}</p>`;
+    document.body.appendChild(b);
+    setTimeout(() => { b.style.opacity = '0'; b.style.transition = 'opacity 0.5s'; setTimeout(() => b.remove(), 500); }, 2500);
+  }
+
+  const pendingAchievements = new Set();
+  W.awardAchievement = function(id, title, sub) {
+    const me = W.me, user = W.user;
+    if (!me || !user) return;
+    const earned = me.achievements && me.achievements[id];
+    if (earned) {
+      toast(`${title} (again)`, true);
+      return;
+    }
+    const pendingId = user + '/' + id;
+    if (pendingAchievements.has(pendingId)) return;
+    const earnedAt = now();
+    pendingAchievements.add(pendingId);
+    db.put('users/' + user + '/achievements/' + id, earnedAt).then(() => {
+      if (W.user !== user) return;
+      W.me.achievements = Object.assign({}, W.me.achievements || {}, { [id]: earnedAt });
+      showAchievementBanner(title, sub);
+      const liveAchievement = { user, id, title, sub, at: earnedAt };
+      achievement = liveAchievement; // scoped to this player for Live Watch
+      setTimeout(() => { if (achievement === liveAchievement) achievement = null; }, 3000);
+    }).catch(() => {
+      if (W.user === user) toast(`Could not save ${title}. Try again when online.`);
+    }).finally(() => pendingAchievements.delete(pendingId));
+  };
+
   function paint() {
     const me = W.me;
     $w('wWho').innerHTML = `<small>${me ? (me.test ? 'TEST' : esc(me.name)) : 'Log in'}</small><b>${eur(me ? me.balance || 0 : 0)}</b>`;
@@ -5960,6 +5996,10 @@ header>span{flex-wrap:wrap}
           if (!u) return ($w('wErr').textContent = 'No account with that name. Tap New account.');
           if (u.pass !== h) return ($w('wErr').textContent = 'Wrong password.');
         }
+        if (W.user !== k) {
+          achievement = null;
+          document.querySelectorAll('.wbanner.wachievement').forEach(b => b.remove());
+        }
         W.user = k; pref.set('wol.user', k); pref.set('wol.pass', h);
         login.hidden = true; await refresh(); toast(isNew ? 'Welcome, ' + name + '. Top up to start spinning.' : 'Welcome back, ' + (W.me ? W.me.name : name), true);
       } catch (e) { $w('wErr').textContent = 'No connection to the wheel. Check your internet and try again.'; }
@@ -5976,7 +6016,7 @@ header>span{flex-wrap:wrap}
       paint();
     } catch (e) {}
   }
-  function logout() { if (gambleBusy) return toast('Wait for the card.'); collectGamble(); if (W.run) W.run.gambleClosed = true; W.user = W.me = null; pref.set('wol.user', null); pref.set('wol.pass', null); paint(); closeSheet(); showLogin(); }
+  function logout() { if (gambleBusy) return toast('Wait for the card.'); collectGamble(); if (W.run) W.run.gambleClosed = true; achievement = null; document.querySelectorAll('.wbanner.wachievement').forEach(b => b.remove()); W.user = W.me = null; pref.set('wol.user', null); pref.set('wol.pass', null); paint(); closeSheet(); showLogin(); }
   // ---------- top up (player pays Cillian on Revolut and confirms; the host page can reverse) ----------
   // Owns the top-up confirmation sheets.
   function topupSheet(msg) {
@@ -6508,7 +6548,7 @@ header>span{flex-wrap:wrap}
   // which room, balls, dice, chickens, doors...) several times a second, and the watcher's phone draws it with
   // the same game code, so it looks exactly like the real thing. Only small JSON goes over the wire:
   // livef/{key}/base holds the whole state (refreshed every few seconds), livef/{key}/d only what changed since.
-  const MIRROR = ['N', 'c', 'R', 'D', 'scene', 'zoom', 'wheelZoom', 'fade', 'DEPTH', 'evenA', 'FINAL', 'B', 'dice', 'rotF', 'flatT', 'balls', 'ballR', 'counts', 'winner', 'banner',
+  const MIRROR = ['N', 'c', 'R', 'D', 'scene', 'zoom', 'wheelZoom', 'fade', 'DEPTH', 'evenA', 'FINAL', 'B', 'dice', 'rotF', 'flatT', 'balls', 'ballR', 'counts', 'winner', 'banner', 'achievement',
     'rotP', 'hi', 'hiA', 'domeBulge', 'pAng', 'ghost', 'ghostSay', 'dots', 'boostA', 'boostNew', 'wellBalls', 'introT', 'camT', 'hallZ', 'doorT', 'flash', 'rotS',
     'bingo', 'ballSpeed', 'ballPhase', 'pickIdx', 'handT', 'liftT', 'handClosed', 'prize', 'roul', 'vault', 'coaster', 'planet', 'mon', 'rotC', 'zena', 'god', 'pyr',
     'pipes', 'carried', 'd6', 'd6Sum', 'chickens', 'arrows', 'fires', 'feathers', 'camX', 'markItems', 'rotM', 'formT', 'showMark', 'chainNote', 'raceLine',
@@ -6526,7 +6566,11 @@ header>span{flex-wrap:wrap}
   // the game right now, one JSON string per piece of state
   function capture() {
     const st = {};
-    for (const n in mirGet) { try { const j = JSON.stringify(mirGet[n](), slim); if (j !== undefined) st[n] = j; } catch (e) {} }
+    for (const n in mirGet) { try {
+      let value = mirGet[n]();
+      if (n === 'achievement' && value && typeof value === 'object' && value.user !== W.user) value = null;
+      const j = JSON.stringify(value, slim); if (j !== undefined) st[n] = j;
+    } catch (e) {} }
     st.ord = JSON.stringify(typeof runOrders !== 'undefined' ? runOrders : null);
     const tiles = [...document.querySelectorAll('.wilds .wt')];
     st.tw = String(tiles.slice(0, 3).filter(t => t.classList.contains('lit')).length); st.tb = String(tiles.slice(3).filter(t => t.classList.contains('lit')).length);
@@ -6539,24 +6583,28 @@ header>span{flex-wrap:wrap}
   const join = (st, keys) => '{' + keys.map(k => JSON.stringify(k) + ':' + st[k]).join(',') + '}';
   const changed = (a, b) => Object.keys(a).filter(k => a[k] !== (b && b[k]));
   const pause = ms => new Promise(r => setTimeout(r, ms));
-  let liveBase = null, liveBaseId = 0, liveBaseAt = 0, liveI = 0, liveSent = '', liveSentAt = 0;
-  async function sendLive(st, playing) {
+  let liveBase = null, liveBaseId = 0, liveBaseAt = 0, liveI = 0, liveSent = '', liveSentAt = 0, liveUser = null;
+  async function sendLive(st, playing, user) {
+    if (!user || W.user !== user) return;
+    if (liveUser !== user) { liveUser = user; liveBase = null; liveBaseId = liveI = 0; liveSent = ''; }
     const capEl = document.getElementById('caption');
     if (!liveBase || SLOW.some(k => st[k] !== liveBase[k]) || now() - liveBaseAt > 5000) {
       liveBase = st; liveBaseId++; liveBaseAt = now();
-      await db.put('livef/' + W.user + '/base', { id: liveBaseId, st: join(st, Object.keys(st)) });
+      await db.put('livef/' + user + '/base', { id: liveBaseId, st: join(st, Object.keys(st)) });
     }
+    if (W.user !== user) return;
     const d = join(st, changed(st, liveBase)), extra = JSON.stringify([lastVerdict, capEl ? capEl.textContent : '', W.run && W.run.live ? W.run.stake : W.stake, W.me ? W.me.balance || 0 : 0, playing]);
     if (d + extra === liveSent && now() - liveSentAt < 4000) return; // nothing moved (still resent now and then, so watchers know we're here)
     liveSent = d + extra; liveSentAt = now();
-    await db.put('livef/' + W.user + '/d', { i: ++liveI, b: liveBaseId, at: now(), d, v: lastVerdict, cap: capEl ? capEl.textContent : '', s: W.run && W.run.live ? W.run.stake : W.stake, bal: W.me ? W.me.balance || 0 : 0, play: playing });
+    if (W.user !== user) return;
+    await db.put('livef/' + user + '/d', { i: ++liveI, b: liveBaseId, at: now(), d, v: lastVerdict, cap: capEl ? capEl.textContent : '', s: W.run && W.run.live ? W.run.stake : W.stake, bal: W.me ? W.me.balance || 0 : 0, play: playing });
   }
   async function streamLoop() {
     streaming = true; let sinceCheck = now(), sinceMsg = now();
     try {
       while (watchers && !document.hidden && W.user) {
-        const t0 = now(), playing = typeof busy !== 'undefined' && busy;
-        try { await sendLive(capture(), playing); } catch (e) { await pause(1500); }
+        const t0 = now(), playing = typeof busy !== 'undefined' && busy, user = W.user;
+        try { await sendLive(capture(), playing, user); } catch (e) { await pause(1500); }
         const gap = (playing ? 90 : 700) - (now() - t0); if (gap > 0) await pause(gap);
         if (now() - sinceMsg > 2000) { sinceMsg = now(); await checkMsgs(); }
         if (now() - sinceCheck > 5000) { sinceCheck = now(); await heartbeat(); }
@@ -6851,6 +6899,14 @@ header>span{flex-wrap:wrap}
       const v = st.v || {}; $w('wwE').textContent = v.e || ''; $w('wwT').textContent = v.t || ''; $w('wwB').textContent = v.b || ''; $w('wwC').textContent = st.cap || '';
       const fin = $w('wwFin'), fl = st.fin; fin.hidden = !fl; if (fl) fin.innerHTML = fl.map(x => `<li>${esc(x)}</li>`).join('');
       renderGamble($w('wwGamble'), parse(st.gamble) || null, true);
+      const ach = typeof st.achievement === 'string' ? parse(st.achievement) : st.achievement;
+      if (ach && ach.id !== S.achId) {
+        S.achId = ach.id;
+        const b = el('div', 'wbanner wachievement');
+        b.innerHTML = `<b class="wbig">${esc(ach.title)}</b><p>${esc(ach.sub)}</p>`;
+        view.appendChild(b); // outside the clipped canvas and its paragraph styles
+        setTimeout(() => { b.style.opacity = '0'; b.style.transition = 'opacity 0.5s'; setTimeout(() => b.remove(), 500); }, 2500);
+      }
       const tw = +st.tw || 0, tb = +st.tb || 0;
       $w('wwTiles').innerHTML = `<span class="g">${'●'.repeat(Math.min(tw, 9))}${'○'.repeat(Math.max(0, 3 - tw))} WILDS</span><span class="p">${'●'.repeat(Math.min(tb, 9))}${'○'.repeat(Math.max(0, 3 - tb))} BONUS</span>`;
       const vk = [v.e, v.t, v.b, st.cap, JSON.stringify(st.gamble)].join('|'); if (vk !== S.vk) { S.vk = vk; fitWatch(); } // refit only when the verdict text changes

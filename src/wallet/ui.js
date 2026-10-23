@@ -118,6 +118,7 @@ body{box-sizing:border-box;margin:0}
 .wbanner .wrow{gap:10px}
 .wbanner .wrow .wbtn:not(.wbig){font-size:17px;flex:1}
 .wbanner[hidden]{display:none}
+.wbanner.wachievement{pointer-events:none;max-width:536px;margin-inline:auto;overflow-wrap:anywhere}
 .wnote{position:fixed;left:16px;right:16px;top:calc(70px + env(safe-area-inset-top,0px));z-index:45;max-width:420px;margin:0 auto;padding:18px;border-radius:18px;background:#2a2312;border:2px solid #f5d27a;color:#f8e4a6;text-align:center;display:flex;flex-direction:column;gap:8px;box-shadow:0 10px 40px rgba(0,0,0,.7),0 0 30px rgba(245,210,122,.35);animation:wnIn .4s ease-out}
 .wnote small{letter-spacing:.18em;text-transform:uppercase;font-size:11px;color:#c9a85a}.wnote b{font-size:32px;color:#fff1b8}.wnote p{margin:0;font-size:18px;line-height:1.35}
 @keyframes wnIn{from{transform:translateY(-20px);opacity:0}}
@@ -316,6 +317,38 @@ header>span{flex-wrap:wrap}
     }).finally(() => pendingTrophies.delete(pendingId));
   }
 
+  function showAchievementBanner(title, sub) {
+    const b = el('div', 'wbanner wachievement');
+    b.innerHTML = `<b class="wbig">${esc(title)}</b><p>${esc(sub)}</p>`;
+    document.body.appendChild(b);
+    setTimeout(() => { b.style.opacity = '0'; b.style.transition = 'opacity 0.5s'; setTimeout(() => b.remove(), 500); }, 2500);
+  }
+
+  const pendingAchievements = new Set();
+  W.awardAchievement = function(id, title, sub) {
+    const me = W.me, user = W.user;
+    if (!me || !user) return;
+    const earned = me.achievements && me.achievements[id];
+    if (earned) {
+      toast(`${title} (again)`, true);
+      return;
+    }
+    const pendingId = user + '/' + id;
+    if (pendingAchievements.has(pendingId)) return;
+    const earnedAt = now();
+    pendingAchievements.add(pendingId);
+    db.put('users/' + user + '/achievements/' + id, earnedAt).then(() => {
+      if (W.user !== user) return;
+      W.me.achievements = Object.assign({}, W.me.achievements || {}, { [id]: earnedAt });
+      showAchievementBanner(title, sub);
+      const liveAchievement = { user, id, title, sub, at: earnedAt };
+      achievement = liveAchievement; // scoped to this player for Live Watch
+      setTimeout(() => { if (achievement === liveAchievement) achievement = null; }, 3000);
+    }).catch(() => {
+      if (W.user === user) toast(`Could not save ${title}. Try again when online.`);
+    }).finally(() => pendingAchievements.delete(pendingId));
+  };
+
   function paint() {
     const me = W.me;
     $w('wWho').innerHTML = `<small>${me ? (me.test ? 'TEST' : esc(me.name)) : 'Log in'}</small><b>${eur(me ? me.balance || 0 : 0)}</b>`;
@@ -384,6 +417,10 @@ header>span{flex-wrap:wrap}
           if (!u) return ($w('wErr').textContent = 'No account with that name. Tap New account.');
           if (u.pass !== h) return ($w('wErr').textContent = 'Wrong password.');
         }
+        if (W.user !== k) {
+          achievement = null;
+          document.querySelectorAll('.wbanner.wachievement').forEach(b => b.remove());
+        }
         W.user = k; pref.set('wol.user', k); pref.set('wol.pass', h);
         login.hidden = true; await refresh(); toast(isNew ? 'Welcome, ' + name + '. Top up to start spinning.' : 'Welcome back, ' + (W.me ? W.me.name : name), true);
       } catch (e) { $w('wErr').textContent = 'No connection to the wheel. Check your internet and try again.'; }
@@ -400,7 +437,7 @@ header>span{flex-wrap:wrap}
       paint();
     } catch (e) {}
   }
-  function logout() { if (gambleBusy) return toast('Wait for the card.'); collectGamble(); if (W.run) W.run.gambleClosed = true; W.user = W.me = null; pref.set('wol.user', null); pref.set('wol.pass', null); paint(); closeSheet(); showLogin(); }
+  function logout() { if (gambleBusy) return toast('Wait for the card.'); collectGamble(); if (W.run) W.run.gambleClosed = true; achievement = null; document.querySelectorAll('.wbanner.wachievement').forEach(b => b.remove()); W.user = W.me = null; pref.set('wol.user', null); pref.set('wol.pass', null); paint(); closeSheet(); showLogin(); }
   // ---------- top up (player pays Cillian on Revolut and confirms; the host page can reverse) ----------
   // Owns the top-up confirmation sheets.
   function topupSheet(msg) {
