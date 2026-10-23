@@ -1,6 +1,11 @@
 {
   "update": 32,
   "name": "Update 32",
-  "goals": ["Wallet/Watch clean recovery work (#209)", "Live Watch nested-wheel drawing (#199)", "GAMBLE/COLLECT (#213)", "Last chicken standing (#200)", "Remove W/B marks from special-chicken art (#211)"],
-  "issues": [209, 199, 213, 200, 211]
+  "goals": ["Wallet/Watch clean recovery work (#209)", "Live Watch nested-wheel drawing (#199)", "GAMBLE/COLLECT (#213)", "Last chicken standing (#200)", "Remove W/B marks from special-chicken art (#211)", "Extra Bonus/WILD/Deeper lag task (#231)", "Monster Room d12/d20 styling request (#229)"],
+  "issues": [209, 199, 213, 200, 211, 231, 229],
+  "work_notes": {
+    "199": "Include #181's Live Watch viewer regression check with the chat box and keyboard open. #182 already fixed the keyboard-open drawing bug in update-31; request a regression check, not a duplicate fix.",
+    "231": "Preserve Math.random call order and outcomes. Do not change odds, prizes, or wallet behavior.",
+    "229": "Monster Room styling request: ordinary d12 is white; special/bonus d20 uses its designated colour. Outcome/prize mapping is PENDING Jimini's read-only odds report and Cillian's decision; make no mapping assumptions and do not implement d20 outcomes before the mapping decision. Any eventual odds/prize/wallet change requires Banter notice, a money PR, fast-sim evidence, and independent review."
+  }
 }
