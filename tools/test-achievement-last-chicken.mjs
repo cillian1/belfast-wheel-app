@@ -19,11 +19,16 @@ const tree = path => {
   return any ? out : null;
 };
 async function phone(path) {
+  let failAchievementWrite = false;
   const context = await browser.newContext({ viewport: { width: 360, height: 800 } });
   const page = await context.newPage(), errors = [];
   await page.route('https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app/**', async route => {
     const request = route.request(), p = new URL(request.url()).pathname.replace(/\.json$/, '').replace(/^\/+/, '');
     if (request.method() === 'GET') return route.fulfill({ json: tree(p) });
+    if (request.method() === 'PUT' && p.endsWith('/achievements/last-chicken') && failAchievementWrite) {
+      failAchievementWrite = false;
+      return route.fulfill({ status: 503, body: 'simulated offline write' });
+    }
     const body = request.postDataJSON();
     if (request.method() === 'POST') { const id = `ci-${data.size}`; data.set(`${p}/${id}`, body); return route.fulfill({ json: { name: id } }); }
     for (const k of [...data.keys()]) if (k.startsWith(p + '/')) data.delete(k);
@@ -34,7 +39,7 @@ async function phone(path) {
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   page.on('pageerror', e => errors.push(e.message));
   await page.goto(origin + path);
-  return { page, errors };
+  return { page, errors, failNextAchievementWrite: () => { failAchievementWrite = true; } };
 }
 
 try {
@@ -54,6 +59,7 @@ try {
 
   // 1. Force a one-chicken ending
   console.log('Testing first-time achievement banner...');
+  A.failNextAchievementWrite();
   await A.page.evaluate(() => {
     // We can't easily run the whole markChain because it's async and depends on a lot of state.
     // But we can simulate the moment the fire arrows finish.
@@ -68,10 +74,20 @@ try {
     }
   });
 
+  await A.page.locator('.wtoast').filter({ hasText: 'Could not save' }).waitFor({ state: 'visible' });
+  await A.page.waitForFunction(() => !W.me.achievements || !W.me.achievements['last-chicken']);
+  assert.equal(await A.page.locator('.wachievement').count(), 0, 'failed writes do not show an earned banner');
+  assert.equal(await B.page.locator('.wachievement').count(), 0, 'failed writes do not mirror a false achievement to Watch');
+
+  // Retry the same one-chicken ending after the failed save.
+  await A.page.evaluate(() => {
+    W.awardAchievement('last-chicken', '🏆 Last chicken standing', 'One bird. One meteor. Respect.');
+  });
+
   // Check for the banner
-  const bannerText = await A.page.locator('.wbanner .wbig').textContent();
+  const bannerText = await A.page.locator('.wachievement .wbig').textContent();
   assert.equal(bannerText, '🏆 Last chicken standing');
-  const bannerSub = await A.page.locator('.wbanner p').textContent();
+  const bannerSub = await A.page.locator('.wachievement p').textContent();
   assert.equal(bannerSub, 'One bird. One meteor. Respect.');
   await B.page.locator('.wachievement').waitFor({ state: 'visible' });
   for (const phone of [A, B]) {

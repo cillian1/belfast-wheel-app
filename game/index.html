@@ -5903,6 +5903,7 @@ header>span{flex-wrap:wrap}
     setTimeout(() => { b.style.opacity = '0'; b.style.transition = 'opacity 0.5s'; setTimeout(() => b.remove(), 500); }, 2500);
   }
 
+  const pendingAchievements = new Set();
   W.awardAchievement = function(id, title, sub) {
     const me = W.me, user = W.user;
     if (!me || !user) return;
@@ -5911,12 +5912,19 @@ header>span{flex-wrap:wrap}
       toast(`${title} (again)`, true);
       return;
     }
+    const pendingId = user + '/' + id;
+    if (pendingAchievements.has(pendingId)) return;
     const earnedAt = now();
-    me.achievements = Object.assign({}, me.achievements || {}, { [id]: earnedAt });
-    db.put('users/' + user + '/achievements/' + id, earnedAt).catch(() => {});
-    showAchievementBanner(title, sub);
-    achievement = { id, title, sub, at: earnedAt }; // global for watchers
-    setTimeout(() => { if (achievement && achievement.id === id) achievement = null; }, 3000);
+    pendingAchievements.add(pendingId);
+    db.put('users/' + user + '/achievements/' + id, earnedAt).then(() => {
+      if (W.user !== user) return;
+      W.me.achievements = Object.assign({}, W.me.achievements || {}, { [id]: earnedAt });
+      showAchievementBanner(title, sub);
+      achievement = { id, title, sub, at: earnedAt }; // global for watchers
+      setTimeout(() => { if (achievement && achievement.id === id) achievement = null; }, 3000);
+    }).catch(() => {
+      if (W.user === user) toast(`Could not save ${title}. Try again when online.`);
+    }).finally(() => pendingAchievements.delete(pendingId));
   };
 
   function paint() {
