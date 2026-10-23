@@ -20,26 +20,26 @@ const browser = await chromium.launch({
 async function runTest() {
   const context = await browser.newContext({ viewport: { width: 360, height: 800 } });
   const page = await context.newPage();
-  
+
   await page.route('https://belfast-wheel-default-rtdb.europe-west1.firebasedatabase.app/**', route => route.fulfill({ json: {} }));
   await page.route('https://raw.githubusercontent.com/**', route => route.fulfill({ json: { game: 31, gameBuild: 99 } }));
 
   try {
     await page.goto(origin);
-    
+
     // Login to get to the game
     await page.locator('#wName').fill('test');
     await page.locator('#wPass').fill('ci-test');
     await page.locator('#wNew').click();
     await page.locator('.wlogin').waitFor({ state: 'hidden' });
-    
+
     // Tap Spin to start audio
     await page.locator('#spinBtn').click();
-    
+
     // Check AC state
     let state = await page.evaluate(() => AC.state);
     assert.equal(state, 'running', 'AudioContext should be running after user gesture (Spin)');
-    
+
     // Check Mute button label
     let muteText = await page.locator('#muteBtn').textContent();
     let isMuted = await page.evaluate(() => Music.muted);
@@ -50,16 +50,16 @@ async function runTest() {
       Object.defineProperty(document, 'hidden', { value: true, writable: true, configurable: true });
       document.dispatchEvent(new Event('visibilitychange'));
     });
-    
+
     // In some browsers, AC might stay running but we duck the volume.
     // We want to ensure it's still running (or resumes) after we come back.
-    
+
     // Simulate Foreground (show)
     await page.evaluate(() => {
       Object.defineProperty(document, 'hidden', { value: false, writable: true, configurable: true });
       document.dispatchEvent(new Event('visibilitychange'));
     });
-    
+
     // Check AC state after show
     state = await page.evaluate(() => AC.state);
     assert.equal(state, 'running', 'AudioContext should be running after visibility restore');

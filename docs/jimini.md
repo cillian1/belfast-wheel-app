@@ -24,3 +24,14 @@ writes reports and the game's wiki. He never changes the game.
 - Model: `JIMINI_MODEL` (default `gemini-2.5-pro`) for tasks; Banter replies use `GEMINI_MODEL` (Flash).
 - A whole-codebase report or a full wiki reads a lot, so expect roughly €1 to €4 a task on Cillian's Google
   bill. A question about one file is a few cents. Banter replies cost a fraction of a cent.
+
+## Temporary write mode (update 31)
+
+Jimini can be switched to write mode by setting the repo variable `JIMINI_WRITE=on`.
+In this mode, he gets the coding tools and opens PRs on branches named `jimini/issue-N` or
+`jimini/pr-N`. An issue task can include `base: branch-name` to choose its starting branch and PR
+target. PR tasks use the PR head as their starting point and target its base branch. Jimini never
+merges; CI must be green before another bot or Cillian merges the PR.
+
+This mode is temporary and MUST be turned off (or the code reverted) once update 31 ships.
+When `JIMINI_WRITE` is off or unset, Jimini goes back to being read-only.

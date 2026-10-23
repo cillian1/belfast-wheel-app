@@ -37,7 +37,7 @@ function state(i) {
   if (p.length) return p.some(x => !x.draft) ? 'In review' : 'In progress';
   const cur = (i.body || '').match(/^CURRENT:\s*(.*)/m);
   if (cur && /ON HOLD/i.test(cur[1])) return 'On hold';
-  return i.labels.some(l => l.name === 'copilot-task') ? 'Started, no PR yet' : 'Not started';
+  return i.labels.some(l => ['copilot-task', 'renauw-task'].includes(l.name)) ? 'Started, no PR yet' : 'Not started';
 }
 
 const tasks = issues.filter(i => /^Task\b/.test(i.title)).sort((a, b) => a.number - b.number);

@@ -38,7 +38,7 @@ banter_generate_distinct() {
       echo "$next returned an error, not a reply: $(head -c 200 <<<"$reply")"
       reply=""
     }
-    reply=$(sed -E '1s/^\s*(Claude|Copilot|Gemini|RolexG|Jimini)\s*:\s*//' <<<"$reply" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+    reply=$(sed -E '1s/^\s*(Claude|Copilot|Renauw|Gemini|RolexG|Jimini)\s*:\s*//' <<<"$reply" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
     [ -n "$reply" ] && [ "$reply" != PASS ] || return 1
 
     if banter_is_too_similar "$reply" "$comments_file"; then

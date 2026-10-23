@@ -1,7 +1,7 @@
 {
   "update": 31,
   "name": "Update 31",
-  "goals": [],
-  "issues": [],
-  "cutLine": ""
+  "goals": ["Mark's farm gold chicken odds fix", "Fast-sim matches live", "Sound", "Double arrows", "Gamble or collect", "Gold WILD / purple BONUS labels"],
+  "issues": [119, 115, 98, 122, 133, 136, 137, 141, 142, 140, 125, 126, 128],
+  "cutLine": "Gamble or collect (#136) moves to update 32 if it runs over"
 }

@@ -43,7 +43,7 @@ try {
   await A.page.locator('#wPass').fill('farm-test');
   await A.page.locator('#wNew').click();
   await A.page.locator('.wlogin').waitFor({ state: 'hidden' });
-  
+
   // 1. Force a one-chicken ending
   console.log('Testing first-time achievement banner...');
   await A.page.evaluate(() => {

@@ -53,17 +53,29 @@ try {
         if (!ball.getContext('2d').getImageData(8, 8, 1, 1).data[3]) throw new Error('ball is empty');
       }
       const cached = text.slice(); text.length = 0;
-      for (const kind of ['W', 'B']) for (const dir of [-1, 1]) {
-        drawChicken(ctx, c, c, N * .055, dir, 0, 0, 0, kind);
-        drawDie3D(ctx, c, c, N * .06, [1, 0, 0, 0, 1, 0, 0, 0, 1], kind);
-        drawDie3D(ctx, c, c, N * .06, [-1, 0, 0, 0, 1, 0, 0, 0, -1], kind);
-      }
-      return { wheel, cached, frame: text.slice() };
+      const originalDrawImage = CanvasRenderingContext2D.prototype.drawImage;
+      const draws = [];
+      CanvasRenderingContext2D.prototype.drawImage = function (img, ...args) {
+        if (img && img.width === 64 && img.height === 64) draws.push(img);
+        return originalDrawImage.call(this, img, ...args);
+      };
+      try {
+        for (const kind of ['W', 'B']) for (const dir of [-1, 1]) {
+          const chickenDrawsBefore = draws.length;
+          drawChicken(ctx, c, c, N * .055, dir, 0, 0, 0, kind);
+          if (draws.length > chickenDrawsBefore) throw new Error('drawChicken still draws a mark');
+          drawDie3D(ctx, c, c, N * .06, [1, 0, 0, 0, 1, 0, 0, 0, 1], kind);
+          drawDie3D(ctx, c, c, N * .06, [-1, 0, 0, 0, 1, 0, 0, 0, -1], kind);
+        }
+      } finally { CanvasRenderingContext2D.prototype.drawImage = originalDrawImage; }
+      return { wheel, cached, frame: text.slice(), markDraws: draws.length };
     } finally { CanvasRenderingContext2D.prototype.fillText = original; draw(); }
   });
   for (const label of ['WILD', 'BONUS', 'MORE']) assert.ok(labels.wheel.includes(label), `${label} is baked into wheel faces`);
   assert.deepEqual(labels.cached, ['W', 'B'], 'each special mark is built once');
-  assert.deepEqual(labels.frame, [], 'dice and chickens draw cached marks, never per-frame text');
+  assert.deepEqual(labels.frame, [], 'dice draw cached marks, never per-frame text');
+  assert.equal(labels.markDraws, 8, 'dice draw 8 marks total (2 kinds * 2 directions * 2 faces each)');
+
   const shot = async name => {
     if (shots) await page.screenshot({ path: resolve(shots, `${name}-360.png`) });
   };

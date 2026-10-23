@@ -23,7 +23,7 @@
   // which room, balls, dice, chickens, doors...) several times a second, and the watcher's phone draws it with
   // the same game code, so it looks exactly like the real thing. Only small JSON goes over the wire:
   // livef/{key}/base holds the whole state (refreshed every few seconds), livef/{key}/d only what changed since.
-  const MIRROR = ['N', 'c', 'R', 'D', 'scene', 'zoom', 'fade', 'DEPTH', 'evenA', 'FINAL', 'B', 'dice', 'rotF', 'flatT', 'balls', 'ballR', 'counts', 'winner', 'banner', 'achievement',
+  const MIRROR = ['N', 'c', 'R', 'D', 'scene', 'zoom', 'wheelZoom', 'fade', 'DEPTH', 'evenA', 'FINAL', 'B', 'dice', 'rotF', 'flatT', 'balls', 'ballR', 'counts', 'winner', 'banner', 'achievement',
     'rotP', 'hi', 'hiA', 'domeBulge', 'pAng', 'ghost', 'ghostSay', 'dots', 'boostA', 'boostNew', 'wellBalls', 'introT', 'camT', 'hallZ', 'doorT', 'flash', 'rotS',
     'bingo', 'ballSpeed', 'ballPhase', 'pickIdx', 'handT', 'liftT', 'handClosed', 'prize', 'roul', 'vault', 'coaster', 'planet', 'mon', 'rotC', 'zena', 'god', 'pyr',
     'pipes', 'carried', 'd6', 'd6Sum', 'chickens', 'arrows', 'fires', 'feathers', 'camX', 'markItems', 'rotM', 'formT', 'showMark', 'chainNote', 'raceLine',
@@ -278,6 +278,7 @@
         if (ANGLES.includes(n) && typeof prev[n] === 'number') v = lerpAng(prev[n], v, t);
         else if (n === 'rot' && Array.isArray(prev.rot) && Array.isArray(v)) v = v.map((a, k) => typeof prev.rot[k] === 'number' ? lerpAng(prev.rot[k], a, t) : a);
         else if (n === 'zoom' && typeof prev.zoom === 'number' && prev.zoom > 0 && v > 0) v = prev.zoom * Math.pow(v / prev.zoom, t);
+        else if (n === 'wheelZoom' && typeof prev.wheelZoom === 'number' && prev.wheelZoom > 0 && v > 0) v = prev.wheelZoom * Math.pow(v / prev.wheelZoom, t);
         else if (n === 'camX' && typeof prev.camX === 'number') v = prev.camX + (v - prev.camX) * t;
       }
       const cur = mirGet[n]();
