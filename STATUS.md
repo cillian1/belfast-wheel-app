@@ -11,7 +11,6 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
-- #239 Banter: remove the low Copilot/Renauw cap and target turns → main
 - #238 ci: recognize Gemini App reviews on Update 32 → update-32
 - #235 Audit Update 32 tracker status (read-only) → main (draft)
 - #234 Jimini: Please complete the read-only odds/prize-mapping report in #229. Do no → main
