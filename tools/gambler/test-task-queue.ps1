@@ -73,6 +73,8 @@ try {
   Check 'bot retry ignored' 2 @((Issue 1), (Issue 2)) @{1 = @($Started, $Blocked, (Comment 'retry' -30 'github-actions[bot]'))}
   Check 'own retry ignored' 2 @((Issue 1), (Issue 2)) @{1 = @($Started, $Blocked, (Comment 'The Gambler: retry' -30))}
   Check 'retry does not duplicate PR' 2 @((Issue 1), (Issue 2)) @{1 = @($Started, $Blocked, $Retry)} @(@{number = 301; body = 'Closes #1'; headRefName = 'gambler/1-task'})
+  Check 'explicit HOLD stays queued' 2 @((Issue 1 'Held' 'HOLD: wait for coordinator'), (Issue 2))
+  Check 'latest comment HOLD stays queued' 2 @((Issue 1), (Issue 2)) @{1 = @((Comment 'HOLD: do not start' -5))}
   Write-Host 'Task queue passed: four wait cases, release priority, explicit retries and duplicate-PR guard.'
 } finally {
   $TaskMutex.Dispose()
