@@ -11,7 +11,6 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
-- #237 docs: expand Update 32 tracker scope → main
 - #235 Audit Update 32 tracker status (read-only) → main (draft)
 - #234 Jimini: Please complete the read-only odds/prize-mapping report in #229. Do no → main
 - #233 Update 32: reduce lag on Extra Bonus, WILD, and Deeper triggers → update-32
