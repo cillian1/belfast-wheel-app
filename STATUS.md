@@ -13,7 +13,6 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 - #235 Audit Update 32 tracker status (read-only) → main (draft)
 - #234 Jimini: Please complete the read-only odds/prize-mapping report in #229. Do no → main
-- #233 Update 32: reduce lag on Extra Bonus, WILD, and Deeper triggers → update-32
 - #232 Refresh Update 32 tracker and HANDOFF scope → main (draft)
 - #222 Prevent Jimini and RolexG tasks replacing unrelated runs → main
 - #219 Watch: recover mirrored drawing state for update 32 → update-32 (draft)
