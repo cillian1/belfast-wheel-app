@@ -106,3 +106,15 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 ## History
 
 The Done log is archived in [docs/HANDOFF-ARCHIVE.md](docs/HANDOFF-ARCHIVE.md). Add new lines there.
+
+## Task sizes and claiming
+
+| Task | Can claim |
+| --- | --- |
+| `size:big` game/dev | Copilot, The Gambler, The Stankman |
+| `size:small` game/dev | RolexG, Renauw first; Copilot/Gambler after 30 minutes |
+| `lane:workflow` | The Gambler, Copilot |
+| `lane:report` | Jimini |
+| Reviews and merges | Gemini |
+
+When you finish, run/expect claim-next; only claim your lane. See docs/task-claiming.md for sizes, lanes and caps. Phase one is read-only: use tools/claim-next.sh with --dry-run; live claiming and the DONE hook are a follow-up under issue #187's cut line. Game tasks target update-N; non-game tasks target main. Before an update starts, its planner labels every ready issue with one size, its lane and unassigned.
