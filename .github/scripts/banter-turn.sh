@@ -112,7 +112,7 @@ speak(){
       reply=$(jq -r '.choices[0].message.content // ""' res.json 2>/dev/null || { echo "GitHub Models said: $(head -c 400 res.json)" >&2; true; })
       fi;;
     Renauw)
-      reply=$(env -u GH_TOKEN -u GITHUB_TOKEN copilot "--agent=${RENAUW_CLI_AGENT:-renauw}" -p "$system
+      reply=$(env -u GH_TOKEN -u GITHUB_TOKEN copilot -p "$system
 
   $prompt" ${COPILOT_CLI_MODEL:+--model "$COPILOT_CLI_MODEL"} -s 2>cli.err || { echo "Renauw CLI failed: $(head -c 600 cli.err)" >&2; true; });;
     Gemini|RolexG|Jimini)
