@@ -2,29 +2,11 @@
 
 ## NOW: the plan (everyone edits this; live status is in STATUS.md)
 
-- **Shipped:** Update 28 "Read the Manual" (game 28, build 65) shipped on 2026-10-22. The team workflow change is merged as PR #85.
-- **Update 29 release:** "Stacked Fowl" (game 29, build 66) is ready for review in open, non-draft PR #95. PR #90 (merge commit `757676e`) and PR #91 (merge commit `1895451`) are merged into `update-29`. Cillian waived paired fast-sim evidence for this release only; the cancelled comparison produced no valid result, and no payback or speed claim is made.
-- **Active (Cillian unparked 14:21 Oct 22):** Fast-sim PR #92. Merge once RolexG posts a before/after timing and one paired result on the PR, CI is green, and someone other than RolexG reviews it.
-- **Parked:** Watch #78 is rescheduled for the next update with a new repro (PR #82 stays parked).
-- **PR #34 stays CLOSED.**
-- **Update 30:** holding branch `update-30` (cut from main after the 29 release, 2026-10-22 13:55). In it so far: PR #100 (money: free spins only on a 10c bet; Cillian's pick 13:45, Gemini said merge). Queue (Cillian 14:31: #103 FIRST): #103 browser-free sim core (Copilot, top priority), then #78 Watch (stale "spinning", Mark's wheel not mirrored), then #97 Watch keyboard, with #98 sound in parallel. All PRs go into `update-30`.
-- **Update 30 who-does-what (Claude's plan, Cillian asked 15:13 Oct 22):**
-  - Copilot builds: #103/PR #104 (browser-free sim, wheel/room first), then #78 via #102 (delayed replay Watch), then #97 Watch keyboard.
-  - RolexG builds: #98 sound (from tomorrow; it hit its 8-task cap today). #109 wallet `db.txn` fix moved to Copilot (PR #110, money, no payback change). #92 is closed for good.
-  - Gemini reviews Copilot's PRs. Claude or Copilot reviews and merges RolexG's.
-  - Jimini checks the rest of #108 (only real, reproducible findings become tasks) and lists what that smoke test should cover.
-  - Claude does the update-30 release check and keeps this plan current.
-  - Low-end phone check: Cillian won't test it (15:16). Copilot runs a Playwright smoke test with 6x CPU throttling and a mobile viewport before release, and checks frame time on the wheel and the ball run. Skip it if it blocks the release.
-- **Update 31 (coordinator: Claude, Cillian's vote 20:53-20:58 Oct 22). Branch `update-31`, cut from main. All PRs go there.**
-  - Copilot: #119/PR #120, URGENT money fix. Mark's farm stacked gold chicken must keep 2:1 landing odds (Austin's bug). Also #115/PR #121, fast sim parity (live tip chance, keep stacks), which is the evidence for #119. Then #98 sound.
-  - Jimini: #122, design report on Austin's double-arrow and double-bonus segments. Cillian picks a version, then it gets built.
-  - Gemini: reviews Copilot's PRs. #120 is a money PR: notice on Banter, payback before/after, one non-author review.
-  - RolexG: picks up #98 sound if Copilot hasn't started it once RolexG's daily cap resets. Claude or Copilot merge RolexG's PRs.
-  - The Gambler: #141 (independent odds check of #120), then #140 (its watcher honours the issue's base branch).
-  - Rebalanced 21:57 (Cillian: assign idle bots): #98 sound merged (PR #112). RolexG: #142, run the sound test in CI. Jimini: re-check #108 findings against main; the still-real ones become the next tasks. Copilot keeps #120, #134 (double arrows), #136 (gamble or collect), #137/PR #138 (labels), all already in progress. Gemini reviews them.
-  - Claude: coordinates, merges, release check.
-- **Next:** after #95 is merged, start the next open `copilot-task` issue in number order (Cillian's bug reports, 13:31-13:34, all repro first: #78 rescheduled, Watch shows a stale "spinning" and mis-draws Mark's wheel after the run ends; then #97 Watch keyboard pushes the board off screen, after #78 because they share watch.js; #98 sound not working can run in parallel); #78 is rescheduled; do not resume #89 unless rescheduled.
-- **Last updated:** 2026-10-22 by Copilot, Update 29 release metadata and parked-task status.
+- **Update 32 (current):** holding branch `update-32`. The Deeper zoom is merged as PR #243 (`0c8e29f`). Remaining open Update 32 PRs are #219, #201 and #152; #244 has merged. Cillian confirmed on Banter #30 that the four PRs open at the time should ship in Update 32. Do not start the release while those remaining PRs are open.
+- **Mobile smoke result for PR #243:** Ran `node tools/test-zoom-throttle.mjs origin/main` and `node tools/test-zoom-throttle.mjs HEAD` using headless Chromium, mobile emulation at 360x800 / DPR 3, and 6x CPU throttling. The shared wheel phase measured 19.3 fps average / 50 ms p95 on main and 18.8 fps / 50 ms p95 on Update 32. The ball run measured 52 fps / 33.4 ms p95 on main and 52.1 fps / 33.4 ms p95 on Update 32. Update 32's added zoom measured 17.2 fps average, 50 ms median, 66.7 ms p95, and 100.1 ms maximum frame interval. Common phases show no clear regression. The wheel window spans multiple animations and pauses between them, so its multi-second maximum interval is not a continuous animation frame time. These are emulated-browser results, not a physical-phone test; no absolute fps cutoff was agreed.
+- **Zoom regression:** `node tools/test-deeper-zoom.mjs` passed on the final rerun; two earlier attempts failed at ball-run landing/completion assertions.
+- **Release:** the smoke test is evidence only, not release approval. Keep the game version unchanged on `update-32`; Claude can run the release check once the remaining Update 32 work is merged.
+- **Last updated:** 2026-10-23 by Copilot after the paired throttled mobile smoke test for PR #243.
 
 **Authority (Cillian, 2026-10-22: "anyone can approve and merge", "full authority", "odds-math to be everyone"):**
 1. Claude, Copilot, Gemini and RolexG can all plan, start, build, review, approve and merge, including money, odds and prize changes. Nobody waits for Cillian's nod or asks him about approvals or merges.
