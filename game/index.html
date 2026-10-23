@@ -533,7 +533,7 @@ const REPLACE = ['F', 'L', 'R', 'B', 'NL', 'NR', 'X', 'C'];
 // dead variants: 'W' = Wilds greyed, 'B' = Bonus greyed, 'WB' = both
 const DEAD_KEYS = ['W', 'B', 'WB'];
 const MAXD = LAYER_ORDERS.length; // every inner wheel, the hidden fifth included
-let DEPTH = MAXD - 1; // inner wheels this run; the dice well sits in the last one (Go even deeper adds the fifth)
+var DEPTH = MAXD - 1; // inner wheels this run; the dice well sits in the last one (Go even deeper adds the fifth)
 const DEAD_ORDERS = {};
 DEAD_KEYS.forEach(v => DEAD_ORDERS[v] = LAYER_ORDERS.map((o, k) => { let j = k * 3; return o.map(key => (key === 'WD' && v.includes('W')) || (key === 'BN' && v.includes('B')) ? REPLACE[j++ % REPLACE.length] + (key === 'WD' ? '*' : '#') : key); }));
 const STANK = [
@@ -649,7 +649,7 @@ const S = .56; // each nested wheel is this much smaller than the one around it
 // ---------- canvas helpers ----------
 // Owns reusable canvas paths, wheel decoration, and dart sprites.
 const cv = $('#wheel'); let ctx = cv.getContext('2d');
-let N = 0, c = 0, R = 0, D = 1;
+var N = 0, c = 0, R = 0, D = 1;
 let faces = {};
 
 function mk(w = N, h = N) { const k = document.createElement('canvas'); k.width = w; k.height = h; return k; }
@@ -1306,9 +1306,10 @@ function build() {
 }
 // ---------- state ----------
 // Owns mutable game state helpers and special dice.
-let scene = 'nested', zoom = 1, wheelZoom = 1, busy = false, fade = 0;
-const rot = Array(MAXD + 1).fill(0);
-let dice = [];
+var scene = 'nested', zoom = 1, wheelZoom = 1;
+let busy = false, fade = 0;
+var rot = Array(MAXD + 1).fill(0);
+var dice = [];
 for (let i = 0; i < 12; i++) { // ten six-sided dice: two in the middle, eight round the edge (slots 0 and 2 are kept for special dice)
   if (i === 0 || i === 2) continue;
   const a = i < 4 ? i * TAU / 4 + .4 : (i - 4) * TAU / 8, rr = i < 4 ? .13 : .32;
@@ -1321,8 +1322,8 @@ function addSpecialDice(kinds) {
   clearSpecialDice();
   return kinds.map((sp, j) => { const [a, rr] = SP_SLOTS[j % SP_SLOTS.length], d = { hx: Math.cos(a) * rr, hy: Math.sin(a) * rr, x: Math.cos(a) * rr, y: Math.sin(a) * rr, a: (Math.random() - .5) * .3, v: 1, sp, swell: 0, born: 0 }; dice.push(d); return d; });
 }
-let rotF = 0, flatT = 0, balls = [], ballR = 0, counts = null, winner = -1, banner = '', achievement = null;
-let rotP = 0, hi = null, hiA = 0;
+var rotF = 0, flatT = 0, balls = [], ballR = 0, counts = null, winner = -1, banner = '', achievement = null;
+var rotP = 0, hi = null, hiA = 0;
 
 // keep physics positions valid when the canvas is resized mid-drop
 function rescaleBalls(oldB) {
@@ -1438,7 +1439,8 @@ document.addEventListener('visibilitychange', () => {
   else if (!document.hidden && !idleRaf) idleRaf = requestAnimationFrame(idle);
 });
 if (!document.hidden) idleRaf = requestAnimationFrame(idle);
-let liveK = -1, navCache = null, evenA = 1;
+var liveK = -1;
+let navCache = null, evenA = 1;
 function navCacheMatches(cache) {
   if (!cache || cache.N !== N || cache.DEPTH !== DEPTH || cache.zoom !== zoom || cache.liveK !== liveK) return false;
   if (cache.rotations.length !== rot.length) return false;
@@ -1543,7 +1545,7 @@ function drawNested() {
   }
   drawPointer(faces.pointer, 1);
 }
-let photoZoom = 0, photoDone = false;
+var photoZoom = 0, photoDone = false;
 function drawPhoto() {
   ctx.save();
   if (photoZoom > 0 && hi !== null) {
@@ -1944,7 +1946,8 @@ addEventListener('pointerdown', () => { const now = performance.now(); pendingWa
 const sliceAt = (r, n) => Math.floor(mod(-r, TAU) / (TAU / n)) % n;
 function target(n) { const i = Math.floor(Math.random() * n); return { i, a: (i + .15 + Math.random() * .7) * TAU / n }; }
 
-let sweepOn = false, sweepA = 0, winGlow = null;
+var sweepOn = false, sweepA = 0;
+let winGlow = null;
 async function spinLayer(k, dur, dir) {
   liveK = k; sweepOn = true; winGlow = null;
   try { const i = await spinLayerRun(k, dur, dir); winGlow = { k, i, t0: performance.now() }; return i; } finally { liveK = -1; sweepOn = false; }
@@ -2088,7 +2091,7 @@ function drawGhost() {
   g.restore();
 }
 // the dive between wheels: a wind-up, a drum roll that speeds up, speed lines, a little overshoot and a crash
-let streak = 0;
+var streak = 0;
 async function dive(z) {
   const from = zoom; whoosh(true);
   await animate(450, t => { zoom = from * (1 - .05 * Math.sin(t * Math.PI)); draw(); });
@@ -2113,7 +2116,7 @@ async function zoomWheelTo(z, dur) {
   wheelZoom = z; draw();
 }
 // smooth scene change: the last frame melts away over the new scene, never through black
-let snap = null, snapA = 0, dots = [], godParts = [], boostA = Array(MAXD + 1).fill(0), boostNew = [];
+let snap = null; var snapA = 0; var dots = []; var godParts = []; var boostA = Array(MAXD + 1).fill(0); var boostNew = [];
 // More Wilds / More Bonus: icons pour into the wheels further in, which flash and come back with extra slices
 function boostedOrder(order, kind, extra, k) {
   const o = order.slice(), sp = x => ['WD', 'BN', 'GD', 'MW', 'MB', 'UP', 'UW', 'UB'].includes(x);
@@ -6535,7 +6538,7 @@ header>span{flex-wrap:wrap}
     'rotP', 'hi', 'hiA', 'domeBulge', 'pAng', 'ghost', 'ghostSay', 'dots', 'boostA', 'boostNew', 'wellBalls', 'introT', 'camT', 'hallZ', 'doorT', 'flash', 'rotS',
     'bingo', 'ballSpeed', 'ballPhase', 'pickIdx', 'handT', 'liftT', 'handClosed', 'prize', 'roul', 'vault', 'coaster', 'planet', 'mon', 'rotC', 'zena', 'god', 'pyr',
     'pipes', 'carried', 'd6', 'd6Sum', 'chickens', 'arrows', 'fires', 'feathers', 'camX', 'markItems', 'rotM', 'formT', 'showMark', 'chainNote', 'raceLine',
-    'rot', 'deadA', 'deadTo', 'deadFrom', 'markSpinning', 'markWin', 'liveK'];
+    'rot', 'deadA', 'deadTo', 'deadFrom', 'markSpinning', 'markWin', 'liveK', 'photoZoom', 'photoDone', 'snapA', 'streak', 'sweepOn', 'sweepA'];
   const SLOW = ['N', 'c', 'R', 'D', 'FINAL', 'B', 'ord', 'boostNew', 'markItems'];
   const ANGLES = ['rotF', 'rotP', 'rotS', 'rotC', 'rotM', 'pAng'];
   const ROOMS = { stank: 'the Stank Chamber', roul: 'the Stank Chamber', vault: 'the golden locksafe', pyramid: "Phelan's Pyramid", god: 'the God room', zena: 'the God room', coaster: 'the Monster bonus', planet: 'the Monster bonus', monster: 'the Monster tank', pipes: "Mark's farm", farm: "Mark's farm" };
@@ -6778,6 +6781,7 @@ header>span{flex-wrap:wrap}
   // the watcher's own game sits idle underneath; it borrows its canvas to draw the other phone's state, then reloads
   const lerpAng = (a, b, t) => { const d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + d * t; };
   function mirApply(st, prev, t) {
+    const oldN = typeof N !== 'undefined' ? N : 0, oldD = typeof D !== 'undefined' ? D : 0;
     if (st.N && st.N !== N) { N = st.N; cv.width = cv.height = N; c = N / 2; R = N / 2 * .935 * .82; }
     for (const n in st) {
       if (!mirGet[n]) continue;
@@ -6786,12 +6790,17 @@ header>span{flex-wrap:wrap}
         if (ANGLES.includes(n) && typeof prev[n] === 'number') v = lerpAng(prev[n], v, t);
         else if (n === 'rot' && Array.isArray(prev.rot) && Array.isArray(v)) v = v.map((a, k) => typeof prev.rot[k] === 'number' ? lerpAng(prev.rot[k], a, t) : a);
         else if (n === 'zoom' && typeof prev.zoom === 'number' && prev.zoom > 0 && v > 0) v = prev.zoom * Math.pow(v / prev.zoom, t);
+        else if (n === 'photoZoom' && typeof prev.photoZoom === 'number') v = prev.photoZoom + (v - prev.photoZoom) * t;
         else if (n === 'wheelZoom' && typeof prev.wheelZoom === 'number' && prev.wheelZoom > 0 && v > 0) v = prev.wheelZoom * Math.pow(v / prev.wheelZoom, t);
         else if (n === 'camX' && typeof prev.camX === 'number') v = prev.camX + (v - prev.camX) * t;
       }
       const cur = mirGet[n]();
       if (Array.isArray(cur) && Array.isArray(v) && (!mirSet[n] || n === 'rot' || n === 'deadA' || n === 'deadTo' || n === 'deadFrom')) { v.forEach((x, k) => cur[k] = x); continue; }
       try { mirSet[n](v); } catch (e) {}
+    }
+    if ((typeof N !== 'undefined' && N !== oldN) || (typeof D !== 'undefined' && D !== oldD)) {
+      if (typeof syncCanvasQuality !== 'undefined') syncCanvasQuality(false);
+      else if (st.N) { cv.width = cv.height = st.N; }
     }
   }
   // the faces each room needs are built on the watcher's phone the first time it shows that room
