@@ -2,6 +2,8 @@
 
 The Stankman is a separate Codex watcher for Banter and `stankman-task` issues. Keep its clone separate from The Gambler's checkout so the two watchers never share a working tree.
 
+Both task work and Banter replies use `gpt-6-luna`. To change Stankman's model for a session, add `-Model <model-id>` when launching the watcher.
+
 ## Windows setup
 
 ```powershell
