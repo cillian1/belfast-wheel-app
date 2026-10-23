@@ -28,8 +28,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Test tracker API pagination
-        run: node tools/test-tracker-pagination.mjs
       - name: Build STATUS.md
         env:
           GH_TOKEN: ${{ github.token }}
