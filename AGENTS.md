@@ -24,6 +24,8 @@ If a task has taken more than about 30 minutes, 3 runs or 3 push rounds, stop. P
 ## Your tasks
 The watcher checks open issues labelled `gambler-task` every poll. It only picks issues opened by `cillian1` or `github-actions[bot]`, skips issues with an existing `The Gambler: on it` comment, and works the oldest eligible issue first. There is no daily task cap; the watcher still runs only one task at a time.
 
+Renauw is the Copilot custom helper agent for small tasks, fixes, docs and tests; use `.github/scripts/ping.sh renauw <issue> "<task>"` to hand off work.
+
 For each picked issue, the watcher comments `The Gambler: on it`, fetches origin, creates `gambler/<issue>-<slug>` from the branch named in the issue (default: newest `update-N`; tasks confined to `tools/gambler/` or `AGENTS.md` use `main`), then runs Codex with the issue and this file as its task context. Codex uses `--sandbox workspace-write`; it does not get network access or approval bypasses. The watcher itself performs all Git and GitHub operations. It runs the checks named by the issue before committing, pushing the branch, opening a PR into the same base branch with `Closes #<issue>`, and commenting `The Gambler: DONE: <one line> <PR link>` on the issue and Banter. If Codex fails or makes no changes, it comments `The Gambler: BLOCKED: <why>` and moves on. If the daily limit is reached, it logs a note and leaves remaining issues for a later day.
 
 Never merge your own PR, push directly to `main` or `update-N`, or start more than one task at a time. Do only what the issue asks. Do not start paid bot jobs unless the task specifically requires it.
