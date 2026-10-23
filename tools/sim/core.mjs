@@ -138,9 +138,9 @@ export function createCore(sources, { full = false } = {}) {
     return sources[name];
   };
   let core = replace(read('core'), /const \$ = s => document.querySelector\(s\);/, 'const $ = () => effect;');
-  core = replace(core, /const GHOST_IMAGE = new Image\(\);\nGHOST_IMAGE.src = GHOST_SPRITE_DATA;/, 'const GHOST_IMAGE = {};');
+  core = replace(core, /const GHOST_IMAGE = new Image\(\);\r?\nGHOST_IMAGE.src = GHOST_SPRITE_DATA;/, 'const GHOST_IMAGE = {};');
   const canvas = replace(read('canvas-helpers'), /const cv = \$\('#wheel'\); let ctx = cv.getContext\('2d'\);/, 'const cv = effect; let ctx = effect;');
-  const motion = replace(read('motion'), /const wait = ms => new Promise\(r => \{[\s\S]*?pendingWaits.add\(w\);\n\}\);/, 'const wait = async () => {};');
+  const motion = replace(read('motion'), /const wait = ms => new Promise\(r => \{[\s\S]*?pendingWaits.add\(w\);\r?\n\}\);/, 'const wait = async () => {};');
   const mark = full ? replace(read('mark-ending'), /else setTimeout\(res, 500\);/, 'else res();') : '';
   const source = [
   `let draw, speak, tick, ting, buzz, flap, pegBuzz, whoosh, playSfx;

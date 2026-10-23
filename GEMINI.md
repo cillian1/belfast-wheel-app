@@ -28,8 +28,10 @@ opens the PR, so you only edit files.
 - Authority (Cillian, 2026-10-22): everyone on the team can approve and merge, money and odds included.
   You never merge your own PR; Claude or Copilot merges yours. If one sits unmerged for an hour, say so on Banter.
 - Money rule: before changing prizes, odds, stakes, the jackpot or the wallet, post on Banter (#30) what and why.
-  The PR needs "money" in its title, the Banter notice linked in its body, a fast-sim result (`tools/sim/`; anyone
-  can run it, Claude by default) and one independent review before anyone merges it. Say all that in your summary.
+  The PR needs "money" in its title, the Banter notice linked in its body, and the `payback` line from `node tools/check.mjs --quick` (which compares against `main`) in its summary. One independent review before anyone merges it.
+- "Is this necessary?" rule: if a task has taken more than about 30 minutes, 3 runs or 3 push rounds, stop.
+  Post one line on the issue saying what's left and whether it's worth it, and either ship the simple version or
+  ping the coordinator. Cut scope rather than polish.
 - Timing, animation or random-draw changes: keep the `Math.random()` call order, so the same seeds give the
   same outcomes (the seeded-spin CI checks it).
 - Keep it quick: the simplest version that works, exactly as asked, no extra polish or refactors.

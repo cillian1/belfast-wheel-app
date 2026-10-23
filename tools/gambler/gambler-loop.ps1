@@ -116,10 +116,7 @@ function Invoke-GamblerTaskQueue {
 
     $State = Get-GamblerTaskState
     if ($null -eq $State) { return }
-    if ($State.started -ge $DailyTaskLimit) {
-      Write-Host "Daily Gambler task limit reached ($DailyTaskLimit); leaving labelled issues for tomorrow."
-      return
-    }
+    $AtDailyLimit = $State.started -ge $DailyTaskLimit
 
     $IssueListLines = & gh issue list --repo $Repo --state open --label gambler-task --limit 100 --json number,title,author,createdAt 2>&1
     if ($LASTEXITCODE -ne 0) {
@@ -170,12 +167,13 @@ function Invoke-GamblerTaskQueue {
           $ExistingBody = [string]$ExistingComment.body
           if ($ExistingBody -match '(?im)^\s*The Gambler:\s*on it\b') {
             $AlreadyStarted = $true
-            $LastGamblerStatus = [pscustomobject]@{ kind = 'on it'; body = $ExistingBody }
+            $LastGamblerStatus = [pscustomobject]@{ kind = 'on it'; body = $ExistingBody; created_at = [string]$ExistingComment.created_at }
           } elseif ($AlreadyStarted -and $ExistingBody -match '(?im)^\s*The Gambler:\s*(DONE|BLOCKED):') {
-            $LastGamblerStatus = [pscustomobject]@{ kind = $Matches[1].ToUpperInvariant(); body = $ExistingBody }
+            $LastGamblerStatus = [pscustomobject]@{ kind = $Matches[1].ToUpperInvariant(); body = $ExistingBody; created_at = [string]$ExistingComment.created_at }
           }
         }
       }
+      $ResumeStaleTask = $false
       if ($AlreadyStarted) {
         if ($Issue.state -ne 'open' -or ($LastGamblerStatus -and $LastGamblerStatus.kind -eq 'BLOCKED')) { continue }
         if ($LastGamblerStatus -and $LastGamblerStatus.kind -eq 'DONE') {
@@ -184,8 +182,45 @@ function Invoke-GamblerTaskQueue {
             $DonePrState = & gh pr view $DonePrMatch.Groups[1].Value --repo $Repo --json state --jq .state 2>&1
             if ($LASTEXITCODE -eq 0 -and [string]$DonePrState -match '^MERGED$') { continue }
           }
+          Write-Host "Issue #$IssueNumber has an unfinished DONE handoff; leaving it for review or closure."
+          return
         }
-        Write-Host "Issue #$IssueNumber is already in progress; waiting for it to finish before starting another task."
+        if (-not $LastGamblerStatus -or $LastGamblerStatus.kind -ne 'on it') { continue }
+        try {
+          $ClaimTime = [DateTimeOffset]::Parse([string]$LastGamblerStatus.created_at).ToUniversalTime()
+        } catch {
+          Write-Warning "Could not read the start time for issue #$IssueNumber; leaving it queued rather than risking duplicate work."
+          return
+        }
+        if (([DateTimeOffset]::UtcNow - $ClaimTime) -lt [TimeSpan]::FromMinutes(30)) {
+          Write-Host "Issue #$IssueNumber is still within its 30-minute claim window; waiting."
+          return
+        }
+
+        $OpenPrLines = & gh pr list --repo $Repo --state open --limit 100 --json number,title,body,headRefName 2>&1
+        if ($LASTEXITCODE -ne 0) {
+          Write-Warning "Could not check for an open PR before resuming issue #$IssueNumber; will retry next poll."
+          return
+        }
+        try { $OpenPrs = @(ConvertFrom-Json -InputObject ($OpenPrLines -join "`n")) } catch {
+          Write-Warning "Could not parse open PRs before resuming issue #$IssueNumber; will retry next poll."
+          return
+        }
+        $IssuePr = $OpenPrs | Where-Object {
+          $PrBody = [string]$_.body
+          $PrBranch = [string]$_.headRefName
+          $PrBody -match "(?im)\b(?:closes|fixes|resolves)\s+#$IssueNumber\b" -or
+            $PrBranch -match "(?i)(?:^|/)issue-$IssueNumber(?:[-/]|$)|^gambler/$IssueNumber(?:-|$)"
+        } | Select-Object -First 1
+        if ($IssuePr) {
+          Write-Host "Issue #$IssueNumber already has open PR #$($IssuePr.number); waiting for it to finish."
+          return
+        }
+
+        $ResumeStaleTask = $true
+        Write-Host "Issue #$IssueNumber has a stale claim and no open PR; resuming it."
+      } elseif ($AtDailyLimit) {
+        Write-Host "Daily Gambler task limit reached ($DailyTaskLimit); leaving labelled issues for tomorrow."
         return
       }
 
@@ -221,13 +256,16 @@ function Invoke-GamblerTaskQueue {
         return
       }
 
-      $State.started++
+      if (-not $ResumeStaleTask) { $State.started++ }
       try {
-        Save-GamblerTaskState -Started $State.started
-        Post-GamblerIssueComment -IssueNumber $IssueNumber -Body 'The Gambler: on it'
+        if (-not $ResumeStaleTask) { Save-GamblerTaskState -Started $State.started }
+        $ClaimComment = if ($ResumeStaleTask) { 'The Gambler: on it (resuming stale claim)' } else { 'The Gambler: on it' }
+        Post-GamblerIssueComment -IssueNumber $IssueNumber -Body $ClaimComment
       } catch {
-        $State.started = [Math]::Max(0, $State.started - 1)
-        try { Save-GamblerTaskState -Started $State.started } catch { }
+        if (-not $ResumeStaleTask) {
+          $State.started = [Math]::Max(0, $State.started - 1)
+          try { Save-GamblerTaskState -Started $State.started } catch { }
+        }
         Write-Warning "Could not start issue #$IssueNumber; will retry next poll. $_"
         return
       }
@@ -249,10 +287,23 @@ function Invoke-GamblerTaskQueue {
         if ($Slug.Length -gt 55) { $Slug = $Slug.Substring(0, 55).Trim('-') }
         if ([string]::IsNullOrWhiteSpace($Slug)) { $Slug = 'task' }
         $TaskBranch = "gambler/$IssueNumber-$Slug"
+        $TaskStartRef = "origin/$BaseBranch"
+        if ($ResumeStaleTask) {
+          $PreviousBranches = @(
+            (Invoke-GamblerGit @('branch', '--remote', '--list', "origin/*/issue-$IssueNumber")) |
+              ForEach-Object { ([string]$_).Trim() } | Where-Object {
+                $_ -match ('^origin/.+/issue-' + [regex]::Escape([string]$IssueNumber) + '$')
+              }
+          )
+          if ($PreviousBranches.Count -gt 0) {
+            $TaskStartRef = $PreviousBranches[-1]
+          }
+          $TaskBranch = "$TaskBranch-resume-$((Get-Date).ToUniversalTime().ToString('MMddHHmm'))"
+        }
         & git -C $RepoRoot show-ref --verify --quiet "refs/heads/$TaskBranch"
         if ($LASTEXITCODE -eq 0) { throw "Local branch $TaskBranch already exists; refusing to reuse it." }
 
-        Invoke-GamblerGit @('switch', '-c', $TaskBranch, "origin/$BaseBranch") | Out-Null
+        Invoke-GamblerGit @('switch', '-c', $TaskBranch, $TaskStartRef) | Out-Null
         $BranchCreated = $true
 
         $AgentsPath = Join-Path $RepoRoot 'AGENTS.md'

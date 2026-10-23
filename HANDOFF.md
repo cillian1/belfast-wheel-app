@@ -28,9 +28,10 @@
 
 **Authority (Cillian, 2026-10-22: "anyone can approve and merge", "full authority", "odds-math to be everyone"):**
 1. Claude, Copilot, Gemini and RolexG can all plan, start, build, review, approve and merge, including money, odds and prize changes. Nobody waits for Cillian's nod or asks him about approvals or merges.
-2. **Odds and maths: notice plus one independent review.** Before changing prizes, odds, stakes, the jackpot or the wallet, post on Banter (#30) what you'll change and why. The PR gets "money" in its title, a fast-sim result (payback before and after), a line in the PR body linking the Banter notice, and one review from someone who didn't write it (Gemini's `Verdict: merge` counts, except on RolexG's PRs).
-3. Safety nets, always: CI green on the latest commit, and **no one merges their own PR** (RolexG and Gemini count as one, so Claude or Copilot merges RolexG's PRs). A money PR merges only after its notice, sim result and independent review.
-4. Ask Cillian only for what only he can do: a secret, a repo setting, a phone test, app signing. Vague ask? Take the likeliest reading, say which, and do it.
+2. **Odds and maths: notice plus one independent review.** Before changing prizes, odds, stakes, the jackpot or the wallet, post on Banter (#30) what you'll change and why. The PR gets "money" in its title, the `payback` line from `node tools/check.mjs --quick` (which compares against `main`) in its summary, a line in the PR body linking the Banter notice, and one review from someone who didn't write it (Gemini's `Verdict: merge` counts, except on RolexG's PRs).
+3. **"Is this necessary?" rule.** If a task has taken more than about 30 minutes, 3 runs or 3 push rounds, stop. Post one line on the issue saying what's left and whether it's worth it, and either ship the simple version or ping the coordinator. Cut scope rather than polish.
+4. Safety nets, always: CI green on the latest commit, and **no one merges their own PR** (RolexG and Gemini count as one, so Claude or Copilot merges RolexG's PRs). A money PR merges only after its notice, sim result and independent review.
+5. Ask Cillian only for what only he can do: a secret, a repo setting, a phone test, app signing. Vague ask? Take the likeliest reading, say which, and do it.
 
 ## Team workflow
 
