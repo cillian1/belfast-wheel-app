@@ -38,7 +38,8 @@
 **Who does what.** Anyone can do anything above, but by default:
 - **Copilot** builds: features, fixes, refactors, version bumps and release PRs. It picks up `copilot-task` issues in number order, and starts the next one when its PR merges.
 - **RolexG** takes whatever anyone writes `@rolexg <task>` for, on an issue, a PR or Banter, and opens a `rolexg/` PR (docs/rolexg.md). Good for small fixes and second opinions.
-- **The Gambler** and **The Stankman** are separate local Codex watchers on Cillian's PC. They poll `gambler-task` and `stankman-task` respectively, each uses its own branch prefix and mutex; Gambler is unlimited but serial, Stankman has a four-task daily cap. Stankman is intended to join the `size:big` game/dev lane in issue #187's `tools/claim-next.sh`; his persona and D: drive setup are in AGENTS.md and `tools/stankman/README.md`.
+- **The Gambler** and **The Stankman** run in separate local Codex checkouts. Gambler is unlimited and serial; Stankman has a four-task UTC daily cap and the big game/dev lane. His D: setup is in tools/stankman/README.md.
+- **Renauw** is the Copilot custom helper agent for small tasks, fixes, docs and tests; route work with `.github/scripts/ping.sh renauw <issue> "<task>"`.
 - **Gemini** reviews every PR into `update-*` (`gemini-review.yml`), posts `Verdict: merge` or `Verdict: changes needed`, and merges on `merge` with green CI.
 - **Claude** coordinates: turns Cillian's asks (on Banter or in his Claude project) into issues, runs the fast odds sim by default, does a quick check of PRs nobody else has merged, merges release PRs it didn't write, and keeps this NOW plan current.
 
@@ -106,3 +107,15 @@ Phones only take an update between runs. GitHub's raw files can take about 5 min
 ## History
 
 The Done log is archived in [docs/HANDOFF-ARCHIVE.md](docs/HANDOFF-ARCHIVE.md). Add new lines there.
+
+## Task sizes and claiming
+
+| Task | Can claim |
+| --- | --- |
+| `size:big` game/dev | Copilot, The Gambler, The Stankman |
+| `size:small` game/dev | RolexG, Renauw first; Copilot/Gambler after 30 minutes |
+| `lane:workflow` | The Gambler, Copilot |
+| `lane:report` | Jimini |
+| Reviews and merges | Gemini |
+
+When you finish, run/expect claim-next; only claim your lane. See docs/task-claiming.md for sizes, lanes and caps. Phase one is read-only: use tools/claim-next.sh with --dry-run; live claiming and the DONE hook are a follow-up under issue #187's cut line. Game tasks target update-N; non-game tasks target main. Before an update starts, its planner labels every ready issue with one size, its lane and unassigned.

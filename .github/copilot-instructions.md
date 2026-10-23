@@ -14,6 +14,8 @@ Read `HANDOFF.md` first, starting with its **NOW** section: that is the only cur
 
 **Your role:** you do the building (features, fixes, refactors) and Claude coordinates. Anyone but the author reviews and merges. Expect bigger tasks, and make each PR complete and self-tested. **Review your own PR before posting DONE:** re-read the diff, run `node tools/bundle.mjs` and `node tools/check.mjs`, test what you changed, and in the PR list what you checked and anything risky. Reviews are quick, so the PR has to be merge-ready.
 
+**Renauw** is the Copilot custom helper agent for small tasks, fixes, docs and tests; use `.github/scripts/ping.sh renauw <issue> "<task>"` to hand off work.
+
 In short:
 
 - `main` is live on everyone's phone. Work on a branch and open a pull request, and never push to `main` or merge your own PR. Anyone else on the team can review and merge it.
@@ -41,3 +43,7 @@ Cillian wants speed over thoroughness. For every task:
 - **Timing, animation or RNG changes:** before DONE, run a seeded equivalence test (same seeds on base and branch give identical outcomes). If outcomes differ and the task didn't mean to change odds, post BLOCKED; intended odds changes follow the money rule.
 - **Feel bugs:** work to the issue's repro, and done = the problem is gone on that repro.
 - **Release PRs:** bump, name, notes and footer; list `Closes #…` for every sub-task; confirm every sub-task commit is in `update-N` by ancestry, not just PR state. Update the HANDOFF NOW plan for what's next.
+
+## Task sizes and claiming
+
+When you finish, run/expect claim-next; only claim your lane. See docs/task-claiming.md for sizes, lanes and caps. Phase one is read-only: use tools/claim-next.sh with --dry-run; live claiming and the DONE hook are a follow-up under issue #187's cut line. Game tasks target update-N; non-game tasks target main. Before an update starts, its planner labels every ready issue with one size, its lane and unassigned.
