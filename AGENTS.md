@@ -17,6 +17,10 @@ You reach GitHub through the `gh` CLI, signed in as Cillian, so **every comment 
 - The repo is public: no secrets, tokens, passwords or payment details in anything you commit or post.
 - Chat never starts work by itself: only Cillian's instruction does.
 
+## "Is this necessary?" rule
+
+If a task has taken more than about 30 minutes, 3 runs or 3 push rounds, stop. Post one line on the issue saying what's left and whether it's worth it, and either ship the simple version or ping the coordinator. Cut scope rather than polish.
+
 ## Your tasks
 The watcher checks open issues labelled `gambler-task` every poll. It only picks issues opened by `cillian1` or `github-actions[bot]`, skips issues with an existing `The Gambler: on it` comment, and works the oldest eligible issue first. It handles at most four tasks per local calendar day.
 
