@@ -1,6 +1,7 @@
 // Generates tracker.json and preserves the previous update's final snapshot in tracker-history.json.
 // The workflow publishes these files on the tracker branch for GitHub Pages.
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { fetchAllPages } from './github-pages.mjs';
 
 const repo = process.env.GITHUB_REPOSITORY || 'cillian1/belfast-wheel-app';
 const headers = { Authorization: `Bearer ${process.env.GH_TOKEN}`, Accept: 'application/vnd.github+json' };
@@ -10,7 +11,7 @@ async function gh(path) {
   return r.json();
 }
 const plan = JSON.parse(readFileSync('tracker-plan.json', 'utf8'));
-const branches = await gh('branches?per_page=100');
+const branches = await fetchAllPages(gh, 'branches');
 const updates = branches.map(b => ({ name: b.name, n: +(b.name.match(/^update-(\d+)$/)?.[1] || 0) }))
   .filter(b => b.n).sort((a, b) => b.n - a.n);
 const branch = updates[0];
