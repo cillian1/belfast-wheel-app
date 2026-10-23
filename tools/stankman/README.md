@@ -19,4 +19,6 @@ The watcher stores its four-per-day task counter in `D:\bots\stankman\state\task
 
 Extra blank lines at EOF are repaired once. Other failures keep a local task-branch checkpoint, named in the BLOCKED comment. If checkpointing fails, the checkout is left intact. Run powershell -NoProfile -ExecutionPolicy Bypass -File tools\stankman\test-task-recovery.ps1 to check these recovery paths.
 
+Add the explicit `report-only` issue label to a `stankman-task` or `gambler-task` issue for a read-only report. The runner requires its final output to contain exactly one `=== REPORT ===` section and one `=== BANTER SUMMARY ===` section, posts those to the task issue and Banter #30, then marks the task DONE. Empty or malformed output, file changes, and comment-post failures remain BLOCKED. Coding issues without this label still require a file change. Run `powershell -NoProfile -ExecutionPolicy Bypass -File tools\test-task-report-only.ps1` to check report-only handling in both runners.
+
 The shared claim preview supports stankman in the big game/dev lane. Live DONE-trigger claiming remains the documented follow-up from #187; this watcher handles stankman-task issues independently.
