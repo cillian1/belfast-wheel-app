@@ -26,9 +26,10 @@ assert.equal(secureResult.card.s, '♠');
 assert.equal(secureResult.won, true);
 assert.equal(cryptoCalls.length, 2, 'out-of-range bytes are rejected before deciding');
 assert.ok(cryptoCalls.every(bytes => bytes instanceof Uint8Array), 'the secure decision requests cryptographic bytes');
-for (const amount of [0, -1, 0.5, 2001, NaN]) assert.equal(gambleAllowed(amount, 0), false);
+for (const amount of [0, -1, 0.5, Number.MAX_SAFE_INTEGER + 1, Infinity, NaN]) assert.equal(gambleAllowed(amount, 0), false);
 assert.equal(gambleAllowed(2000, 4), true);
-assert.equal(gambleAllowed(6, 5), false);
+assert.equal(gambleAllowed(6, 500), true);
+assert.equal(gambleAllowed(Number.MAX_SAFE_INTEGER, 1000), true);
 const eligible = { gambleCredit: 6 };
 assert.equal(gambleEligible(eligible, eligible, false), true);
 assert.equal(gambleEligible({ ...eligible, live: true }, eligible, false), false);
@@ -45,8 +46,12 @@ assert.match(source, /gambleTimer = setTimeout\(collectGamble, 15000\)/);
 assert.ok(source.indexOf("g.phase = 'flipping'") < source.indexOf('g.card = result.card'), 'the card is not published before the reveal');
 assert.doesNotMatch(functions, /Math\.random/);
 let amount = 6, count = 0;
-while (gambleAllowed(amount, count)) { amount *= 2; count++; }
-assert.equal(amount, 192); assert.equal(count, 5);
+for (; count < 12; count++) {
+  assert.equal(gambleAllowed(amount, count), true);
+  assert.equal(settleGamble({ balance: amount }, { id: 'chain-' + count, amount, count, won: true }).balance, amount * 2);
+  amount *= 2;
+}
+assert.equal(amount, 24576);
 for (const won of [true, false]) {
   const original = { balance: 100, spins: 7, staked: 70, won: 42 };
   const bet = { id: 'receipt', amount: 6, count: 0, won };
@@ -62,6 +67,13 @@ for (const won of [true, false]) {
   assert.equal(settleGamble(short, bet), undefined);
   assert.deepEqual(short, { balance: 5 }, 'short balance must not change');
 }
+for (const won of [true, false]) {
+  const bet = { id: 'large', amount: 100000000, count: 30, won };
+  const settled = settleGamble({ balance: bet.amount }, bet);
+  assert.equal(settled.balance, won ? 200000000 : 0);
+  assert.deepEqual(settleGamble(structuredClone(settled), bet), settled);
+  assert.equal(settleGamble({ balance: bet.amount - 1 }, bet), undefined);
+}
 assert.equal(settleGamble(null, { amount: 6 }), undefined);
 const leaveSource = source.match(/  function leaveGamble\(e\) \{[^]*?\n  \}/)[0];
 for (const locked of [false, true]) {
@@ -71,29 +83,26 @@ for (const locked of [false, true]) {
   assert.deepEqual(calls, locked ? ['prevent', 'stop'] : ['collect'], 'Back to top/auto must collect, or block navigation while settling');
   assert.equal(W.run.gambleClosed, locked ? undefined : true);
 }
-console.log('Decision, ladder, cap, short-balance, separate stats and idempotent settlement checks passed.');
+console.log('Decision, ladder, unlimited chain, short-balance, separate stats and idempotent settlement checks passed.');
 
 const watchSource = readFileSync(fileURLToPath(new URL('../src/wallet/watch.js', import.meta.url)), 'utf8');
 assert.match(watchSource, /renderGamble\(\$w\('wwGamble'\), parse\(st\.gamble\) \|\| null, true\)/, 'Watch decodes its serialized gamble snapshot before rendering');
 assert.match(watchSource, /st\.gamble = JSON\.stringify\(W\.gamble \|\| null\)/, 'Watch publishes the current pick/card/reveal state');
 const uiSource = readFileSync(fileURLToPath(new URL('../src/wallet/ui.js', import.meta.url)), 'utf8');
-assert.match(uiSource, /drawCard\(ctx, 90, 126, 140, g\.card \|\| \{ r: 14, s: '♥' \}, !!g\.colour/, 'the UI reveals the actual selected deck card');
+assert.doesNotMatch(uiSource, /data-gamble="(?:red|black)"/);
+assert.match(uiSource, /spectator \|\| !offering/);
+assert.match(uiSource, /g\.revealAt/);
 
-// Reproducible ladders across small and capped wins, using the live decision and stop rules.
+// Seeded 100k independent wagers: fixed stake avoids heavy-tail chain variance.
 let seed = 0x1352026;
 const random = () => { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; return seed >>> 0; };
-const starts = [6, 10, 100, 500, 1500, 2000], ladders = 1000000;
-let banked = 0, returned = 0, wagers = 0;
-for (let i = 0; i < ladders; i++) {
-  let risk = starts[i % starts.length], step = 0;
-  banked += risk;
-  while (gambleAllowed(risk, step)) {
-    risk = gambleDecision('red', () => (random() & 1) ? 26 : 0).won ? risk * 2 : 0;
-    step++; wagers++;
-  }
-  returned += risk;
+let wins = 0;
+const decisions = [];
+for (let i = 0; i < 100000; i++) {
+  const won = gambleDecision('red', () => random() & 255).won;
+  decisions.push(won); wins += Number(won);
 }
-const percent = returned / banked * 100;
-console.log(`${ladders.toLocaleString('en-IE')} gamble ladders (${wagers.toLocaleString('en-IE')} wagers), starts 6c–€20, max 5 gambles / €20 at risk`);
-console.log(`Return: ${percent.toFixed(4)}% (expected 100%, tolerance ±0.2%)`);
-assert.ok(Math.abs(percent - 100) <= 0.2, 'Return outside tolerance');
+seed = 0x1352026;
+assert.deepEqual(decisions, Array.from({ length: 100000 }, () => gambleDecision('red', () => random() & 255).won), 'same seed gives identical outcomes independently of animation');
+console.log('100000 gambles: win rate ' + (wins / 1000).toFixed(3) + '%, net EV per stake ' + ((wins * 2 - 100000) / 100000).toFixed(5) + ' (expected 0)');
+assert.ok(Math.abs(wins / 100000 - .5) < .005);

@@ -43,6 +43,18 @@
   .wgamble p{margin:2px 0}
   .wgamble .wrow{gap:4px}
 }
+@keyframes gambleGlow{50%{filter:brightness(1.55);box-shadow:0 0 20px #ffc43d}}
+@keyframes gambleLadder{0%,8%,16%,26%,38%,54%,76%{--double:1;--lose:.2}4%,12%,21%,32%,46%,65%,88%,100%{--double:.2;--lose:1}}
+.wgamble .gslot{flex:1;min-width:0;min-height:64px;font-size:20px;font-weight:900;border:3px outset #ffe298;border-radius:12px;box-shadow:inset 0 2px 4px #fff8,0 5px 0 #392507,0 0 12px #f9b52d80;color:#251600}
+.wgamble .ggamb{background:linear-gradient(#ffe56c,#e99309)}
+.wgamble .gcollect{background:linear-gradient(#afff9c,#37a94b);border-color:#b8ffa6}
+.wgamble .offered{animation:gambleGlow .7s infinite}
+.wgamble .gslot:disabled{cursor:default}
+.wgamble .gladder{display:flex;gap:8px;justify-content:center;margin:12px 0;--double:.45;--lose:.45}
+.gladder>div{flex:1;padding:14px 4px;border:3px solid;border-radius:8px;font-size:24px;font-weight:900;background:#17110a;overflow-wrap:anywhere}
+.gdouble{color:#ffe268;opacity:var(--double)}.glose{color:#ff6767;opacity:var(--lose)}
+.gladder.running{animation:gambleLadder 1.5s linear both}
+.gladder.won{--double:1;--lose:.2}.gladder.lost{--double:.2;--lose:1}
 .wgamble p{margin:6px 0}
 .wgamble .wdealer{display:flex;align-items:center;justify-content:center;gap:12px}
 .wgamble .wdealer[hidden]{display:none}
@@ -229,30 +241,19 @@ header>span{flex-wrap:wrap}
     box.hidden = !g;
     if (box === gambleBox) document.getElementById('finalCard').classList.toggle('wgambling', !!g);
     if (!g) { box.innerHTML = ''; return; }
-    box.classList.toggle('flipping', g.phase === 'flipping');
-    const offering = g.phase === 'offer', choosing = g.phase === 'pick';
+    const offering = g.phase === 'offer';
     const locked = ['settling', 'flipping', 'reveal'].includes(g.phase);
-    const message = g.phase === 'settling' || g.phase === 'flipping' ? 'Card coming…'
-      : g.phase === 'pick' ? 'Pick RED or BLACK · 50/50'
-      : g.won === false ? 'Phelan laughs. Gamble lost.'
-      : g.won ? `Gamble won! ${eur(g.amount)} banked.` : `${eur(g.amount)} banked. Gamble or collect?`;
-    if (!box.querySelector('canvas')) box.innerHTML = `<b></b>
-      <div class="wdealer"><img alt="Ghost Phelan"><canvas width="180" height="252"></canvas></div>
-      <p class="gmessage"></p><p class="gpick"></p><div class="gactions"></div>`;
-    box.querySelector('b').textContent = `Ghost Phelan’s gamble · ${g.count}/5`;
-    box.querySelector('.gmessage').textContent = message;
-    box.querySelector('.gpick').textContent = g.pick ? `Picked ${g.pick.toUpperCase()}${g.colour ? ` · ${g.colour.toUpperCase()}` : ''}` : '';
-    box.querySelector('.gactions').innerHTML = spectator ? '' : `<div class="wrow">${offering ? '<button type="button" class="wbtn gold" data-gamble="deal">GAMBLE</button>' : ''}
-      ${choosing ? '<button type="button" class="wbtn red" data-gamble="red">RED</button><button type="button" class="wbtn" data-gamble="black">BLACK</button>' : ''}
-      ${!locked ? '<button type="button" class="wbtn" data-gamble="collect">COLLECT</button>' : ''}</div>
-      ${!locked ? '<p><small>Already banked · collects automatically in 15s · max €20 at risk</small></p>' : ''}`;
-    box.querySelector('img').src = GHOST_IMAGE.src;
-    box.querySelector('.wdealer').hidden = !g.pick && g.phase === 'offer';
-    const canvas = box.querySelector('canvas'), ctx = canvas.getContext('2d');
-    canvas.setAttribute('aria-label', g.colour ? g.colour + ' card' : 'Face-down card');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawCard(ctx, 90, 126, 140, g.card || { r: 14, s: '♥' }, !!g.colour, '#4a2a6b');
+    if (!box.querySelector('.gladder')) box.innerHTML = '<b></b><div class="gladder"><div class="gdouble"></div><div class="glose">LOSE · €0.00</div></div><p class="gmessage"></p><div class="gactions"></div>';
+    const wins = g.count - (g.won === false ? 1 : 0);
+    box.querySelector('b').textContent = 'Ghost Phelan’s gamble · x' + (2 ** wins) + ' · ' + wins + ' wins';
+    box.querySelector('.gmessage').textContent = locked ? (g.phase === 'reveal' ? (g.won ? 'Gamble won!' : 'Phelan laughs. Gamble lost.') : 'Double or nothing…') : eur(g.amount) + ' banked · collects automatically in 15s';
+    const ladder = box.querySelector('.gladder');
+    ladder.className = 'gladder' + (g.phase === 'flipping' ? ' running' : g.won === undefined ? '' : g.won ? ' won' : ' lost');
+    ladder.style.animationDelay = Math.min(0, (g.revealAt || now()) - now() - 1500) + 'ms';
+    box.querySelector('.gdouble').textContent = eur(g.phase === 'flipping' ? g.ladderAmount : g.won ? g.amount : g.amount * 2);
+    box.querySelector('.gactions').innerHTML = '<div class="wrow"><button type="button" class="wbtn gslot ggamb' + (offering ? ' offered' : '') + '" data-gamble="deal" ' + (spectator || !offering ? 'disabled' : '') + '>GAMBLE</button><button type="button" class="wbtn gslot gcollect" data-gamble="collect" ' + (spectator || locked ? 'disabled' : '') + '>COLLECT</button></div>';
   }
+
   appEl.insertBefore(bar, appEl.querySelector('.stage'));
   const $w = id => document.getElementById(id);
 

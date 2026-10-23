@@ -146,7 +146,7 @@
   }
   // ---------- a separate, fair wager on money already banked ----------
   function gambleAllowed(amount, count) {
-    return Number.isSafeInteger(amount) && amount > 0 && amount <= 2000 && Number.isInteger(count) && count >= 0 && count < 5;
+    return Number.isSafeInteger(amount) && amount > 0;
   }
   function gambleEligible(run, current, auto) {
     return !!run && current === run && !run.live && !run.auto && !auto && !run.gambleClosed && gambleAllowed(run.gambleCredit, 0);
@@ -207,18 +207,12 @@
     W.gamble = { amount: run.gambleCredit, count: 0, phase: 'offer', user: W.user };
     armGamble();
   }
-  function dealGamble() {
+  async function dealGamble() {
     const g = W.gamble;
-    if (!g || gambleBusy || autoOn || busy || g.user !== W.user || g.phase !== 'offer' || !gambleAllowed(g.amount, g.count)) return;
+    if (!g || gambleBusy || autoOn || busy || g.user !== W.user || g.phase !== 'offer' || !gambleAllowed(g.amount)) return;
     if (now() >= g.expiresAt) return collectGamble();
     phelanStop();
-    g.phase = 'pick'; g.pick = null; g.colour = null;
-    armGamble();
-  }
-  async function pickGamble(pick) {
-    const g = W.gamble;
-    if (!g || gambleBusy || g.phase !== 'pick' || g.user !== W.user || autoOn || busy) return;
-    if (now() >= g.expiresAt) return collectGamble();
+    const pick = 'red'; // Fixed fair coin flip; no player colour selection.
     if (W.connected === false) { collectGamble(); return toast('No connection. Keep your banked win.'); }
     const user = W.user, test = isTest(), amount = g.amount;
     let bet;
@@ -238,8 +232,9 @@
       const delta = bet.won ? amount : -amount, what = bet.won ? 'Gamble win' : 'Gamble lose';
       log(user, 'gamble', delta, { what, pick, colour: result.colour, gambleId: bet.id });
       if (!test) db.txn('stats', st => updateGambleStats(st, bet, test)).catch(() => {});
-      g.phase = 'flipping'; renderGamble(gambleBox, g);
-      await new Promise(resolve => setTimeout(resolve, 350));
+      g.phase = 'flipping'; g.ladderAmount = amount * 2; g.revealAt = now() + 1500;
+      renderGamble(gambleBox, g);
+      await new Promise(resolve => setTimeout(resolve, 1500));
       g.card = result.card; g.colour = result.colour; g.won = bet.won; g.count++; g.amount = bet.won ? amount * 2 : 0;
       g.phase = 'reveal'; renderGamble(gambleBox, g);
       if (!bet.won) {
@@ -255,7 +250,7 @@
       await new Promise(resolve => setTimeout(resolve, 900));
       gambleBusy = false;
       g.phase = bet.won && gambleAllowed(g.amount, g.count) ? 'offer' : 'done';
-      armGamble();
+      if (g.phase === 'done') collectGamble(); else armGamble();
     } catch (e) {
       gambleBusy = false; collectGamble();
       toast(bet ? 'Connection interrupted. Check your balance/history before playing again.' : 'Card unavailable. Keep your banked win.');
@@ -265,7 +260,6 @@
     const action = e.target.dataset.gamble;
     if (action === 'collect') collectGamble();
     else if (action === 'deal') dealGamble();
-    else if (action === 'red' || action === 'black') pickGamble(action);
   });
   function leaveGamble(e) {
     if (gambleBusy) { e.preventDefault(); e.stopImmediatePropagation(); return toast('Wait for the card.'); }
