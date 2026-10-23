@@ -40,7 +40,8 @@ function createHarness(payload, options = {}) {
   const closeSheet = () => {};
   const toast = () => {};
   const runtime = new Function('db', 'unpack', 'performance', 'pause', 'mirrorScreen', 'closeSheet', 'toast', 'console', 'setTimeout', 'clearTimeout', `
-    let busy = false, viewing = null;
+    let busy = false, viewing = null, gambleBusy = false;
+    const W = {}, collectGamble = () => {};
     ${helperMatch[0]}
     ${replayMatch[0]}
     return { replay, get viewing() { return viewing; } };

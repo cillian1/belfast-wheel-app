@@ -77,6 +77,9 @@ export function pathHarness(full = false, compute = false) {
       stop({
         k: 'M', race: 1, n: alive.length, sp: alive.filter(ch => ch.special).length,
         sw: alive.filter(ch => ch.special === 'W').length, sb: alive.filter(ch => ch.special === 'B').length,
+        ch: alive.filter(ch => ch.special).map(ch => ({
+          special: ch.special, count: ch.count || 1, mult: ch.mult || 1.5,
+        })),
       });
     };
     // Revenge is a downstream prize room, not part of path sampling.

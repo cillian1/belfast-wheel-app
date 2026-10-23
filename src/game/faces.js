@@ -34,7 +34,7 @@ function buildSweep() {
   return k;
 }
 // Go back up: three chevrons pointing out toward the wheel above
-function upChevrons(g, am, a, ph = -1, rs = [R * .66, R * .75, R * .84]) {
+function upChevrons(g, am, a, ph = -1, rs = [R * .66, R * .75, R * .84], double = false) {
   const tx = -Math.sin(am), ty = Math.cos(am), w = R * .045;
   g.save(); g.lineCap = 'round'; g.lineJoin = 'round';
   rs.forEach((r, j) => {
@@ -42,6 +42,26 @@ function upChevrons(g, am, a, ph = -1, rs = [R * .66, R * .75, R * .84]) {
     const tip = r + R * .03, bx = c + Math.cos(am) * r, by = c + Math.sin(am) * r;
     g.strokeStyle = `rgba(150,255,225,${al})`; g.shadowColor = 'rgba(80,255,200,.9)'; g.shadowBlur = ph < 0 ? 0 : R * .04; g.lineWidth = R * .016;
     g.beginPath(); g.moveTo(bx + tx * w, by + ty * w); g.lineTo(c + Math.cos(am) * tip, c + Math.sin(am) * tip); g.lineTo(bx - tx * w, by - ty * w); g.stroke();
+    if (double) {
+      const r2 = r - R * .02, tip2 = tip - R * .02, bx2 = c + Math.cos(am) * r2, by2 = c + Math.sin(am) * r2;
+      g.beginPath(); g.moveTo(bx2 + tx * w, by2 + ty * w); g.lineTo(c + Math.cos(am) * tip2, c + Math.sin(am) * tip2); g.lineTo(bx2 - tx * w, by2 - ty * w); g.stroke();
+    }
+  });
+  g.restore();
+}
+// Go deeper: three chevrons pointing in toward the centre
+function downChevrons(g, am, a, ph = -1, rs = [R * .84, R * .75, R * .66], double = false) {
+  const tx = -Math.sin(am), ty = Math.cos(am), w = R * .045;
+  g.save(); g.lineCap = 'round'; g.lineJoin = 'round';
+  rs.forEach((r, j) => {
+    const al = ph < 0 ? a : a * (.25 + .75 * Math.max(0, Math.sin(ph - j * 1.1)));
+    const tip = r - R * .03, bx = c + Math.cos(am) * r, by = c + Math.sin(am) * r;
+    g.strokeStyle = `rgba(170,190,255,${al})`; g.shadowColor = 'rgba(100,150,255,.9)'; g.shadowBlur = ph < 0 ? 0 : R * .04; g.lineWidth = R * .016;
+    g.beginPath(); g.moveTo(bx + tx * w, by + ty * w); g.lineTo(c + Math.cos(am) * tip, c + Math.sin(am) * tip); g.lineTo(bx - tx * w, by - ty * w); g.stroke();
+    if (double) {
+      const r2 = r + R * .02, tip2 = tip + R * .02, bx2 = c + Math.cos(am) * r2, by2 = c + Math.sin(am) * r2;
+      g.beginPath(); g.moveTo(bx2 + tx * w, by2 + ty * w); g.lineTo(c + Math.cos(am) * tip2, c + Math.sin(am) * tip2); g.lineTo(bx2 - tx * w, by2 - ty * w); g.stroke();
+    }
   });
   g.restore();
 }
@@ -75,10 +95,10 @@ function buildRing(items, pal) {
       wedgeText(g, am, R * .725, s.lbl, fsFor(s.lbl, R * .725), R * .27, 'dark');
       return;
     }
-    if (s.boost) { // More Wilds / More Bonus: copper or orchid, a stack of three small emblems and chevrons pouring inward
+    if (s.boost) { // More Wilds / More Bonus: copper or orchid, an emblem and chevrons pouring inward
       const am = BASE + (i + .5) * seg, tx = -Math.sin(am), ty = Math.cos(am), sz = R * .072 * Math.min(1, icon * 1.3);
       const at = (r, t) => [c + Math.cos(am) * r + tx * t, c + Math.sin(am) * r + ty * t];
-      [R * .85, R * .755, R * .66].forEach(r => {
+      [R * .69].forEach(r => {
         const [x, y] = at(r, 0);
         if (s.boost === 'W') cleopatra(g, x, y, am, sz * 1.15); else ankh(g, x, y, am, sz);
       });
@@ -88,14 +108,20 @@ function buildRing(items, pal) {
         g.beginPath(); g.moveTo(lx, ly); g.lineTo(mx, my); g.lineTo(rx, ry); g.stroke();
       });
       g.restore();
+      const label = ['MORE', s.boost === 'W' ? 'WILD' : 'BONUS'];
+      wedgeText(g, am, R * .83, label, fsFor(label, R * .83), R * .17, 'dark');
       return;
     }
     if (s.up && (s.wild || s.bonus)) { // half Wild or ankh, half Go back up
       const am = BASE + (i + .5) * seg;
       if (s.wild) cleopatra(g, c + Math.cos(am) * R * .8, c + Math.sin(am) * R * .8, am, R * .15 * icon); else ankh(g, c + Math.cos(am) * R * .8, c + Math.sin(am) * R * .8, am, R * .13 * icon);
-      upChevrons(g, am, .55, -1, [R * .6, R * .67]); return;
+      upChevrons(g, am, .55, -1, [R * .6, R * .67]);
+      const label = [s.wild ? 'WILD' : 'BONUS'];
+      wedgeText(g, am, R * .88, label, fsFor(label, R * .88) * .8, R * .1, s.wild ? 'light' : 'dark');
+      return;
     }
-    if (s.up) { upChevrons(g, BASE + (i + .5) * seg, .55); return; }
+    if (s.up) { upChevrons(g, BASE + (i + .5) * seg, .55, -1, undefined, s.up === 2); return; }
+    if (s.deep === 2) { downChevrons(g, BASE + (i + .5) * seg, .55, -1, undefined, true); return; }
     if (s.god) {
       const am = BASE + (i + .5) * seg;
       eyeOfHorus(g, c + Math.cos(am) * R * .68, c + Math.sin(am) * R * .68, am, R * .15 * icon);
@@ -104,12 +130,14 @@ function buildRing(items, pal) {
     }
     if (s.bonus) {
       const am = BASE + (i + .5) * seg;
-      ankh(g, c + Math.cos(am) * R * .72, c + Math.sin(am) * R * .72, am, R * .19 * icon);
+      ankh(g, c + Math.cos(am) * R * .65, c + Math.sin(am) * R * .65, am, R * .15 * icon);
+      wedgeText(g, am, R * .83, ['BONUS'], fsFor(['BONUS'], R * .83), R * .18, 'dark');
       return;
     }
     if (s.wild) {
       const am = BASE + (i + .5) * seg;
-      cleopatra(g, c + Math.cos(am) * R * .72, c + Math.sin(am) * R * .72, am, R * .22 * icon);
+      cleopatra(g, c + Math.cos(am) * R * .65, c + Math.sin(am) * R * .65, am, R * .17 * icon);
+      wedgeText(g, am, R * .83, ['WILD'], fsFor(['WILD'], R * .83), R * .18, 'light');
       return;
     }
     wedgeText(g, BASE + (i + .5) * seg, s.deep ? R * .76 : R * .725, s.lbl, fsFor(s.lbl, R * .725), s.deep ? R * .2 : R * .27, s.show || s.deep ? 'dark' : (i % 2 ? 'dark' : 'light'));
@@ -223,6 +251,7 @@ function buildBall(gold) {
   else if (gold) { gr.addColorStop(0, '#fffbe8'); gr.addColorStop(.3, '#f3cf6e'); gr.addColorStop(.8, '#8a5a12'); gr.addColorStop(1, '#3e2806'); }
   else { gr.addColorStop(0, '#ffffff'); gr.addColorStop(.3, '#d5dce2'); gr.addColorStop(.75, '#5a626b'); gr.addColorStop(1, '#1d2126'); }
   g.beginPath(); g.arc(r, r, r - .5, 0, TAU); g.fillStyle = gr; g.fill();
+  if (gold === 'W' || gold === 'B') g.drawImage(specialMark(gold), s * .12, s * .12, s * .76, s * .76);
   return k;
 }
 

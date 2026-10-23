@@ -22,14 +22,16 @@ Wilds/ankhs, special-chicken stacks/multipliers and RNG-call counts. The runner'
 regardless of worker scheduling.
 
 Records use the existing fastsim format: `k` (`W/B/G/P/M/-`), `w`, `b`, `g`, `god`,
-and farm fields `race`, `n`, `sp`, `sw`, `sb`, consumable by `rooms.js`/`race.py`.
+and farm fields `race`, `n`, `sp`, `sw`, `sb`, plus `ch` records containing each
+special chicken's `special`, `count`, and `mult`, consumable by `rooms.js`/`race.py`.
 As in fastsim, races are forced on for sampling and stopped at the survivor
 roster; the downstream analysis supplies the race weighting and prize EVs.
 This does not update or validate those analytic tables or their weighting.
 
 Measured here: **10,000 full paths in 57.278 s on four cores**, including browser
 startup; all 200 browser/core seeds match. No game, money or prize files changed.
-`--workers`, `--seed` (first seed, default 1) and `--tip` (default .10) are optional.
+`--workers` and `--seed` (first seed, default 1) are optional; `--tip` defaults to
+the live `TIP_CHANCE` read from `src/game/motion.js`.
 `CHROMIUM_PATH` optionally selects the browser executable for both commands;
 otherwise they use the existing Playwright test installation.
 

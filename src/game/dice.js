@@ -48,13 +48,14 @@ function drawDie3D(g, x, y, s, M, sp) {
       g.fillStyle = `rgb(${Math.round(col[0] * lit)},${Math.round(col[1] * lit)},${Math.round(col[2] * lit)})`; g.fill();
       g.strokeStyle = `rgba(30,20,40,${.4 + (1 - n[2]) * .3})`; g.lineWidth = Math.max(1, s * .02); g.stroke();
       g.globalAlpha = Math.min(1, n[2] * 2.2);
-      if (special) { // a diamond instead of pips
-        g.fillStyle = sp === 'W' ? '#8a5a08' : '#fff2ff'; g.beginPath();
-        [[0, -.5], [.36, 0], [0, .5], [-.36, 0]].forEach(([a, b], k) => { const p = P(a, b); k ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); }); g.closePath(); g.fill();
-      } else {
+      if (!special) {
         g.fillStyle = sp === 'W' ? '#3a2406' : '#fff6dc';
         PIPS[f.val].forEach(([a, b]) => { g.beginPath(); for (let k = 0; k <= 10; k++) { const t = k / 10 * TAU, p = P(a * .5 + Math.cos(t) * .17, b * .5 + Math.sin(t) * .17); k ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); } g.fill(); });
       }
+      g.save(); g.transform(U[0], U[1], V[0], V[1], x + C[0], y + C[1]);
+      if (special) g.drawImage(specialMark(sp), -.65, -.65, 1.3, 1.3);
+      else g.drawImage(specialMark(sp), -.28, -.98, .56, .56);
+      g.restore();
       g.globalAlpha = 1;
       return;
     }

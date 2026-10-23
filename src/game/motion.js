@@ -243,7 +243,12 @@ async function boostRun(kind, fromK) {
   const img = mk(96, 96); paintTile(img, kind);
   for (let j = fromK + 1; j <= DEPTH; j++) { boostNew[j] = boostedOrder(runOrders[j - 1], kind, 4, j); faces['boost' + j] = ringFor(j, boostNew[j]); }
   Music.sting(3); buzz([40, 30, 40, 30, 120]); whoosh(true);
-  setVerdict({ eyebrow: 'Going deeper', title: kind === 'W' ? 'More Wilds' : 'More Bonus', body: 'The wheels below are changing.', flash: true });
+  let body = 'The wheels below are changing.';
+  if (!store.get('wildHint')) {
+    body = (kind === 'W' ? 'Gold Cleopatra = WILD. ' : 'Purple ankh = BONUS. ') + 'Collect 3 of a kind. ' + body;
+    store.set('wildHint', true);
+  }
+  setVerdict({ eyebrow: 'Going deeper', title: kind === 'W' ? 'More Wilds' : 'More Bonus', body, flash: true });
   godParts = [];
   for (let i = 0; i < 36; i++) {
     const j = fromK + 1 + (i % (DEPTH - fromK)), sc = Math.pow(S, j - fromK), a = Math.random() * TAU, rr = R * (.6 + Math.random() * .3) * sc;

@@ -135,10 +135,14 @@ function drawLayer(g, k, sc) {
   if (boostA[k] > 0 && faces['boost' + k]) { ctx.globalAlpha = boostA[k]; drawScaled(faces['boost' + k], rot[k], sc); ctx.globalAlpha = 1; }
   if (k && deadFrom[k]) drawScaled(deadFace(deadFrom[k], k), rot[k], sc);
   if (k && deadA[k] > 0 && deadTo[k]) { ctx.globalAlpha = deadA[k]; drawScaled(deadFace(deadTo[k], k), rot[k], sc); ctx.globalAlpha = 1; }
-  if (k > 0 && LAYERS[k].some(it => it.up)) { // the chevrons flash in a wave, outward
+  if (k > 0 && LAYERS[k].some(it => it.up || it.deep === 2)) { // the chevrons flash in a wave
     const ph = performance.now() / 180, n = LAYERS[k].length;
     ctx.save(); ctx.translate(c, c); ctx.scale(sc, sc); ctx.rotate(rot[k]); ctx.translate(-c, -c); ctx.globalCompositeOperation = 'lighter';
-    LAYERS[k].forEach((it, i) => { if (it.up) upChevrons(ctx, BASE + (i + .5) * TAU / n, 1, ph, it.wild || it.bonus ? [R * .6, R * .67] : undefined); });
+    LAYERS[k].forEach((it, i) => {
+      const am = BASE + (i + .5) * TAU / n;
+      if (it.up) upChevrons(ctx, am, 1, ph, it.wild || it.bonus ? [R * .6, R * .67] : undefined, it.up === 2);
+      if (it.deep === 2) downChevrons(ctx, am, 1, ph, undefined, true);
+    });
     ctx.restore();
   }
   if (k === 0 && sc < 1.6) drawDeepGlow(sc);
@@ -325,6 +329,7 @@ function draw() {
 }
 // everything fits on one screen: the wheel takes whatever height the rest of the page leaves
 function fitStage() {
+  if (typeof viewing !== 'undefined' && viewing) return;
   const st = $('.stage'), app = $('.app'); if (!st || !app) return;
   const cs = getComputedStyle(document.body), gap = parseFloat(getComputedStyle(app).rowGap) || 0;
   let used = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom), n = 0;
@@ -355,6 +360,7 @@ function syncCanvasQuality(preserve = true) {
 Perf.onCanvasQualityChange(syncCanvasQuality);
 function resize() {
   const w = cv.clientWidth; if (!w) return;
+  if (typeof viewing !== 'undefined' && viewing) return;
   D = Math.min(2, window.devicePixelRatio || 1);
   const n = Math.round(w * D); if (n === N) { syncCanvasQuality(false); return; }
   const old = B ? { N } : null;
