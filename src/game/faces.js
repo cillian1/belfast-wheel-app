@@ -34,7 +34,7 @@ function buildSweep() {
   return k;
 }
 // Go back up: three chevrons pointing out toward the wheel above
-function upChevrons(g, am, a, ph = -1, rs = [R * .66, R * .75, R * .84]) {
+function upChevrons(g, am, a, ph = -1, rs = [R * .66, R * .75, R * .84], double = false) {
   const tx = -Math.sin(am), ty = Math.cos(am), w = R * .045;
   g.save(); g.lineCap = 'round'; g.lineJoin = 'round';
   rs.forEach((r, j) => {
@@ -42,6 +42,26 @@ function upChevrons(g, am, a, ph = -1, rs = [R * .66, R * .75, R * .84]) {
     const tip = r + R * .03, bx = c + Math.cos(am) * r, by = c + Math.sin(am) * r;
     g.strokeStyle = `rgba(150,255,225,${al})`; g.shadowColor = 'rgba(80,255,200,.9)'; g.shadowBlur = ph < 0 ? 0 : R * .04; g.lineWidth = R * .016;
     g.beginPath(); g.moveTo(bx + tx * w, by + ty * w); g.lineTo(c + Math.cos(am) * tip, c + Math.sin(am) * tip); g.lineTo(bx - tx * w, by - ty * w); g.stroke();
+    if (double) {
+      const r2 = r - R * .02, tip2 = tip - R * .02, bx2 = c + Math.cos(am) * r2, by2 = c + Math.sin(am) * r2;
+      g.beginPath(); g.moveTo(bx2 + tx * w, by2 + ty * w); g.lineTo(c + Math.cos(am) * tip2, c + Math.sin(am) * tip2); g.lineTo(bx2 - tx * w, by2 - ty * w); g.stroke();
+    }
+  });
+  g.restore();
+}
+// Go deeper: three chevrons pointing in toward the centre
+function downChevrons(g, am, a, ph = -1, rs = [R * .84, R * .75, R * .66], double = false) {
+  const tx = -Math.sin(am), ty = Math.cos(am), w = R * .045;
+  g.save(); g.lineCap = 'round'; g.lineJoin = 'round';
+  rs.forEach((r, j) => {
+    const al = ph < 0 ? a : a * (.25 + .75 * Math.max(0, Math.sin(ph - j * 1.1)));
+    const tip = r - R * .03, bx = c + Math.cos(am) * r, by = c + Math.sin(am) * r;
+    g.strokeStyle = `rgba(170,190,255,${al})`; g.shadowColor = 'rgba(100,150,255,.9)'; g.shadowBlur = ph < 0 ? 0 : R * .04; g.lineWidth = R * .016;
+    g.beginPath(); g.moveTo(bx + tx * w, by + ty * w); g.lineTo(c + Math.cos(am) * tip, c + Math.sin(am) * tip); g.lineTo(bx - tx * w, by - ty * w); g.stroke();
+    if (double) {
+      const r2 = r + R * .02, tip2 = tip + R * .02, bx2 = c + Math.cos(am) * r2, by2 = c + Math.sin(am) * r2;
+      g.beginPath(); g.moveTo(bx2 + tx * w, by2 + ty * w); g.lineTo(c + Math.cos(am) * tip2, c + Math.sin(am) * tip2); g.lineTo(bx2 - tx * w, by2 - ty * w); g.stroke();
+    }
   });
   g.restore();
 }
@@ -100,7 +120,8 @@ function buildRing(items, pal) {
       wedgeText(g, am, R * .88, label, fsFor(label, R * .88) * .8, R * .1, s.wild ? 'light' : 'dark');
       return;
     }
-    if (s.up) { upChevrons(g, BASE + (i + .5) * seg, .55); return; }
+    if (s.up) { upChevrons(g, BASE + (i + .5) * seg, .55, -1, undefined, s.up === 2); return; }
+    if (s.deep === 2) { downChevrons(g, BASE + (i + .5) * seg, .55, -1, undefined, true); return; }
     if (s.god) {
       const am = BASE + (i + .5) * seg;
       eyeOfHorus(g, c + Math.cos(am) * R * .68, c + Math.sin(am) * R * .68, am, R * .15 * icon);

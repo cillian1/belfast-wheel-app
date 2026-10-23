@@ -2,20 +2,20 @@
 // Owns wheel content, run text, and move selection data.
 const MAIN = [
   { lbl: ['FORWARD', '? M'], go: () => ({ t: `Forward ${metres()} metres`, b: "Straight ahead, whatever way you’re facing. A big stride is about a metre." }) },
-  { lbl: ['GO', 'DEEPER'], deep: true },
+  { lbl: ['GO', 'DEEPER'], deep: true, go: () => 'go deeper' },
   { lbl: ['NEXT', 'LEFT'], go: () => ({ t: 'Take the next left', b: 'The very next left you reach. Street, alley, arcade, doorway. Whatever comes first.' }) },
-  { lbl: ['SHOW ME', 'JUST FOR FUN'], show: true },
-  { lbl: ['GO', 'DEEPER'], deep: true },
+  { lbl: ['SHOW ME', 'JUST FOR FUN'], show: true, go: () => 'show me' },
+  { lbl: ['GO', 'DEEPER'], deep: true, go: () => 'go deeper' },
   { lbl: ['RIGHT', '? M'], go: () => ({ t: `Right ${metres()} metres`, b: 'Turn to your right and walk it. If something is in the way, go round it and keep counting.' }) },
-  { lbl: ['GO', 'DEEPER'], deep: true },
+  { lbl: ['GO', 'DEEPER'], deep: true, go: () => 'go deeper' },
   { lbl: ['INTO THAT', 'BUILDING'], go: () => ({ t: 'Go into that building', b: 'The nearest building with an open door. Everyone goes in, and you stay at least five minutes.' }) },
-  { lbl: ['GO', 'DEEPER'], deep: true },
+  { lbl: ['GO', 'DEEPER'], deep: true, go: () => 'go deeper' },
   { lbl: ['BACK', '? M'], go: () => ({ t: `Back ${metres()} metres`, b: 'Turn round and walk back the way you came.' }) },
-  { lbl: ['GO', 'DEEPER'], deep: true },
-  { lbl: ['SHOW ME', 'JUST FOR FUN'], show: true },
-  { lbl: ['GO', 'DEEPER'], deep: true },
+  { lbl: ['GO', 'DEEPER'], deep: true, go: () => 'go deeper' },
+  { lbl: ['SHOW ME', 'JUST FOR FUN'], show: true, go: () => 'show me' },
+  { lbl: ['GO', 'DEEPER'], deep: true, go: () => 'go deeper' },
   { lbl: ['ASK A', 'LOCAL'], go: () => ({ t: 'Ask a local', b: 'Stop the next local and ask where they would go right now. That is where you are going.' }) },
-  { lbl: ['GO', 'DEEPER'], deep: true },
+  { lbl: ['GO', 'DEEPER'], deep: true, go: () => 'go deeper' },
   { lbl: ['NEXT', 'RIGHT'], go: () => ({ t: 'Take the next right', b: 'The very next right you reach. No skipping one because it looks boring.' }) },
 ];
 
@@ -38,6 +38,8 @@ const MOVE_DEFS = {
   MW: { lbl: ['MORE', 'WILDS'], boost: 'W', go: () => 'More Wilds: no move from this wheel' },
   MB: { lbl: ['MORE', 'BONUS'], boost: 'B', go: () => 'More Bonus: no move from this wheel' },
   ED: { lbl: ['EVEN', 'DEEPER'], deep: true, even: true, go: () => 'Go even deeper' },
+  D2: { lbl: [], deep: 2, go: () => 'go two levels deeper' },
+  U2: { lbl: [], up: 2, go: () => 'go back up two levels' },
 };
 // Wilds (gold, Cleopatra) and Bonus slices (purple, ankh). Wild on all three inner wheels is
 // the ultra bonus; Bonus on all three is the bonus round. Four inner wheels, and you need three of a kind:
@@ -46,12 +48,12 @@ const MOVE_DEFS = {
 // it sends you to whichever room you hold two of, else the kind you have more of, else a coin flip. Every Wild and Bonus has a
 // normal slice on both sides, wrap-around included. Miss either kind and that kind goes grey on every wheel further in.
 const LAYER_ORDERS = [
-  ['BN', 'B', 'MW', 'F', 'C', 'WD', 'NL', 'X', 'BN', 'NR', 'F', 'WD', 'C', 'R', 'BN', 'X', 'L', 'WD', 'F', 'B', 'BN', 'R', 'NL', 'MB', 'L', 'BN', 'L', 'NR', 'WD', 'B', 'C', 'BN', 'NL', 'X', 'WD', 'NR', 'F', 'BN', 'C', 'R', 'WD', 'X', 'BN', 'NR'],
-  ['BN', 'NL', 'X', 'WD', 'NR', 'MW', 'F', 'BN', 'C', 'R', 'WD', 'X', 'UP', 'BN', 'F', 'B', 'WD', 'R', 'MB', 'NL', 'BN', 'L'],
-  ['BN', 'NR', 'F', 'WD', 'C', 'R', 'BN', 'UP', 'L', 'WD', 'F', 'B', 'BN', 'R', 'X', 'C', 'NL', 'WD', 'L', 'UP', 'BN', 'B'],
-  ['BN', 'C', 'ED', 'R', 'WD', 'X', 'UP', 'BN', 'F', 'B', 'WD', 'R', 'UP', 'BN', 'L', 'GD', 'F', 'NR', 'WD', 'B', 'UP', 'BN', 'NL'],
+  ['BN', 'B', 'MW', 'F', 'C', 'WD', 'U2', 'X', 'BN', 'NR', 'F', 'WD', 'C', 'R', 'BN', 'X', 'L', 'WD', 'F', 'B', 'BN', 'R', 'NL', 'MB', 'L', 'BN', 'L', 'NR', 'WD', 'B', 'C', 'BN', 'NL', 'X', 'WD', 'NR', 'F', 'BN', 'C', 'R', 'WD', 'X', 'BN', 'NR'],
+  ['BN', 'NL', 'X', 'WD', 'NR', 'MW', 'F', 'BN', 'C', 'R', 'WD', 'X', 'U2', 'BN', 'F', 'B', 'WD', 'R', 'MB', 'NL', 'BN', 'L'],
+  ['BN', 'NR', 'F', 'WD', 'C', 'R', 'BN', 'UP', 'L', 'WD', 'F', 'B', 'BN', 'R', 'X', 'D2', 'NL', 'WD', 'L', 'U2', 'BN', 'B'],
+  ['BN', 'C', 'ED', 'R', 'WD', 'X', 'UP', 'BN', 'F', 'B', 'WD', 'R', 'UP', 'BN', 'L', 'GD', 'F', 'NR', 'WD', 'B', 'U2', 'BN', 'NL'],
   // the hidden fifth wheel, only reached through Go even deeper on the last wheel: more Wilds and ankhs than any other wheel
-  ['BN', 'C', 'WD', 'R', 'BN', 'X', 'WD', 'F', 'BN', 'B', 'GD', 'NL', 'WD', 'L', 'BN', 'NR', 'WD', 'F', 'BN', 'X', 'WD', 'R', 'BN', 'C', 'WD', 'L', 'BN', 'B'],
+  ['BN', 'C', 'WD', 'R', 'BN', 'X', 'WD', 'F', 'BN', 'B', 'GD', 'U2', 'WD', 'L', 'BN', 'NR', 'WD', 'F', 'BN', 'X', 'WD', 'R', 'BN', 'C', 'WD', 'L', 'BN', 'B'],
 ];
 const REPLACE = ['F', 'L', 'R', 'B', 'NL', 'NR', 'X', 'C'];
 // dead variants: 'W' = Wilds greyed, 'B' = Bonus greyed, 'WB' = both
