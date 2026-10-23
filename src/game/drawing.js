@@ -293,34 +293,40 @@ function draw() {
     if (!N) return;
     updatePointer(performance.now());
     ctx.clearRect(0, 0, N, N);
-    const now = performance.now();
-    if (scene === 'final') drawFinal(); else if (scene === 'photo') drawPhoto();
-    else if (scene === 'intro') drawIntro(now); else if (scene === 'building') drawBuilding(now);
-    else if (scene === 'hall') drawHall(); else if (scene === 'stank') drawStank(now);
-    else if (scene === 'pipes') drawPipes(); else if (scene === 'farm') drawFarm(now);
-    else if (scene === 'coaster') drawCoaster(now); else if (scene === 'planet') drawPlanetScene(now); else if (scene === 'monster') drawMonster(now);
-    else if (scene === 'pyramid' && pyr) drawPyramid(now); else if (scene === 'god' && god) drawGodRoom(now); else if (scene === 'zena' && zena) drawZena(now);
-    else if (scene === 'roul' && roul) drawRoul(now); else if (scene === 'vault' && vault) drawVault(now);
-    else if (scene === 'pyramid' || scene === 'god' || scene === 'zena' || scene === 'roul' || scene === 'vault') {}
-    else drawNested();
-    if (snapA > 0 && snap) { ctx.globalAlpha = snapA; ctx.drawImage(snap, 0, 0); ctx.globalAlpha = 1; }
-    if (scene === 'pipes' && pipes) pipes.balls.forEach(b => { if (b.state === 'pre') ctx.drawImage(ballImg(b), b.x - b.pr, b.y - b.pr, b.pr * 2, b.pr * 2); });
-    if (ghost && scene !== 'pyramid' && scene !== 'god' && scene !== 'zena') { drawGhost(); if (ghostSay) bubble(ctx, ghostSay, ghost.x, ghost.y - R * .22); }
-    for (let i = 0; i < godParts.length; i++) {
-      if (Perf.low && i % 2) continue;
-      const p = godParts[i], sz = p.s;
-      ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, p.life)); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.drawImage(p.img, -sz / 2, -sz / 2, sz, sz); ctx.restore();
-    }
-    for (let i = 0; i < dots.length; i++) {
-      if (Perf.low && i % 2) continue;
-      const p = dots[i]; // die pips on their way to becoming chickens
-      if (p.hide) continue;
-      const r = p.r * (1 + p.glow * .6);
-      if (!Perf.low) {
-        const gr = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 3.2); gr.addColorStop(0, `rgba(255,240,190,${.7 * p.glow})`); gr.addColorStop(1, 'rgba(255,200,90,0)');
-        ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(p.x, p.y, r * 3.2, 0, TAU); ctx.fill();
+    const zoomWheel = scene === 'nested' && wheelZoom !== 1;
+    if (zoomWheel) { ctx.save(); ctx.translate(c, c); ctx.scale(wheelZoom, wheelZoom); ctx.translate(-c, -c); }
+    try {
+      const now = performance.now();
+      if (scene === 'final') drawFinal(); else if (scene === 'photo') drawPhoto();
+      else if (scene === 'intro') drawIntro(now); else if (scene === 'building') drawBuilding(now);
+      else if (scene === 'hall') drawHall(); else if (scene === 'stank') drawStank(now);
+      else if (scene === 'pipes') drawPipes(); else if (scene === 'farm') drawFarm(now);
+      else if (scene === 'coaster') drawCoaster(now); else if (scene === 'planet') drawPlanetScene(now); else if (scene === 'monster') drawMonster(now);
+      else if (scene === 'pyramid' && pyr) drawPyramid(now); else if (scene === 'god' && god) drawGodRoom(now); else if (scene === 'zena' && zena) drawZena(now);
+      else if (scene === 'roul' && roul) drawRoul(now); else if (scene === 'vault' && vault) drawVault(now);
+      else if (scene === 'pyramid' || scene === 'god' || scene === 'zena' || scene === 'roul' || scene === 'vault') {}
+      else drawNested();
+      if (snapA > 0 && snap) { ctx.globalAlpha = snapA; ctx.drawImage(snap, 0, 0); ctx.globalAlpha = 1; }
+      if (scene === 'pipes' && pipes) pipes.balls.forEach(b => { if (b.state === 'pre') ctx.drawImage(ballImg(b), b.x - b.pr, b.y - b.pr, b.pr * 2, b.pr * 2); });
+      if (ghost && scene !== 'pyramid' && scene !== 'god' && scene !== 'zena') { drawGhost(); if (ghostSay) bubble(ctx, ghostSay, ghost.x, ghost.y - R * .22); }
+      for (let i = 0; i < godParts.length; i++) {
+        if (Perf.low && i % 2) continue;
+        const p = godParts[i], sz = p.s;
+        ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, p.life)); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.drawImage(p.img, -sz / 2, -sz / 2, sz, sz); ctx.restore();
       }
-      ctx.fillStyle = p.red ? '#d0202f' : (p.glow > .5 ? '#fff6dc' : '#1b1a19'); ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, TAU); ctx.fill();
+      for (let i = 0; i < dots.length; i++) {
+        if (Perf.low && i % 2) continue;
+        const p = dots[i]; // die pips on their way to becoming chickens
+        if (p.hide) continue;
+        const r = p.r * (1 + p.glow * .6);
+        if (!Perf.low) {
+          const gr = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 3.2); gr.addColorStop(0, `rgba(255,240,190,${.7 * p.glow})`); gr.addColorStop(1, 'rgba(255,200,90,0)');
+          ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(p.x, p.y, r * 3.2, 0, TAU); ctx.fill();
+        }
+        ctx.fillStyle = p.red ? '#d0202f' : (p.glow > .5 ? '#fff6dc' : '#1b1a19'); ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, TAU); ctx.fill();
+      }
+    } finally {
+      if (zoomWheel) ctx.restore();
     }
     if (fade > 0) { ctx.fillStyle = `rgba(10,12,15,${fade})`; ctx.fillRect(0, 0, N, N); }
   } finally {
