@@ -11,6 +11,7 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
+- #222 Prevent Jimini and RolexG tasks replacing unrelated runs → main
 - #219 Watch: recover mirrored drawing state for update 32 → update-32 (draft)
 - #218 money: host wallet fixes (#151) → update-32
 - #217 money: slot-machine GAMBLE / COLLECT, unlimited double-or-nothing → update-32
