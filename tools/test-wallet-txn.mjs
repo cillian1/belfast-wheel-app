@@ -38,15 +38,43 @@ function createDb(replies, dbSource = match[0]) {
   return { db, calls };
 }
 
-const hostRetryPut = createDb([
-  response(100, '"host-v1"'), new TypeError('network'),
+const hostRetryRead = createDb([
+  new TypeError('network'), response(100, '"host-v1"'), response(null),
+], hostMatch[0]);
+assert.equal(await hostRetryRead.db.txn('users/test/balance', value => value + 10), 110);
+assert.deepEqual(hostRetryRead.calls.map(call => call.headers || {}), [
+  { 'X-Firebase-ETag': 'true' }, { 'X-Firebase-ETag': 'true' }, { 'if-match': '"host-v1"' },
+]);
+assert.notEqual(hostRetryRead.db.tags, false, 'a first-read network error must not disable host ETags');
+
+const hostConflict = createDb([
+  response(100, '"host-v1"'), response(null, null, 412),
   response(100, '"host-v2"'), response(null),
 ], hostMatch[0]);
-assert.equal(await hostRetryPut.db.txn('users/test/balance', value => value + 10), 110);
-assert.deepEqual(hostRetryPut.calls.filter(call => call.method === 'PUT').map(call => call.headers), [
+assert.equal(await hostConflict.db.txn('users/test/balance', value => value + 10), 110);
+assert.deepEqual(hostConflict.calls.filter(call => call.method === 'PUT').map(call => call.headers), [
   { 'if-match': '"host-v1"' }, { 'if-match': '"host-v2"' },
 ]);
-assert.notEqual(hostRetryPut.db.tags, false, 'host retries must preserve ETag protection after a failed PUT');
+
+let hostBalance = 100, hostTag = '"host-v1"', loseHostPutResponse = true;
+const hostCalls = [];
+const hostFetch = async (_url, options = {}) => {
+  hostCalls.push(options);
+  if (!options.method) return response(hostBalance, hostTag);
+  assert.equal(options.method, 'PUT');
+  assert.equal(options.headers['if-match'], hostTag);
+  hostBalance = JSON.parse(options.body);
+  hostTag = '"host-v2"';
+  if (loseHostPutResponse) {
+    loseHostPutResponse = false;
+    throw new TypeError('response lost after server commit');
+  }
+  return response(hostBalance, hostTag);
+};
+const hostDb = new Function('fetch', 'CFG', `${hostMatch[0]}; return db;`)(hostFetch, { db: 'https://example.invalid' });
+await assert.rejects(hostDb.txn('users/test/balance', value => value + 10), /outcome unknown/);
+assert.equal(hostBalance, 110, 'a committed PUT with a lost response must not apply the adjustment twice');
+assert.equal(hostCalls.filter(call => call.method === 'PUT').length, 1, 'an ambiguous PUT must not be replayed');
 
 const retryPut = createDb([
   response(100, '"v1"'), new TypeError('network'),
@@ -112,4 +140,4 @@ const abort = createDb([response(100)]);
 assert.equal(await abort.db.txn('users/test/balance', () => undefined), 100);
 assert.equal(abort.calls.length, 1, 'an aborted transaction must not write');
 
-console.log('Wallet and host transactions retain ETags after network failures, refresh retries, and stop after eight attempts.');
+console.log('Wallet transactions retry with ETags; host reads retry with ETags and ambiguous writes are not replayed.');
