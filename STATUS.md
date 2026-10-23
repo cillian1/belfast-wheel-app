@@ -11,7 +11,6 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
-- #224 Fix Renauw Banter seat detection → main
 - #222 Prevent Jimini and RolexG tasks replacing unrelated runs → main
 - #219 Watch: recover mirrored drawing state for update 32 → update-32 (draft)
 - #218 money: host wallet fixes (#151) → update-32
