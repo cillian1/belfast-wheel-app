@@ -860,7 +860,7 @@ function buildDart() {
 // ---------- the room: dim, a fire going ----------
 // Owns the ambient room background and its animation.
 const room = $('#room'), rctx = room.getContext('2d');
-let RW = 0, RH = 0, RDp = 1, roomBg = null, fireBox = null, lastRoom = 0, roomRaf = 0;
+let RW = 0, RH = 0, RDp = 1, roomBg = null, fireBox = null, lastRoom = 0, roomRaf = 0, roomPaused = false;
 const EMBERS = Array.from({ length: 26 }, () => ({ x: cosmeticRandom(), y: cosmeticRandom(), v: .15 + cosmeticRandom() * .35, s: 1 + cosmeticRandom() * 1.5 }));
 function buildRoom() {
   const k = document.createElement('canvas'); k.width = room.width; k.height = room.height;
@@ -936,7 +936,7 @@ function drawRoomFrame(now) {
 }
 function drawRoom(now) {
   roomRaf = 0;
-  if (document.hidden) return;
+  if (document.hidden || roomPaused || busy) return;
   roomRaf = requestAnimationFrame(drawRoom);
   if (now - lastRoom < 66 || !roomBg) return; lastRoom = now;
   const perfStart = Perf.begin('room');
@@ -944,8 +944,13 @@ function drawRoom(now) {
   finally { Perf.end('room', perfStart); }
 }
 function scheduleRoom() {
-  if (document.hidden) { if (roomRaf) { cancelAnimationFrame(roomRaf); roomRaf = 0; } return; }
+  if (document.hidden || roomPaused) { if (roomRaf) { cancelAnimationFrame(roomRaf); roomRaf = 0; } return; }
   if (!roomRaf) roomRaf = requestAnimationFrame(drawRoom);
+}
+function pauseRoom(paused) {
+  roomPaused = paused;
+  if (paused) { if (roomRaf) { cancelAnimationFrame(roomRaf); roomRaf = 0; } }
+  else scheduleRoom();
 }
 document.addEventListener('visibilitychange', scheduleRoom);
 roomResize(); window.addEventListener('resize', roomResize); scheduleRoom();
@@ -1263,6 +1268,9 @@ function buildPhoto() {
   }
   g.restore();
   bevel(g, r, false);
+  const base = mk(), b = base.getContext('2d');
+  b.drawImage(faces.dart, 0, 0); b.drawImage(faces.base, 0, 0);
+  faces.photoBase = base;
   return k;
 }
 
@@ -1553,8 +1561,7 @@ function drawPhoto() {
     const am = BASE + (hi + .5) * TAU / PHOTO_N, fx = c + Math.cos(am) * R * .55, fy = c + Math.sin(am) * R * .55, z = 1 + photoZoom * 1.7;
     ctx.translate(c, c); ctx.scale(z, z); ctx.translate(-lerp(c, fx, photoZoom), -lerp(c, fy, photoZoom));
   }
-  ctx.drawImage(faces.dart, 0, 0);
-  ctx.drawImage(faces.base, 0, 0);
+  if (faces.photoBase) ctx.drawImage(faces.photoBase, 0, 0);
   if (faces.photo) drawScaled(faces.photo, rotP, 1);
   ctx.globalCompositeOperation = 'overlay'; ctx.drawImage(faces.sheen, 0, 0); ctx.globalCompositeOperation = 'source-over';
   if (hi !== null && hiA > 0) {
@@ -5132,6 +5139,7 @@ async function spinPhoto() {
 // one run at a time: button, wheel and photo controls stay locked until every wheel, die and ball has finished
 function lock(on) {
   busy = on; spinBtn.disabled = on;
+  pauseRoom(on);
   document.body.classList.toggle('locked', on);
   if (on) runsStarted++; else { resetAsking(false); autoNext(); }
   spinBtn.setAttribute('aria-busy', on ? 'true' : 'false');

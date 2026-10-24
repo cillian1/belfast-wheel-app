@@ -47,6 +47,7 @@ async function spinPhoto() {
 // one run at a time: button, wheel and photo controls stay locked until every wheel, die and ball has finished
 function lock(on) {
   busy = on; spinBtn.disabled = on;
+  pauseRoom(on);
   document.body.classList.toggle('locked', on);
   if (on) runsStarted++; else { resetAsking(false); autoNext(); }
   spinBtn.setAttribute('aria-busy', on ? 'true' : 'false');
