@@ -1268,9 +1268,10 @@ function buildPhoto() {
   }
   g.restore();
   bevel(g, r, false);
-  const wheel = mk(), w = wheel.getContext('2d');
-  w.drawImage(faces.dart, 0, 0); w.drawImage(faces.base, 0, 0); w.drawImage(k, 0, 0);
-  return wheel;
+  const base = mk(), b = base.getContext('2d');
+  b.drawImage(faces.dart, 0, 0); b.drawImage(faces.base, 0, 0);
+  faces.photoBase = base;
+  return k;
 }
 
 const LAYERS = [MAIN, ...LAYER_ORDERS.map(o => o.map(key => MOVE_DEFS[key]))];
@@ -1560,6 +1561,7 @@ function drawPhoto() {
     const am = BASE + (hi + .5) * TAU / PHOTO_N, fx = c + Math.cos(am) * R * .55, fy = c + Math.sin(am) * R * .55, z = 1 + photoZoom * 1.7;
     ctx.translate(c, c); ctx.scale(z, z); ctx.translate(-lerp(c, fx, photoZoom), -lerp(c, fy, photoZoom));
   }
+  if (faces.photoBase) ctx.drawImage(faces.photoBase, 0, 0);
   if (faces.photo) drawScaled(faces.photo, rotP, 1);
   ctx.globalCompositeOperation = 'overlay'; ctx.drawImage(faces.sheen, 0, 0); ctx.globalCompositeOperation = 'source-over';
   if (hi !== null && hiA > 0) {
