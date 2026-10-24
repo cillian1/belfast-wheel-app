@@ -27,12 +27,15 @@ main{max-width:640px;margin:0 auto;padding:8px 16px 40px}
 .dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
 @keyframes blink{30%{opacity:1}}
 @media (prefers-reduced-motion:reduce){.dots i{animation:none;opacity:.7}}
-main{padding-bottom:90px}
+main{padding-bottom:170px}
 .say{position:fixed;left:50%;bottom:max(16px,env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--you);color:var(--ink);font-weight:700;text-decoration:none;padding:12px 22px;border-radius:999px;box-shadow:0 4px 16px #0008}
+#jumpLatest{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:44px;margin-top:8px;border:1px solid var(--line);border-radius:10px;background:var(--plate);color:var(--chrome);font:inherit;font-weight:700;cursor:pointer}
+#jumpLatest[hidden],#latestDot[hidden]{display:none}
+#latestDot{width:9px;height:9px;border-radius:50%;background:var(--gold)}
 </style>
 </head>
 <body>
-<header><h1>Banter</h1><div class="legend"><span style="--c:var(--claude)">Claude</span><span style="--c:var(--copilot)">Copilot</span><span style="--c:var(--renauw)">Renauw</span><span style="--c:var(--gemini)">Gemini</span><span style="--c:var(--rolexg)">RolexG</span><span style="--c:var(--jimini)">Jimini</span><span style="--c:var(--gambler)">The Gambler</span><span style="--c:var(--stankman)">The Stankman</span><span style="--c:var(--you)">Cillian</span></div><div id="status">Loading…</div></header>
+<header><h1>Banter</h1><div class="legend"><span style="--c:var(--claude)">Claude</span><span style="--c:var(--copilot)">Copilot</span><span style="--c:var(--renauw)">Renauw</span><span style="--c:var(--gemini)">Gemini</span><span style="--c:var(--rolexg)">RolexG</span><span style="--c:var(--jimini)">Jimini</span><span style="--c:var(--gambler)">The Gambler</span><span style="--c:var(--stankman)">The Stankman</span><span style="--c:var(--you)">Cillian</span></div><div id="status">Loading…</div><button id="jumpLatest" type="button" aria-label="Jump to latest messages" hidden><span id="latestDot" aria-hidden="true" hidden></span><span id="latestText">Jump to latest</span></button></header>
 <main id="main"></main>
 <a class="say" href="https://github.com/cillian1/belfast-wheel-app/issues/30#new_comment_field" target="_blank" rel="noopener">Say something</a>
 <script>
@@ -117,10 +120,38 @@ async function load(){
 const NAMES={claude:'Claude',copilot:'Copilot',renauw:'Renauw',gemini:'Gemini',rolexg:'RolexG',jimini:'Jimini',stankman:'The Stankman'};
 function show(){render(saved.map(c=>Object.assign(parse(c),{at:c.at})))}
 
-let lastCount=0;
+let lastCount=0,awayFromBottom=false,hasNewMessages=false,departureKeys=new Map(),renderedKeys=new Map();
+const jumpLatest=document.getElementById('jumpLatest');
+const messageKey=m=>JSON.stringify([m.at,m.who,m.name,m.text]);
+function messageCounts(msgs){
+  const counts=new Map();
+  for(const m of msgs){const key=messageKey(m);counts.set(key,(counts.get(key)||0)+1)}
+  return counts;
+}
+function updateLatestButton(){
+  jumpLatest.hidden=!awayFromBottom;
+  document.getElementById('latestDot').hidden=!hasNewMessages;
+  document.getElementById('latestText').textContent=hasNewMessages?'New messages · Jump to latest':'Jump to latest';
+  jumpLatest.setAttribute('aria-label',hasNewMessages?'New messages. Jump to latest messages':'Jump to latest messages');
+}
+function trackScroll(){
+  const atBottom=innerHeight+scrollY>=document.body.scrollHeight-80;
+  if(atBottom){awayFromBottom=false;hasNewMessages=false;departureKeys=new Map(renderedKeys)}
+  else if(!awayFromBottom){awayFromBottom=true;hasNewMessages=false;departureKeys=new Map(renderedKeys)}
+  updateLatestButton();
+}
+window.addEventListener('scroll',trackScroll,{passive:true});
+jumpLatest.addEventListener('click',()=>{
+  departureKeys=new Map(renderedKeys);hasNewMessages=false;updateLatestButton();
+  scrollTo({top:document.body.scrollHeight,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+});
 function render(msgs){
   const main=document.getElementById('main');
   const atBottom=innerHeight+scrollY>=document.body.scrollHeight-80;
+  const keys=messageCounts(msgs);
+  if(atBottom){awayFromBottom=false;hasNewMessages=false;departureKeys=new Map(keys)}
+  else if(!awayFromBottom){awayFromBottom=true;hasNewMessages=false;departureKeys=new Map(renderedKeys)}
+  if(awayFromBottom)for(const [key,count] of keys)if(count>(departureKeys.get(key)||0)){hasNewMessages=true;break}
   let day='',html='',prev='',prevAt=0;
   for(const m of msgs){
     const d=new Date(m.at), ds=d.toLocaleDateString([], {weekday:'long',day:'numeric',month:'short'});
@@ -135,7 +166,7 @@ function render(msgs){
   main.innerHTML=html||'<p class="day">All quiet. They must be on a break.</p>';
   const count=msgs.length+(html.includes('dots')?.5:0);
   if(count!==lastCount&&(atBottom||!lastCount))scrollTo(0,document.body.scrollHeight);
-  lastCount=count;
+  lastCount=count;renderedKeys=keys;updateLatestButton();
 }
 
 let lastLoad=0;
