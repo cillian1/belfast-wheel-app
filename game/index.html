@@ -303,6 +303,7 @@ footer{position:fixed;top:8px;left:10px;z-index:5;color:rgba(220,225,230,.55);fo
     </div>
     <div class="actions" id="photoActions" hidden>
       <label class="btn" for="cam">Retake</label>
+      <label class="btn" for="lib">Choose another</label>
       <button class="btn" id="backBtn" type="button">Back to the Wheel of Life</button>
     </div>
   </section>
@@ -5235,8 +5236,8 @@ function onFile(e) {
   if (busy) { e.target.value = ''; return; }
   const f = e.target.files && e.target.files[0]; if (!f) return;
   const url = URL.createObjectURL(f), im = new Image();
-  im.onload = () => { enterPhoto(im); e.target.value = ''; };
-  im.onerror = () => { e.target.value = ''; setVerdict({ eyebrow: 'Show me', title: 'That picture would not open', body: 'Try again with a normal photo from the camera.', show: true }); };
+  im.onload = () => { enterPhoto(im); e.target.value = ''; URL.revokeObjectURL(url); };
+  im.onerror = () => { e.target.value = ''; URL.revokeObjectURL(url); setVerdict({ eyebrow: 'Show me', title: 'That picture would not open', body: 'Try again with a normal photo from the camera.', show: true }); };
   im.src = url;
 }
 $('#cam').addEventListener('change', onFile);
