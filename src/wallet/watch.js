@@ -189,6 +189,7 @@
   const ticker = el('div', 'wfeed'); ticker.hidden = true; document.body.appendChild(ticker);
   let feedSeen = null, feedQ = [], feedShowing = false;
   async function pollFeed() {
+    if (typeof busy !== 'undefined' && busy) return;
     try {
       const f = await db.get('feed', '?orderBy="$key"&limitToLast=5') || {};
       const items = Object.entries(f).sort((a, b) => a[0] < b[0] ? -1 : 1);
