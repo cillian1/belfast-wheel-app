@@ -1,51 +1,76 @@
-# Performance and Development Analysis Report
+# Update 33: Smoothness and "Show me" investigation
 
-This report identifies key bottlenecks in the Belfast Wheel's graphical performance on mobile devices and suggests strategies to streamline the development and testing workflow. The primary performance issues stem from redundant per-frame allocations and un-cached complex scenes, while development speed is hindered by sequential tooling and fragmented test execution.
+Update 33 focuses on improving the main wheel room's performance on mobile devices and fixing the broken "Show me" (photo) feature. Analysis of the game loop, layout logic, and photo flow reveals several bottlenecks and a logic error in the verdict presentation.
 
-## 1. Graphic Performance Improvements
+## Smoothness Findings
 
-### Redundant Per-Frame Gradient Allocation
-- **What's wrong:** Multiple rooms and effects (fireplace, dice glows, deep-spin glows) create new `CanvasGradient` objects using `createLinearGradient` or `createRadialGradient` in every single animation frame.
-- **Where:** `src/game/room.js:84` (fireplace), `src/game/drawing.js:52` (dice), `src/game/drawing.js:72` (deep glow), `src/game/ultra-bonus.js:215` (Stank Chamber).
-- **Why it matters:** In Canvas2D, creating gradient objects is a high-allocation operation that triggers frequent garbage collection (GC) and is significantly slower on mobile browsers (especially older Android). This often accounts for the "sluggish" feel even when frame rates look acceptable.
-- **Suggested Fix:** Pre-bake generic gradients into small offscreen canvases (e.g., a 64x64 radial glow or a 1x100 linear flame gradient) during initialization. Use `ctx.drawImage` to stretch and place these pre-rendered assets. For dynamic colors, use `globalCompositeOperation` or a few variations of the pre-baked assets.
-- **Confidence:** High.
+Likely causes of jank on phones, ranked by impact:
 
-### Lack of Background Caching in Bonus Rooms
-- **What's wrong:** While the main wheel uses a `navCache` to avoid redrawing all layers, bonus rooms like the Stank Chamber and God Room redraw their entire backgrounds and complex wheel faces every frame.
-- **Where:** `src/game/ultra-bonus.js:199` (drawStank), `src/game/god-room.js`.
-- **Why it matters:** Drawing static decorations, complex ridges, and high-quality wedge text for a dozen slices every frame is expensive. On a 320px-440px phone, this can easily push the frame budget past 8ms.
-- **Suggested Fix:** Implement the `navCache` pattern for all bonus rooms. Render the static background and the unrotated wheel face to offscreen canvases once. In the `draw()` loop, only perform a single `rotate()` and `drawImage()`.
-- **Confidence:** High.
+1. **Layout Thrash in `fitStage()`** (`src/game/drawing.js:343`)
+   - **What's wrong:** Iterates through all `.app` children and calls `getComputedStyle(el)` and `el.offsetHeight` in a loop.
+   - **Why it matters:** This triggers a reflow for every element. It's called by `setVerdict`, which fires at every major milestone in a spin, causing noticeable stutters mid-game.
+   - **Fix:** Pre-calculate or cache child visibility/heights, or at least read them in a way that doesn't alternate with writes.
 
-### Excessive Particle Iteration and Individual Drawing
-- **What's wrong:** Effects like `drawDeepGlow` and the God Room's `godParts` iterate through many individual particles, calling `beginPath()`, `arc()`, and `fill()` for each one.
-- **Where:** `src/game/drawing.js:72`, `src/game/core.js:101`.
-- **Why it matters:** Every individual Canvas call has overhead. Drawing 50-100 individual glow circles per frame can consume a large portion of the mobile GPU/CPU budget.
-- **Suggested Fix:** Use a "sprite sheet" approach for particles. Draw a single glow sprite to a hidden canvas, then use the fastest `drawImage` variant to place copies of it. For many particles, consider drawing them all to a single "frame canvas" that only updates occasionally, or use a simpler "particle pool" that skips frames for half the particles in `low` mode.
-- **Confidence:** Medium-High.
+2. **Unthrottled Banter Polling** (`src/wallet/watch.js:208`)
+   - **What's wrong:** `pollFeed()` runs every 6 seconds via `setInterval`.
+   - **Why it matters:** It doesn't check if the game is `busy` (spinning). A network fetch and JSON parse happening mid-spin is a prime candidate for frame drops.
+   - **Fix:** Skip polling if `busy` is true.
 
----
+3. **Lack of Caching in `drawPhoto()`** (`src/game/drawing.js:217`)
+   - **What's wrong:** Redraws `faces.dart` and `faces.base` (two fullscreen canvases) every frame during the photo spin.
+   - **Why it matters:** Unlike the main nested wheel (`drawNested`), the photo wheel isn't using `navCache`. Redrawing large canvases per-frame is heavy for mobile GPUs.
+   - **Fix:** Cache the static base of the photo wheel (dart + base + photo background) into a single canvas.
 
-## 2. Streamlining Development and Testing
+4. **Redundant Animation Loops** (`src/game/room.js`, `src/game/perf.js`)
+   - **What's wrong:** Three separate `requestAnimationFrame` loops (Room fire, Perf meter, Game loop) running concurrently.
+   - **Why it matters:** On old Androids, the overhead of multiple RAF callbacks competing for the main thread can cause micro-stutter.
+   - **Fix:** Pause the Room fire animation (`drawRoom`) when `busy` is true; the wheel covers most of it anyway.
 
-### Sequential and Monolithic Tooling
-- **What's wrong:** `tools/check.mjs` runs syntax validation, version checks, and a 1000-run payback simulation sequentially. It also uses `execFileSync` to fetch base versions from Git for every file.
-- **Where:** `tools/check.mjs:1-120`.
-- **Why it matters:** The "quick" check takes several seconds, discouraging frequent use during development. Spawning multiple Git processes is particularly slow in some environments.
-- **Suggested Fix:** Use `Promise.all` to run independent checks in parallel. Cache the "main" branch payback result in a local temporary file (e.g., `.check-cache.json`) and only re-calculate it when `main` moves. Use a single `git show` command with a pipe or a temporary directory to avoid multiple process spawns.
-- **Confidence:** High.
+5. **Heavy CSS Shadows** (`src/css/app.css`)
+   - **What's wrong:** Large `box-shadow` on `.plate`, `.spin`, and `.btn.ti`.
+   - **Why it matters:** Huge shadows on large elements require significant paint time on mobile.
+   - **Fix:** Reduce blur radius or use `will-change: transform` to promote these to their own layers.
 
-### Fragmented Test Suite
-- **What's wrong:** There are over 20 separate `test-*.mjs` files in the `tools/` directory, with no single command to run them all efficiently.
-- **Where:** `tools/test-*.mjs`.
-- **Why it matters:** Developers have to remember which tests to run or wait for the full CI pipeline, which uses a slow browser-based smoke test.
-- **Suggested Fix:** Introduce a unified `tools/test.mjs` runner. This script should scan for `test-*.mjs` files and execute them in parallel using Node's native `child_process` or `worker_threads`. A summary report should show exactly which test failed. Add a `--watch` mode that uses `fs.watch` to re-run only the tests related to changed files.
-- **Confidence:** High.
+## "Show me" Findings
 
-### Dependence on Browser Smoke Tests for Logic
-- **What's wrong:** Many invariants are verified by `test-ci-browser.mjs`, which launches a full browser.
-- **Where:** `tools/test-ci-browser.mjs`.
-- **Why it matters:** Browser-based tests are inherently slower and more brittle than pure-logic tests.
-- **Suggested Fix:** Move more "game logic" validation (RNG sequences, state transitions, wallet math) into the browser-free `sim/core.mjs` and test it with fast, pure Node.js scripts. Reserve Playwright/Chromium for layout-critical visual checks only.
-- **Confidence:** Medium.
+The feature "no longer works" due to these issues:
+
+1. **Missing Verdict Plate** (`src/game/show-me.js:128`)
+   - **What's wrong:** `spinPhoto` calls `setVerdict` for the result but omits `photo: true`.
+   - **Why it matters:** When `photo` and `show` are both false, the verdict plate (`#verdict`) is hidden by `ui.js`. The player spins, the wheel stops, and the result is whispered but the text never appears.
+   - **Fix:** Ensure `photo: true` is passed to the final `setVerdict` in `spinPhoto`.
+
+2. **Resolution Mismatch** (`src/game/ui.js:52`)
+   - **What's wrong:** `setVerdict` calls `fitStage()`, which changes the CSS width of the stage, but it doesn't trigger `resize()`.
+   - **Why it matters:** The canvas resolution `N` remains at the old value. The photo wheel is built and drawn at the wrong size, leading to blurriness or clipping.
+   - **Fix:** Call `resize()` after `fitStage()` if the dimensions changed.
+
+3. **Resource Leak** (`src/game/show-me.js:136`)
+   - **What's wrong:** `URL.createObjectURL(f)` is used but never revoked.
+   - **Why it matters:** Multiple photo attempts (retakes) will leak memory until the page is reloaded.
+   - **Fix:** Call `URL.revokeObjectURL` after the image is loaded and drawn to the canvas.
+
+## Task List for RolexG
+
+### Task 1: Main wheel room smoothness - Layout & Polls (Small)
+- **Goal:** Stop layout thrash and polling during spins.
+- **Action:** 
+  1. Optimize `fitStage` in `src/game/drawing.js` to avoid redundant `getComputedStyle` calls.
+  2. In `src/wallet/watch.js`, check `if (typeof busy !== 'undefined' && busy) return;` at the start of `pollFeed`.
+- **Done-when:** `tools/check.mjs` is green, and `fitStage` loop is cleaned up.
+
+### Task 2: Room & Photo Caching (Small)
+- **Goal:** Reduce per-frame draw work.
+- **Action:**
+  1. In `src/game/room.js`, pause `drawRoom` RAF loop if `busy` is true.
+  2. In `src/game/faces.js`, add a `buildPhotoBase` to cache the dart and chrome rim for the photo scene.
+  3. Update `drawPhoto` in `src/game/drawing.js` to use this cache.
+- **Done-when:** Photo spin is visibly smoother; Room animation pauses during main spin.
+
+### Task 3: Fix "Show me" Verdict & Leaks (Small)
+- **Goal:** Make the result visible and fix the memory leak.
+- **Action:**
+  1. In `src/game/show-me.js`, pass `photo: true` to the final `setVerdict` in `spinPhoto`.
+  2. Revoke the object URL in `onFile` after the image loads.
+  3. In `src/game/ui.js`, ensure `resize()` is called if `fitStage()` changed the stage width.
+- **Done-when:** "Show me" result text is visible after spin; photo retakes don't balloon memory.
