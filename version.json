@@ -1,9 +1,9 @@
 {
-  "game": 34,
+  "game": 35,
   "apk": 3,
-  "gameBuild": 71,
-  "notes": "Clearer free 10c spin help; reliable photo retakes and library choice; Banter jump-to-latest and new-message indicator",
+  "gameBuild": 72,
+  "notes": "Reset an unaffordable saved bet to 10c after a balance change",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk",
-  "name": "Little Things"
+  "name": "Back to 10c"
 }
