@@ -312,7 +312,9 @@ function buildPhoto() {
   }
   g.restore();
   bevel(g, r, false);
-  return k;
+  const wheel = mk(), w = wheel.getContext('2d');
+  w.drawImage(faces.dart, 0, 0); w.drawImage(faces.base, 0, 0); w.drawImage(k, 0, 0);
+  return wheel;
 }
 
 const LAYERS = [MAIN, ...LAYER_ORDERS.map(o => o.map(key => MOVE_DEFS[key]))];
