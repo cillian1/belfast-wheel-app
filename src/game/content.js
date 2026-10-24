@@ -93,6 +93,14 @@ const FINAL_POOL = [
   { lbl: ['BLACK', 'TAXI'], t: 'Black taxi tour', b: 'and flag down a black taxi and ask for the tour' },
   { lbl: ['LATE', 'CAFÉ'], t: 'A late café', b: 'and get a coffee somewhere still open' },
   { lbl: ['ROOFTOP', 'BAR'], t: 'Rooftop bar', b: 'and find a bar with a roof terrace' },
+  { lbl: ['ST GEORGE', 'MARKET'], t: "St George's Market", b: "and browse St George's Market" },
+  { lbl: ['ULSTER', 'MUSEUM'], t: 'Ulster Museum', b: 'and explore the Ulster Museum' },
+  { lbl: ['BOTANIC', 'GARDENS'], t: 'Botanic Gardens', b: 'and wander through Botanic Gardens' },
+  { lbl: ['TITANIC', 'QUARTER'], t: 'Titanic Quarter', b: 'and take a look around Titanic Quarter' },
+  { lbl: ['PEACE', 'WALL'], t: 'The Peace Wall', b: 'and see the Peace Wall' },
+  { lbl: ['BIG FISH'], t: 'The Big Fish', b: 'and find the Big Fish by the Lagan' },
+  { lbl: ['BELFAST', 'CASTLE'], t: 'Belfast Castle', b: 'and head up to Belfast Castle' },
+  { lbl: ['ALBERT', 'CLOCK'], t: 'The Albert Clock', b: 'and visit the Albert Clock' },
 ];
 const SLOT_TINTS = [['#1d2f66', '#78a3f2'], ['#5a3d0d', '#f0c66a'], ['#5a1f33', '#ec93ae'], ['#0f4a3a', '#62d4aa'], ['#3b1f66', '#b58ff2'], ['#5a2a14', '#e8a172'], ['#2b3036', '#dde3e8'], ['#123d5c', '#70c6f0']];
 let FINAL = [];
