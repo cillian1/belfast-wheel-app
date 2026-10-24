@@ -1,0 +1,207 @@
+{
+  "generatedAt": "2026-10-24T14:38:35.949Z",
+  "update": {
+    "number": 34,
+    "name": "Update 32",
+    "branch": "update-34",
+    "goals": [
+      "Wallet/Watch clean recovery work (#209)",
+      "Live Watch nested-wheel drawing (#199)",
+      "GAMBLE/COLLECT (#213)",
+      "Last chicken standing (#200)",
+      "Remove W/B marks from special-chicken art (#211)",
+      "Reduce Extra Bonus, WILD, and Deeper-trigger lag (#231): begin with a performance trace and evidence; reduce measured lag without speculative architecture.",
+      "After a first-spin Deeper hit, ease into a zoom that frames the whole wheel like a dartboard.",
+      "Live Watch (#199): opening chat during a live-view spin must not interrupt wheel/ball completion or cause console errors; do not duplicate the completed #181 keyboard-drawing fix.",
+      "Monster Room dice: regular dice stay white d12s; special/bonus dice retain type-specific colors and become d20s. Faces 13-20 generate more Monster cans through the existing can/tank flow, not a separate prize table. Before implementation, require a Banter notice, money PR linked to that notice, fast-sim/payback evidence, and an independent review."
+    ],
+    "cutLine": "Austin temporary free-spin rule ends at 2026-10-24T14:00:00Z, the instant for Saturday 2026-10-24 15:00 Europe/Dublin: spins are free, wins go to Austin's wallet, and bets do not contribute to the jackpot; afterward normal play resumes. No live account or jackpot changes in this tracker update.",
+    "progress": {
+      "done": 6,
+      "total": 6
+    }
+  },
+  "tasks": [
+    {
+      "issue": 231,
+      "title": "Update 32: reduce lag on Extra Bonus, WILD, and Deeper triggers",
+      "url": "https://github.com/cillian1/belfast-wheel-app/issues/231",
+      "owner": "The Stankman",
+      "blocked": false,
+      "blockedText": "",
+      "pr": {
+        "number": 257,
+        "title": "money: Release update 32 \"The Watchful Gambler\"",
+        "url": "https://github.com/cillian1/belfast-wheel-app/pull/257",
+        "state": "merged"
+      },
+      "prState": "merged",
+      "ci": null,
+      "lastActivity": "2026-10-23T15:40:33Z"
+    },
+    {
+      "issue": 213,
+      "title": "Gamble: slot-machine GAMBLE / COLLECT, unlimited double-or-nothing",
+      "url": "https://github.com/cillian1/belfast-wheel-app/issues/213",
+      "owner": "The Gambler",
+      "blocked": false,
+      "blockedText": "",
+      "pr": {
+        "number": 257,
+        "title": "money: Release update 32 \"The Watchful Gambler\"",
+        "url": "https://github.com/cillian1/belfast-wheel-app/pull/257",
+        "state": "merged"
+      },
+      "prState": "merged",
+      "ci": null,
+      "lastActivity": "2026-10-23T15:40:33Z"
+    },
+    {
+      "issue": 211,
+      "title": "Update 32: remove W/B marks from special chickens",
+      "url": "https://github.com/cillian1/belfast-wheel-app/issues/211",
+      "owner": "RolexG",
+      "blocked": false,
+      "blockedText": "",
+      "pr": {
+        "number": 257,
+        "title": "money: Release update 32 \"The Watchful Gambler\"",
+        "url": "https://github.com/cillian1/belfast-wheel-app/pull/257",
+        "state": "merged"
+      },
+      "prState": "merged",
+      "ci": null,
+      "lastActivity": "2026-10-23T15:40:33Z"
+    },
+    {
+      "issue": 209,
+      "title": "Update 32: rebuild the wallet fixes (#152) and Watch drawing fix (#202) as clean PRs on update-32",
+      "url": "https://github.com/cillian1/belfast-wheel-app/issues/209",
+      "owner": "The Gambler",
+      "blocked": false,
+      "blockedText": "",
+      "pr": {
+        "number": 219,
+        "title": "Watch: recover mirrored drawing state for update 32",
+        "url": "https://github.com/cillian1/belfast-wheel-app/pull/219",
+        "state": "merged"
+      },
+      "prState": "merged",
+      "ci": null,
+      "lastActivity": "2026-10-23T14:29:58Z"
+    },
+    {
+      "issue": 200,
+      "title": "Achievement: \"Last chicken standing\" on Mark's farm",
+      "url": "https://github.com/cillian1/belfast-wheel-app/issues/200",
+      "owner": "Unassigned",
+      "blocked": false,
+      "blockedText": "",
+      "pr": {
+        "number": 257,
+        "title": "money: Release update 32 \"The Watchful Gambler\"",
+        "url": "https://github.com/cillian1/belfast-wheel-app/pull/257",
+        "state": "merged"
+      },
+      "prState": "merged",
+      "ci": null,
+      "lastActivity": "2026-10-23T15:40:33Z"
+    },
+    {
+      "issue": 199,
+      "title": "Live Watch: nested wheels drawn wrong while watching (going deeper / final answer)",
+      "url": "https://github.com/cillian1/belfast-wheel-app/issues/199",
+      "owner": "Unassigned",
+      "blocked": false,
+      "blockedText": "",
+      "pr": {
+        "number": 257,
+        "title": "money: Release update 32 \"The Watchful Gambler\"",
+        "url": "https://github.com/cillian1/belfast-wheel-app/pull/257",
+        "state": "merged"
+      },
+      "prState": "merged",
+      "ci": null,
+      "lastActivity": "2026-10-23T15:40:33Z"
+    }
+  ],
+  "merges": [
+    {
+      "number": 283,
+      "title": "money: Prepare update 34 Little Things, build 71",
+      "url": "https://github.com/cillian1/belfast-wheel-app/pull/283",
+      "mergedAt": "2026-10-24T14:29:17Z",
+      "owner": "cillian1"
+    },
+    {
+      "number": 282,
+      "title": "Fix photo URL cleanup and add library retakes",
+      "url": "https://github.com/cillian1/belfast-wheel-app/pull/282",
+      "mergedAt": "2026-10-24T14:24:55Z",
+      "owner": "belfast-wheel-rolexg[bot]"
+    },
+    {
+      "number": 278,
+      "title": "Add Banter jump-to-latest and new-message indicator",
+      "url": "https://github.com/cillian1/belfast-wheel-app/pull/278",
+      "mergedAt": "2026-10-24T14:19:39Z",
+      "owner": "Copilot"
+    },
+    {
+      "number": 281,
+      "title": "Sync reviewed main prerequisites into update 34",
+      "url": "https://github.com/cillian1/belfast-wheel-app/pull/281",
+      "mergedAt": "2026-10-24T14:16:01Z",
+      "owner": "cillian1"
+    },
+    {
+      "number": 277,
+      "title": "Clarify 10c requirement for daily free spins",
+      "url": "https://github.com/cillian1/belfast-wheel-app/pull/277",
+      "mergedAt": "2026-10-24T14:14:43Z",
+      "owner": "Copilot"
+    }
+  ],
+  "history": [
+    {
+      "number": 33,
+      "name": "Update 33",
+      "build": null,
+      "releaseDate": "2026-10-24T10:59:22Z",
+      "releasePr": {
+        "number": 271,
+        "url": "https://github.com/cillian1/belfast-wheel-app/pull/271"
+      },
+      "tasks": [
+        {
+          "owner": "RolexG",
+          "issue": 265,
+          "pr": 267,
+          "title": "money: Prepare update 33 Picture This, build 70",
+          "url": "https://github.com/cillian1/belfast-wheel-app/pull/267"
+        },
+        {
+          "owner": "RolexG",
+          "issue": 261,
+          "pr": 266,
+          "title": "Integrate main into update 33 without losing the shipped smoothness fix",
+          "url": "https://github.com/cillian1/belfast-wheel-app/pull/266"
+        },
+        {
+          "owner": "Copilot",
+          "issue": 262,
+          "pr": 264,
+          "title": "Pause room rendering and cache the photo wheel",
+          "url": "https://github.com/cillian1/belfast-wheel-app/pull/264"
+        },
+        {
+          "owner": "Unassigned",
+          "issue": 259,
+          "pr": 261,
+          "title": "RolexG: Update 33: make Show me work again",
+          "url": "https://github.com/cillian1/belfast-wheel-app/pull/261"
+        }
+      ]
+    }
+  ]
+}

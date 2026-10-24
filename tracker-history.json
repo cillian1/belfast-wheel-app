@@ -1,0 +1,42 @@
+[
+  {
+    "number": 33,
+    "name": "Update 33",
+    "build": null,
+    "releaseDate": "2026-10-24T10:59:22Z",
+    "releasePr": {
+      "number": 271,
+      "url": "https://github.com/cillian1/belfast-wheel-app/pull/271"
+    },
+    "tasks": [
+      {
+        "owner": "RolexG",
+        "issue": 265,
+        "pr": 267,
+        "title": "money: Prepare update 33 Picture This, build 70",
+        "url": "https://github.com/cillian1/belfast-wheel-app/pull/267"
+      },
+      {
+        "owner": "RolexG",
+        "issue": 261,
+        "pr": 266,
+        "title": "Integrate main into update 33 without losing the shipped smoothness fix",
+        "url": "https://github.com/cillian1/belfast-wheel-app/pull/266"
+      },
+      {
+        "owner": "Copilot",
+        "issue": 262,
+        "pr": 264,
+        "title": "Pause room rendering and cache the photo wheel",
+        "url": "https://github.com/cillian1/belfast-wheel-app/pull/264"
+      },
+      {
+        "owner": "Unassigned",
+        "issue": 259,
+        "pr": 261,
+        "title": "RolexG: Update 33: make Show me work again",
+        "url": "https://github.com/cillian1/belfast-wheel-app/pull/261"
+      }
+    ]
+  }
+]
