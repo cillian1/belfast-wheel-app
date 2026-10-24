@@ -2,19 +2,16 @@
 
 ## NOW: the plan (everyone edits this; live status is in STATUS.md)
 
-- **Current: Update 34 — small usability improvements.** Parent #270; authoritative scope: [docs/update-34.md](docs/update-34.md). Branch `update-34` is cut from released main; feature PRs go there, never straight to main.
-- **Claude is unavailable due to usage limits.** No planning, implementation, review, merge or release depends on Claude; do not dispatch/ping him. Automatic Claude Banter chat is paused unless `BANTER_CLAUDE_ENABLED=on` is explicitly configured.
-- **The Gambler coordinates**, handles integration/release, and owns the main-only workflow/context prerequisite #275. Gemini independently reviews/merges The Gambler's PRs; nobody merges their own PR.
-- **Renauw: #272**, correct the help text to state the existing five-free-10c-spins rule. Ready after this plan is published.
-- **RolexG: #273**, photo URL cleanup plus choose-another-from-library. Wait for #272 to merge; both touch src/index.html. The Gambler dispatches when clear.
-- **Copilot: #274**, Banter jump-to-latest and new-message indication. Ready in parallel with #272; owns chat.html, no app-bundle edits.
-- **Jimini:** code-based scope review is complete in #271; independent phone-width/usability check after the feature PRs are ready. No speculative new tasks from chat.
-- **Reviews/merges:** Gemini reviews; The Gambler can merge other authors' green PRs. Gemini independently merges The Gambler's release PR. Claude is not a fallback. Stankman has no critical-path assignment while availability is unconfirmed.
-- **Done for 34:** #272/#273/#274 integrated, phone-width checks at 320/390/440px, existing checks green, no odds/payment changes; then one coherent version/build/footer/bundle release PR.
-- **Cut:** no photo editor, streak counter, hub/result overlay, feed-backend rewrite, RNG/odds tuning or old unverified task resurrection. Exact chat unread counts are optional; a simple new-message label is enough.
-- **Shipped:** Update 33 “Picture This”, game 33/build 70, PR #268; public version and bundle verified. #261/#264/#265 are included; do not restart those implementations.
-- Earlier update plans are preserved in [docs/HANDOFF-ARCHIVE.md](docs/HANDOFF-ARCHIVE.md); they are historical, not the active queue.
-- **Last updated:** 2026-10-24 by The Gambler, from Cillian's update-34 planning request.
+- **Shipped: Update 34 “Little Things”, game 34/build 71**, 2026-10-24 at 15:37 Europe/London, release PR #285. Gemini independently reviewed/merged with green CI; public version/bundle/chat verified. APK remains 3.
+- Included: Renauw #277/#272 (accurate free-10c-spin help), Copilot #278/#274 (Banter jump-to-latest/new messages), RolexG #282/#273 (photo object-URL cleanup and library retakes). Scope record: [docs/update-34.md](docs/update-34.md).
+- The Gambler completed integration, independent browser/phone checks and release preparation #283; Jimini's final independent source/usability review PASS is on #283 (run 40103136086, no files changed). No odds/payment-rule changes; quick payback unchanged at 117.2% → 117.2%.
+- Verified 320/390/440px help/photo/Banter behavior, photo success/error URL cleanup/same-file/cancel, no extra picture-spin charge with mocked Firebase, seeded browser/frame RNG at 10/30/60/120fps and 50 full browser/core paths. No physical phone/camera test was performed.
+- **Completed live-data tasks:** #280 (Austin is tatious; requested balance reset) and #279 (authorised jackpot fallback reset), both written narrowly, read back and closed. These were separate data corrections, not release behavior. Do not repeat them.
+- **Claude remains unavailable due to usage limits.** No task, review, merge or release depends on him. Automatic Claude chat stays paused unless explicitly re-enabled with BANTER_CLAUDE_ENABLED=on.
+- **Coordination:** The Gambler handles ready work and integration; Gemini independently reviews/merges The Gambler's PRs. Nobody merges their own PR. Stankman has no critical-path assignment while availability is unconfirmed.
+- Workflow prerequisites #276 and #281 are merged. Review checkout fix #284 is merged and verified by the successful Jimini run; the shallow clone now fetches the requested head first.
+- **Next:** check newly ready gambler-task issues and actual dependency/PR state. Do not restart completed update-34 work or old releases from stale labels. Current feature scope is complete; do not invent more from generated Banter chat.
+- Historical update plans are preserved in [docs/HANDOFF-ARCHIVE.md](docs/HANDOFF-ARCHIVE.md). **Last updated:** 2026-10-24 by The Gambler after release.
 
 
 **Authority (Cillian, 2026-10-22: "anyone can approve and merge", "full authority", "odds-math to be everyone"):**

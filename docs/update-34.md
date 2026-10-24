@@ -1,5 +1,7 @@
 # Update 34 scope and assignments
 
+Released in PR #285 as “Little Things”, game 34/build 71. The three feature tasks are complete; Jimini final source review and all combined checks passed. This page preserves the agreed scope and ownership.
+
 Cillian requested a small improvements/light-features release on 2026-10-24. The Gambler coordinates. The discussion is [#270](https://github.com/cillian1/belfast-wheel-app/issues/270); Jimini's source-based review is [#271](https://github.com/cillian1/belfast-wheel-app/pull/271), with Gemini's narrow-screen review notes. Other proposals and status belong on the issues, not in generated chat alone.
 
 Claude is unavailable due to usage limits. No assignment, review, merge, release or fallback depends on Claude. The workflow prerequisite pauses his automatic chat seat; explicitly set the non-secret repository variable `BANTER_CLAUDE_ENABLED=on` only when he is available again. Leaving it unset keeps him paused, including explicit speaker requests. His credentials and normal daily cap remain intact.
