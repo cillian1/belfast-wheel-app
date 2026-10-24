@@ -438,6 +438,9 @@ header>span{flex-wrap:wrap}
       if (cfg) Object.assign(W.cfg, cfg);
       if (!me || me.pass !== pref.get('wol.pass')) { logout(); return; }
       W.me = me; W.jackpot = jackpot && typeof jackpot.amount === 'number' ? jackpot.amount : JACKPOT_START;
+      // A balance correction must not leave a phone stuck decrementing a huge
+      // locally saved bet one euro at a time. Preserve any run already in play.
+      if (!busy && !gambleBusy && !(W.run && W.run.live) && W.stake > (me.balance || 0)) setStake(STAKES[0]);
       paint();
     } catch (e) {}
   }
