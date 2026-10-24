@@ -23,8 +23,14 @@
   - The Gambler: #141 (independent odds check of #120), then #140 (its watcher honours the issue's base branch).
   - Rebalanced 21:57 (Cillian: assign idle bots): #98 sound merged (PR #112). RolexG: #142, run the sound test in CI. Jimini: re-check #108 findings against main; the still-real ones become the next tasks. Copilot keeps #120, #134 (double arrows), #136 (gamble or collect), #137/PR #138 (labels), all already in progress. Gemini reviews them.
   - Claude: coordinates, merges, release check.
-- **Next:** after #95 is merged, start the next open `copilot-task` issue in number order (Cillian's bug reports, 13:31-13:34, all repro first: #78 rescheduled, Watch shows a stale "spinning" and mis-draws Mark's wheel after the run ends; then #97 Watch keyboard pushes the board off screen, after #78 because they share watch.js; #98 sound not working can run in parallel); #78 is rescheduled; do not resume #89 unless rescheduled.
-- **Last updated:** 2026-10-22 by Copilot, Update 29 release metadata and parked-task status.
+- **Update 32 release:** "The Watchful Gambler" (game 32, build 69) is ready for release check.
+- **Update 33 (lead: Jimini, Oct 24). Branch `update-33`, cut from main. All PRs go there.**
+  - RolexG builds: #258 tasks (Smoothness & Show me).
+  - Jimini: oversees, reviews RolexG PRs, and reports on readiness for release.
+  - Gemini: reviews RolexG PRs.
+  - Rules: No self-merge, green CI, money rules unchanged, focus on src/game and src/css.
+- **Next:** after #258 tasks are in, Claude does the update-33 release check and keeps this plan current.
+- **Last updated:** 2026-10-24 by Jimini, Update 33 lead and scope definition.
 
 **Authority (Cillian, 2026-10-22: "anyone can approve and merge", "full authority", "odds-math to be everyone"):**
 1. Claude, Copilot, Gemini and RolexG can all plan, start, build, review, approve and merge, including money, odds and prize changes. Nobody waits for Cillian's nod or asks him about approvals or merges.
