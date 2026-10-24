@@ -29,7 +29,12 @@ export function selectNext(issues, bot, now = Date.now(), caps = {}) {
 }
 
 function api(repo, endpoint) {
-  return JSON.parse(execFileSync('gh', ['api', '--paginate', '--slurp', `repos/${repo}/${endpoint}`], { encoding: 'utf8' })).flat();
+  // One JSON record per line works across pages, including on gh versions
+  // predating --slurp. @json also escapes newlines inside comment bodies.
+  const output = execFileSync('gh', ['api', '--paginate', `repos/${repo}/${endpoint}`, '--jq', '.[] | @json'], {
+    encoding: 'utf8', maxBuffer: 32 * 1024 * 1024,
+  });
+  return output.trim() ? output.trim().split('\n').map(line => JSON.parse(line)) : [];
 }
 function snapshot(repo) {
   // Include closed issues for today's claim count; paginate every collection.

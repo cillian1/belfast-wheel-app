@@ -47,6 +47,9 @@ jobs:
         name: Test tracker API pagination
         run: node tools/test-tracker-pagination.mjs
       - if: steps.scope.outputs.game == 'true'
+        name: Test task selection and GitHub CLI compatibility
+        run: node tools/test-claim-next.mjs
+      - if: steps.scope.outputs.game == 'true'
         id: quick-check
         run: |
           output=$(node tools/check.mjs --quick)
