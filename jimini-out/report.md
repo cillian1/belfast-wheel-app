@@ -1,76 +1,44 @@
-# Update 33: Smoothness and "Show me" investigation
+# Update 34: Scope and Assignments
 
-Update 33 focuses on improving the main wheel room's performance on mobile devices and fixing the broken "Show me" (photo) feature. Analysis of the game loop, layout logic, and photo flow reveals several bottlenecks and a logic error in the verdict presentation.
+Update 34 is a "small improvements" release focused on rule transparency, technical hygiene, and chat usability. With Claude unavailable, the scope is kept strictly to low-risk, non-overlapping changes that can be verified via the existing CI and phone-check routines.
 
-## Smoothness Findings
+## Scope Validation & Ranking
 
-Likely causes of jank on phones, ranked by impact:
+1. **Rule Transparency: 10c Free-Spin Help** (Rank: 1)
+   - **Where:** `src/index.html:16`
+   - **What:** The help text omits the requirement that the "first 5 free spins" only apply to 10c bets. This is a common point of confusion for players.
+   - **Fix:** Update the bullet point to: `<li><b>Spin</b> to play. Your first 5 10c spins each day are free.</li>`.
+   - **Done-when:** Help modal accurately reflects the 10c condition.
+   - **Owner:** RolexG.
 
-1. **Layout Thrash in `fitStage()`** (`src/game/drawing.js:343`)
-   - **What's wrong:** Iterates through all `.app` children and calls `getComputedStyle(el)` and `el.offsetHeight` in a loop.
-   - **Why it matters:** This triggers a reflow for every element. It's called by `setVerdict`, which fires at every major milestone in a spin, causing noticeable stutters mid-game.
-   - **Fix:** Pre-calculate or cache child visibility/heights, or at least read them in a way that doesn't alternate with writes.
+2. **Technical Hygiene: Photo URL Cleanup** (Rank: 2)
+   - **Where:** `src/game/show-me.js:142-149` (`onFile` function).
+   - **Status:** **DUPLICATE** (identified in Update 33 analysis but not implemented).
+   - **What:** `URL.createObjectURL(f)` is called on every photo selection but never revoked. This causes a memory leak on mobile browsers as users experiment with different photos.
+   - **Fix:** Store the object URL and call `URL.revokeObjectURL(url)` in both `im.onload` and `im.onerror` (after the image is processed).
+   - **Done-when:** Memory usage remains stable across multiple photo selections; re-selecting the same photo still works.
+   - **Owner:** RolexG.
 
-2. **Unthrottled Banter Polling** (`src/wallet/watch.js:208`)
-   - **What's wrong:** `pollFeed()` runs every 6 seconds via `setInterval`.
-   - **Why it matters:** It doesn't check if the game is `busy` (spinning). A network fetch and JSON parse happening mid-spin is a prime candidate for frame drops.
-   - **Fix:** Skip polling if `busy` is true.
+3. **Usability: Banter Jump-to-Latest** (Rank: 3)
+   - **Where:** `chat.html`
+   - **What:** On long chat threads, scrolling up to read history makes it difficult to quickly return to the bottom to see new messages or type a reply.
+   - **Fix:** Add a floating "Jump to latest" button (positioned near the bottom right) that appears when the user has scrolled up more than 300px and disappears when they are near the bottom.
+   - **Done-when:** Button is visible only when scrolled up; clicking it scrolls the view to the very bottom.
+   - **Owner:** Copilot.
 
-3. **Lack of Caching in `drawPhoto()`** (`src/game/drawing.js:217`)
-   - **What's wrong:** Redraws `faces.dart` and `faces.base` (two fullscreen canvases) every frame during the photo spin.
-   - **Why it matters:** Unlike the main nested wheel (`drawNested`), the photo wheel isn't using `navCache`. Redrawing large canvases per-frame is heavy for mobile GPUs.
-   - **Fix:** Cache the static base of the photo wheel (dart + base + photo background) into a single canvas.
+## Suggested Alternative
 
-4. **Redundant Animation Loops** (`src/game/room.js`, `src/game/perf.js`)
-   - **What's wrong:** Three separate `requestAnimationFrame` loops (Room fire, Perf meter, Game loop) running concurrently.
-   - **Why it matters:** On old Androids, the overhead of multiple RAF callbacks competing for the main thread can cause micro-stutter.
-   - **Fix:** Pause the Room fire animation (`drawRoom`) when `busy` is true; the wheel covers most of it anyway.
+**Improved Retake Options**
+- **Where:** `src/index.html:54-57` (`#photoActions`).
+- **What:** Currently, the photo scene only offers a "Retake" button linked to the camera (`for="cam"`). If a user wants to pick a *different* existing photo from their library, they must click "Back" and start over.
+- **Fix:** Add a second label to `#photoActions` for the library: `<label class="btn" for="lib">Choose another</label>`.
+- **Done-when:** Both camera and library options are available directly from the photo scene.
+- **Owner:** RolexG (combine with Photo URL cleanup).
 
-5. **Heavy CSS Shadows** (`src/css/app.css`)
-   - **What's wrong:** Large `box-shadow` on `.plate`, `.spin`, and `.btn.ti`.
-   - **Why it matters:** Huge shadows on large elements require significant paint time on mobile.
-   - **Fix:** Reduce blur radius or use `will-change: transform` to promote these to their own layers.
+## Workflow Health
 
-## "Show me" Findings
-
-The feature "no longer works" due to these issues:
-
-1. **Missing Verdict Plate** (`src/game/show-me.js:128`)
-   - **What's wrong:** `spinPhoto` calls `setVerdict` for the result but omits `photo: true`.
-   - **Why it matters:** When `photo` and `show` are both false, the verdict plate (`#verdict`) is hidden by `ui.js`. The player spins, the wheel stops, and the result is whispered but the text never appears.
-   - **Fix:** Ensure `photo: true` is passed to the final `setVerdict` in `spinPhoto`.
-
-2. **Resolution Mismatch** (`src/game/ui.js:52`)
-   - **What's wrong:** `setVerdict` calls `fitStage()`, which changes the CSS width of the stage, but it doesn't trigger `resize()`.
-   - **Why it matters:** The canvas resolution `N` remains at the old value. The photo wheel is built and drawn at the wrong size, leading to blurriness or clipping.
-   - **Fix:** Call `resize()` after `fitStage()` if the dimensions changed.
-
-3. **Resource Leak** (`src/game/show-me.js:136`)
-   - **What's wrong:** `URL.createObjectURL(f)` is used but never revoked.
-   - **Why it matters:** Multiple photo attempts (retakes) will leak memory until the page is reloaded.
-   - **Fix:** Call `URL.revokeObjectURL` after the image is loaded and drawn to the canvas.
-
-## Task List for RolexG
-
-### Task 1: Main wheel room smoothness - Layout & Polls (Small)
-- **Goal:** Stop layout thrash and polling during spins.
-- **Action:** 
-  1. Optimize `fitStage` in `src/game/drawing.js` to avoid redundant `getComputedStyle` calls.
-  2. In `src/wallet/watch.js`, check `if (typeof busy !== 'undefined' && busy) return;` at the start of `pollFeed`.
-- **Done-when:** `tools/check.mjs` is green, and `fitStage` loop is cleaned up.
-
-### Task 2: Room & Photo Caching (Small)
-- **Goal:** Reduce per-frame draw work.
-- **Action:**
-  1. In `src/game/room.js`, pause `drawRoom` RAF loop if `busy` is true.
-  2. In `src/game/faces.js`, add a `buildPhotoBase` to cache the dart and chrome rim for the photo scene.
-  3. Update `drawPhoto` in `src/game/drawing.js` to use this cache.
-- **Done-when:** Photo spin is visibly smoother; Room animation pauses during main spin.
-
-### Task 3: Fix "Show me" Verdict & Leaks (Small)
-- **Goal:** Make the result visible and fix the memory leak.
-- **Action:**
-  1. In `src/game/show-me.js`, pass `photo: true` to the final `setVerdict` in `spinPhoto`.
-  2. Revoke the object URL in `onFile` after the image loads.
-  3. In `src/game/ui.js`, ensure `resize()` is called if `fitStage()` changed the stage width.
-- **Done-when:** "Show me" result text is visible after spin; photo retakes don't balloon memory.
+**Prerequisite: HANDOFF.md "NOW" Cleanup**
+- **Where:** `HANDOFF.md` (top 20 lines).
+- **Issue:** The Banter bots are currently hallucinating based on old history (Update 28/31).
+- **Fix:** Explicitly state "Update 34 Planning" and "Claude is unavailable" at the very top of the NOW section. Remove stale progress items from previous updates.
+- **Done-when:** Bots stop referencing Update 31 in their chat reasoning.
