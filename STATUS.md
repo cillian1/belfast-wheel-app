@@ -10,6 +10,7 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
+- #296 RolexG: Own the wheel-transition implementation audit/fix for Update36 on top  → gambler/update-36-depth-routes
 - #295 [WIP] Add additional options for Plinko variety → update-36 (draft)
 - #294 [WIP] Add deterministic tests for repeat rewards and deeper routes → gambler/update-36-depth-routes (draft)
 - #290 money: Draft Update 36 repeats and deeper wheel routes → update-36 (draft)
