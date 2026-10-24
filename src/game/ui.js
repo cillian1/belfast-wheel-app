@@ -45,7 +45,7 @@ async function backToMain() {
     await fadeTo(0, 350);
   }
   if (zoom !== 1) await zoomTo(1, 1500);
-  if (DEPTH !== MAXD - 1) { DEPTH = MAXD - 1; navCache = null; draw(); }
+  if (DEPTH !== BASE_DEPTH) { DEPTH = BASE_DEPTH; navCache = null; draw(); }
 }
 
 async function runMain() {
@@ -71,7 +71,7 @@ async function runMain() {
   const steps = []; let wilds = 0, bonus = 0;
   setVerdict({ eyebrow: 'The wheel says', title: 'Go deeper', body: 'Hold on.' });
   await zoomWheelTo(1.14, 1800);
-  let wMiss = 0, bMiss = 0, ups = 0, godHit = false;
+  let wMiss = 0, bMiss = 0, godHit = false;
   if (Math.random() < GOLDEN_CHANCE) await goldenRun();
   else if (store.get('hope', false)) { store.set('hope', false); await wait(400); await boostRun('W', 0); }
   for (let k = 1; k <= DEPTH; k++) {
@@ -92,20 +92,21 @@ async function runMain() {
       continue;
     }
     const wildLive = wMiss < 2, bonusLive = bMiss < 2;
+    const repeatHere = (it.wild || it.bonus || it.up === 2) && Math.random() < 1 / 3;
     if (it.up) { // back out one or two wheels and spin that one again; everything collected stays
       if (it.wild || it.bonus) { // the hybrid ones pay out first
         if (it.wild) wilds++; else bonus++;
         buzz([20, 30, 20, 30, 80]); Music.sting(Math.max(wilds, bonus)); Music.setLevel(Math.max(wilds, bonus));
         steps.push({ text: cap(it.go()) }); setTiles(wilds, bonus);
       }
-      if (ups++ < 3) {
+      {
         let body = '';
         if ((it.wild || it.bonus) && !store.get('wildHint')) {
           body = (it.wild ? 'Gold Cleopatra = WILD. ' : 'Purple ankh = BONUS. ') + 'Collect 3 of a kind.';
           store.set('wildHint', true);
         }
-        const dist = it.up === 2 ? 2 : 1, targetK = Math.max(0, k - dist);
-        setVerdict({ eyebrow: 'Going deeper', title: it.up === 2 ? 'Go two levels up' : it.wild ? 'Wild, go back up' : it.bonus ? 'Bonus, go back up' : 'Go back up', body, steps: steps.slice(), flash: true });
+        const dist = it.up === 2 ? 2 : 1, targetK = repeatHere ? k : Math.max(0, k - dist);
+        setVerdict({ eyebrow: 'Going deeper', title: repeatHere ? 'Spin this level again' : it.up === 2 ? 'Go two levels up' : it.wild ? 'Wild, go back up' : it.bonus ? 'Bonus, go back up' : 'Go back up', body, steps: steps.slice(), flash: true });
         playSfx('back');
         Music.sting(1); buzz([30, 30, 30]); await wait(500);
         await dive(1 / Math.pow(S, targetK));
@@ -114,20 +115,16 @@ async function runMain() {
       continue;
     }
     if (it.deep === 2) { // jump two wheels deeper
-      const targetK = Math.min(DEPTH, k + 2);
+      const targetK = Math.min(MAXD, k + 2);
+      await unlockDepth(targetK);
       setVerdict({ eyebrow: 'Going deeper', title: 'Go two levels deeper', body: '', steps: steps.slice(), flash: true });
       Music.sting(1); buzz([30, 30, 30]); await wait(500);
       await dive(1 / Math.pow(S, targetK));
       k = targetK - 1; continue;
     }
-    if (it.even) { // Go even deeper: a fifth wheel rises out of the dice well, and the well sinks into its centre (not a direction, so not a step)
-      if (DEPTH < MAXD) {
-        setVerdict({ eyebrow: 'Going deeper', title: 'Go even deeper', body: 'There is another wheel under this one.', steps: steps.slice(), flash: true });
-        $('#caption').textContent = 'Even deeper'; Music.sting(4); buzz([60, 40, 60, 40, 200]); whoosh(true);
-        DEPTH = MAXD; evenA = 0; navCache = null;
-        await animate(1500, t => { evenA = easeInOut(t); draw(); const f = Math.sin(t * Math.PI) * .35; ctx.fillStyle = `rgba(150,170,255,${f})`; ctx.fillRect(0, 0, N, N); });
-        evenA = 1; draw();
-      }
+    if (it.even) {
+      setVerdict({ eyebrow: 'Going deeper', title: it.go(), body: 'The next wheel stays open for this run.', steps: steps.slice(), flash: true });
+      await unlockDepth(k + 1);
       continue;
     }
     if (it.boost) {
@@ -148,6 +145,10 @@ async function runMain() {
     }
     steps.push({ text: cap(it.go()) });
     setTiles(wilds, bonus);
+    if (repeatHere) {
+      $('#caption').textContent = 'Collected — spin this level again';
+      k--; // the loop increment returns to this same wheel; the extra stays collected
+    }
     // a full set never ends the run early: every wheel still spins, and the rooms only open after the last one
     if ((it.wild && wilds === 3) || (it.bonus && bonus === 3)) {
       setVerdict({ eyebrow: 'Going deeper', title: it.wild ? 'Three wilds' : 'Three ankhs', body: '', steps: steps.slice(), flash: true });
@@ -294,4 +295,13 @@ async function runMain() {
   speak(said);
   $('#caption').textContent = 'Tap Spin to go back to the top';
   logMove(steps.map(s => s.text.replace(/^And /, '')).join(' · '));
+}
+
+async function unlockDepth(target) {
+  target = Math.min(MAXD, target);
+  if (target <= DEPTH) return;
+  DEPTH = target; evenA = 0; navCache = null;
+  Music.sting(4); buzz([60, 40, 60, 40, 200]); whoosh(true);
+  await animate(1500, t => { evenA = easeInOut(t); draw(); });
+  evenA = 1; draw();
 }

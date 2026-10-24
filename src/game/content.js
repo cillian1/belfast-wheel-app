@@ -37,6 +37,7 @@ const MOVE_DEFS = {
   UB: { lbl: [], up: true, bonus: true, go: () => 'Bonus, and go back up' },
   MW: { lbl: ['MORE', 'WILDS'], boost: 'W', go: () => 'More Wilds: no move from this wheel' },
   MB: { lbl: ['MORE', 'BONUS'], boost: 'B', go: () => 'More Bonus: no move from this wheel' },
+  MD: { lbl: ['MORE', 'DEEPER'], deep: true, even: true, go: () => 'Go more deeper' },
   ED: { lbl: ['EVEN', 'DEEPER'], deep: true, even: true, go: () => 'Go even deeper' },
   D2: { lbl: [], deep: 2, go: () => 'go two levels deeper' },
   U2: { lbl: [], up: 2, go: () => 'go back up two levels' },
@@ -51,15 +52,18 @@ const LAYER_ORDERS = [
   ['BN', 'B', 'MW', 'F', 'C', 'WD', 'U2', 'X', 'BN', 'NR', 'F', 'WD', 'C', 'R', 'BN', 'X', 'L', 'WD', 'F', 'B', 'BN', 'R', 'NL', 'MB', 'L', 'BN', 'L', 'NR', 'WD', 'B', 'C', 'BN', 'NL', 'X', 'WD', 'NR', 'F', 'BN', 'C', 'R', 'WD', 'X', 'BN', 'NR'],
   ['BN', 'NL', 'X', 'WD', 'NR', 'MW', 'F', 'BN', 'C', 'R', 'WD', 'X', 'U2', 'BN', 'F', 'B', 'WD', 'R', 'MB', 'NL', 'BN', 'L'],
   ['BN', 'NR', 'F', 'WD', 'C', 'R', 'BN', 'UP', 'L', 'WD', 'F', 'B', 'BN', 'R', 'X', 'D2', 'NL', 'WD', 'L', 'U2', 'BN', 'B'],
-  ['BN', 'C', 'ED', 'R', 'WD', 'X', 'UP', 'BN', 'F', 'B', 'WD', 'R', 'UP', 'BN', 'L', 'GD', 'F', 'NR', 'WD', 'B', 'U2', 'BN', 'NL'],
-  // the hidden fifth wheel, only reached through Go even deeper on the last wheel: more Wilds and ankhs than any other wheel
-  ['BN', 'C', 'WD', 'R', 'BN', 'X', 'WD', 'F', 'BN', 'B', 'GD', 'U2', 'WD', 'L', 'BN', 'NR', 'WD', 'F', 'BN', 'X', 'WD', 'R', 'BN', 'C', 'WD', 'L', 'BN', 'B'],
+  ['BN', 'C', 'MD', 'R', 'WD', 'X', 'UP', 'BN', 'F', 'B', 'WD', 'R', 'UP', 'BN', 'L', 'GD', 'F', 'NR', 'WD', 'B', 'U2', 'BN', 'NL'],
+  // Unlocks persist for this run, including when an up slice takes you back out.
+  ['BN', 'MD', 'WD', 'R', 'BN', 'X', 'WD', 'F', 'BN', 'B', 'GD', 'U2', 'WD', 'L', 'BN', 'NR', 'WD', 'F', 'BN', 'X', 'WD', 'R', 'BN', 'C', 'WD', 'L', 'BN', 'B'],
+  ['BN', 'C', 'WD', 'ED', 'BN', 'UP', 'WD', 'F', 'BN', 'B', 'GD', 'U2', 'WD', 'L', 'BN', 'NR'],
+  ['BN', 'C', 'WD', 'R', 'BN', 'UP', 'WD', 'F', 'BN', 'B', 'GD', 'U2', 'WD', 'L', 'BN', 'NR'],
 ];
 const REPLACE = ['F', 'L', 'R', 'B', 'NL', 'NR', 'X', 'C'];
 // dead variants: 'W' = Wilds greyed, 'B' = Bonus greyed, 'WB' = both
 const DEAD_KEYS = ['W', 'B', 'WB'];
 const MAXD = LAYER_ORDERS.length; // every inner wheel, the hidden fifth included
-var DEPTH = MAXD - 1; // inner wheels this run; the dice well sits in the last one (Go even deeper adds the fifth)
+const BASE_DEPTH = 4;
+var DEPTH = BASE_DEPTH; // extra wheels unlock one at a time; reset only on a new run
 const DEAD_ORDERS = {};
 DEAD_KEYS.forEach(v => DEAD_ORDERS[v] = LAYER_ORDERS.map((o, k) => { let j = k * 3; return o.map(key => (key === 'WD' && v.includes('W')) || (key === 'BN' && v.includes('B')) ? REPLACE[j++ % REPLACE.length] + (key === 'WD' ? '*' : '#') : key); }));
 const STANK = [

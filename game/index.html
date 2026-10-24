@@ -513,6 +513,7 @@ const MOVE_DEFS = {
   UB: { lbl: [], up: true, bonus: true, go: () => 'Bonus, and go back up' },
   MW: { lbl: ['MORE', 'WILDS'], boost: 'W', go: () => 'More Wilds: no move from this wheel' },
   MB: { lbl: ['MORE', 'BONUS'], boost: 'B', go: () => 'More Bonus: no move from this wheel' },
+  MD: { lbl: ['MORE', 'DEEPER'], deep: true, even: true, go: () => 'Go more deeper' },
   ED: { lbl: ['EVEN', 'DEEPER'], deep: true, even: true, go: () => 'Go even deeper' },
   D2: { lbl: [], deep: 2, go: () => 'go two levels deeper' },
   U2: { lbl: [], up: 2, go: () => 'go back up two levels' },
@@ -527,15 +528,18 @@ const LAYER_ORDERS = [
   ['BN', 'B', 'MW', 'F', 'C', 'WD', 'U2', 'X', 'BN', 'NR', 'F', 'WD', 'C', 'R', 'BN', 'X', 'L', 'WD', 'F', 'B', 'BN', 'R', 'NL', 'MB', 'L', 'BN', 'L', 'NR', 'WD', 'B', 'C', 'BN', 'NL', 'X', 'WD', 'NR', 'F', 'BN', 'C', 'R', 'WD', 'X', 'BN', 'NR'],
   ['BN', 'NL', 'X', 'WD', 'NR', 'MW', 'F', 'BN', 'C', 'R', 'WD', 'X', 'U2', 'BN', 'F', 'B', 'WD', 'R', 'MB', 'NL', 'BN', 'L'],
   ['BN', 'NR', 'F', 'WD', 'C', 'R', 'BN', 'UP', 'L', 'WD', 'F', 'B', 'BN', 'R', 'X', 'D2', 'NL', 'WD', 'L', 'U2', 'BN', 'B'],
-  ['BN', 'C', 'ED', 'R', 'WD', 'X', 'UP', 'BN', 'F', 'B', 'WD', 'R', 'UP', 'BN', 'L', 'GD', 'F', 'NR', 'WD', 'B', 'U2', 'BN', 'NL'],
-  // the hidden fifth wheel, only reached through Go even deeper on the last wheel: more Wilds and ankhs than any other wheel
-  ['BN', 'C', 'WD', 'R', 'BN', 'X', 'WD', 'F', 'BN', 'B', 'GD', 'U2', 'WD', 'L', 'BN', 'NR', 'WD', 'F', 'BN', 'X', 'WD', 'R', 'BN', 'C', 'WD', 'L', 'BN', 'B'],
+  ['BN', 'C', 'MD', 'R', 'WD', 'X', 'UP', 'BN', 'F', 'B', 'WD', 'R', 'UP', 'BN', 'L', 'GD', 'F', 'NR', 'WD', 'B', 'U2', 'BN', 'NL'],
+  // Unlocks persist for this run, including when an up slice takes you back out.
+  ['BN', 'MD', 'WD', 'R', 'BN', 'X', 'WD', 'F', 'BN', 'B', 'GD', 'U2', 'WD', 'L', 'BN', 'NR', 'WD', 'F', 'BN', 'X', 'WD', 'R', 'BN', 'C', 'WD', 'L', 'BN', 'B'],
+  ['BN', 'C', 'WD', 'ED', 'BN', 'UP', 'WD', 'F', 'BN', 'B', 'GD', 'U2', 'WD', 'L', 'BN', 'NR'],
+  ['BN', 'C', 'WD', 'R', 'BN', 'UP', 'WD', 'F', 'BN', 'B', 'GD', 'U2', 'WD', 'L', 'BN', 'NR'],
 ];
 const REPLACE = ['F', 'L', 'R', 'B', 'NL', 'NR', 'X', 'C'];
 // dead variants: 'W' = Wilds greyed, 'B' = Bonus greyed, 'WB' = both
 const DEAD_KEYS = ['W', 'B', 'WB'];
 const MAXD = LAYER_ORDERS.length; // every inner wheel, the hidden fifth included
-var DEPTH = MAXD - 1; // inner wheels this run; the dice well sits in the last one (Go even deeper adds the fifth)
+const BASE_DEPTH = 4;
+var DEPTH = BASE_DEPTH; // extra wheels unlock one at a time; reset only on a new run
 const DEAD_ORDERS = {};
 DEAD_KEYS.forEach(v => DEAD_ORDERS[v] = LAYER_ORDERS.map((o, k) => { let j = k * 3; return o.map(key => (key === 'WD' && v.includes('W')) || (key === 'BN' && v.includes('B')) ? REPLACE[j++ % REPLACE.length] + (key === 'WD' ? '*' : '#') : key); }));
 const STANK = [
@@ -679,6 +683,8 @@ const PALS = [
   { light: [[0, '#6e6a62'], [.3, '#d9d4c8'], [.55, '#a39d90'], [.75, '#ebe6da'], [1, '#6a655c']], dark: [[0, '#16140f'], [.35, '#4d4840'], [.55, '#221f1a'], [.8, '#3a362f'], [1, '#14120e']] },
   { light: [[0, '#7a6a52'], [.3, '#f1e4cc'], [.5, '#b9a586'], [.72, '#fbf3e3'], [1, '#7d6c53']], dark: [[0, '#2a2219'], [.35, '#6b5a43'], [.55, '#33291e'], [.8, '#57493a'], [1, '#241d15']] },
   { light: [[0, '#4a5470'], [.3, '#c4cde8'], [.55, '#8792b4'], [.75, '#e2e8f8'], [1, '#48526e']], dark: [[0, '#0b0e1c'], [.35, '#2c3458'], [.55, '#121630'], [.8, '#262d4e'], [1, '#090b17']] },
+  { light: CHROME_LIGHT, dark: CHROME_DARK },
+  { light: CHROME_LIGHT, dark: CHROME_DARK },
 ];
 const GOLD_A = [[0, '#5a3a08'], [.28, '#f7d77a'], [.48, '#a8771e'], [.7, '#fff1b8'], [1, '#6b4510']];
 const GOLD_B = [[0, '#6b4a12'], [.3, '#e2b856'], [.5, '#8a6118'], [.75, '#f3d488'], [1, '#5a3c0c']];
@@ -1472,7 +1478,7 @@ function snapshotNavCache() {
 }
 function drawLayer(g, k, sc) {
   const sv = ctx; ctx = g;
-  const ga = ctx.globalAlpha; if (k === MAXD && evenA < 1) ctx.globalAlpha = ga * evenA;
+  const ga = ctx.globalAlpha; if (k === DEPTH && evenA < 1) ctx.globalAlpha = ga * evenA;
   if (k > 0) drawScaled(faces.wall, 0, sc);
   drawScaled(faces.layers[k], rot[k], sc);
   if (boostA[k] > 0 && faces['boost' + k]) { ctx.globalAlpha = boostA[k]; drawScaled(faces['boost' + k], rot[k], sc); ctx.globalAlpha = 1; }
@@ -1490,7 +1496,7 @@ function drawLayer(g, k, sc) {
   }
   if (k === 0 && sc < 1.6) drawDeepGlow(sc);
   if (k === DEPTH) { drawScaled(faces.well, 0, sc); drawDice(sc); }
-  else if (k === MAXD - 1 && evenA < 1) { ctx.globalAlpha = 1 - evenA; drawScaled(faces.well, 0, sc); ctx.globalAlpha = 1; } // the old well fades as the fifth wheel rises
+  else if (k === DEPTH - 1 && evenA < 1) { ctx.globalAlpha = 1 - evenA; drawScaled(faces.well, 0, sc); ctx.globalAlpha = 1; } // the old well fades as the fifth wheel rises
   if (k > 0) {
     ctx.globalCompositeOperation = 'overlay'; drawScaled(faces.light, 0, sc); ctx.globalCompositeOperation = 'source-over';
     drawScaled(faces.pbevel, 0, sc);
@@ -2476,7 +2482,7 @@ async function backToMain() {
     await fadeTo(0, 350);
   }
   if (zoom !== 1) await zoomTo(1, 1500);
-  if (DEPTH !== MAXD - 1) { DEPTH = MAXD - 1; navCache = null; draw(); }
+  if (DEPTH !== BASE_DEPTH) { DEPTH = BASE_DEPTH; navCache = null; draw(); }
 }
 
 async function runMain() {
@@ -2502,7 +2508,7 @@ async function runMain() {
   const steps = []; let wilds = 0, bonus = 0;
   setVerdict({ eyebrow: 'The wheel says', title: 'Go deeper', body: 'Hold on.' });
   await zoomWheelTo(1.14, 1800);
-  let wMiss = 0, bMiss = 0, ups = 0, godHit = false;
+  let wMiss = 0, bMiss = 0, godHit = false;
   if (Math.random() < GOLDEN_CHANCE) await goldenRun();
   else if (store.get('hope', false)) { store.set('hope', false); await wait(400); await boostRun('W', 0); }
   for (let k = 1; k <= DEPTH; k++) {
@@ -2523,20 +2529,21 @@ async function runMain() {
       continue;
     }
     const wildLive = wMiss < 2, bonusLive = bMiss < 2;
+    const repeatHere = (it.wild || it.bonus || it.up === 2) && Math.random() < 1 / 3;
     if (it.up) { // back out one or two wheels and spin that one again; everything collected stays
       if (it.wild || it.bonus) { // the hybrid ones pay out first
         if (it.wild) wilds++; else bonus++;
         buzz([20, 30, 20, 30, 80]); Music.sting(Math.max(wilds, bonus)); Music.setLevel(Math.max(wilds, bonus));
         steps.push({ text: cap(it.go()) }); setTiles(wilds, bonus);
       }
-      if (ups++ < 3) {
+      {
         let body = '';
         if ((it.wild || it.bonus) && !store.get('wildHint')) {
           body = (it.wild ? 'Gold Cleopatra = WILD. ' : 'Purple ankh = BONUS. ') + 'Collect 3 of a kind.';
           store.set('wildHint', true);
         }
-        const dist = it.up === 2 ? 2 : 1, targetK = Math.max(0, k - dist);
-        setVerdict({ eyebrow: 'Going deeper', title: it.up === 2 ? 'Go two levels up' : it.wild ? 'Wild, go back up' : it.bonus ? 'Bonus, go back up' : 'Go back up', body, steps: steps.slice(), flash: true });
+        const dist = it.up === 2 ? 2 : 1, targetK = repeatHere ? k : Math.max(0, k - dist);
+        setVerdict({ eyebrow: 'Going deeper', title: repeatHere ? 'Spin this level again' : it.up === 2 ? 'Go two levels up' : it.wild ? 'Wild, go back up' : it.bonus ? 'Bonus, go back up' : 'Go back up', body, steps: steps.slice(), flash: true });
         playSfx('back');
         Music.sting(1); buzz([30, 30, 30]); await wait(500);
         await dive(1 / Math.pow(S, targetK));
@@ -2545,20 +2552,16 @@ async function runMain() {
       continue;
     }
     if (it.deep === 2) { // jump two wheels deeper
-      const targetK = Math.min(DEPTH, k + 2);
+      const targetK = Math.min(MAXD, k + 2);
+      await unlockDepth(targetK);
       setVerdict({ eyebrow: 'Going deeper', title: 'Go two levels deeper', body: '', steps: steps.slice(), flash: true });
       Music.sting(1); buzz([30, 30, 30]); await wait(500);
       await dive(1 / Math.pow(S, targetK));
       k = targetK - 1; continue;
     }
-    if (it.even) { // Go even deeper: a fifth wheel rises out of the dice well, and the well sinks into its centre (not a direction, so not a step)
-      if (DEPTH < MAXD) {
-        setVerdict({ eyebrow: 'Going deeper', title: 'Go even deeper', body: 'There is another wheel under this one.', steps: steps.slice(), flash: true });
-        $('#caption').textContent = 'Even deeper'; Music.sting(4); buzz([60, 40, 60, 40, 200]); whoosh(true);
-        DEPTH = MAXD; evenA = 0; navCache = null;
-        await animate(1500, t => { evenA = easeInOut(t); draw(); const f = Math.sin(t * Math.PI) * .35; ctx.fillStyle = `rgba(150,170,255,${f})`; ctx.fillRect(0, 0, N, N); });
-        evenA = 1; draw();
-      }
+    if (it.even) {
+      setVerdict({ eyebrow: 'Going deeper', title: it.go(), body: 'The next wheel stays open for this run.', steps: steps.slice(), flash: true });
+      await unlockDepth(k + 1);
       continue;
     }
     if (it.boost) {
@@ -2579,6 +2582,10 @@ async function runMain() {
     }
     steps.push({ text: cap(it.go()) });
     setTiles(wilds, bonus);
+    if (repeatHere) {
+      $('#caption').textContent = 'Collected — spin this level again';
+      k--; // the loop increment returns to this same wheel; the extra stays collected
+    }
     // a full set never ends the run early: every wheel still spins, and the rooms only open after the last one
     if ((it.wild && wilds === 3) || (it.bonus && bonus === 3)) {
       setVerdict({ eyebrow: 'Going deeper', title: it.wild ? 'Three wilds' : 'Three ankhs', body: '', steps: steps.slice(), flash: true });
@@ -2725,6 +2732,15 @@ async function runMain() {
   speak(said);
   $('#caption').textContent = 'Tap Spin to go back to the top';
   logMove(steps.map(s => s.text.replace(/^And /, '')).join(' · '));
+}
+
+async function unlockDepth(target) {
+  target = Math.min(MAXD, target);
+  if (target <= DEPTH) return;
+  DEPTH = target; evenA = 0; navCache = null;
+  Music.sting(4); buzz([60, 40, 60, 40, 200]); whoosh(true);
+  await animate(1500, t => { evenA = easeInOut(t); draw(); });
+  evenA = 1; draw();
 }
 // ---------- ultra bonus: 77 Bridgefield and the Stankman's Wheel ----------
 // Owns Stank Chamber assets and room behavior.

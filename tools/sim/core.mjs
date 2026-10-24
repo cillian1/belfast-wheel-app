@@ -109,7 +109,7 @@ export function pathHarness(full = false, compute = false) {
     // A seed describes a fresh spin, independent of boot-time drawing or workers.
     clearSpecialDice();
     dice.forEach(d => { d.x = d.hx; d.y = d.hy; d.M = null; d.z = 0; d.v = 1; });
-    DEPTH = MAXD - 1; rot.fill(0); lastQuote = -1;
+    DEPTH = typeof BASE_DEPTH === 'undefined' ? MAXD - 1 : BASE_DEPTH; rot.fill(0); lastQuote = -1;
     ringCache.clear(); faces.farm = null;
     for (let k = 1; k <= MAXD; k++) {
       const order = BASE_ORDERS[k - 1];
