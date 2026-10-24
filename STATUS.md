@@ -12,7 +12,7 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 **Other open PRs**
 
 - #278 [WIP] Update chat.html with jump-to-latest button and new-message indicator → main (draft)
-- #277 [WIP] Update free-spin help to clarify 10c bets → main (draft)
+- #277 Clarify 10c requirement for daily free spins → main (draft)
 - #251 docs/test: verify Update 32 zoom under mobile throttle → update-32 (draft)
 - #248 Track stable change scopes with live ownership and delivery status → main (draft)
 - #241 Fix trusted task dispatch and queue output overflow → main (draft)
