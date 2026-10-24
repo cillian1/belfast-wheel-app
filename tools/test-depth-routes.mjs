@@ -17,14 +17,15 @@ function extract(source, pattern, description) {
 const mainSource = extract(contentSource, /const MAIN = \[[\s\S]*?\n\];/, 'main wheel data');
 const moveSource = extract(contentSource, /const MOVE_DEFS = \{[\s\S]*?\n\};/, 'move definitions');
 const ordersSource = extract(contentSource, /const LAYER_ORDERS = \[[\s\S]*?\n\];/, 'layer orders');
-const { MAIN, MOVE_DEFS, LAYER_ORDERS } = new Function(
+const { MAIN, MOVE_DEFS, LAYER_ORDERS } = new Function('metres', 'pick',
   `${mainSource}\n${moveSource}\n${ordersSource}\nreturn { MAIN, MOVE_DEFS, LAYER_ORDERS };`,
-)();
+)(() => 1, choices => choices[0]);
 
 const targetSource = extract(motionSource, /function target\(n\) \{[\s\S]*?\n\}/, 'spin target function');
 const spinRunSource = extract(motionSource, /async function spinLayerRun\(k, dur, dir\) \{[\s\S]*?\n\}/, 'wheel spin function');
 const runMainSource = extract(uiSource, /async function runMain\(\) \{[\s\S]*?\n\}/, 'main run function');
 const backToMainSource = extract(uiSource, /async function backToMain\(\) \{[\s\S]*?\n\}/, 'return-to-main function');
+const unlockDepthSource = extract(uiSource, /async function unlockDepth\(target\) \{[\s\S]*?\n\}/, 'depth unlock function');
 
 // The strict boundary matters: a draw equal to one third is not below the tease chance.
 const teaseChanceMatch = motionSource.match(/TEASE_CHANCE\s*=\s*([^;,\n]+)/);
@@ -77,12 +78,14 @@ function makeHarness(initialDepth = 4) {
   const unlockDepths = [];
   const stop = Symbol('end scripted route');
   const storeData = new Map();
+  const randomValues = [];
   const noOp = () => {};
   const $ = selector => selector === '.stage'
     ? { classList: { remove: noOp } }
     : { textContent: '' };
   const env = {
     DEPTH: initialDepth,
+    BASE_DEPTH: 4,
     MAXD: 7,
     MAIN,
     LAYERS: layers,
@@ -104,6 +107,7 @@ function makeHarness(initialDepth = 4) {
       const event = events.shift();
       if (!event) throw stop;
       assert.equal(k, event.k, `scripted spin expected layer ${event.k}, got ${k}`);
+      if (event.stopAfterSpin) throw stop;
       return event.index;
     },
     setVerdict: noOp,
@@ -111,7 +115,7 @@ function makeHarness(initialDepth = 4) {
     logMove: noOp,
     quote: () => '',
     zoomWheelTo: async () => {},
-    Math: Object.assign(Object.create(Math), { random: () => .99 }),
+    Math: Object.assign(Object.create(Math), { random: () => randomValues.length ? randomValues.shift() : .99 }),
     GOLDEN_CHANCE: 1 / 30,
     store: {
       get: (key, fallback) => storeData.has(key) ? storeData.get(key) : fallback,
@@ -169,7 +173,8 @@ function makeHarness(initialDepth = 4) {
       return (function () {
         ${runMainSource}
         ${backToMainSource}
-        return { runMain, backToMain };
+        ${unlockDepthSource}
+        return { runMain, backToMain, unlockDepth };
       })();
     }
   `)(env);
@@ -185,8 +190,13 @@ function makeHarness(initialDepth = 4) {
     return index;
   }
 
-  async function run(plan) {
-    events.splice(0, events.length, ...plan.map(({ k, key }) => ({ k, index: indexFor(k, key) })));
+  async function run(plan, scriptedRandom = []) {
+    events.splice(0, events.length, ...plan.map(({ k, key }) => ({
+      k,
+      index: key === 'STOP' ? -1 : indexFor(k, key),
+      stopAfterSpin: key === 'STOP',
+    })));
+    randomValues.splice(0, randomValues.length, ...scriptedRandom);
     spins.length = 0;
     depthAtSpin.length = 0;
     unlockDepths.length = 0;
@@ -208,12 +218,14 @@ async function testRepeatCollections() {
   const result = await harness.run([
     deeper,
     { k: 1, key: 'WD' },
-    { k: 2, key: 'BN' },
-    { k: 3, key: 'U2' },
     { k: 1, key: 'WD' },
-  ]);
-  assert.deepEqual(result.spins, [0, 1, 2, 3, 1, 2], 'U2 re-enters its target wheel before continuing inward');
-  assert.deepEqual(harness.env.lastTiles, [2, 1], 'Wild and Bonus collections survive the repeat and both add again');
+    { k: 2, key: 'BN' },
+    { k: 2, key: 'BN' },
+    { k: 3, key: 'F' },
+    { k: 4, key: 'STOP' },
+  ], [.99, .1, .99, .1, .99]);
+  assert.deepEqual(result.spins, [0, 1, 1, 2, 2, 3, 4], 'WILD and BONUS each repeat their own wheel');
+  assert.deepEqual(harness.env.lastTiles, [2, 2], 'WILD and BONUS collections survive their repeats and both add again');
 }
 
 async function testHybridCollectorsRepeat() {
@@ -222,14 +234,17 @@ async function testHybridCollectorsRepeat() {
     deeper,
     { k: 1, key: 'WD' },
     { k: 2, key: 'UW' },
+    { k: 2, key: 'UW' },
     { k: 1, key: 'F' },
     { k: 2, key: 'UB' },
-    { k: 1, key: 'F' },
     { k: 2, key: 'UB' },
     { k: 1, key: 'F' },
-  ]);
-  assert.deepEqual(result.spins, [0, 1, 2, 1, 2, 1, 2, 1, 2], 'hybrid collectors back up and re-enter the route');
-  assert.deepEqual(harness.env.lastTiles, [2, 2], 'repeated Wild and Bonus hybrid collectors are retained');
+    { k: 2, key: 'F' },
+    { k: 3, key: 'F' },
+    { k: 4, key: 'STOP' },
+  ], [.99, .99, .1, .99, .1, .99]);
+  assert.deepEqual(result.spins, [0, 1, 2, 2, 1, 2, 2, 1, 2, 3, 4], 'hybrid collectors repeat at their own level before backing up');
+  assert.deepEqual(harness.env.lastTiles, [3, 2], 'repeated Wild and Bonus hybrid collectors are retained');
 }
 
 async function testU2AndOneLevelBackup() {
@@ -237,16 +252,16 @@ async function testU2AndOneLevelBackup() {
   const twoUpResult = await twoUp.run([
     deeper,
     { k: 1, key: 'F' }, { k: 2, key: 'F' }, { k: 3, key: 'U2' },
-    { k: 1, key: 'F' },
-  ]);
-  assert.deepEqual(twoUpResult.spins, [0, 1, 2, 3, 1, 2], 'U2 backs up two levels and repeats level 1');
+    { k: 3, key: 'U2' }, { k: 1, key: 'F' }, { k: 2, key: 'F' }, { k: 3, key: 'STOP' },
+  ], [.99, .1, .99]);
+  assert.deepEqual(twoUpResult.spins, [0, 1, 2, 3, 3, 1, 2, 3], 'U2 repeats the same level once, then backs up two levels');
 
   const oneUp = makeHarness(7);
   const oneUpResult = await oneUp.run([
     deeper,
-    { k: 1, key: 'F' }, { k: 2, key: 'F' }, { k: 3, key: 'UP' },
+    { k: 1, key: 'F' }, { k: 2, key: 'F' }, { k: 3, key: 'UP' }, { k: 2, key: 'F' }, { k: 3, key: 'STOP' },
   ]);
-  assert.deepEqual(oneUpResult.spins, [0, 1, 2, 3, 2], 'ordinary UP backs up one level and repeats level 2');
+  assert.deepEqual(oneUpResult.spins, [0, 1, 2, 3, 2, 3], 'ordinary UP backs up one level and repeats level 2');
 }
 
 async function testD2AdvancesTwoLevels() {
@@ -254,8 +269,10 @@ async function testD2AdvancesTwoLevels() {
   const result = await harness.run([
     deeper,
     { k: 1, key: 'F' }, { k: 2, key: 'F' }, { k: 3, key: 'D2' },
+    { k: 5, key: 'STOP' },
   ]);
-  assert.equal(result.spins.at(-1), 5, 'D2 from level 3 advances directly to level 5, not level 4');
+  assert.deepEqual(result.spins, [0, 1, 2, 3, 5], 'D2 from level 3 advances directly to level 5, not level 4');
+  assert.equal(result.depthAtSpin.at(-1), 5, 'the fifth wheel is unlocked before it spins');
 }
 
 async function testProgressiveUnlockAndFreshRun() {
@@ -263,16 +280,16 @@ async function testProgressiveUnlockAndFreshRun() {
   const unlocked = await harness.run([
     deeper,
     { k: 1, key: 'F' }, { k: 2, key: 'F' }, { k: 3, key: 'F' },
-    { k: 4, key: 'ED' }, { k: 5, key: 'ED' }, { k: 6, key: 'ED' },
-    { k: 7, key: 'U2' }, { k: 5, key: 'F' }, { k: 6, key: 'F' }, { k: 7, key: 'F' },
-  ]);
-  assert.deepEqual(unlocked.unlockDepths, [5, 6, 7], 'successive Even Deeper results unlock one wheel at a time');
-  assert.deepEqual(unlocked.spins.slice(-3), [5, 6, 7], 'U2 backs up and re-enters the unlocked seventh wheel');
-  assert.deepEqual(unlocked.depthAtSpin.slice(-3), [7, 7, 7], 'backing up and re-entering retain the unlocked depth');
+    { k: 4, key: 'MD' }, { k: 5, key: 'MD' }, { k: 6, key: 'ED' },
+    { k: 7, key: 'U2' }, { k: 7, key: 'U2' }, { k: 5, key: 'F' }, { k: 6, key: 'F' }, { k: 7, key: 'STOP' },
+  ], [.99, .1, .99]);
+  assert.deepEqual(unlocked.unlockDepths, [5, 6, 7], 'successive deeper results unlock one wheel at a time');
+  assert.deepEqual(unlocked.spins.slice(-4), [7, 5, 6, 7], 'U2 repeats at level 7, then backs up and re-enters the unlocked seventh wheel');
+  assert.deepEqual(unlocked.depthAtSpin.slice(-4), [7, 7, 7, 7], 'backing up and re-entering retain the unlocked depth');
 
   await harness.game.backToMain();
   assert.equal(harness.env.DEPTH, 4, 'returning to the main wheel resets depth for a fresh run');
-  const fresh = await harness.run([deeper]);
+  const fresh = await harness.run([deeper, { k: 1, key: 'STOP' }]);
   assert.equal(fresh.depthAtSpin[1], 4, 'a fresh deeper run starts at depth 4 after the reset');
   assert.equal(LAYER_ORDERS.length, 7, 'game data includes all seven unlockable inner wheels');
 }
