@@ -75,3 +75,29 @@ rm -f "$tmp/copilot.log"
 [ ! -s "$tmp/copilot.log" ] || { echo "Copilot/Renauw ran after their shared daily cap." >&2; exit 1; }
 
 echo "Banter seat selection and shared cap tests passed."
+
+# Unavailable Claude must never consume a model call, even when explicitly requested.
+cat > "$tmp/bin/claude" <<'CLAUDE_STUB'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "$CLAUDE_LOG"
+echo 'A fresh note about choosing a library photo.'
+CLAUDE_STUB
+chmod +x "$tmp/bin/claude"
+printf '[{"body":"Claude","created_at":"%sT12:00:00Z","user":{"login":"cillian1"}}]\n' "$today" > "$tmp/claude.json"
+(
+  cd "$tmp/work"
+  PATH="$tmp/bin:$PATH" REPO=owner/repo GH_TOKEN=test GH_FIXTURE="$tmp/claude.json" \
+    GH_LOG="$tmp/paused-gh.log" CLAUDE_LOG="$tmp/claude.log" CLAUDE_CODE_OAUTH_TOKEN=test \
+    BANTER_REQUESTED_SPEAKER=Claude bash .github/scripts/banter-turn.sh
+)
+[ ! -s "$tmp/claude.log" ] || { echo "Paused Claude was invoked." >&2; exit 1; }
+[ ! -s "$tmp/paused-gh.log" ] || { echo "Paused Claude posted or dispatched a turn." >&2; exit 1; }
+(
+  cd "$tmp/work"
+  PATH="$tmp/bin:$PATH" REPO=owner/repo GH_TOKEN=test GH_FIXTURE="$tmp/claude.json" \
+    GH_LOG="$tmp/enabled-gh.log" CLAUDE_LOG="$tmp/claude.log" CLAUDE_CODE_OAUTH_TOKEN=test \
+    BANTER_CLAUDE_ENABLED=on BANTER_REQUESTED_SPEAKER=Claude bash .github/scripts/banter-turn.sh
+)
+[ -s "$tmp/claude.log" ] || { echo "Explicitly enabled Claude was not invoked." >&2; exit 1; }
+grep -Fq 'Claude: A fresh note about choosing a library photo.' "$tmp/enabled-gh.log"
+echo "Claude pause and explicit resume tests passed."
