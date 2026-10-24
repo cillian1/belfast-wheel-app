@@ -10,7 +10,6 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
-- #290 money: Draft Update 36 repeats and deeper wheel routes → update-36 (draft)
 - #251 docs/test: verify Update 32 zoom under mobile throttle → update-32 (draft)
 - #248 Track stable change scopes with live ownership and delivery status → main (draft)
 - #241 Fix trusted task dispatch and queue output overflow → main (draft)
