@@ -2,16 +2,16 @@
 
 ## NOW: the plan (everyone edits this; live status is in STATUS.md)
 
-- **Shipped: Update 34 “Little Things”, game 34/build 71**, 2026-10-24 at 15:37 Europe/London, release PR #285. Gemini independently reviewed/merged with green CI; public version/bundle/chat verified. APK remains 3.
-- Included: Renauw #277/#272 (accurate free-10c-spin help), Copilot #278/#274 (Banter jump-to-latest/new messages), RolexG #282/#273 (photo object-URL cleanup and library retakes). Scope record: [docs/update-34.md](docs/update-34.md).
-- The Gambler completed integration, independent browser/phone checks and release preparation #283; Jimini's final independent source/usability review PASS is on #283 (run 40103136086, no files changed). No odds/payment-rule changes; quick payback unchanged at 117.2% → 117.2%.
-- Verified 320/390/440px help/photo/Banter behavior, photo success/error URL cleanup/same-file/cancel, no extra picture-spin charge with mocked Firebase, seeded browser/frame RNG at 10/30/60/120fps and 50 full browser/core paths. No physical phone/camera test was performed.
-- **Completed live-data tasks:** #280 (Austin is tatious; requested balance reset) and #279 (authorised jackpot fallback reset), both written narrowly, read back and closed. These were separate data corrections, not release behavior. Do not repeat them.
-- **Claude remains unavailable due to usage limits.** No task, review, merge or release depends on him. Automatic Claude chat stays paused unless explicitly re-enabled with BANTER_CLAUDE_ENABLED=on.
-- **Coordination:** The Gambler handles ready work and integration; Gemini independently reviews/merges The Gambler's PRs. Nobody merges their own PR. Stankman has no critical-path assignment while availability is unconfirmed.
-- Workflow prerequisites #276 and #281 are merged. Review checkout fix #284 is merged and verified by the successful Jimini run; the shallow clone now fetches the requested head first.
-- **Next:** check newly ready gambler-task issues and actual dependency/PR state. Do not restart completed update-34 work or old releases from stale labels. Current feature scope is complete; do not invent more from generated Banter chat.
-- Historical update plans are preserved in [docs/HANDOFF-ARCHIVE.md](docs/HANDOFF-ARCHIVE.md). **Last updated:** 2026-10-24 by The Gambler after release.
+- **Current work: Update 36, wheel repeats/deeper routes and Plinko variety**, requested directly by Cillian on 2026-10-25. Holding branch: `update-36`. Draft integration: #290 (`gambler/update-36-depth-routes`). Do not release this draft before tests, odds review and independent final review.
+- **Wheel scope:** collecting WILD/BONUS gives its extra and a 1-in-3 repeat on the same wheel; double-up gets the same repeat chance; double-down must descend two real levels; unlocked deeper wheels persist after back-up moves during that run, with further More Deeper / Even Deeper routes.
+- **Owners:** RolexG audits/fixes transitions on #290; Renauw owns deterministic transition regressions #291; Copilot owns Plinko variety #292; Jimini independently reports odds/route risks #293 (JUST ANSWER, no files). Gambler coordinates, integrates, rebundles and validates. Gemini independently reviews/merges; no self-merge. Claude remains unavailable and has no assignment.
+- **Plinko:** user requests more variations/options. Clarification asked whether destinations, round effects or both; current safe first cut is more distinct destination options, preserving eight visible slots and existing payout/physics rules. Record any answer on #292 before extending effects.
+- **Odds notice:** Banter comment 6390880705. Initial draft quick payback 117.2% → 169.2% (+52.1 pp); not a full RTP estimate or permission to retune prizes/edge/EV silently. Review collection/termination and existing backup-cap semantics before accepting the result. Money titles, fast sim evidence and independent review remain required.
+- **Shipped baseline: Update 35 “Back to 10c”, game 35/build 72**, release #289, independently merged with green CI. Public metadata/bundle verified. Unaffordable locally saved bets reset to 10c while idle on authenticated account refresh; balances and active runs are preserved. APK remains 3.
+- Update 34 “Little Things” shipped in #285; scope/evidence: [docs/update-34.md](docs/update-34.md). Queue repair #287 shipped; eight stale completed issues reconciled. Live DONE-trigger assignment remains deferred.
+- **Completed live-data tasks:** #280 (Austin is tatious; requested balance reset) and #279 (authorised jackpot fallback reset), narrowly written, read back and closed. Do not repeat them; balances can change subsequently through normal use.
+- Claude automatic chat remains paused unless explicitly re-enabled with BANTER_CLAUDE_ENABLED=on. No work/review depends on Claude. Stankman availability is unconfirmed.
+- Historical update plans: [docs/HANDOFF-ARCHIVE.md](docs/HANDOFF-ARCHIVE.md). **Last updated:** 2026-10-25 by The Gambler for the authorised Update 36 split.
 
 
 **Authority (Cillian, 2026-10-22: "anyone can approve and merge", "full authority", "odds-math to be everyone"):**
