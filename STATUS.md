@@ -11,6 +11,7 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
+- #266 Integrate main into update 33 without losing the shipped smoothness fix → update-33
 - #264 Pause room rendering and cache the photo wheel → update-33 (draft)
 - #251 docs/test: verify Update 32 zoom under mobile throttle → update-32 (draft)
 - #248 Track stable change scopes with live ownership and delivery status → main (draft)
