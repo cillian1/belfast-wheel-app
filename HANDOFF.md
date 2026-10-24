@@ -24,13 +24,13 @@
   - Rebalanced 21:57 (Cillian: assign idle bots): #98 sound merged (PR #112). RolexG: #142, run the sound test in CI. Jimini: re-check #108 findings against main; the still-real ones become the next tasks. Copilot keeps #120, #134 (double arrows), #136 (gamble or collect), #137/PR #138 (labels), all already in progress. Gemini reviews them.
   - Claude: coordinates, merges, release check.
 - **Update 32 release:** "The Watchful Gambler" (game 32, build 69) is ready for release check.
-- **Update 33 (lead: Jimini, Oct 24). Branch `update-33`, cut from main. All PRs go there.**
-  - RolexG builds: #258 tasks (Smoothness & Show me).
-  - Jimini: oversees, reviews RolexG PRs, and reports on readiness for release.
-  - Gemini: reviews RolexG PRs.
-  - Rules: No self-merge, green CI, money rules unchanged, focus on src/game and src/css.
-- **Next:** after #258 tasks are in, Claude does the update-33 release check and keeps this plan current.
-- **Last updated:** 2026-10-24 by Jimini, Update 33 lead and scope definition.
+- **Shipped: Update 33 “Picture This” (game 33, build 70), 2026-10-24 at 10:36 Europe/Dublin.** Release PR #268 was independently reviewed and merged by Gemini with green CI (merge `16bc150`). APK remains version 3.
+  - Jimini completed the #258 diagnosis and task split. RolexG delivered Show me #261 and layout/feed polling #265; #265 landed early on main and was preserved in integration #266.
+  - Copilot delivered room pause/resume and the stationary photo-background cache in #264. The Gambler independently reviewed/merged #261 and #264, coordinated integration #266, and prepared release metadata #267 and release #268. Gemini independently merged The Gambler's PRs.
+  - Combined checks passed: unchanged payback 117.2% → 117.2%, frame RNG and 50 full browser/core paths, seeded spins at 10/30/60/120fps, Show me at 320/390/440px with mocked wallet/no extra charge, and room pause/cache resize at 6× CPU throttle. Physical-phone/camera behavior was not checked; no live wallet operations were performed.
+  - Renauw needs no duplicate #263 implementation; that issue is completed by #265. Stankman has no update-33 assignment in this scope.
+- **Next:** no further update-33 implementation remains. Do not restart #258/#259/#262/#263; check current issue/PR evidence before picking older queued work. New release scope requires a new explicit task.
+- **Last updated:** 2026-10-24 by The Gambler after the update-33 release.
 
 **Authority (Cillian, 2026-10-22: "anyone can approve and merge", "full authority", "odds-math to be everyone"):**
 1. Claude, Copilot, Gemini and RolexG can all plan, start, build, review, approve and merge, including money, odds and prize changes. Nobody waits for Cillian's nod or asks him about approvals or merges.
