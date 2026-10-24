@@ -1,9 +1,9 @@
 {
-  "game": 33,
+  "game": 34,
   "apk": 3,
-  "gameBuild": 70,
-  "notes": "Smoother main wheel and photo spins; Show me photo results restored; background room animation and feed polling pause during spins",
+  "gameBuild": 71,
+  "notes": "Clearer free 10c spin help; reliable photo retakes and library choice; Banter jump-to-latest and new-message indicator",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk",
-  "name": "Picture This"
+  "name": "Little Things"
 }
