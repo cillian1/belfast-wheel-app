@@ -108,16 +108,13 @@ document.addEventListener('visibilitychange', () => {
 });
 if (!document.hidden) idleRaf = requestAnimationFrame(idle);
 var liveK = -1;
-let navCache = null, evenA = 1;
+let navCache = null, evenA = 1, evenD = BASE_DEPTH;
 function navCacheMatches(cache) {
   if (!cache || cache.N !== N || cache.DEPTH !== DEPTH || cache.zoom !== zoom || cache.liveK !== liveK) return false;
   if (cache.rotations.length !== rot.length) return false;
   for (let k = 0; k < rot.length; k++) if (cache.rotations[k] !== (k === liveK ? '' : rot[k].toFixed(5))) return false;
   if (cache.deadTo.length !== deadTo.length || cache.deadFrom.length !== deadFrom.length || cache.deadA.length !== deadA.length) return false;
   for (let k = 0; k < deadTo.length; k++) if (cache.deadTo[k] !== deadTo[k] || cache.deadFrom[k] !== deadFrom[k] || cache.deadA[k] !== deadA[k]) return false;
-  if (liveK === DEPTH) return cache.dice === null;
-  if (!cache.dice || cache.dice.length !== dice.length) return false;
-  for (let i = 0; i < dice.length; i++) if (cache.dice[i] !== dice[i].x + dice[i].y + (dice[i].gone ? 1 : 0)) return false;
   return true;
 }
 function snapshotNavCache() {
@@ -125,12 +122,12 @@ function snapshotNavCache() {
     N, DEPTH, zoom, liveK,
     rotations: rot.map((r, k) => k === liveK ? '' : r.toFixed(5)),
     deadTo: deadTo.slice(), deadFrom: deadFrom.slice(), deadA: deadA.slice(),
-    dice: liveK === DEPTH ? null : dice.map(d => d.x + d.y + (d.gone ? 1 : 0)),
   };
 }
 function drawLayer(g, k, sc) {
   const sv = ctx; ctx = g;
-  const ga = ctx.globalAlpha; if (k === DEPTH && evenA < 1) ctx.globalAlpha = ga * evenA;
+  const ga = ctx.globalAlpha;
+  if (k > evenD && evenA < 1) ctx.globalAlpha = ga * evenA;
   if (k > 0) drawScaled(faces.wall, 0, sc);
   drawScaled(faces.layers[k], rot[k], sc);
   if (boostA[k] > 0 && faces['boost' + k]) { ctx.globalAlpha = boostA[k]; drawScaled(faces['boost' + k], rot[k], sc); ctx.globalAlpha = 1; }
@@ -148,7 +145,7 @@ function drawLayer(g, k, sc) {
   }
   if (k === 0 && sc < 1.6) drawDeepGlow(sc);
   if (k === DEPTH) { drawScaled(faces.well, 0, sc); drawDice(sc); }
-  else if (k === DEPTH - 1 && evenA < 1) { ctx.globalAlpha = 1 - evenA; drawScaled(faces.well, 0, sc); ctx.globalAlpha = 1; } // the old well fades as the fifth wheel rises
+  else if (k === evenD && evenA < 1) { ctx.globalAlpha = 1 - evenA; drawScaled(faces.well, 0, sc); ctx.globalAlpha = 1; } // the old well fades as new wheels rise
   if (k > 0) {
     ctx.globalCompositeOperation = 'overlay'; drawScaled(faces.light, 0, sc); ctx.globalCompositeOperation = 'source-over';
     drawScaled(faces.pbevel, 0, sc);
