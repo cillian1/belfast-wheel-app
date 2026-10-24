@@ -10,6 +10,8 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
+- #295 [WIP] Add additional options for Plinko variety → main (draft)
+- #294 [WIP] Add deterministic tests for repeat rewards and deeper routes → main (draft)
 - #290 money: Draft Update 36 repeats and deeper wheel routes → update-36 (draft)
 - #251 docs/test: verify Update 32 zoom under mobile throttle → update-32 (draft)
 - #248 Track stable change scopes with live ownership and delivery status → main (draft)
