@@ -1,7 +1,7 @@
 // ---------- the room: dim, a fire going ----------
 // Owns the ambient room background and its animation.
 const room = $('#room'), rctx = room.getContext('2d');
-let RW = 0, RH = 0, RDp = 1, roomBg = null, fireBox = null, lastRoom = 0, roomRaf = 0;
+let RW = 0, RH = 0, RDp = 1, roomBg = null, fireBox = null, lastRoom = 0, roomRaf = 0, roomPaused = false;
 const EMBERS = Array.from({ length: 26 }, () => ({ x: cosmeticRandom(), y: cosmeticRandom(), v: .15 + cosmeticRandom() * .35, s: 1 + cosmeticRandom() * 1.5 }));
 function buildRoom() {
   const k = document.createElement('canvas'); k.width = room.width; k.height = room.height;
@@ -77,7 +77,7 @@ function drawRoomFrame(now) {
 }
 function drawRoom(now) {
   roomRaf = 0;
-  if (document.hidden) return;
+  if (document.hidden || roomPaused || busy) return;
   roomRaf = requestAnimationFrame(drawRoom);
   if (now - lastRoom < 66 || !roomBg) return; lastRoom = now;
   const perfStart = Perf.begin('room');
@@ -85,8 +85,13 @@ function drawRoom(now) {
   finally { Perf.end('room', perfStart); }
 }
 function scheduleRoom() {
-  if (document.hidden) { if (roomRaf) { cancelAnimationFrame(roomRaf); roomRaf = 0; } return; }
+  if (document.hidden || roomPaused) { if (roomRaf) { cancelAnimationFrame(roomRaf); roomRaf = 0; } return; }
   if (!roomRaf) roomRaf = requestAnimationFrame(drawRoom);
+}
+function pauseRoom(paused) {
+  roomPaused = paused;
+  if (paused) { if (roomRaf) { cancelAnimationFrame(roomRaf); roomRaf = 0; } }
+  else scheduleRoom();
 }
 document.addEventListener('visibilitychange', scheduleRoom);
 roomResize(); window.addEventListener('resize', roomResize); scheduleRoom();

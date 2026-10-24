@@ -2,13 +2,16 @@
 // Owns spin controls, photo flow, tiles, and auto-spin.
 function enterPhoto(img) {
   photoImg = img; scene = 'photo'; rotP = 0; hi = null; hiA = 0; photoZoom = 0; photoDone = false;
+  $('.stage').classList.add('photo');
   faces.photo = buildPhoto(); draw();
   setBtn('Spin the picture', false);
   $('#caption').textContent = '';
   setVerdict({ eyebrow: 'Show me', title: 'Picture locked in', body: 'Spin it. The slice it lands on shows which part of the picture you walk toward.', photo: true });
 }
 function leavePhoto() {
-  scene = 'nested'; hi = null; hiA = 0; draw();
+  scene = 'nested'; hi = null; hiA = 0; photoZoom = 0; photoDone = false;
+  $('.stage').classList.remove('photo');
+  draw();
   setBtn('Spin', false);
   $('#caption').textContent = 'Land on Go deeper if you dare.';
   setVerdict({ title: 'Back on the wheel', body: 'Spin when you get there.' });
@@ -44,6 +47,7 @@ async function spinPhoto() {
 // one run at a time: button, wheel and photo controls stay locked until every wheel, die and ball has finished
 function lock(on) {
   busy = on; spinBtn.disabled = on;
+  pauseRoom(on);
   document.body.classList.toggle('locked', on);
   if (on) runsStarted++; else { resetAsking(false); autoNext(); }
   spinBtn.setAttribute('aria-busy', on ? 'true' : 'false');
@@ -68,7 +72,10 @@ async function spin() {
       // a new spin never needs the photo buttons
       $('#showActions').hidden = true; $('#photoActions').hidden = true;
       if (plate.classList.contains('need')) { plate.classList.remove('need'); fitStage(); }
-      if (scene === 'photo') { scene = 'nested'; photoZoom = 0; hi = null; hiA = 0; }
+      if (scene === 'photo') {
+        scene = 'nested'; photoZoom = 0; hi = null; hiA = 0;
+        $('.stage').classList.remove('photo');
+      }
       await backToMain();
       $('#caption').textContent = 'Land on Go deeper if you dare.';
       roomHit = false;
@@ -79,6 +86,7 @@ async function spin() {
   } catch (err) {
     console.error(String(err && err.stack || err));
     scene = 'nested'; zoom = 1; wheelZoom = 1; fade = 0; balls = []; counts = null; winner = -1; flatT = 0; banner = ''; draw();
+    $('.stage').classList.remove('photo');
     setVerdict({ title: 'That run broke halfway', body: 'Something went wrong mid-spin. Tap Spin to start again from the top.' });
     setBtn('Spin', false);
   } finally { lock(false); }
@@ -124,7 +132,7 @@ function autoNext() {
   autoT = setTimeout(() => {
     if (!autoOn) return;
     const banner = document.querySelector('.wbanner');
-    if (busy || tapPick || doorPick || document.hidden || (banner && !banner.hidden)) return autoNext(); // wait for a quiet moment
+    if (busy || tapPick || doorPick || document.hidden || (banner && !banner.hidden) || plate.classList.contains('need')) return autoNext(); // wait for a quiet moment
     const n = runsStarted;
     Promise.resolve(spin()).finally(() => { if (autoOn && runsStarted === n) setAuto(false); }); // no run started (no credit, logged out): stop
   }, 3500);

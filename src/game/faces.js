@@ -312,6 +312,9 @@ function buildPhoto() {
   }
   g.restore();
   bevel(g, r, false);
+  const base = mk(), b = base.getContext('2d');
+  b.drawImage(faces.dart, 0, 0); b.drawImage(faces.base, 0, 0);
+  faces.photoBase = base;
   return k;
 }
 
