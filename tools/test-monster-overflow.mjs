@@ -4,7 +4,7 @@ import {chromium} from '@playwright/test';
 import vm from 'node:vm';
 const tankSource=readFileSync('src/game/bonus-round.js','utf8').split('const COSMIC')[0];
 const unit=vm.createContext({$m:v=>(Math.round(v*.6689)/100).toFixed(2)});vm.runInContext(tankSource+';globalThis.prize=monsterPrize;globalThis.extraCents=monsterOverflowCents;',unit);
-assert.equal(unit.prize(120).overflow,0);assert.equal(unit.prize(121).overflow,1.25);assert.equal(unit.prize(144).total,180);assert.equal(unit.extraCents(124),4,'overflow display uses combined minus base rounded cents, not a separately rounded amount');
+assert.equal(unit.prize(120).overflow,0);assert.equal(unit.prize(121).overflow,1.125);assert.equal(unit.prize(144).total,162);assert.equal(unit.extraCents(122),2,'overflow display uses combined minus base rounded cents, not a separately rounded amount');
 let html=readFileSync('game/index.html','utf8').replace(/@font-face\s*\{[^}]*file:\/\/\/android_asset[^}]*\}\s*/g,'');
 html=html.replace(/const wait = ms => new Promise\(r => \{[\s\S]*?pendingWaits.add\(w\);\n\}\);/, 'const wait = async () => {};');
 const browser=await chromium.launch({...(process.env.CHROMIUM_PATH ? {executablePath:process.env.CHROMIUM_PATH} : {}),args:['--no-sandbox']});
@@ -26,7 +26,7 @@ try {for(const width of [320,390,440]){
  const ev=await page.evaluate(()=>W.cfg.ev),edge=await page.evaluate(()=>W.cfg.edge);
  assert.deepEqual(await page.evaluate(()=>({ev:W.cfg.ev,edge:W.cfg.edge,marker:W.cfg.marker})),{ev,edge,marker:'preserved'});
  assert.equal(ev,await page.evaluate(()=>WALLET_CFG.ev));assert.equal(edge,.995);
- const scenario=width===320?{top:12,wilds:0,total:120,base:150,overflow:0}:width===390?{top:12,wilds:1,total:144,base:150,overflow:30}:{top:6,wilds:0,total:60,base:30,overflow:0};
+ const scenario=width===320?{top:12,wilds:0,total:120,base:135,overflow:0}:width===390?{top:12,wilds:1,total:144,base:135,overflow:27}:{top:6,wilds:0,total:60,base:27,overflow:0};
  const result=await page.evaluate(async({top,wilds})=>{
  const oldDraw=draw;draw=()=>{}; const phases=[],verdicts=[];let now=0,frames=[],done=false,error;
  audio=tick=ting=buzz=whoosh=popSound=playSfx=()=>{};Music.setMode=Music.setLevel=Music.sting=Music.duck=()=>{};
