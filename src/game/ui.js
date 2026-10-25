@@ -98,6 +98,8 @@ async function runMain() {
         if (it.wild) wilds++; else bonus++;
         buzz([20, 30, 20, 30, 80]); Music.sting(Math.max(wilds, bonus)); Music.setLevel(Math.max(wilds, bonus));
         steps.push({ text: cap(it.go()) }); setTiles(wilds, bonus);
+      } else {
+        steps.push({ text: repeatHere ? 'Spin this level again' : cap(it.go()) });
       }
       {
         let body = '';
@@ -115,6 +117,7 @@ async function runMain() {
       continue;
     }
     if (it.deep === 2) { // jump two wheels deeper
+      steps.push({ text: cap(it.go()) });
       const targetK = Math.min(MAXD, k + 2);
       await unlockDepth(targetK);
       setVerdict({ eyebrow: 'Going deeper', title: 'Go two levels deeper', body: '', steps: steps.slice(), flash: true });
@@ -123,6 +126,7 @@ async function runMain() {
       k = targetK - 1; continue;
     }
     if (it.even) {
+      steps.push({ text: cap(it.go()) });
       setVerdict({ eyebrow: 'Going deeper', title: it.go(), body: 'The next wheel stays open for this run.', steps: steps.slice(), flash: true });
       await unlockDepth(k + 1);
       continue;
@@ -139,6 +143,7 @@ async function runMain() {
     if (it.god) { // only on the last wheel now: it opens Phelan's shop once the wheels are done
       godHit = true; Music.sting(4); buzz([60, 40, 60, 40, 200]);
       await animate(700, t => { draw(); ctx.fillStyle = `rgba(255,250,225,${Math.sin(t * Math.PI) * .8})`; ctx.fillRect(0, 0, N, N); });
+      steps.push({ text: 'The God slice' });
       setVerdict({ eyebrow: 'Going deeper', title: 'The God slice', body: '', steps: steps.slice(), flash: true });
       $('#caption').textContent = 'Something cold is waiting';
       continue;
@@ -300,6 +305,7 @@ async function runMain() {
 async function unlockDepth(target) {
   target = Math.min(MAXD, target);
   if (target <= DEPTH) return;
+  evenD = DEPTH;
   DEPTH = target; evenA = 0; navCache = null;
   Music.sting(4); buzz([60, 40, 60, 40, 200]); whoosh(true);
   await animate(1500, t => { evenA = easeInOut(t); draw(); });

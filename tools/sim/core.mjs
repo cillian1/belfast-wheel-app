@@ -154,7 +154,7 @@ export function createCore(sources, { full = false } = {}) {
   mk = () => effect;
   setVerdict = setBtn = setTiles = setWilds = hideFinal = logMove = () => {};
   draw = speak = tick = ting = buzz = flap = pegBuzz = whoosh = popSound = playSfx = () => {};
-  let liveK = -1, navCache = null, domeBulge = 0, evenA = 1, ghostSay = '', sayLast = null;
+  let liveK = -1, navCache = null, domeBulge = 0, evenA = 1, evenD = 4, ghostSay = '', sayLast = null;
   let photoDone = true, doorPick = null, tapPick = null, god = null;
   let pyr = null, zena = null, roul = null, vault = null, pickIdx = -1, prize = null, bingo = [];
   const Perf = { low: true }, Music = effect, AC = null, RACE_CHANCE = 1;
