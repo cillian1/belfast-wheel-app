@@ -115,6 +115,9 @@ function navCacheMatches(cache) {
   for (let k = 0; k < rot.length; k++) if (cache.rotations[k] !== (k === liveK ? '' : rot[k].toFixed(5))) return false;
   if (cache.deadTo.length !== deadTo.length || cache.deadFrom.length !== deadFrom.length || cache.deadA.length !== deadA.length) return false;
   for (let k = 0; k < deadTo.length; k++) if (cache.deadTo[k] !== deadTo[k] || cache.deadFrom[k] !== deadFrom[k] || cache.deadA[k] !== deadA[k]) return false;
+  if (liveK === DEPTH) return cache.dice === null;
+  if (!cache.dice || cache.dice.length !== dice.length) return false;
+  for (let i = 0; i < dice.length; i++) if (cache.dice[i] !== dice[i].x + dice[i].y + (dice[i].gone ? 1 : 0)) return false;
   return true;
 }
 function snapshotNavCache() {
@@ -122,6 +125,7 @@ function snapshotNavCache() {
     N, DEPTH, zoom, liveK,
     rotations: rot.map((r, k) => k === liveK ? '' : r.toFixed(5)),
     deadTo: deadTo.slice(), deadFrom: deadFrom.slice(), deadA: deadA.slice(),
+    dice: liveK === DEPTH ? null : dice.map(d => d.x + d.y + (d.gone ? 1 : 0)),
   };
 }
 function drawLayer(g, k, sc) {

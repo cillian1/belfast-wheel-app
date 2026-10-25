@@ -92,7 +92,7 @@ async function runMain() {
       continue;
     }
     const wildLive = wMiss < 2, bonusLive = bMiss < 2;
-    const repeatHere = (it.wild || it.bonus || it.up === 2) && Math.random() < 1 / 3;
+    const repeatHere = (it.wild || it.bonus || it.boost || it.up === 2) && Math.random() < 1 / 3;
     if (it.up) { // back out one or two wheels and spin that one again; everything collected stays
       if (it.wild || it.bonus) { // the hybrid ones pay out first
         if (it.wild) wilds++; else bonus++;
@@ -134,6 +134,10 @@ async function runMain() {
     if (it.boost) {
       await boostRun(it.boost, k);
       steps.push({ text: cap(it.go()) });
+      if (repeatHere) {
+        $('#caption').textContent = 'Extras added below — spin this level again';
+        k--;
+      }
       continue;
     }
     if (it.wild) { wilds++; buzz([20, 30, 20, 30, 80]); Music.sting(wilds); Music.setLevel(wilds); }

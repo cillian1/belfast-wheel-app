@@ -7,6 +7,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const contentSource = readFileSync(resolve(root, 'src/game/content.js'), 'utf8');
 const motionSource = readFileSync(resolve(root, 'src/game/motion.js'), 'utf8');
 const uiSource = readFileSync(resolve(root, 'src/game/ui.js'), 'utf8');
+const drawingSource = readFileSync(resolve(root, 'src/game/drawing.js'), 'utf8');
 
 function extract(source, pattern, description) {
   const match = source.match(pattern);
@@ -63,16 +64,14 @@ async function testExactOneThirdBoundary() {
 function makeLayers() {
   const orders = LAYER_ORDERS.map(order => order.slice());
   const layers = [MAIN, ...LAYER_ORDERS.map(order => order.map(key => MOVE_DEFS[key]))];
-  // The route contract exercises depth 7; reuse real source items for presentation-free layers
-  // beyond the currently declared orders so the real runMain routing can be driven there.
-  while (orders.length < 7) orders.push(orders.at(-1).slice());
-  while (layers.length <= 7) layers.push(layers.at(-1).slice());
+  assert.equal(orders.length, 7, 'all seven depths must exist in the real wheel data');
   return { orders, layers };
 }
 
 function makeHarness(initialDepth = 4) {
   const { orders, layers } = makeLayers();
   const events = [];
+  const boosts = [];
   const spins = [];
   const depthAtSpin = [];
   const unlockDepths = [];
@@ -122,7 +121,7 @@ function makeHarness(initialDepth = 4) {
       set: (key, value) => storeData.set(key, value),
     },
     wait: async () => {},
-    boostRun: async () => {},
+    boostRun: async (kind, k) => { boosts.push([kind, k]); },
     S: 2,
     dive: async () => {},
     $,
@@ -135,6 +134,7 @@ function makeHarness(initialDepth = 4) {
     N: 512,
     navCache: null,
     evenA: 0,
+    evenD: 4,
     whoosh: noOp,
     godRoom: async () => {},
     pyramidRun: async () => {},
@@ -200,18 +200,48 @@ function makeHarness(initialDepth = 4) {
     spins.length = 0;
     depthAtSpin.length = 0;
     unlockDepths.length = 0;
+    boosts.length = 0;
     try {
       await game.runMain();
     } catch (error) {
       if (error !== stop) throw error;
     }
-    return { spins: spins.slice(), depthAtSpin: depthAtSpin.slice(), unlockDepths: unlockDepths.slice() };
+    return { spins: spins.slice(), depthAtSpin: depthAtSpin.slice(), unlockDepths: unlockDepths.slice(), boosts: boosts.slice() };
   }
 
   return { env, game, run };
 }
 
 const deeper = { k: 0, key: 'main-deeper' };
+
+async function testRepeatBoundaryAndBoosts() {
+  for (const key of ['WD', 'BN', 'MW', 'MB', 'U2']) {
+    const repeat = makeHarness();
+    const result = await repeat.run([deeper, { k: 1, key }, { k: 1, key: 'STOP' }], [.99, 1 / 3 - Number.EPSILON]);
+    assert.deepEqual(result.spins, [0, 1, 1], `${key} repeats below one third`);
+    if (key === 'MW' || key === 'MB') assert.deepEqual(result.boosts, [[key === 'MW' ? 'W' : 'B', 1]], 'the extra is awarded before the repeated spin');
+    const boundary = makeHarness();
+    const nextK = key === 'U2' ? 0 : 2;
+    const boundaryResult = await boundary.run([deeper, { k: 1, key }, { k: nextK, key: 'STOP' }], [.99, 1 / 3]);
+    assert.deepEqual(boundaryResult.spins, [0, 1, nextK], `${key} does not repeat at exactly one third`);
+  }
+}
+
+function testDiceCacheInvalidation() {
+  const matchesSource = extract(drawingSource, /function navCacheMatches\(cache\) \{[\s\S]*?\n\}/, 'navigation cache comparison');
+  const snapshotSource = extract(drawingSource, /function snapshotNavCache\(\) \{[\s\S]*?\n\}/, 'navigation cache snapshot');
+  const env = { N: 390, DEPTH: 4, zoom: 1, liveK: 2, rot: Array(8).fill(0), deadTo: [], deadFrom: [], deadA: [], dice: [{ x: 1, y: 2, gone: false }] };
+  const cache = new Function('env', `with (env) { ${matchesSource}; ${snapshotSource}; return { navCacheMatches, snapshotNavCache }; }`)(env);
+  let snapshot = cache.snapshotNavCache();
+  assert.equal(cache.navCacheMatches(snapshot), true);
+  env.dice[0].x++;
+  assert.equal(cache.navCacheMatches(snapshot), false, 'dice movement invalidates a cached static well');
+  env.liveK = env.DEPTH;
+  snapshot = cache.snapshotNavCache();
+  assert.equal(snapshot.dice, null, 'the active well is drawn rather than cached');
+  env.dice[0].x++;
+  assert.equal(cache.navCacheMatches(snapshot), true);
+}
 
 async function testRepeatCollections() {
   const harness = makeHarness();
@@ -295,6 +325,8 @@ async function testProgressiveUnlockAndFreshRun() {
 }
 
 await testExactOneThirdBoundary();
+testDiceCacheInvalidation();
+await testRepeatBoundaryAndBoosts();
 await testRepeatCollections();
 await testHybridCollectorsRepeat();
 await testU2AndOneLevelBackup();

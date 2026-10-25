@@ -80,6 +80,8 @@ jobs:
           node tools/bundle.mjs
           git diff --exit-code -- game/index.html
           node tools/check-game-invariants.mjs origin/main
+          node tools/test-depth-routes.mjs
+          node tools/test-plinko-variety.mjs
           node tools/sim/core-test.mjs &
           node tools/sim/core-check.mjs 50 &
           node tools/test-stake-reset.mjs &
