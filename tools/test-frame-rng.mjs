@@ -8,6 +8,28 @@ const core = readFileSync(resolve(root, 'src/game/core.js'), 'utf8');
 const room = readFileSync(resolve(root, 'src/game/room.js'), 'utf8');
 const pyramid = readFileSync(resolve(root, 'src/game/pyramid.js'), 'utf8');
 const motion = readFileSync(resolve(root, 'src/game/motion.js'), 'utf8');
+const music = readFileSync(resolve(root, 'src/game/music.js'), 'utf8');
+assert.doesNotMatch(music, /Math\.random\(/, 'background music must never advance gameplay RNG');
+assert.match(music, /cosmeticRandom\(/, 'audio noise and beat offsets use cosmetic RNG');
+// Exercise audio initialisation and scheduled beats with gameplay RNG forbidden.
+// Changing the number/timing of audio callbacks must only consume cosmetic draws.
+{
+  const param = () => ({ value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {}, setTargetAtTime() {} });
+  const node = () => ({ gain: param(), frequency: param(), detune: param(), threshold: param(), ratio: param(), Q: param(), connect() {}, start() {}, stop() {} });
+  const audio = { currentTime: 0, sampleRate: 32, destination: {}, createBuffer: () => ({ getChannelData: () => new Float32Array(32) }) };
+  for (const name of ['Gain', 'DynamicsCompressor', 'BiquadFilter', 'Oscillator', 'BufferSource']) audio['create' + name] = node;
+  const timers = [];
+  let draws = 0;
+  const gameMath = Object.create(Math);
+  gameMath.random = () => { throw new Error('Music consumed gameplay RNG'); };
+  const runtime = new Function('Math', 'cosmeticRandom', 'AC', 'localStorage', 'window', 'document', 'setInterval', 'clearInterval', 'setEffectsMuted', `${music}; return Music;`)(
+    gameMath, () => { draws++; return .25; }, audio, { getItem() { return null; } }, {}, { hidden: false, addEventListener() {} },
+    callback => { timers.push(callback); return timers.length; }, () => {}, () => {},
+  );
+  runtime.start(); runtime.setLevel(4);
+  for (let i = 0; i < 40; i++) { audio.currentTime = i / 4; timers[0](); }
+  assert.ok(draws > audio.sampleRate + 3, 'scheduled beats actually exercise cosmetic noise offsets');
+}
 const factoryMatch = core.match(/function makeCosmeticRandom\(seed\) \{[\s\S]*?\n\}/);
 const roomFrameMatch = room.match(/function drawRoomFrame\(now\) \{[\s\S]*?\n\}/);
 const sandStepMatch = pyramid.match(/function sandStep\(dt, rate\) \{[\s\S]*?\n\}/);

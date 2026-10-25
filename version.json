@@ -1,9 +1,9 @@
 {
-  "game": 35,
+  "game": 36,
   "apk": 3,
-  "gameBuild": 72,
-  "notes": "Reset an unaffordable saved bet to 10c after a balance change",
+  "gameBuild": 73,
+  "notes": "One-in-three repeat chances with extras; true two-level dives; persistent deeper wheels; 24 Plinko options across the same eight holes",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk",
-  "name": "Back to 10c"
+  "name": "Deeper Again"
 }

@@ -80,9 +80,13 @@ jobs:
           node tools/bundle.mjs
           git diff --exit-code -- game/index.html
           node tools/check-game-invariants.mjs origin/main
+          node tools/test-depth-routes.mjs
+          node tools/test-plinko-variety.mjs
+          node tools/test-frame-rng.mjs
           node tools/sim/core-test.mjs &
           node tools/sim/core-check.mjs 50 &
           node tools/test-stake-reset.mjs &
+          node tools/test-bonus-frame-rng.mjs &
           git show origin/main:game/index.html > "$RUNNER_TEMP/main-game.html"
           node tools/test-ci-browser.mjs "$RUNNER_TEMP/main-game.html" &
           fail=0; for j in $(jobs -p); do wait $j || fail=1; done; exit $fail
