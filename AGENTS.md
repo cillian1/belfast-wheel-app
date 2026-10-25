@@ -17,6 +17,10 @@ You reach GitHub through the `gh` CLI, signed in as Cillian, so **every comment 
 - The repo is public: no secrets, tokens, passwords or payment details in anything you commit or post.
 - Chat never starts work by itself: only Cillian's instruction does.
 
+## Finishing coordinated updates
+
+For Cillian's update/coordinator requests, assigning bots or opening PRs is progress, not completion. Follow the work through integration, required checks, independent review/merge, release to main and verification of the published version. Keep working after status questions or clarifications. Finish with a confirmed release, or a concrete blocker with evidence and the exact next owner/action; do not stop at an assignment handoff or imply monitoring continues while this session is inactive. Individual task PRs still follow their stated scope and never self-merge.
+
 ## "Is this necessary?" rule
 
 If a task has taken more than about 30 minutes, 3 runs or 3 push rounds, stop. Post one line on the issue saying what's left and whether it's worth it, and either ship the simple version or ping the coordinator. Cut scope rather than polish.
