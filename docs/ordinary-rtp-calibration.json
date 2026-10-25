@@ -1,0 +1,142 @@
+{
+  "schema": 1,
+  "gameVersion": 37,
+  "sourceFingerprint": "bc235c94e34f59d13d8d85f236293e26efdc39735f557ea49c8b8f0465537ad4",
+  "scope": "Ordinary-prize model target only; jackpot funding/payouts and promotions excluded. Not certified actual RTP.",
+  "target": 0.995,
+  "normalizationEV": 14.814752,
+  "training": {
+    "count": 50000,
+    "meanBase": 14.814751999275725,
+    "standardError": 0.18771645584648408,
+    "calibrationEV": 14.814751999275725,
+    "target": 0.995,
+    "includeOverflow": true,
+    "mean95Interval": [
+      14.446827745816616,
+      15.182676252734833
+    ],
+    "normalizationEV": 14.814751999275725,
+    "modeledReturn": 0.995,
+    "modeledReturnSE": 0.012607559922459925,
+    "perStakeRoundingBounds": [
+      {
+        "stakeCents": 10,
+        "returnAbsoluteErrorBound": 0.020791
+      },
+      {
+        "stakeCents": 20,
+        "returnAbsoluteErrorBound": 0.0103955
+      },
+      {
+        "stakeCents": 30,
+        "returnAbsoluteErrorBound": 0.0069303333333333335
+      },
+      {
+        "stakeCents": 40,
+        "returnAbsoluteErrorBound": 0.00519775
+      },
+      {
+        "stakeCents": 50,
+        "returnAbsoluteErrorBound": 0.0041582
+      },
+      {
+        "stakeCents": 60,
+        "returnAbsoluteErrorBound": 0.0034651666666666667
+      },
+      {
+        "stakeCents": 70,
+        "returnAbsoluteErrorBound": 0.0029701428571428574
+      },
+      {
+        "stakeCents": 80,
+        "returnAbsoluteErrorBound": 0.002598875
+      },
+      {
+        "stakeCents": 90,
+        "returnAbsoluteErrorBound": 0.0023101111111111113
+      },
+      {
+        "stakeCents": 100,
+        "returnAbsoluteErrorBound": 0.0020791
+      }
+    ],
+    "assumptions": [
+      "Ordinary prizes only: progressive jackpot and free-spin/promotional frequency excluded.",
+      "Conditional room model: physical d12 faces are assumed independent and uniform; this is not proven by the animation.",
+      "God room assumes optimal higher/lower decisions; player choices can reduce return.",
+      "Race indexed-tag distributions approximate the source biased shuffle with 50,000 fixed-seed shuffles.",
+      "Currency rounding is not included in base EV; reported stake bounds quantify that limitation.",
+      "Path-mean standard error excludes error in these conditional-room assumptions; use independent holdout seeds."
+    ]
+  },
+  "holdout": {
+    "count": 10000,
+    "meanBase": 15.360251685908018,
+    "standardError": 0.43299995367665917,
+    "calibrationEV": 15.360251685908018,
+    "target": 0.995,
+    "includeOverflow": true,
+    "mean95Interval": [
+      14.511571776701766,
+      16.20893159511427
+    ],
+    "normalizationEV": 14.814752,
+    "modeledReturn": 1.031637277996856,
+    "modeledReturnSE": 0.029081482694295245,
+    "perStakeRoundingBounds": [
+      {
+        "stakeCents": 10,
+        "returnAbsoluteErrorBound": 0.02076
+      },
+      {
+        "stakeCents": 20,
+        "returnAbsoluteErrorBound": 0.01038
+      },
+      {
+        "stakeCents": 30,
+        "returnAbsoluteErrorBound": 0.00692
+      },
+      {
+        "stakeCents": 40,
+        "returnAbsoluteErrorBound": 0.00519
+      },
+      {
+        "stakeCents": 50,
+        "returnAbsoluteErrorBound": 0.004152
+      },
+      {
+        "stakeCents": 60,
+        "returnAbsoluteErrorBound": 0.00346
+      },
+      {
+        "stakeCents": 70,
+        "returnAbsoluteErrorBound": 0.002965714285714286
+      },
+      {
+        "stakeCents": 80,
+        "returnAbsoluteErrorBound": 0.002595
+      },
+      {
+        "stakeCents": 90,
+        "returnAbsoluteErrorBound": 0.002306666666666667
+      },
+      {
+        "stakeCents": 100,
+        "returnAbsoluteErrorBound": 0.002076
+      }
+    ],
+    "assumptions": [
+      "Ordinary prizes only: progressive jackpot and free-spin/promotional frequency excluded.",
+      "Conditional room model: physical d12 faces are assumed independent and uniform; this is not proven by the animation.",
+      "God room assumes optimal higher/lower decisions; player choices can reduce return.",
+      "Race indexed-tag distributions approximate the source biased shuffle with 50,000 fixed-seed shuffles.",
+      "Currency rounding is not included in base EV; reported stake bounds quantify that limitation.",
+      "Path-mean standard error excludes error in these conditional-room assumptions; use independent holdout seeds."
+    ]
+  },
+  "holdoutCheck": {
+    "combinedStandardError": 0.03169673804796748,
+    "passed": true
+  }
+}

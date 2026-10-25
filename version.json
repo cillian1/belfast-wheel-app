@@ -1,9 +1,9 @@
 {
-  "game": 36,
+  "game": 37,
   "apk": 3,
-  "gameBuild": 73,
-  "notes": "One-in-three repeat chances with extras; true two-level dives; persistent deeper wheels; 24 Plinko options across the same eight holes",
+  "gameBuild": 74,
+  "notes": "Normal bonus symbols advance; MORE symbols repeat one in three; Phelan returns Monster tank overflow; ordinary-prize RTP target 99.5%",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk",
-  "name": "Deeper Again"
+  "name": "Overflow"
 }

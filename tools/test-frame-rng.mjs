@@ -34,6 +34,25 @@ const factoryMatch = core.match(/function makeCosmeticRandom\(seed\) \{[\s\S]*?\
 const roomFrameMatch = room.match(/function drawRoomFrame\(now\) \{[\s\S]*?\n\}/);
 const sandStepMatch = pyramid.match(/function sandStep\(dt, rate\) \{[\s\S]*?\n\}/);
 const spinMatch = motion.match(/async function spinLayerRun\(k, dur, dir\) \{[\s\S]*?\n\}/);
+const physicsMatch = core.match(/function physicsFrames\(\) \{[\s\S]*?\n\}/);
+assert.ok(physicsMatch, 'fixed physics scheduler exists');
+function physicsTicks(fps) {
+  let now = 0, frames = [];
+  const request = new Function('performance', 'requestAnimationFrame', `${physicsMatch[0]}; return physicsFrames();`)(
+    { now: () => now }, callback => { frames.push(callback); },
+  );
+  const times = [];
+  const step = time => { times.push(time); if (times.length < 120) request(step); };
+  request(step);
+  for (let i = 0; times.length < 120; i++) {
+    assert.ok(i < 2000, 'physics scheduler finishes');
+    now += 1000 / fps;
+    const pending = frames; frames = [];
+    pending.forEach(callback => callback(now));
+  }
+  return times;
+}
+for (const fps of [10, 30, 120]) assert.deepEqual(physicsTicks(fps), physicsTicks(60), 'display rate must not alter physics timestamps or tick count');
 const targetMatch = motion.match(/function target\(n\) \{[\s\S]*?\n\}/);
 if (!factoryMatch || !roomFrameMatch || !sandStepMatch || !spinMatch || !targetMatch) throw new Error('Could not find the RNG, frame effect, or wheel-spin functions');
 

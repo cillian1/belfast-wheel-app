@@ -2,6 +2,10 @@
 
 ## NOW: the plan (everyone edits this; live status is in STATUS.md)
 
+- **Current: Update37 “Overflow”, game37/build74**, issue #299, holding `update-37`. Cillian requests ordinary collector repeat nerf, Monster overflow/Phelan animation and 99.5% ordinary-prize RTP target. Finish through verified release; Claude remains unavailable.
+- Normal WILD/BONUS collectors now advance; hybrids award then back up. Only MORE WILDS/MORE BONUS keep1/3 same-level repeats; U2 unchanged. Monster over-cap units become one combined final payout after Phelan drinks/grows/returns the excess. Focused phone tests cover below/at/above cap and single credit.
+- **RTP scope confirmed:** leave jackpot funding/payout rules unchanged; ordinary prizes target99.5%. Corrected source-derived model,50k calibration paths plus10k holdout, bounded rounding/model uncertainty. See [ordinary RTP evidence](docs/ordinary-rtp.md). Target is not certified actual RTP. Future prize/path changes need recalibration and independent review.
+- Current-pot reset explicitly requested again by Cillian: jackpot/amount323830→6000cents, ETag-conditional write and immediate readback verified. Do not repeat this reset; normal paid spins can change the pot afterwards. No user balances changed.
 - **Shipped: Update 36 “Deeper Again”, game36/build73**, release #297 independently merged by Gemini with green CI at 2026-10-25 07:41 Europe/London. Merge f295254b; public version metadata and generated bundle verified. APK remains3.
 - Includes exact 1-in-3 same-level repeats retaining extras for WILD/BONUS/hybrids, MORE WILDS/MORE BONUS boosts and U2; actual double-down3→5; persistent unlock/re-entry through depths5–7 with usable backups; new runs reset4. Plinko has24 possible distinct destinations and the same eight unique holes per deal.
 - Integrated RolexG #296, Renauw #294 and Copilot #295 under #290. Jimini independently reviewed the integrated source (PASS on #290); Gemini reviewed the final integration and release. Child PRs were incorporated by ancestry, not discarded or merged twice.
