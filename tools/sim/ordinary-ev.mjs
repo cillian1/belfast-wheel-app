@@ -36,6 +36,8 @@ const raceMax = +required(race, /RACE_MAX = (\d+)/, 'maximum racers')[1];
 const values = array(race, 'vals');
 const bigValues = required(race, /pick\((\[[\d, ]+\])\)/, 'big race prize')[1];
 const bigPrizes = JSON.parse(bigValues);
+const raceTagFunction = required(race, /function raceTagValue\(base, ch\) \{[^\n]*\}/, 'race tag payout')[0];
+const raceTagValue = new Function(`${raceTagFunction}; return raceTagValue;`)();
 const markFunction = required(mark, /function markSpecialPrize\(kind, mult\) \{[^\n]*\}/, 'Mark special prize')[0];
 const markPrize = new Function(`${markFunction}; return markSpecialPrize;`)();
 const bigAtFunction = required(race, /function raceBigAt\(racers, randomAt\) \{[\s\S]*?\n\}/, 'race special selection')[0];
@@ -61,7 +63,7 @@ const indexed = values.map(() => new Map());
 let randomState = 0x51a7c0de;
 const random = () => { randomState = (1664525 * randomState + 1013904223) >>> 0; return randomState / 4294967296; };
 for (let i = 0; i < 50000; i++) values.slice().sort(() => random() - .5).forEach((v, index) => indexed[index].set(v, (indexed[index].get(v) || 0) + 1 / 50000));
-const indexedPrize = (index, mult = 1) => [...indexed[index]].reduce((sum, [v, p]) => sum + p * Math.round(v * mult), 0);
+const indexedPrize = (index, mult = 1) => [...indexed[index]].reduce((sum, [v, p]) => sum + p * raceTagValue(v, mult === 1 ? {} : { special: 'W', mult }), 0);
 const tanks = new Map();
 function monsterEV(specials, includeOverflow) {
   const key = `${specials}:${includeOverflow}`;
@@ -102,7 +104,7 @@ function farmEV(record) {
   let expectedTags = 0;
   for (let i = 0; i < racers.length; i++) {
     const mult = racers[i].special ? racers[i].mult : 1;
-    const regular = indexedPrize(i, mult), big = mean(bigPrizes.map(v => Math.round(v * mult)));
+    const regular = indexedPrize(i, mult), big = mean(bigPrizes.map(v => raceTagValue(v, racers[i])));
     expectedTags += hasSpecial ? (i === specialBig ? big : regular) : big / racers.length + regular * (1 - 1 / racers.length);
   }
   return (1 - raceChance) * markEV + raceChance * expectedTags / racers.length;

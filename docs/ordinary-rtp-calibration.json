@@ -1,24 +1,24 @@
 {
   "schema": 1,
-  "gameVersion": 38,
-  "sourceFingerprint": "72f798216d90c8b8414b4537a19e1567b70e44a786c9846d02dbbb79d3284cdc",
+  "gameVersion": 39,
+  "sourceFingerprint": "ae4983cb08c34efebc7a48502f4040245605414895496e92abc3ecfb6bc91176",
   "scope": "Ordinary-prize model target only; jackpot funding/payouts and promotions excluded. Not certified actual RTP.",
   "target": 0.995,
-  "normalizationEV": 15.33689837,
+  "normalizationEV": 15.25068635,
   "training": {
     "count": 50000,
-    "meanBase": 15.336898369365485,
-    "standardError": 0.19018525812215598,
-    "calibrationEV": 15.336898369365485,
+    "meanBase": 15.25068635176061,
+    "standardError": 0.2157725484037101,
+    "calibrationEV": 15.25068635176061,
     "target": 0.995,
     "includeOverflow": true,
     "mean95Interval": [
-      14.96413526344606,
-      15.70966147528491
+      14.827772156889338,
+      15.673600546631882
     ],
-    "normalizationEV": 15.336898369365485,
-    "modeledReturn": 0.9949999999999999,
-    "modeledReturnSE": 0.012338500736858842,
+    "normalizationEV": 15.25068635176061,
+    "modeledReturn": 0.995,
+    "modeledReturnSE": 0.014077640881841776,
     "perStakeRoundingBounds": [
       {
         "stakeCents": 10,
@@ -72,18 +72,18 @@
   },
   "holdout": {
     "count": 10000,
-    "meanBase": 15.897849840343852,
-    "standardError": 0.44009046262485985,
-    "calibrationEV": 15.897849840343852,
+    "meanBase": 15.922728853695833,
+    "standardError": 0.5059760106113382,
+    "calibrationEV": 15.922728853695833,
     "target": 0.995,
     "includeOverflow": true,
     "mean95Interval": [
-      15.035272533599127,
-      16.760427147088578
+      14.93101587289761,
+      16.914441834494056
     ],
-    "normalizationEV": 15.33689837,
-    "modeledReturn": 1.0313924112637993,
-    "modeledReturnSE": 0.028551405880623014,
+    "normalizationEV": 15.25068635,
+    "modeledReturn": 1.0388460457340238,
+    "modeledReturnSE": 0.03301137529185902,
     "perStakeRoundingBounds": [
       {
         "stakeCents": 10,
@@ -136,7 +136,7 @@
     ]
   },
   "holdoutCheck": {
-    "combinedStandardError": 0.031103398177384795,
+    "combinedStandardError": 0.03588775378181004,
     "passed": true
   }
 }

@@ -1,6 +1,6 @@
 // ---------- the bonus round: rollercoaster, the planet wheel, twelve-sided dice, the Monster tank ----------
 // Owns bonus-room dice, coaster, planet, and Monster tank behavior.
-const TANK_LEVELS = [{ at: 0, v: 30 }, { at: 68, v: 50 }, { at: 78, v: 80 }, { at: 90, v: 150 }];
+const TANK_LEVELS = [{ at: 0, v: 27 }, { at: 68, v: 45 }, { at: 78, v: 72 }, { at: 90, v: 135 }];
 const TANK_CAP = 120;
 function monsterPrize(total) {
   const amount = Math.max(0, Number.isFinite(total) ? total : 0);

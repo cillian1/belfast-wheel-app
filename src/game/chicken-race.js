@@ -10,7 +10,8 @@ function raceBigAt(racers, randomAt) {
   }, null);
   return special ? racers.indexOf(special) : randomAt;
 }
-function raceTagValue(base, ch) { return ch.special ? Math.round(base * (ch.mult || 1.5)) : base; }
+// Transfer a small amount to Pyramid doors after multipliers, keeping a consolation.
+function raceTagValue(base, ch) { return Math.max(1, (ch.special ? Math.round(base * (ch.mult || 1.5)) : base) - 8); }
 function drawRaceLine() {
   const x = raceLine - camX, sq = N * .018, y0 = N * .58, y1 = N * .97;
   for (let y = y0, j = 0; y < y1; y += sq, j++) for (let q = 0; q < 2; q++) { ctx.fillStyle = (j + q) % 2 ? '#111' : '#f4f0e4'; ctx.fillRect(x + q * sq - sq, y, sq, Math.min(sq, y1 - y)); }

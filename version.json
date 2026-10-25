@@ -1,9 +1,9 @@
 {
-  "game": 38,
+  "game": 39,
   "apk": 3,
-  "gameBuild": 75,
-  "notes": "Backups stay inside deep; unlocked levels remain available; recalibrated ordinary-prize model target",
+  "gameBuild": 76,
+  "notes": "Better Pyramid ordinary doors, funded by smaller Chicken Race and Monster payouts; deep backups stay deep",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk",
-  "name": "Stay Deep"
+  "name": "Pyramid Pays"
 }
