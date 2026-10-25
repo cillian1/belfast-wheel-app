@@ -9,6 +9,7 @@ const root = new URL('../', import.meta.url);
 const browserHtml = html => html.replace(/@font-face\s*\{[^}]*file:\/\/\/android_asset[^}]*\}\s*/g, '');
 const currentHtml = browserHtml(readFileSync(new URL('game/index.html', root), 'utf8'));
 const baselineHtml = browserHtml(readFileSync(baselinePath, 'utf8'));
+const releaseConfig = JSON.parse(currentHtml.match(/window\.WALLET_CFG\s*=\s*(\{[^;]*\})\s*;/)[1]);
 const server = createServer((request, response) => {
   response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
   response.end(request.url === '/baseline' ? baselineHtml : currentHtml);
@@ -128,9 +129,9 @@ async function spin(path, fps = 60) {
 try {
   const baseline = await spin('/baseline');
   const runs = await Promise.all([10, 30, 60, 120].map(async fps => ({ fps, ...await spin('/current', fps) })));
-  for (const run of runs) assert.deepEqual(run.values, baseline.values, `EV, edge, and stakes must match main at ${run.fps} fps`);
+  for (const run of runs) assert.deepEqual(run.values, { ...baseline.values, ev: releaseConfig.ev }, `released EV and unchanged edge/stakes must match at ${run.fps} fps`);
   for (let i = 1; i < runs.length; i++) assert.equal(runs[i].result, runs[0].result, `seeded spin results must match at ${runs[0].fps} and ${runs[i].fps} fps`);
-  console.log('Seeded 360px headless spin matches at 10, 30, 60, and 120 fps; EV, edge, and stakes match main; no browser console errors.');
+  console.log('Seeded 360px headless spin matches at 10, 30, 60, and 120 fps; EV matches the release config; edge and stakes match main; no browser console errors.');
 } finally {
   await browser.close();
   await new Promise(resolve => server.close(resolve));

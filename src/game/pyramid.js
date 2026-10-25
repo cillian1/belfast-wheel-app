@@ -350,10 +350,20 @@ async function monsterRun(steps, w = 0, b = 3) {
     requestAnimationFrame(f);
   });
   mon.fill = total; draw();
-  const lvl = TANK_LEVELS.reduce((a, l) => total >= l.at ? l : a, TANK_LEVELS[0]);
+  const prize = monsterPrize(total);
+  if (prize.overflow > 0) {
+    mon.overflowPhase = 'gulp'; mon.overflowT = 0;
+    setVerdict({ eyebrow: 'Bonus', title: 'Phelan drinks the overflow', body: 'The tank is full. The extra is still yours.', steps: steps.slice() });
+    $('#caption').textContent = 'Too much Monster for one tank';
+    await animate(1000, t => { mon.overflowT = t; draw(); });
+    mon.overflowPhase = 'poo';
+    setVerdict({ eyebrow: 'Bonus', title: 'Phelan pays it back', body: 'Here comes the rest of your money.', steps: steps.slice() });
+    await animate(2200, t => { mon.overflowT = t; draw(); });
+    mon.overflowPhase = 'done'; mon.overflowT = 1;
+  }
   ting(); buzz([60, 40, 120]); Music.sting(4);
-  setVerdict({ eyebrow: 'Final answer', title: `€${$m(lvl.v)}`, body: `The Monster tank filled to the €${$m(lvl.v)} line${bigCans ? `, with ${bigCans} big can${bigCans > 1 ? 's' : ''} from the special dice` : ''}. That is your bonus. Collect it before the next spin.`, steps: steps.slice(), q: quote() });
-  speak(['Final answer', ...spokenMoves(steps), `The Monster tank pays ${$m(lvl.v)} euro`, roomAct('monster')]);
+  setVerdict({ eyebrow: 'Final answer · €' + $m(prize.total), title: `€${$m(prize.total)}`, body: `The Monster tank pays €${$m(prize.base)}${bigCans ? `, with ${bigCans} big can${bigCans > 1 ? 's' : ''} from the special dice` : ''}.${prize.overflow ? ' Phelan returned the overflow too — it is included in this total.' : ''} Collect it before the next spin.`, steps: steps.slice(), q: quote() });
+  speak(['Final answer', ...spokenMoves(steps), `The Monster tank and overflow pay ${$m(prize.total)} euro`, roomAct('monster')]);
   $('#caption').textContent = 'Tap Spin to go back to the top';
-  logMove(`Bonus · Monster tank · €${$m(lvl.v)}`);
+  logMove(`Bonus · Monster tank and overflow · €${$m(prize.total)}`);
 }

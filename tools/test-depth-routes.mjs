@@ -215,7 +215,7 @@ function makeHarness(initialDepth = 4) {
 const deeper = { k: 0, key: 'main-deeper' };
 
 async function testRepeatBoundaryAndBoosts() {
-  for (const key of ['WD', 'BN', 'MW', 'MB', 'U2']) {
+  for (const key of ['MW', 'MB', 'U2']) {
     const repeat = makeHarness();
     const result = await repeat.run([deeper, { k: 1, key }, { k: 1, key: 'STOP' }], [.99, 1 / 3 - Number.EPSILON]);
     assert.deepEqual(result.spins, [0, 1, 1], `${key} repeats below one third`);
@@ -246,35 +246,20 @@ function testDiceCacheInvalidation() {
 async function testRepeatCollections() {
   const harness = makeHarness();
   const result = await harness.run([
-    deeper,
-    { k: 1, key: 'WD' },
-    { k: 1, key: 'WD' },
-    { k: 2, key: 'BN' },
-    { k: 2, key: 'BN' },
-    { k: 3, key: 'F' },
-    { k: 4, key: 'STOP' },
-  ], [.99, .1, .99, .1, .99]);
-  assert.deepEqual(result.spins, [0, 1, 1, 2, 2, 3, 4], 'WILD and BONUS each repeat their own wheel');
-  assert.deepEqual(harness.env.lastTiles, [2, 2], 'WILD and BONUS collections survive their repeats and both add again');
+    deeper, { k: 1, key: 'WD' }, { k: 2, key: 'BN' }, { k: 3, key: 'F' }, { k: 4, key: 'STOP' },
+  ], [.99, .1, .1]);
+  assert.deepEqual(result.spins, [0, 1, 2, 3, 4], 'normal WILD/BONUS always advance even when the next random draw is below one third');
+  assert.deepEqual(harness.env.lastTiles, [1, 1], 'ordinary collectors still award one symbol');
 }
 
 async function testHybridCollectorsRepeat() {
   const harness = makeHarness();
   const result = await harness.run([
-    deeper,
-    { k: 1, key: 'WD' },
-    { k: 2, key: 'UW' },
-    { k: 2, key: 'UW' },
-    { k: 1, key: 'F' },
-    { k: 2, key: 'UB' },
-    { k: 2, key: 'UB' },
-    { k: 1, key: 'F' },
-    { k: 2, key: 'F' },
-    { k: 3, key: 'F' },
-    { k: 4, key: 'STOP' },
-  ], [.99, .99, .1, .99, .1, .99]);
-  assert.deepEqual(result.spins, [0, 1, 2, 2, 1, 2, 2, 1, 2, 3, 4], 'hybrid collectors repeat at their own level before backing up');
-  assert.deepEqual(harness.env.lastTiles, [3, 2], 'repeated Wild and Bonus hybrid collectors are retained');
+    deeper, { k: 1, key: 'WD' }, { k: 2, key: 'UW' }, { k: 1, key: 'F' },
+    { k: 2, key: 'UB' }, { k: 1, key: 'F' }, { k: 2, key: 'F' }, { k: 3, key: 'F' }, { k: 4, key: 'STOP' },
+  ], [.99, .1]);
+  assert.deepEqual(result.spins, [0, 1, 2, 1, 2, 1, 2, 3, 4], 'hybrid collectors award the symbol and back up rather than repeating');
+  assert.deepEqual(harness.env.lastTiles, [2, 1]);
 }
 
 async function testU2AndOneLevelBackup() {

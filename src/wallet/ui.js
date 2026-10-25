@@ -435,7 +435,12 @@ header>span{flex-wrap:wrap}
     if (!W.user) return;
     try {
       const [me, cfg, jackpot] = await Promise.all([db.get('users/' + W.user), db.get('config').catch(() => null), db.get('jackpot').catch(() => ({ amount: JACKPOT_START }))]);
-      if (cfg) Object.assign(W.cfg, cfg);
+      if (cfg) {
+        Object.assign(W.cfg, cfg);
+        // RTP calibration belongs to this game version; legacy host overrides
+        // must not silently replace the released prize normalization.
+        W.cfg.ev = CFG.ev; W.cfg.edge = CFG.edge;
+      }
       if (!me || me.pass !== pref.get('wol.pass')) { logout(); return; }
       W.me = me; W.jackpot = jackpot && typeof jackpot.amount === 'number' ? jackpot.amount : JACKPOT_START;
       // A balance correction must not leave a phone stuck decrementing a huge
