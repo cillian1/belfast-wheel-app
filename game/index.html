@@ -3600,36 +3600,45 @@ function drawMonster(now) {
 async function roll12(dice) {
   dice.forEach(d => { const a = -Math.PI / 2 + (Math.random() - .5) * 2.6, sp = N * (.35 + Math.random() * .45); d.vx = Math.cos(a) * sp; d.vy = Math.sin(a) * sp + N * .15; d.vz = 2.6 + Math.random() * 1.4; d.w = [(Math.random() - .5) * 18, (Math.random() - .5) * 18, (Math.random() - .5) * 8]; });
   const x0 = N * .06, x1 = N * .94, y0 = N * .06, y1 = N * .42, rad = N * .052;
-  let last = performance.now(), calm = 0, el = 0;
+  let last = performance.now(), calm = 0, el = 0, pending = 0;
+  // Dice outcomes depend on simulation ticks, never on display frame rate.
+  const fixedDt = 1 / 60;
   await new Promise(res => {
     function f(now) {
-      const dt = Math.max(0, Math.min(.033, (now - last) / 1000)); last = now; el += dt;
-      for (let k = 0; k < 4; k++) {
-        const h = dt / 4;
-        dice.forEach(d => {
-          d.vz -= 3.4 * h; d.z += d.vz * h; d.x += d.vx * h; d.y += d.vy * h; d.M = spinRot(d.M, d.w, h);
-          if (d.z <= 0) {
-            d.z = 0;
-            if (d.vz < -.35) { d.vz = -d.vz * .52; d.w = d.w.map(x => x * .75 + (Math.random() - .5) * 6); d.vx += (Math.random() - .5) * N * .12; d.vy += (Math.random() - .5) * N * .12; tick(.5 + Math.min(.6, -d.vz * .2), 1200 + cosmeticRandom() * 500); }
-            else d.vz = 0;
-            d.vx *= .975; d.vy *= .975; d.w = d.w.map(x => x * .985);
-            // on the felt it rolls: spin follows the direction it travels
-            const rl = 1 / (N * .045); d.w[0] = lerp(d.w[0], -d.vy * rl, .04); d.w[1] = lerp(d.w[1], d.vx * rl, .04);
+      pending += Math.max(0, Math.min(.25, (now - last) / 1000)); last = now;
+      let settled = false;
+      while (pending + 1e-9 >= fixedDt && !settled) {
+        pending -= fixedDt;
+        const dt = fixedDt; el += dt;
+        for (let k = 0; k < 4; k++) {
+          const h = dt / 4;
+          dice.forEach(d => {
+            d.vz -= 3.4 * h; d.z += d.vz * h; d.x += d.vx * h; d.y += d.vy * h; d.M = spinRot(d.M, d.w, h);
+            if (d.z <= 0) {
+              d.z = 0;
+              if (d.vz < -.35) { d.vz = -d.vz * .52; d.w = d.w.map(x => x * .75 + (Math.random() - .5) * 6); d.vx += (Math.random() - .5) * N * .12; d.vy += (Math.random() - .5) * N * .12; tick(.5 + Math.min(.6, -d.vz * .2), 1200 + cosmeticRandom() * 500); }
+              else d.vz = 0;
+              d.vx *= .975; d.vy *= .975; d.w = d.w.map(x => x * .985);
+              // on the felt it rolls: spin follows the direction it travels
+              const rl = 1 / (N * .045); d.w[0] = lerp(d.w[0], -d.vy * rl, .04); d.w[1] = lerp(d.w[1], d.vx * rl, .04);
+            }
+            if (d.x < x0 + rad) { d.x = x0 + rad; d.vx = Math.abs(d.vx) * .6; } if (d.x > x1 - rad) { d.x = x1 - rad; d.vx = -Math.abs(d.vx) * .6; }
+            if (d.y < y0 + rad) { d.y = y0 + rad; d.vy = Math.abs(d.vy) * .6; } if (d.y > y1 - rad) { d.y = y1 - rad; d.vy = -Math.abs(d.vy) * .6; }
+          });
+          for (let i = 0; i < dice.length; i++) for (let j = i + 1; j < dice.length; j++) {
+            const a = dice[i], b = dice[j], dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy;
+            if (d2 >= 4 * rad * rad || d2 < 1e-6) continue;
+            const dd = Math.sqrt(d2), nx = dx / dd, ny = dy / dd, ov = (2 * rad - dd) / 2;
+            a.x -= nx * ov; a.y -= ny * ov; b.x += nx * ov; b.y += ny * ov;
+            const vn = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny; if (vn < 0) { const jn = -.8 * vn; a.vx -= jn * nx; a.vy -= jn * ny; b.vx += jn * nx; b.vy += jn * ny; }
           }
-          if (d.x < x0 + rad) { d.x = x0 + rad; d.vx = Math.abs(d.vx) * .6; } if (d.x > x1 - rad) { d.x = x1 - rad; d.vx = -Math.abs(d.vx) * .6; }
-          if (d.y < y0 + rad) { d.y = y0 + rad; d.vy = Math.abs(d.vy) * .6; } if (d.y > y1 - rad) { d.y = y1 - rad; d.vy = -Math.abs(d.vy) * .6; }
-        });
-        for (let i = 0; i < dice.length; i++) for (let j = i + 1; j < dice.length; j++) {
-          const a = dice[i], b = dice[j], dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy;
-          if (d2 >= 4 * rad * rad || d2 < 1e-6) continue;
-          const dd = Math.sqrt(d2), nx = dx / dd, ny = dy / dd, ov = (2 * rad - dd) / 2;
-          a.x -= nx * ov; a.y -= ny * ov; b.x += nx * ov; b.y += ny * ov;
-          const vn = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny; if (vn < 0) { const jn = -.8 * vn; a.vx -= jn * nx; a.vy -= jn * ny; b.vx += jn * nx; b.vy += jn * ny; }
         }
+        const still = dice.every(d => d.z === 0 && d.vz === 0 && Math.hypot(d.vx, d.vy) < N * .02 && Math.hypot(...d.w) < 1.5);
+        calm = still ? calm + 1 : 0;
+        settled = calm > 12 || el > 13;
       }
-      const still = dice.every(d => d.z === 0 && d.vz === 0 && Math.hypot(d.vx, d.vy) < N * .02 && Math.hypot(...d.w) < 1.5);
-      calm = still ? calm + 1 : 0; draw();
-      if (calm > 12 || el > 13) res(); else requestAnimationFrame(f);
+      draw();
+      if (settled) res(); else requestAnimationFrame(f);
     }
     requestAnimationFrame(f);
   });
