@@ -1,0 +1,73 @@
+{
+  "generatedAt": "2026-10-25T20:17:08.632Z",
+  "update": {
+    "number": 40,
+    "name": "Update 32",
+    "branch": "update-40",
+    "goals": [
+      "Wallet/Watch clean recovery work (#209)",
+      "Live Watch nested-wheel drawing (#199)",
+      "GAMBLE/COLLECT (#213)",
+      "Last chicken standing (#200)",
+      "Remove W/B marks from special-chicken art (#211)",
+      "Reduce Extra Bonus, WILD, and Deeper-trigger lag (#231): begin with a performance trace and evidence; reduce measured lag without speculative architecture.",
+      "After a first-spin Deeper hit, ease into a zoom that frames the whole wheel like a dartboard.",
+      "Live Watch (#199): opening chat during a live-view spin must not interrupt wheel/ball completion or cause console errors; do not duplicate the completed #181 keyboard-drawing fix.",
+      "Monster Room dice: regular dice stay white d12s; special/bonus dice retain type-specific colors and become d20s. Faces 13-20 generate more Monster cans through the existing can/tank flow, not a separate prize table. Before implementation, require a Banter notice, money PR linked to that notice, fast-sim/payback evidence, and an independent review."
+    ],
+    "cutLine": "Austin temporary free-spin rule ends at 2026-10-24T14:00:00Z, the instant for Saturday 2026-10-24 15:00 Europe/Dublin: spins are free, wins go to Austin's wallet, and bets do not contribute to the jackpot; afterward normal play resumes. No live account or jackpot changes in this tracker update.",
+    "progress": {
+      "done": 1,
+      "total": 1
+    }
+  },
+  "tasks": [
+    {
+      "issue": 231,
+      "title": "Update 32: reduce lag on Extra Bonus, WILD, and Deeper triggers",
+      "url": "https://github.com/cillian1/belfast-wheel-app/issues/231",
+      "owner": "The Stankman",
+      "blocked": false,
+      "blockedText": "",
+      "pr": {
+        "number": 257,
+        "title": "money: Release update 32 \"The Watchful Gambler\"",
+        "url": "https://github.com/cillian1/belfast-wheel-app/pull/257",
+        "state": "merged"
+      },
+      "prState": "merged",
+      "ci": null,
+      "lastActivity": "2026-10-23T15:40:33Z"
+    }
+  ],
+  "merges": [
+    {
+      "number": 313,
+      "title": "Keep large special chickens to one normal Mark-wheel slot",
+      "url": "https://github.com/cillian1/belfast-wheel-app/pull/313",
+      "mergedAt": "2026-10-25T20:13:02Z",
+      "owner": "cillian1"
+    }
+  ],
+  "history": [
+    {
+      "number": 39,
+      "name": "Update 39",
+      "build": null,
+      "releaseDate": "2026-10-25T20:16:55Z",
+      "releasePr": {
+        "number": 314,
+        "url": "https://github.com/cillian1/belfast-wheel-app/pull/314"
+      },
+      "tasks": [
+        {
+          "owner": "Unassigned",
+          "issue": 308,
+          "pr": 309,
+          "title": "money: better Pyramid doors funded by race and Monster reductions",
+          "url": "https://github.com/cillian1/belfast-wheel-app/pull/309"
+        }
+      ]
+    }
+  ]
+}
