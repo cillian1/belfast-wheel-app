@@ -38,10 +38,10 @@ const Music = (() => {
     const comp = AC.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 4;
     master.connect(comp); comp.connect(AC.destination);
     noise = AC.createBuffer(1, AC.sampleRate, AC.sampleRate);
-    const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = cosmeticRandom() * 2 - 1;
     // drone on D and A
     const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 420; const g = AC.createGain(); g.gain.value = .06;
-    [38, 45, 50].forEach(m => { const o = AC.createOscillator(); o.type = 'sawtooth'; o.frequency.value = hz(m); o.detune.value = (Math.random() - .5) * 8; o.connect(lp); o.start(); });
+    [38, 45, 50].forEach(m => { const o = AC.createOscillator(); o.type = 'sawtooth'; o.frequency.value = hz(m); o.detune.value = (cosmeticRandom() - .5) * 8; o.connect(lp); o.start(); });
     lp.connect(g); g.connect(master); drone = g;
   }
   function env(g, t, peak, a, dur) { g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(.0001, t + dur); }
@@ -59,7 +59,7 @@ const Music = (() => {
   }
   function nz(t, dur, v, type, freq, q = 1) {
     const s = AC.createBufferSource(); s.buffer = noise; const f = AC.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
-    const g = AC.createGain(); env(g, t, v, .002, dur); s.connect(f); f.connect(g); g.connect(master); s.start(t, Math.random() * .5); s.stop(t + dur + .02);
+    const g = AC.createGain(); env(g, t, v, .002, dur); s.connect(f); f.connect(g); g.connect(master); s.start(t, cosmeticRandom() * .5); s.stop(t + dur + .02);
   }
   function doum(t, v = .7) { const o = AC.createOscillator(), g = AC.createGain(); o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(62, t + .18); env(g, t, v, .003, .4); o.connect(g); g.connect(master); o.start(t); o.stop(t + .42); }
   function tek(t, v = .22) { nz(t, .06, v, 'highpass', 3500, .7); }
