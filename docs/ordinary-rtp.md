@@ -2,13 +2,13 @@
 
 Cillian’s 25 October 2026 decision is a **99.5% ordinary-prize RTP target**, equivalent to a 0.5% ordinary-prize house edge. He explicitly leaves the progressive jackpot’s funding/payout rules unchanged. Jackpot returns, free spins and promotions are excluded from this target. The separately requested current-pot reset to €60 was completed and verified; do not repeat it.
 
-## Calibration for Update 37
+## Calibration for Update 38
 
 The source-derived conditional room model uses roulette cash/gold/vault probabilities, the actual Monster tank tiers and overflow formula, optimal God higher/lower decisions, Pyramid prizes, recorded chicken multipliers and side-God payouts. Monster dice are modelled as independent fair d12s. Race indexed-tag means approximate the source’s biased shuffle using fixed-seed samples.
 
-- Training: 50,000 full Chromium-core paths, seeds 1–50,000, after fixed-clock physics and exact Plinko launch-position corrections. Mean base prize 14.81475200; standard error 0.18771646.
-- Configuration: `edge=0.995`, `ev=14.814752`. The model’s training normalization targets 99.5% before cent rounding. Versioned game calibration takes precedence over legacy host EV/edge overrides; unrelated host configuration still applies.
-- Separate holdout: 10,000 full paths, seeds 50,001–60,000. Estimated ordinary return 103.16% with standard error 2.91 percentage points. It passes the combined three-standard-error training/holdout comparison. This noisy holdout is **not** evidence that actual return is exactly 99.5%.
+- Training: 50,000 full Chromium-core paths, seeds 1–50,000, after clamping every backup to the first deep wheel. Mean base prize 15.33689837; standard error 0.19018526.
+- Configuration: `edge=0.995`, `ev=15.33689837`. The model’s training normalization targets 99.5% before cent rounding. Versioned game calibration takes precedence over legacy host EV/edge overrides; unrelated host configuration still applies.
+- Separate holdout: 10,000 full paths, seeds 50,001–60,000. Estimated ordinary return 103.14% with standard error 2.86 percentage points. It passes the combined three-standard-error training/holdout comparison. This noisy holdout is **not** evidence that actual return is exactly 99.5%.
 
 The committed [calibration artifact](ordinary-rtp-calibration.json) includes source fingerprint, sample counts, confidence intervals, conservative per-stake cent-rounding bounds and assumptions. It is a reproducible model calibration, **not certified theoretical or actual RTP**. Physical dice fairness, player God decisions, sampled race indexing and currency rounding are limits beyond path-sampling error. The 1,000-seed quick checker is a comparison diagnostic, not the calibration source.
 

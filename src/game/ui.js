@@ -80,17 +80,6 @@ async function runMain() {
     await dive(1 / Math.pow(S, k));
     const idx = await spinLayer(k, 4300, k % 2 ? -1 : 1);
     const it = (deadTo[k] ? DEAD_LAYERS[deadTo[k]] : LAYERS)[k][idx];
-    if (k === 0) {
-      if (!it.deep) {
-        const r = it.go();
-        setVerdict({ eyebrow: 'Final answer', title: r.t, body: r.b, q: quote(), steps: steps.slice() });
-        speak(['Final answer', r.t, r.b]);
-        logMove(steps.length ? steps.map(s => s.text.replace(/^And /, '')).join(' · ') + ' · ' + r.t : r.t);
-        return;
-      }
-      steps.push({ text: 'Back to the start' });
-      continue;
-    }
     const wildLive = wMiss < 2, bonusLive = bMiss < 2;
     const repeatHere = (it.boost || it.up === 2) && Math.random() < 1 / 3;
     if (it.up) { // back out one or two wheels and spin that one again; everything collected stays
@@ -107,7 +96,8 @@ async function runMain() {
           body = (it.wild ? 'Gold Cleopatra = WILD. ' : 'Purple ankh = BONUS. ') + 'Collect 3 of a kind.';
           store.set('wildHint', true);
         }
-        const dist = it.up === 2 ? 2 : 1, targetK = repeatHere ? k : Math.max(0, k - dist);
+        // Wheel 0 is the main wheel: a deep run can only back up as far as wheel 1.
+        const dist = it.up === 2 ? 2 : 1, targetK = repeatHere ? k : Math.max(1, k - dist);
         setVerdict({ eyebrow: 'Going deeper', title: repeatHere ? 'Spin this level again' : it.up === 2 ? 'Go two levels up' : it.wild ? 'Wild, go back up' : it.bonus ? 'Bonus, go back up' : 'Go back up', body, steps: steps.slice(), flash: true });
         playSfx('back');
         Music.sting(1); buzz([30, 30, 30]); await wait(500);
