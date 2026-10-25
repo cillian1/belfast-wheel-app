@@ -4,7 +4,7 @@ import {chromium} from '@playwright/test';
 import vm from 'node:vm';
 const tankSource=readFileSync('src/game/bonus-round.js','utf8').split('const COSMIC')[0];
 const unit=vm.createContext({$m:v=>(Math.round(v*.6689)/100).toFixed(2)});vm.runInContext(tankSource+';globalThis.prize=monsterPrize;globalThis.extraCents=monsterOverflowCents;',unit);
-assert.equal(unit.prize(120).overflow,0);assert.equal(unit.prize(121).overflow,1.125);assert.equal(unit.prize(144).total,162);assert.equal(unit.extraCents(122),2,'overflow display uses combined minus base rounded cents, not a separately rounded amount');
+assert.equal(unit.prize(120).overflow,0);assert.equal(unit.prize(121).overflow,1.125);assert.equal(unit.prize(144).total,162);assert.equal(unit.extraCents(123),3,'overflow display uses combined minus base rounded cents, not a separately rounded amount');
 let html=readFileSync('game/index.html','utf8').replace(/@font-face\s*\{[^}]*file:\/\/\/android_asset[^}]*\}\s*/g,'');
 html=html.replace(/const wait = ms => new Promise\(r => \{[\s\S]*?pendingWaits.add\(w\);\n\}\);/, 'const wait = async () => {};');
 const browser=await chromium.launch({...(process.env.CHROMIUM_PATH ? {executablePath:process.env.CHROMIUM_PATH} : {}),args:['--no-sandbox']});
