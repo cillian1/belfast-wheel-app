@@ -19,6 +19,27 @@ const cosmeticRandom = (() => {
   catch (e) { seed[0] = (Date.now() ^ Math.floor(performance.now() * 1000)) >>> 0; }
   return makeCosmeticRandom(seed[0]);
 })();
+// Deterministic physics callbacks: rendering cadence must not alter prize draws.
+function physicsFrames() {
+  const stepMs = 1000 / 60;
+  let last = performance.now(), pending = 0, ticks = 0, waiting = null, scheduled = false, pumping = false;
+  function frame(now) {
+    scheduled = false;
+    pending += Math.max(0, Math.min(250, now - last)); last = now;
+    pumping = true;
+    while (waiting && pending + 1e-6 >= stepMs) {
+      pending -= stepMs;
+      const callback = waiting; waiting = null;
+      callback(++ticks * stepMs);
+    }
+    pumping = false;
+    if (waiting && !scheduled) { scheduled = true; requestAnimationFrame(frame); }
+  }
+  return callback => {
+    waiting = callback;
+    if (!pumping && !scheduled) { scheduled = true; requestAnimationFrame(frame); }
+  };
+}
 const GHOST_IMAGE = new Image();
 GHOST_IMAGE.src = GHOST_SPRITE_DATA;
 const pick = a => a[Math.floor(Math.random() * a.length)];

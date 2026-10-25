@@ -1,64 +1,64 @@
 {
   "schema": 1,
   "gameVersion": 37,
-  "sourceFingerprint": "37ae32fca0af8234d1526c6cfeaa73d7b207ed7cf7a2af54cd53425f5a52843c",
+  "sourceFingerprint": "e72f5e62f6aa3f5e53a182d6e6093cfb01c1dda54dcc447dd28a71ff76bb8804",
   "scope": "Ordinary-prize model target only; jackpot funding/payouts and promotions excluded. Not certified actual RTP.",
   "target": 0.995,
-  "normalizationEV": 14.8755121,
+  "normalizationEV": 14.85060806,
   "training": {
     "count": 50000,
-    "meanBase": 14.87551210227238,
-    "standardError": 0.18776960030958317,
-    "calibrationEV": 14.87551210227238,
+    "meanBase": 14.850608059551593,
+    "standardError": 0.18772978115979888,
+    "calibrationEV": 14.850608059551593,
     "target": 0.995,
     "includeOverflow": true,
     "mean95Interval": [
-      14.507483685665596,
-      15.243540518879163
+      14.482657688478387,
+      15.2185584306248
     ],
-    "normalizationEV": 14.87551210227238,
+    "normalizationEV": 14.850608059551593,
     "modeledReturn": 0.995,
-    "modeledReturnSE": 0.012559618184808241,
+    "modeledReturnSE": 0.012578012395516681,
     "perStakeRoundingBounds": [
       {
         "stakeCents": 10,
-        "returnAbsoluteErrorBound": 0.020824000000000002
+        "returnAbsoluteErrorBound": 0.020851
       },
       {
         "stakeCents": 20,
-        "returnAbsoluteErrorBound": 0.010412000000000001
+        "returnAbsoluteErrorBound": 0.0104255
       },
       {
         "stakeCents": 30,
-        "returnAbsoluteErrorBound": 0.006941333333333333
+        "returnAbsoluteErrorBound": 0.0069503333333333335
       },
       {
         "stakeCents": 40,
-        "returnAbsoluteErrorBound": 0.0052060000000000006
+        "returnAbsoluteErrorBound": 0.00521275
       },
       {
         "stakeCents": 50,
-        "returnAbsoluteErrorBound": 0.0041648
+        "returnAbsoluteErrorBound": 0.0041702
       },
       {
         "stakeCents": 60,
-        "returnAbsoluteErrorBound": 0.0034706666666666666
+        "returnAbsoluteErrorBound": 0.0034751666666666668
       },
       {
         "stakeCents": 70,
-        "returnAbsoluteErrorBound": 0.002974857142857143
+        "returnAbsoluteErrorBound": 0.002978714285714286
       },
       {
         "stakeCents": 80,
-        "returnAbsoluteErrorBound": 0.0026030000000000003
+        "returnAbsoluteErrorBound": 0.002606375
       },
       {
         "stakeCents": 90,
-        "returnAbsoluteErrorBound": 0.002313777777777778
+        "returnAbsoluteErrorBound": 0.002316777777777778
       },
       {
         "stakeCents": 100,
-        "returnAbsoluteErrorBound": 0.0020824
+        "returnAbsoluteErrorBound": 0.0020851
       }
     ],
     "assumptions": [
@@ -72,58 +72,58 @@
   },
   "holdout": {
     "count": 10000,
-    "meanBase": 15.284256243134001,
-    "standardError": 0.43189422401919025,
-    "calibrationEV": 15.284256243134001,
+    "meanBase": 15.341985014132657,
+    "standardError": 0.4327467268772073,
+    "calibrationEV": 15.341985014132657,
     "target": 0.995,
     "includeOverflow": true,
     "mean95Interval": [
-      14.437743564056388,
-      16.130768922211615
+      14.493801429453331,
+      16.190168598811983
     ],
-    "normalizationEV": 14.8755121,
-    "modeledReturn": 1.0223402636281902,
-    "modeledReturnSE": 0.028888736737950307,
+    "normalizationEV": 14.85060806,
+    "modeledReturn": 1.0279225623211279,
+    "modeledReturnSE": 0.028994300536595078,
     "perStakeRoundingBounds": [
       {
         "stakeCents": 10,
-        "returnAbsoluteErrorBound": 0.02093
+        "returnAbsoluteErrorBound": 0.02083
       },
       {
         "stakeCents": 20,
-        "returnAbsoluteErrorBound": 0.010465
+        "returnAbsoluteErrorBound": 0.010415
       },
       {
         "stakeCents": 30,
-        "returnAbsoluteErrorBound": 0.0069766666666666675
+        "returnAbsoluteErrorBound": 0.0069433333333333335
       },
       {
         "stakeCents": 40,
-        "returnAbsoluteErrorBound": 0.0052325
+        "returnAbsoluteErrorBound": 0.0052075
       },
       {
         "stakeCents": 50,
-        "returnAbsoluteErrorBound": 0.0041860000000000005
+        "returnAbsoluteErrorBound": 0.004166
       },
       {
         "stakeCents": 60,
-        "returnAbsoluteErrorBound": 0.0034883333333333337
+        "returnAbsoluteErrorBound": 0.0034716666666666667
       },
       {
         "stakeCents": 70,
-        "returnAbsoluteErrorBound": 0.00299
+        "returnAbsoluteErrorBound": 0.002975714285714286
       },
       {
         "stakeCents": 80,
-        "returnAbsoluteErrorBound": 0.00261625
+        "returnAbsoluteErrorBound": 0.00260375
       },
       {
         "stakeCents": 90,
-        "returnAbsoluteErrorBound": 0.0023255555555555555
+        "returnAbsoluteErrorBound": 0.0023144444444444445
       },
       {
         "stakeCents": 100,
-        "returnAbsoluteErrorBound": 0.0020930000000000002
+        "returnAbsoluteErrorBound": 0.002083
       }
     ],
     "assumptions": [
@@ -136,7 +136,7 @@
     ]
   },
   "holdoutCheck": {
-    "combinedStandardError": 0.0315008431523818,
+    "combinedStandardError": 0.03160499738045575,
     "passed": true
   }
 }

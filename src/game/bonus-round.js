@@ -8,6 +8,10 @@ function monsterPrize(total) {
   const overflow = Math.max(0, amount - TANK_CAP) * TANK_LEVELS[TANK_LEVELS.length - 1].v / TANK_CAP;
   return { base, overflow, total: base + overflow };
 }
+function monsterOverflowCents(total) {
+  const prize = monsterPrize(total);
+  return Math.max(0, Math.round(Number($m(prize.total)) * 100) - Math.round(Number($m(prize.base)) * 100));
+}
 
 const COSMIC = [1000, 5000, 10000, 1000, 5000, 1000, 10000, 5000, 1000, 5000, 10000, 5000];
 // the planet wheel is a trick, so its prizes are plain text: never real money
@@ -285,7 +289,7 @@ function drawMonsterOverflow(now) {
       ctx.fillStyle = '#5b3b0b'; ctx.font = `700 ${N * .018}px ${LABEL_FONT}`; ctx.fillText('€', cx, cy + N * .006);
     }
     ctx.fillStyle = '#ffe49a'; ctx.font = `700 ${N * .031}px ${LABEL_FONT}`;
-    ctx.fillText('EXTRA €' + $m(monsterPrize(M.fill).overflow), N * .24, N * .985);
+    ctx.fillText('EXTRA €' + (monsterOverflowCents(M.fill) / 100).toFixed(2), N * .24, N * .985);
   }
   ctx.restore();
 }

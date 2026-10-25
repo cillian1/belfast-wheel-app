@@ -262,6 +262,9 @@ async function runMain() {
       ctx.drawImage(ballImg(b), b.x - r, b.y - r, r * 2, r * 2);
     });
   });
+  // Every ball must begin physics at its intended launch point. Delayed intro
+  // arcs may still be short of that point when the presentation animation ends.
+  balls.forEach(b => { b.x = b.hx; b.y = b.hy; });
   scene = 'final';
   wellBalls = []; dice.forEach(d => { d.gone = false; d.label = 0; d.glow = 0; d.toBall = false; });
   const order = balls.map((_, i) => i).sort(() => Math.random() - .5);
