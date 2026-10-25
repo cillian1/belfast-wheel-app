@@ -4,6 +4,7 @@ import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { createCore } from './sim/core.mjs';
+import { calibrate } from './sim/ordinary-ev.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -41,75 +42,13 @@ console.log(`Checked ${scripts.length} inline scripts; game version ${version.ga
 
 // 2. Quick odds check
 if (quick) {
-  const TABLES = JSON.parse(readFileSync(resolve(root, 'tools/sim/tables.json'), 'utf8'));
-  const RACE_CHANCE = 0.16;
-  const AM_AVG = TABLES.AM.reduce((a, b) => a + b, 0) / TABLES.AM.length;
-
-  function getEV(r) {
-    if (r.k === '-') return 0;
-    if (r.k === 'W' || r.k === 'B') {
-      const w = r.w, b = r.b, n = w + b;
-      let ev = 0;
-      // Exact EV for Bonus/Monster room picks with replacement (rooms.js logic)
-      for (let g = 0; g <= n; g++) {
-        // P(g gold out of n picks) = Binomial(n, g, 0.2)
-        let prob = 1;
-        for (let i = 0; i < g; i++) prob *= (n - i) / (i + 1) * 0.2;
-        for (let i = 0; i < n - g; i++) prob *= 0.8;
-        
-        const basePrizeEV = (w + 2 * b) * AM_AVG;
-        if (g >= 3) {
-          const ls = TABLES.LS;
-          ev += prob * (basePrizeEV + ls[0] + ls[1] * (ls[2] - 1) / 2);
-        } else {
-          ev += prob * (basePrizeEV + g * 50);
-        }
-      }
-      return ev;
-    }
-    if (r.k === 'G') {
-      const GOD_AVG = TABLES.GOD.reduce((a, b) => a + b, 0) / TABLES.GOD.length;
-      return 0.35 * GOD_AVG + 0.65 * TABLES.CONS;
-    }
-    if (r.k === 'P') {
-      const ptAvg = TABLES.PT.reduce((a, b) => a + b, 0) / TABLES.PT.length;
-      const pdAvg = TABLES.PD[0] + TABLES.PD[1] * (TABLES.PD[2] - 1) / 2;
-      return (1/3) * ptAvg + (2/3) * pdAvg;
-    }
-    if (r.k === 'M' || r.k === 'D') {
-      const sw = r.sw || r.w || 0, sb = r.sb || r.b || 0, n = r.n || 6;
-      const multW = sw > 0 ? 1.5 * Math.pow(2, sw - 1) : 0;
-      const multB = sb > 0 ? 1.5 * Math.pow(2, sb - 1) : 0;
-      const markPrize = (sw > 0 ? 10 * multW / 1.5 : 0) + (sb > 0 ? 5 * multB / 1.5 : 0);
-      const evMark = markPrize / Math.min(n, 16);
-      const racers = Math.min(8, (sw > 0 ? 1 : 0) + (sb > 0 ? 1 : 0) + Math.max(0, n - (sw > 0 ? 1 : 0) - (sb > 0 ? 1 : 0)));
-      const plain = racers - (sw > 0 ? 1 : 0) - (sb > 0 ? 1 : 0);
-      const bigAvg = 100, valAvg = 15.625;
-      let evRace = 0;
-      if (racers > 0) {
-        if (sw > 0 || sb > 0) {
-          if (sw > 0 && (sb === 0 || multW >= multB)) {
-             evRace = (bigAvg * multW + (sb > 0 ? valAvg * multB : 0) + plain * valAvg) / racers;
-          } else {
-             evRace = (bigAvg * multB + (sw > 0 ? valAvg * multW : 0) + plain * valAvg) / racers;
-          }
-        } else {
-          evRace = (bigAvg + (racers - 1) * valAvg) / racers;
-        }
-      }
-      return RACE_CHANCE * evRace + (1 - RACE_CHANCE) * evMark;
-    }
-    return 0;
-  }
-
-  async function calculate(sources, cfg) {
+  async function calculate(sources, cfg, includeOverflow) {
     const spin = createCore(sources, { full: true });
-    let total = 0, count = 1000;
+    const records = [], count = 1000;
     for (let i = 1; i <= count; i++) {
-      total += getEV(await spin(i));
+      records.push(await spin(i));
     }
-    const avgV = total / count;
-    return avgV * (cfg.edge / cfg.ev);
+    return calibrate(records, { includeOverflow, normalizationEV: cfg.ev, target: cfg.edge });
   }
 
   const modules = ['core', 'content', 'canvas-helpers', 'faces', 'state', 'dice', 'motion', 'ball-physics', 'ui', 'mark-ending'];
@@ -124,11 +63,13 @@ if (quick) {
   ]));
   const baseCfg = JSON.parse(execFileSync('git', ['show', `${baseRef}:src/config.json`], { encoding: 'utf8' }));
 
-  const [pbCurrent, pbBase] = await Promise.all([
-    calculate(currentSources, currentCfg),
-    calculate(baseSources, baseCfg)
+  const [current, base] = await Promise.all([
+    calculate(currentSources, currentCfg, true),
+    calculate(baseSources, baseCfg, /function monsterPrize\(/.test(execFileSync('git', ['show', `${baseRef}:src/game/bonus-round.js`], { encoding: 'utf8' })))
   ]);
 
-  const diff = pbCurrent - pbBase;
+  const pbCurrent = current.modeledReturn, pbBase = base.modeledReturn, diff = pbCurrent - pbBase;
+  const spread = 1.96 * current.modeledReturnSE;
+  console.log(`Ordinary model sample n=1000: current 95% path-sampling interval ${(Math.max(0, pbCurrent - spread) * 100).toFixed(1)}%–${((pbCurrent + spread) * 100).toFixed(1)}%; jackpot, promotions and rounding excluded.`);
   console.log(`payback ${(pbBase * 100).toFixed(1)}% → ${(pbCurrent * 100).toFixed(1)}% (${diff >= 0 ? '+' : ''}${(diff * 100).toFixed(1)} pp)`);
 }

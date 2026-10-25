@@ -205,7 +205,8 @@ function pinStep(P, h) {
 }
 function runPipes() {
   return new Promise(res => {
-    const P = pipes, sp = N * .7, gx = P.xs[P.green]; let last = performance.now(), el = 0;
+    const physicsFrame = physicsFrames();
+    const P = pipes, sp = N * .7, gx = P.xs[P.green]; let last = 0, el = 0;
     function f(now) {
       const dt = Math.max(0, Math.min(.033, (now - last) / 1000)); last = now; let busyBalls = false; el += dt;
       if (snapA > 0) snapA = Math.max(0, 1 - easeInOut(Math.min(1, el / 1.2)));
@@ -240,9 +241,9 @@ function runPipes() {
       if (P.cf) P.cf = P.cf.map(v => Math.max(0, v - dt * 1.8));
       const steps = 6; for (let s = 0; s < steps; s++) pinStep(P, dt / steps);
       draw();
-      if (busyBalls) requestAnimationFrame(f); else setTimeout(res, 500);
+      if (busyBalls) physicsFrame(f); else setTimeout(res, 500);
     }
-    requestAnimationFrame(f);
+    physicsFrame(f);
   });
 }
 async function rollD6() {
@@ -256,8 +257,9 @@ async function rollD6() {
   tick(1.4, 900); buzz(25);
   d6.forEach(d => { const a = -Math.PI / 2 + (Math.random() - .5) * 2.4, sp = N * (.5 + Math.random() * .6); d.vx = Math.cos(a) * sp; d.vy = Math.sin(a) * sp; d.vz = 2 + Math.random() * 1.2; d.w = [(Math.random() - .5) * 30, (Math.random() - .5) * 30, (Math.random() - .5) * 12]; });
   const x0 = N * .08, x1 = N * .92, y0 = N * .1, y1 = N * .92, rad = N * .045;
-  let last = performance.now(), calm = 0, el = 0;
+  let last = 0, calm = 0, el = 0;
   await new Promise(res => {
+    const physicsFrame = physicsFrames();
     function f(now) {
       const dt = Math.max(0, Math.min(.033, (now - last) / 1000)); last = now; el += dt;
       for (let k = 0; k < 4; k++) {
@@ -283,9 +285,9 @@ async function rollD6() {
       }
       const still = d6.every(d => d.z === 0 && d.vz === 0 && Math.hypot(d.vx, d.vy) < N * .02 && Math.hypot(...d.w) < 1.5);
       calm = still ? calm + 1 : 0; draw();
-      if (calm > 10 || el > 7) res(); else requestAnimationFrame(f);
+      if (calm > 10 || el > 7) res(); else physicsFrame(f);
     }
-    requestAnimationFrame(f);
+    physicsFrame(f);
   });
   const from = d6.map(d => d.M), to = d6.map(d => snapRot(d.M));
   await animate(260, t => { d6.forEach((d, i) => d.M = lerpRot(from[i], to[i], easeOut(t))); draw(); });
@@ -464,7 +466,8 @@ function drawFarm(now) {
 }
 function farmLoop(dur, fn) { // runs chicken/arrow/fire/feather updates while fn steers the phase
   return new Promise(res => {
-    const t0 = performance.now(); let last = t0;
+    const physicsFrame = physicsFrames();
+    const t0 = 0; let last = 0;
     function f(now) {
       const dt = Math.max(0, Math.min(.033, (now - last) / 1000)); last = now; const el = Math.max(0, (now - t0) / 1000);
       const done = fn(dt, el);
@@ -472,9 +475,9 @@ function farmLoop(dur, fn) { // runs chicken/arrow/fire/feather updates while fn
       fires.forEach(f => f.life -= dt * .5); fires = fires.filter(f => f.life > 0);
       feathers.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += N * .3 * dt; p.vx *= .97; p.r += dt * 4; p.life -= dt * .7; }); feathers = feathers.filter(p => p.life > 0);
       draw();
-      if (done || el > dur) res(); else requestAnimationFrame(f);
+      if (done || el > dur) res(); else physicsFrame(f);
     }
-    requestAnimationFrame(f);
+    physicsFrame(f);
   });
 }
 function walkChicken(ch, dt, speed) {
