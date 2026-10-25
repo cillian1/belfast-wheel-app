@@ -96,6 +96,7 @@ async function runMain() {
           body = (it.wild ? 'Gold Cleopatra = WILD. ' : 'Purple ankh = BONUS. ') + 'Collect 3 of a kind.';
           store.set('wildHint', true);
         }
+        // Wheel 0 is the main wheel: a deep run can only back up as far as wheel 1.
         const dist = it.up === 2 ? 2 : 1, targetK = repeatHere ? k : Math.max(1, k - dist);
         setVerdict({ eyebrow: 'Going deeper', title: repeatHere ? 'Spin this level again' : it.up === 2 ? 'Go two levels up' : it.wild ? 'Wild, go back up' : it.bonus ? 'Bonus, go back up' : 'Go back up', body, steps: steps.slice(), flash: true });
         playSfx('back');
