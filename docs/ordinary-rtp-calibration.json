@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "gameVersion": 39,
-  "sourceFingerprint": "ae4983cb08c34efebc7a48502f4040245605414895496e92abc3ecfb6bc91176",
+  "gameVersion": 40,
+  "sourceFingerprint": "3a148a7e008f39498055534219f6327bdddaf938d503ac9d3a0c4f20a42a2ac4",
   "scope": "Ordinary-prize model target only; jackpot funding/payouts and promotions excluded. Not certified actual RTP.",
   "target": 0.995,
   "normalizationEV": 15.25068635,

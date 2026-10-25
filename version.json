@@ -1,9 +1,9 @@
 {
-  "game": 39,
+  "game": 40,
   "apk": 3,
-  "gameBuild": 76,
-  "notes": "Better Pyramid ordinary doors, funded by smaller Chicken Race and Monster payouts; deep backups stay deep",
+  "gameBuild": 77,
+  "notes": "Large special chickens form one normal-size Mark-wheel slot; grown chicken prizes preserved",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk",
-  "name": "Pyramid Pays"
+  "name": "One Chicken, One Slot"
 }

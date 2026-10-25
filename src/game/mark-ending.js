@@ -449,7 +449,8 @@ function drawFarm(now) {
   if (markItems.length && formT.length) {
     if (showMark < 1) formT.forEach((ft, i) => {
       if (ft.t <= 0) return; const e = easeInOut(Math.min(1, ft.t));
-      drawMarkWedge(ft.idx ?? i, markItems.length, lerp(ft.x - camX, c, e), lerp(ft.y, c, e), lerp(.1, ft.size || 1, e));
+      // A grown chicken still owns one normal-size wedge, never its neighbours.
+      drawMarkWedge(ft.idx ?? i, markItems.length, lerp(ft.x - camX, c, e), lerp(ft.y, c, e), lerp(.1, 1, e));
     });
     if (showMark > 0) {
       ctx.globalAlpha = showMark; drawScaled(faces.mark, rotM, 1); drawWheelRim(1); drawMarkGlow(now);

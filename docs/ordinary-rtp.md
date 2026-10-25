@@ -2,7 +2,9 @@
 
 Cillian’s 25 October 2026 decision is a **99.5% ordinary-prize RTP target**, equivalent to a 0.5% ordinary-prize house edge. He explicitly leaves the progressive jackpot’s funding/payout rules unchanged. Jackpot returns, free spins and promotions are excluded from this target. The separately requested current-pot reset to €60 was completed and verified; do not repeat it.
 
-## Calibration for Update 39
+## Calibration carried forward to Update 40
+
+Update40 changes only the forming-wedge drawing scale. Prize tables, chicken multipliers, slot counts, RNG calls and normalization are unchanged. The Update39 training/holdout records are reused and the artifact fingerprint is rebound to the visual-only source; this is not a new simulation sample.
 
 The source-derived conditional room model uses roulette cash/gold/vault probabilities, the actual Monster tank tiers and overflow formula, optimal God higher/lower decisions, Pyramid prizes, recorded chicken multipliers and side-God payouts. Monster dice are modelled as independent fair d12s. Race indexed-tag means approximate the source’s biased shuffle using fixed-seed samples.
 
