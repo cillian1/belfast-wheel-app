@@ -1,9 +1,9 @@
 {
-  "game": 37,
+  "game": 38,
   "apk": 3,
-  "gameBuild": 74,
-  "notes": "Normal bonus symbols advance; MORE symbols repeat one in three; Phelan returns Monster tank overflow; ordinary-prize RTP target 99.5%",
+  "gameBuild": 75,
+  "notes": "Backups stay inside deep; unlocked levels remain available; recalibrated ordinary-prize model target",
   "gameUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/game/index.html",
   "apkUrl": "https://raw.githubusercontent.com/cillian1/belfast-wheel-app/main/app/WheelOfLife.apk",
-  "name": "Overflow"
+  "name": "Stay Deep"
 }

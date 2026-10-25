@@ -216,14 +216,35 @@ const deeper = { k: 0, key: 'main-deeper' };
 
 async function testRepeatBoundaryAndBoosts() {
   for (const key of ['MW', 'MB', 'U2']) {
+    // Test U2 away from the deep boundary so its chance-based repeat is
+    // distinguishable from a backup clamped to the first deep wheel.
+    const level = key === 'U2' ? 3 : 1;
+    const prefix = [deeper, ...Array.from({ length: level - 1 }, (_, i) => ({ k: i + 1, key: 'F' }))];
     const repeat = makeHarness();
-    const result = await repeat.run([deeper, { k: 1, key }, { k: 1, key: 'STOP' }], [.99, 1 / 3 - Number.EPSILON]);
-    assert.deepEqual(result.spins, [0, 1, 1], `${key} repeats below one third`);
+    const result = await repeat.run([...prefix, { k: level, key }, { k: level, key: 'STOP' }], [.99, 1 / 3 - Number.EPSILON]);
+    assert.deepEqual(result.spins, [...prefix.map(event => event.k), level, level], `${key} repeats below one third`);
     if (key === 'MW' || key === 'MB') assert.deepEqual(result.boosts, [[key === 'MW' ? 'W' : 'B', 1]], 'the extra is awarded before the repeated spin');
     const boundary = makeHarness();
-    const nextK = key === 'U2' ? 0 : 2;
-    const boundaryResult = await boundary.run([deeper, { k: 1, key }, { k: nextK, key: 'STOP' }], [.99, 1 / 3]);
-    assert.deepEqual(boundaryResult.spins, [0, 1, nextK], `${key} does not repeat at exactly one third`);
+    const nextK = key === 'U2' ? 1 : 2;
+    const boundaryResult = await boundary.run([...prefix, { k: level, key }, { k: nextK, key: 'STOP' }], [.99, 1 / 3]);
+    assert.deepEqual(boundaryResult.spins, [...prefix.map(event => event.k), level, nextK], `${key} does not repeat at exactly one third`);
+  }
+}
+
+async function testBackupsCannotLeaveDeep() {
+  for (const key of ['UP', 'U2', 'UW', 'UB']) {
+    for (const level of [1, 2]) {
+      const harness = makeHarness(7);
+      const prefix = [deeper, ...Array.from({ length: level - 1 }, (_, i) => ({ k: i + 1, key: 'F' }))];
+      const result = await harness.run([
+        ...prefix, { k: level, key }, { k: 1, key }, { k: 1, key }, { k: 1, key: 'STOP' },
+      ]);
+      assert.deepEqual(result.spins, [...prefix.map(event => event.k), level, 1, 1, 1], `${key} at deep level ${level}, including repeated backups, stays on an inner wheel`);
+      assert.equal(result.spins.filter(k => k === 0).length, 1, 'the main wheel spins only once, before entering deep');
+      assert.ok(result.depthAtSpin.every(depth => depth === 7), 'backups preserve every already-unlocked deep level');
+      if (key === 'UW') assert.deepEqual(harness.env.lastTiles, [3, 0], 'clamped wild backups still collect every symbol');
+      if (key === 'UB') assert.deepEqual(harness.env.lastTiles, [0, 3], 'clamped bonus backups still collect every symbol');
+    }
   }
 }
 
@@ -315,6 +336,7 @@ await testRepeatBoundaryAndBoosts();
 await testRepeatCollections();
 await testHybridCollectorsRepeat();
 await testU2AndOneLevelBackup();
+await testBackupsCannotLeaveDeep();
 await testD2AdvancesTwoLevels();
 await testProgressiveUnlockAndFreshRun();
-console.log('Depth-route boundary, collectors, backups, D2 jumps, progressive unlocks, re-entry, and fresh-run reset are covered.');
+console.log('Depth-route boundary, collectors, backups that cannot leave deep, D2 jumps, progressive unlocks, re-entry, and fresh-run reset are covered.');
