@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { createCore } from './sim/core.mjs';
-import { conditionalEV } from './sim/ordinary-ev.mjs';
+import { calibrate } from './sim/ordinary-ev.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -44,12 +44,11 @@ console.log(`Checked ${scripts.length} inline scripts; game version ${version.ga
 if (quick) {
   async function calculate(sources, cfg, includeOverflow) {
     const spin = createCore(sources, { full: true });
-    let total = 0, count = 1000;
+    const records = [], count = 1000;
     for (let i = 1; i <= count; i++) {
-      total += conditionalEV(await spin(i), { includeOverflow });
+      records.push(await spin(i));
     }
-    const avgV = total / count;
-    return avgV * (cfg.edge / cfg.ev);
+    return calibrate(records, { includeOverflow, normalizationEV: cfg.ev, target: cfg.edge });
   }
 
   const modules = ['core', 'content', 'canvas-helpers', 'faces', 'state', 'dice', 'motion', 'ball-physics', 'ui', 'mark-ending'];
@@ -64,11 +63,13 @@ if (quick) {
   ]));
   const baseCfg = JSON.parse(execFileSync('git', ['show', `${baseRef}:src/config.json`], { encoding: 'utf8' }));
 
-  const [pbCurrent, pbBase] = await Promise.all([
+  const [current, base] = await Promise.all([
     calculate(currentSources, currentCfg, true),
     calculate(baseSources, baseCfg, /function monsterPrize\(/.test(execFileSync('git', ['show', `${baseRef}:src/game/bonus-round.js`], { encoding: 'utf8' })))
   ]);
 
-  const diff = pbCurrent - pbBase;
+  const pbCurrent = current.modeledReturn, pbBase = base.modeledReturn, diff = pbCurrent - pbBase;
+  const spread = 1.96 * current.modeledReturnSE;
+  console.log(`Ordinary model sample n=1000: current 95% path-sampling interval ${(Math.max(0, pbCurrent - spread) * 100).toFixed(1)}%–${((pbCurrent + spread) * 100).toFixed(1)}%; jackpot, promotions and rounding excluded.`);
   console.log(`payback ${(pbBase * 100).toFixed(1)}% → ${(pbCurrent * 100).toFixed(1)}% (${diff >= 0 ? '+' : ''}${(diff * 100).toFixed(1)} pp)`);
 }

@@ -6,9 +6,9 @@ Cillian’s 25 October 2026 decision is a **99.5% ordinary-prize RTP target**, e
 
 The source-derived conditional room model uses roulette cash/gold/vault probabilities, the actual Monster tank tiers and overflow formula, optimal God higher/lower decisions, Pyramid prizes, recorded chicken multipliers and side-God payouts. Monster dice are modelled as independent fair d12s. Race indexed-tag means approximate the source’s biased shuffle using fixed-seed samples.
 
-- Training: 50,000 full Chromium-core paths, seeds 1–50,000. Mean base prize 14.87551210; standard error 0.18776960.
-- Configuration: `edge=0.995`, `ev=14.8755121`. The model’s training normalization targets 99.5% before cent rounding. Versioned game calibration takes precedence over legacy host EV/edge overrides; unrelated host configuration still applies.
-- Separate holdout: 10,000 full paths, seeds 50,001–60,000. Estimated ordinary return 102.23% with standard error 2.89 percentage points. It passes the combined three-standard-error training/holdout comparison. This noisy holdout is **not** evidence that actual return is exactly 99.5%.
+- Training: 50,000 full Chromium-core paths, seeds 1–50,000, after fixed-clock physics and exact Plinko launch-position corrections. Mean base prize 14.81475200; standard error 0.18771646.
+- Configuration: `edge=0.995`, `ev=14.814752`. The model’s training normalization targets 99.5% before cent rounding. Versioned game calibration takes precedence over legacy host EV/edge overrides; unrelated host configuration still applies.
+- Separate holdout: 10,000 full paths, seeds 50,001–60,000. Estimated ordinary return 103.16% with standard error 2.91 percentage points. It passes the combined three-standard-error training/holdout comparison. This noisy holdout is **not** evidence that actual return is exactly 99.5%.
 
 The committed [calibration artifact](ordinary-rtp-calibration.json) includes source fingerprint, sample counts, confidence intervals, conservative per-stake cent-rounding bounds and assumptions. It is a reproducible model calibration, **not certified theoretical or actual RTP**. Physical dice fairness, player God decisions, sampled race indexing and currency rounding are limits beyond path-sampling error. The 1,000-seed quick checker is a comparison diagnostic, not the calibration source.
 
