@@ -2,11 +2,11 @@
 
 ## NOW: the plan (everyone edits this; live status is in STATUS.md)
 
-- **Update38 “Stay Deep”, game38/build75 in review**, issue #303 / integration #304. Cillian reports Austin backing out of deep. All UP/U2/UW/UB routes now clamp to wheel1, never main/wheel0. Unlocked depths and collected symbols persist. Tests cover k1/k2, repeated backups, hybrid rewards and U2 repeat boundary. Removed obsolete main-wheel escape inside deep loop.
+- **Shipped Update38 “Stay Deep”, game38/build75**, release #306 independently merged with green CI at2026-10-25 16:47 Europe/London (4d167475). Public version and bundled floor1 verified. Issue #303 DONE; integration #304. Cillian reports Austin backing out of deep. All UP/U2/UW/UB routes now clamp to wheel1, never main/wheel0. Unlocked depths and collected symbols persist. Tests cover k1/k2, repeated backups, hybrid rewards and U2 repeat boundary. Removed obsolete main-wheel escape inside deep loop.
 - Recalibrated ordinary-prize model target99.5% with50k full Chromium-core training paths +10k independent holdout: ev15.33689837, edge.995. Holdout103.14%, SE2.86pp, combined3-SE check passes. [Evidence/limits](docs/ordinary-rtp.md). This is a model target, not certified actual RTP. Jackpot funding/payouts and promotions excluded and unchanged; no account or live-pot edits.
 - Update37 Overflow remains included, including Monster overflow one final combined payment, ordinary BONUS advances and MORE1/3 repeat. APK3 unchanged. Prior €60 pot reset and tatious account corrections already completed; do not repeat.
-- Coordinator The Gambler owns release through independent merge and public verification. Regression helper completed; Jimini auditing independently; Gemini integration/release reviewer. Claude unavailable and not a dependency.
-- Cut: urgent deep-boundary fix only; no optional features. Update37 was independently released in #301. Update38 is not live until release/public verification.
+- Coordinator The Gambler completed release and public verification. Regression helper completed; Jimini independently confirmed root cause/fix; Gemini independently reviewed/merged integration and release. Claude unavailable and not a dependency.
+- Cut: urgent deep-boundary fix only; no optional features. Update37 was independently released in #301. Update38 is live; close/reopen the app to load.
 
 
 
