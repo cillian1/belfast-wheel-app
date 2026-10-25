@@ -1,7 +1,8 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import vm from 'node:vm';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { createCore } from './sim/core.mjs';
 import { calibrate } from './sim/ordinary-ev.mjs';
@@ -42,13 +43,13 @@ console.log(`Checked ${scripts.length} inline scripts; game version ${version.ga
 
 // 2. Quick odds check
 if (quick) {
-  async function calculate(sources, cfg, includeOverflow) {
+  async function calculate(sources, cfg, includeOverflow, model = calibrate) {
     const spin = createCore(sources, { full: true });
     const records = [], count = 1000;
     for (let i = 1; i <= count; i++) {
       records.push(await spin(i));
     }
-    return calibrate(records, { includeOverflow, normalizationEV: cfg.ev, target: cfg.edge });
+    return model(records, { includeOverflow, normalizationEV: cfg.ev, target: cfg.edge });
   }
 
   const modules = ['core', 'content', 'canvas-helpers', 'faces', 'state', 'dice', 'motion', 'ball-physics', 'ui', 'mark-ending'];
@@ -63,10 +64,25 @@ if (quick) {
   ]));
   const baseCfg = JSON.parse(execFileSync('git', ['show', `${baseRef}:src/config.json`], { encoding: 'utf8' }));
 
-  const [current, base] = await Promise.all([
-    calculate(currentSources, currentCfg, true),
-    calculate(baseSources, baseCfg, /function monsterPrize\(/.test(execFileSync('git', ['show', `${baseRef}:src/game/bonus-round.js`], { encoding: 'utf8' })))
-  ]);
+  // Price the baseline with its own source and model, not the proposed payout tables.
+  const tempRoot = mkdtempSync(resolve(tmpdir(), 'wheel-payback-'));
+  let current, base;
+  try {
+    mkdirSync(resolve(tempRoot, 'tools/sim'), { recursive: true });
+    mkdirSync(resolve(tempRoot, 'src/game'), { recursive: true });
+    const baselineFile = path => execFileSync('git', ['show', `${baseRef}:${path}`], { encoding: 'utf8' });
+    writeFileSync(resolve(tempRoot, 'tools/sim/ordinary-ev.mjs'), baselineFile('tools/sim/ordinary-ev.mjs'));
+    for (const name of ['wild-room', 'bonus-round', 'pyramid', 'god-room', 'chicken-race', 'mark-ending']) {
+      writeFileSync(resolve(tempRoot, `src/game/${name}.js`), baselineFile(`src/game/${name}.js`));
+    }
+    const baselineModel = await import(pathToFileURL(resolve(tempRoot, 'tools/sim/ordinary-ev.mjs')).href);
+    [current, base] = await Promise.all([
+      calculate(currentSources, currentCfg, true),
+      calculate(baseSources, baseCfg, /function monsterPrize\(/.test(baselineFile('src/game/bonus-round.js')), baselineModel.calibrate),
+    ]);
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
 
   const pbCurrent = current.modeledReturn, pbBase = base.modeledReturn, diff = pbCurrent - pbBase;
   const spread = 1.96 * current.modeledReturnSE;

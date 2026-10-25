@@ -193,7 +193,7 @@ async function pyramidRun(steps) {
   await animate(6500, t => { pyr.scroll = easeInOut(t) * N * 2.6; if (cosmeticRandom() < .05) tick(.3, 300); draw(); });
   // 4. three doors: tap one
   const wildDoor = Math.floor(Math.random() * 3);
-  pyr.doors = [0, 1, 2].map(j => ({ open: 0, wild: j === wildDoor, amt: 60 + 10 * Math.floor(Math.random() * 15) }));
+  pyr.doors = [0, 1, 2].map(j => ({ open: 0, wild: j === wildDoor, amt: 240 + 10 * Math.floor(Math.random() * 15) }));
   await crossTo(() => { pyr.ph = 'doors'; pyr.pickable = true; }, 900);
   $('#caption').textContent = 'Pick a door';
   setBtn('Pick a door', true);
