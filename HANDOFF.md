@@ -2,11 +2,11 @@
 
 ## NOW: the plan (everyone edits this; live status is in STATUS.md)
 
-- **Update39 “Pyramid Pays”, game39/build76 in review**, issue #308/integration #309. Cillian requested bigger Pyramid ordinary doors funded by small Chicken Race/Monster cuts. Doors240–380base pay€3.13–€4.96 on20c; Wild door odds/top table unchanged. Race deducts8base once after multipliers, floor1base; Monster tiers/overflow10%lower. All scale with stake; actual race cent changes vary with tag/normalization.
+- **Shipped Update39 “Pyramid Pays”, game39/build76**, release #310 independently merged with greenCI at2026-10-25 20:02 Europe/London (63a2d533). Public version and revised payout formulas verified. Issue #308 DONE; integration #309. Cillian requested bigger Pyramid ordinary doors funded by small Chicken Race/Monster cuts. Doors240–380base pay€3.13–€4.96 on20c; Wild door odds/top table unchanged. Race deducts8base once after multipliers, floor1base; Monster tiers/overflow10%lower. All scale with stake; actual race cent changes vary with tag/normalization.
 - Ordinary-only99.5% model target recalibrated with50k full Chromium-core paths +10k independent holdout: ev15.25068635/edge.995. Holdout103.88%, SE3.30pp, combined3-SE check passes. Not certified actual RTP; [evidence/limits](docs/ordinary-rtp.md). Reductions fully fund Pyramid gain in same-path sample. Jackpot funding/payouts/promotions excluded and unchanged, no live-account/pot writes.
 - Payout helper regression, stacking/money tests, Monster phone one-credit tests320/390/440,50browser/core paths and seeded/frame/deep tests pass. Full50k paths equal Update38. Baseline quick checker now loads baseline model and payout source, fixing comparisons after table changes. Explicit invariant permits only authorised10%Monster cut plus source-bound calibration; other prize tables/edge/stakes guarded.
 - Update38 Stay Deep remains included: backups never leave deep; unlocked levels and collected rewards persist. Update37 overflow remains included. APK3 unchanged. Earlier jackpot/account resets completed; do not repeat.
-- Coordinator The Gambler owns release through independent review/merge and public verification. Test helper complete; Gemini reviews/merges. Claude unavailable and not a dependency. Cut: payout rebalance only. Update39 not live until release/public verification.
+- Coordinator The Gambler completed release and public verification. Test helper complete; Gemini independently reviewed/merged integration and release. Claude unavailable and not a dependency. Cut: payout rebalance only. Update39 live; close/reopen app to load.
 
 
 
