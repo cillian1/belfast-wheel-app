@@ -2,10 +2,10 @@
 
 ## NOW: the plan (everyone edits this; live status is in STATUS.md)
 
-- **Update40 “One Chicken, One Slot”, game40/build77 in progress**, issue #312. Austin reports a2x special chicken appearing to occupy2Mark-wheel slots. Actual allocation was already one per chicken; forming wedge incorrectly grew to chicken size, overlapping neighbours. Drawing now grows every wedge only toscale1; farm chicken growth and prize multipliers persist. Regression helper owns one-to-one slots/formation-scale test; Gemini independent review/release follows.
+- **Shipped Update40 “One Chicken, One Slot”, game40/build77**, release #314 independently merged with greenCI at2026-10-25 20:16 Europe/London (ad938352). Public version and normalwedge formula verified; issue #312 DONE. Austin reports a2x special chicken appearing to occupy2Mark-wheel slots. Actual allocation was already one per chicken; forming wedge incorrectly grew to chicken size, overlapping neighbours. Drawing now grows every wedge only toscale1; farm chicken growth and prize multipliers persist. Regression helper completed actualdrawFarm/one-to-one-slot test; oldcodefails. Gemini independently reviewed/merged integration #313 and release.
 - Pure visual fix: prize tables, winner selection, RNG calls, normalization, actual slot odds and jackpot unchanged. Update39 ordinary-prize99.5%MODEL TARGET/EV15.25068635 carried forward; same50k/10k datasets reused with source fingerprint rebound, not a new simulation sample. Evidence/limits [here](docs/ordinary-rtp.md); not certified actual RTP. No live data writes.
 - Update39 Pyramid ordinary doors€3.13–€4.96 on20c, race8base haircut/floor1, Monster10%reduction remain included. Update38 deep backups remain inside deep. APK3 unchanged; earlier live resets completed, do not repeat.
-- Coordinator The Gambler owns release through independent merge and public verification. Claude unavailable and not a dependency. Cut: large-chicken wedge visualbug only. Update40 not live until release/public verification.
+- Coordinator The Gambler completed release and public verification. Claude unavailable and not a dependency. Cut: large-chicken wedge visualbug only. Update40 live; close/reopen app to load.
 
 
 
