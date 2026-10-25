@@ -1,44 +1,31 @@
-# Update 34: Scope and Assignments
+# Update 38 Audit: "Stay Deep" Invariant
 
-Update 34 is a "small improvements" release focused on rule transparency, technical hygiene, and chat usability. With Claude unavailable, the scope is kept strictly to low-risk, non-overlapping changes that can be verified via the existing CI and phone-check routines.
+I have conducted an independent read-only audit of the "stay deep" invariant requested in issue #303. The goal is to ensure that once a player enters the nested wheels (Wheel 1 or deeper), they cannot be routed back to the main wheel (Wheel 0) through any "back" transitions (UP, U2, UW, UB).
 
-## Scope Validation & Ranking
+## Findings
 
-1. **Rule Transparency: 10c Free-Spin Help** (Rank: 1)
-   - **Where:** `src/index.html:16`
-   - **What:** The help text omits the requirement that the "first 5 free spins" only apply to 10c bets. This is a common point of confusion for players.
-   - **Fix:** Update the bullet point to: `<li><b>Spin</b> to play. Your first 5 10c spins each day are free.</li>`.
-   - **Done-when:** Help modal accurately reflects the 10c condition.
-   - **Owner:** RolexG.
+### 1. Verification of Reported Bug
+**Status:** Confirmed.
+In the current `src/game/ui.js` (L110), the transition logic for "up" slices uses `Math.max(0, k - dist)`. When a player is on Wheel 1 (`k=1`) and hits an `UP` slice (`dist=1`), or on Wheel 2 (`k=2`) and hits a `U2` slice (`dist=2`), `targetK` becomes 0. This causes the loop to spin the main wheel (Wheel 0) in the next iteration. If the resulting slice on Wheel 0 is not a "deep" slice, the run ends prematurely. This matches the behavior reported by Austin.
 
-2. **Technical Hygiene: Photo URL Cleanup** (Rank: 2)
-   - **Where:** `src/game/show-me.js:142-149` (`onFile` function).
-   - **Status:** **DUPLICATE** (identified in Update 33 analysis but not implemented).
-   - **What:** `URL.createObjectURL(f)` is called on every photo selection but never revoked. This causes a memory leak on mobile browsers as users experiment with different photos.
-   - **Fix:** Store the object URL and call `URL.revokeObjectURL(url)` in both `im.onload` and `im.onerror` (after the image is processed).
-   - **Done-when:** Memory usage remains stable across multiple photo selections; re-selecting the same photo still works.
-   - **Owner:** RolexG.
+### 2. Audit of Proposed Fix
+**Status:** Correct and Effective.
+The Gambler's plan to use a `floor1` route (clamping `targetK` to at least 1) is the correct architectural fix. 
+- **Clamping:** Changing `Math.max(0, k - dist)` to `Math.max(1, k - dist)` in `src/game/ui.js` ensures that `targetK` is always at least 1 when triggered from within the deep loop (where `k >= 1`).
+- **Unreachable Code:** The `if (k === 0)` block inside the `runMain` loop (L83-93) becomes unreachable if `targetK` is clamped to 1. Removing this block is a clean and safe refactor that aligns with the new invariant.
 
-3. **Usability: Banter Jump-to-Latest** (Rank: 3)
-   - **Where:** `chat.html`
-   - **What:** On long chat threads, scrolling up to read history makes it difficult to quickly return to the bottom to see new messages or type a reply.
-   - **Fix:** Add a floating "Jump to latest" button (positioned near the bottom right) that appears when the user has scrolled up more than 300px and disappears when they are near the bottom.
-   - **Done-when:** Button is visible only when scrolled up; clicking it scrolls the view to the very bottom.
-   - **Owner:** Copilot.
+### 3. Regression Test Requirements
+**Status:** Action Required.
+The existing regression test `tools/test-depth-routes.mjs` currently expects `U2` from Wheel 1 to route to Wheel 0 (`const nextK = key === 'U2' ? 0 : 2`). 
+- **Update Needed:** This test must be updated to expect `nextK = 1` for `U2` transitions from Wheel 1.
+- **New Coverage:** Additional test cases should be added to verify that `U2` from Wheel 2 also floors at Wheel 1, and that repeated "back" hits maintain the `k=1` boundary.
 
-## Suggested Alternative
+### 4. RTP Recalibration
+**Status:** Mandatory.
+This change is player-favorable as it removes paths that lead to a premature end of a run. Consequently, the ordinary prize EV will increase. To maintain the 99.5% target, a full 50k+10k recalibration is required. I have verified that the Gambler has initiated this process.
 
-**Improved Retake Options**
-- **Where:** `src/index.html:54-57` (`#photoActions`).
-- **What:** Currently, the photo scene only offers a "Retake" button linked to the camera (`for="cam"`). If a user wants to pick a *different* existing photo from their library, they must click "Back" and start over.
-- **Fix:** Add a second label to `#photoActions` for the library: `<label class="btn" for="lib">Choose another</label>`.
-- **Done-when:** Both camera and library options are available directly from the photo scene.
-- **Owner:** RolexG (combine with Photo URL cleanup).
+## Blockers
+The implementation branch `gambler/update-38-stay-deep` was not present in the workspace at the time of this audit. This report is based on the intended plan and the existing source code. A final verification against the actual pushed code is required once available.
 
-## Workflow Health
-
-**Prerequisite: HANDOFF.md "NOW" Cleanup**
-- **Where:** `HANDOFF.md` (top 20 lines).
-- **Issue:** The Banter bots are currently hallucinating based on old history (Update 28/31).
-- **Fix:** Explicitly state "Update 34 Planning" and "Claude is unavailable" at the very top of the NOW section. Remove stale progress items from previous updates.
-- **Done-when:** Bots stop referencing Update 31 in their chat reasoning.
+## Recommendation
+Approve the "stay deep" logic as planned. Ensure the regression tests are updated to reflect the new floor before merging.
