@@ -135,7 +135,13 @@ async function spin(path, fps = 60) {
     }));
     assert.deepEqual(errors, [], `console errors on ${path}`);
     console.log(`${path} at ${fps}fps completed in ${((Date.now() - started) / 1000).toFixed(1)}s`);
-    return { result, values, trace: await page.evaluate(() => window.__seededPath) };
+    const trace = await page.evaluate(() => {
+      // Font/resize artwork can finish before or after the test counter attaches.
+      // Compare gameplay draw deltas, not that arbitrary boot-time prefix.
+      const path = window.__seededPath, offset = path[0]?.calls || 0;
+      return path.map(event => ({ ...event, calls: event.calls - offset }));
+    });
+    return { result, values, trace };
   } finally {
     await context.close();
   }
