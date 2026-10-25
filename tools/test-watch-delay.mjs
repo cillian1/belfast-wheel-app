@@ -18,6 +18,7 @@ assert.ok(source.includes("'liveK'"), 'MIRROR includes liveK for nested wheel sy
 assert.ok(source.includes("'photoZoom'"), 'MIRROR includes photoZoom for transition sync');
 assert.ok(source.includes("'photoDone'"), 'MIRROR includes photoDone for transition sync');
 assert.ok(source.includes("'snapA'"), 'MIRROR includes snapA for scene change sync');
+assert.ok(source.includes("'evenD'"), 'MIRROR includes the old well depth for multi-wheel reveal transitions');
 
 const helpers = new Function(`${helpersMatch[0]}; return { addWatchFrame, pruneWatchFrames, alignWatchBuffer, takeWatchFrame, watchOfflineMessage };`)();
 const buffer = [];

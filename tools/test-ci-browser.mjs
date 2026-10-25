@@ -86,10 +86,12 @@ async function spin(path, fps = 60) {
     }, null, { timeout: 10000 });
     const canvas = await page.locator('#wheel').boundingBox();
     const picks = [[.2, .45], [.5, .45], [.8, .45], [.2, .65], [.5, .65], [.8, .65], [.2, .82], [.5, .82], [.8, .82]];
-    const deadline = Date.now() + 60000;
+    // Repeats and the newly unlocked wheels can legitimately exceed a minute.
+    // Keep a finite per-run deadline and run FPS variants concurrently below.
+    const started = Date.now(), deadline = started + 120000;
     while (Date.now() < deadline) {
       const state = await page.evaluate(() => ({
-        done: !document.querySelector('#spinBtn').disabled && document.querySelector('#spinBtn').textContent === 'Spin',
+        done: !document.querySelector('#spinBtn').disabled && ['Spin', 'Back to the top'].includes(document.querySelector('#spinBtn').textContent),
         pick: document.querySelector('.stage').classList.contains('pick'),
       }));
       if (state.done) break;
@@ -101,8 +103,8 @@ async function spin(path, fps = 60) {
       }
       await page.waitForTimeout(100);
     }
-    const completed = await page.evaluate(() => !document.querySelector('#spinBtn').disabled && document.querySelector('#spinBtn').textContent === 'Spin');
-    assert.ok(completed, `spin did not finish: ${await page.evaluate(() => JSON.stringify({
+    const completed = await page.evaluate(() => !document.querySelector('#spinBtn').disabled && ['Spin', 'Back to the top'].includes(document.querySelector('#spinBtn').textContent));
+    assert.ok(completed, `spin did not finish on ${path} at ${fps}fps: ${await page.evaluate(() => JSON.stringify({
       button: document.querySelector('#spinBtn').textContent,
       disabled: document.querySelector('#spinBtn').disabled,
       caption: document.querySelector('#caption').textContent,
@@ -116,6 +118,7 @@ async function spin(path, fps = 60) {
       stakes: window.WALLET_CFG.stakes,
     }));
     assert.deepEqual(errors, [], `console errors on ${path}`);
+    console.log(`${path} at ${fps}fps completed in ${((Date.now() - started) / 1000).toFixed(1)}s`);
     return { result, values };
   } finally {
     await context.close();
@@ -124,8 +127,7 @@ async function spin(path, fps = 60) {
 
 try {
   const baseline = await spin('/baseline');
-  const runs = [];
-  for (const fps of [10, 30, 60, 120]) runs.push({ fps, ...await spin('/current', fps) });
+  const runs = await Promise.all([10, 30, 60, 120].map(async fps => ({ fps, ...await spin('/current', fps) })));
   for (const run of runs) assert.deepEqual(run.values, baseline.values, `EV, edge, and stakes must match main at ${run.fps} fps`);
   for (let i = 1; i < runs.length; i++) assert.equal(runs[i].result, runs[0].result, `seeded spin results must match at ${runs[0].fps} and ${runs[i].fps} fps`);
   console.log('Seeded 360px headless spin matches at 10, 30, 60, and 120 fps; EV, edge, and stakes match main; no browser console errors.');

@@ -109,7 +109,7 @@ export function pathHarness(full = false, compute = false) {
     // A seed describes a fresh spin, independent of boot-time drawing or workers.
     clearSpecialDice();
     dice.forEach(d => { d.x = d.hx; d.y = d.hy; d.M = null; d.z = 0; d.v = 1; });
-    DEPTH = MAXD - 1; rot.fill(0); lastQuote = -1;
+    DEPTH = typeof BASE_DEPTH === 'undefined' ? MAXD - 1 : BASE_DEPTH; rot.fill(0); lastQuote = -1;
     ringCache.clear(); faces.farm = null;
     for (let k = 1; k <= MAXD; k++) {
       const order = BASE_ORDERS[k - 1];
@@ -154,7 +154,7 @@ export function createCore(sources, { full = false } = {}) {
   mk = () => effect;
   setVerdict = setBtn = setTiles = setWilds = hideFinal = logMove = () => {};
   draw = speak = tick = ting = buzz = flap = pegBuzz = whoosh = popSound = playSfx = () => {};
-  let liveK = -1, navCache = null, domeBulge = 0, evenA = 1, ghostSay = '', sayLast = null;
+  let liveK = -1, navCache = null, domeBulge = 0, evenA = 1, evenD = 4, ghostSay = '', sayLast = null;
   let photoDone = true, doorPick = null, tapPick = null, god = null;
   let pyr = null, zena = null, roul = null, vault = null, pickIdx = -1, prize = null, bingo = [];
   const Perf = { low: true }, Music = effect, AC = null, RACE_CHANCE = 1;
