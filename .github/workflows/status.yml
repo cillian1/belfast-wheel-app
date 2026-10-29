@@ -2,11 +2,16 @@
 name: Status board
 on:
   issues:
-    types: [opened, edited, closed, reopened, labeled, unlabeled]
+    types: [opened, edited, closed, reopened, labeled, unlabeled, assigned, unassigned]
   issue_comment:
     types: [created]
   pull_request:
-    types: [opened, closed, reopened, ready_for_review, converted_to_draft, edited]
+    types: [opened, closed, reopened, ready_for_review, converted_to_draft, edited, synchronize]
+  pull_request_review:
+    types: [submitted, edited, dismissed]
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
   workflow_dispatch:
 permissions:
   contents: write
