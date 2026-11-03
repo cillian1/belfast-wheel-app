@@ -15,3 +15,5 @@ assert.equal(branches.length, 101);
 assert.equal(branches.at(-1).name, 'update-32');
 assert.deepEqual(calls, ['branches?per_page=100&page=1', 'branches?per_page=100&page=2']);
 console.log('Tracker REST pagination: fetched all 101 branches, including update-32.');
+// Keep the scope regression suite in the existing tracker CI entrypoint.
+await import('./test-tracker-scopes.mjs');

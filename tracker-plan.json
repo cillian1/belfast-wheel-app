@@ -13,5 +13,84 @@
     "Monster Room dice: regular dice stay white d12s; special/bonus dice retain type-specific colors and become d20s. Faces 13-20 generate more Monster cans through the existing can/tank flow, not a separate prize table. Before implementation, require a Banter notice, money PR linked to that notice, fast-sim/payback evidence, and an independent review."
   ],
   "cutLine": "Austin temporary free-spin rule ends at 2026-10-24T14:00:00Z, the instant for Saturday 2026-10-24 15:00 Europe/Dublin: spins are free, wins go to Austin's wallet, and bets do not contribute to the jackpot; afterward normal play resumes. No live account or jackpot changes in this tracker update.",
-  "issues": [209, 199, 213, 200, 211, 231]
+  "issues": [209, 199, 213, 200, 211, 231],
+  "scopes": [
+    {
+      "id": "clean-recovery",
+      "title": "Clean wallet and Watch recovery",
+      "description": "Recover the wallet fixes and Watch drawing work as clean, separate update-32 PRs without stale tooling. Both deliverables are required; the source-only Watch/bundle-CI conflict needs coordinator resolution.",
+      "issues": [209],
+      "owner": "The Gambler",
+      "dependencies": ["live-watch"],
+      "deliverables": [
+        {"id": "wallet", "title": "Host wallet recovery", "issues": [151], "prs": [218], "prior": [{"pr": 152, "reason": "Superseded by clean wallet recovery #218"}]},
+        {"id": "watch", "title": "Watch recovery", "issues": [199], "prs": [219], "holdOwner": "Claude", "holdAction": "Resolve source-only instruction versus generated-bundle CI before making #219 ready", "prior": [{"pr": 202, "reason": "Superseded by clean Watch recovery #219"}]}
+      ]
+    },
+    {
+      "id": "live-watch",
+      "title": "Live Watch drawing and chat regression",
+      "description": "Correct nested/going-deeper and final-answer wheel drawing. Opening chat during a live-view spin must not interrupt wheel/ball completion or cause console errors. Do not duplicate the completed #181 keyboard-drawing fix.",
+      "issues": [199],
+      "owner": "The Gambler",
+      "deliverables": [
+        {"id": "drawing", "title": "Nested-wheel drawing recovery", "prs": [219], "holdOwner": "Claude", "holdAction": "Resolve source-only instruction versus generated-bundle CI before making #219 ready", "prior": [{"pr": 202, "reason": "Superseded by #219; not the active implementation"}]},
+        {"id": "chat-regression", "title": "Chat-during-spin regression evidence", "prs": [], "discover": false, "nextOwner": "Claude", "nextAction": "Assign and verify the approved chat-during-live-spin regression; #219 alone is not evidence"}
+      ]
+    },
+    {
+      "id": "gamble-collect",
+      "title": "GAMBLE / COLLECT",
+      "description": "Implement #213's slot-machine-style unlimited double-or-nothing GAMBLE/COLLECT flow, preserving the specified wallet safety and independent money-review gates.",
+      "issues": [213],
+      "deliverables": [{"id": "implementation", "title": "GAMBLE/COLLECT implementation", "prs": [217]}]
+    },
+    {
+      "id": "last-chicken",
+      "title": "Last chicken standing",
+      "description": "Award the Mark's farm achievement when exactly one chicken survives; persist it, show the first-time banner/repeat toast and mirror it to Live Watch.",
+      "issues": [200],
+      "owner": "The Gambler",
+      "implementationAuthor": "RolexG",
+      "reviewers": ["Claude", "Copilot"],
+      "deliverables": [{"id": "achievement", "title": "Achievement and Watch sync", "prs": [201]}]
+    },
+    {
+      "id": "chicken-art",
+      "title": "Remove W/B chicken marks",
+      "description": "Remove the W/B letter marks from special-chicken artwork (#211); visual-only, with no prize or odds changes.",
+      "issues": [211],
+      "deliverables": [{"id": "art", "title": "Special-chicken artwork", "prs": [212]}]
+    },
+    {
+      "id": "measured-lag",
+      "title": "Measured trigger-lag reduction",
+      "description": "Profile Extra Bonus, WILD and Deeper effects, beginning with a performance trace and evidence; reduce measured lag rather than choosing speculative architecture. Preserve random draw order and outcomes.",
+      "issues": [231],
+      "deliverables": [{"id": "performance", "title": "Trace-led lag reduction", "prs": [233]}]
+    },
+    {
+      "id": "deeper-zoom",
+      "title": "First-spin Deeper zoom",
+      "description": "After a first-spin Deeper hit, ease into a zoom framing the whole wheel like a dartboard.",
+      "issues": [],
+      "deliverables": [{"id": "zoom", "title": "Whole-wheel zoom", "prs": [243]}]
+    },
+    {
+      "id": "monster-d20",
+      "title": "Monster Room special d20s",
+      "description": "Regular dice stay white d12s. Special/bonus dice keep their type-specific colors and become d20s; faces 13–20 generate more Monster cans through the existing can/tank flow, not a separate prize table. Require a Banter notice, a money PR linking it, fast-sim/payback evidence and independent review.",
+      "issues": [236],
+      "reverts": [{"pr": 244, "reverts": 242}],
+      "deliverables": [{"id": "dice", "title": "Special d20 can flow", "prs": [242], "nextOwner": "Claude", "nextAction": "Resolve the reverted d20 implementation and commission a reviewed replacement; do not count #242 as complete"}]
+    },
+    {
+      "id": "austin-free-spins",
+      "title": "Austin temporary free spins",
+      "description": "Until 2026-10-24T14:00:00Z (Saturday 15:00 Europe/Dublin), spins are free, wins are credited to Austin's wallet and bets do not contribute to the jackpot; afterward normal play resumes. Implementation is money work requiring Banter notice, money PR, fast-sim/payback evidence and independent review. No live account or jackpot operations in this tracker change.",
+      "issues": [167],
+      "implementationAuthor": "RolexG",
+      "deliverables": [{"id": "tester-pass", "title": "Time-limited free-spin rule", "prs": [246], "nextOwner": "Claude", "nextAction": "Resolve #167's direct-to-main merge/recovery blocker; code on main does not confirm Austin's live pass was activated"}]
+    }
+  ]
 }
