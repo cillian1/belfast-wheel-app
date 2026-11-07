@@ -1,0 +1,21 @@
+[
+  {
+    "number": 39,
+    "name": "Update 39",
+    "build": null,
+    "releaseDate": "2026-10-25T20:16:55Z",
+    "releasePr": {
+      "number": 314,
+      "url": "https://github.com/cillian1/belfast-wheel-app/pull/314"
+    },
+    "tasks": [
+      {
+        "owner": "Unassigned",
+        "issue": 308,
+        "pr": 309,
+        "title": "money: better Pyramid doors funded by race and Monster reductions",
+        "url": "https://github.com/cillian1/belfast-wheel-app/pull/309"
+      }
+    ]
+  }
+]
