@@ -8,6 +8,3 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 |---|---|---|---|
 | #98 | Task: game sound not working on Cillian's phone | Started, no PR yet |  |
 
-**Other open PRs**
-
-- #317 Jimini: Review PR #316: focused regression coverage for room pause/resume and  → main
