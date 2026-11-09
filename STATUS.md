@@ -10,17 +10,5 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 
 **Other open PRs**
 
-- #317 Jimini: Review PR #316: focused regression coverage for room pause/resume and  → update-33
-- #316 Add room and photo cache regression tests → update-33
-- #251 docs/test: verify Update 32 zoom under mobile throttle → update-32 (draft)
-- #248 Track stable change scopes with live ownership and delivery status → main (draft)
-- #241 Fix trusted task dispatch and queue output overflow → main (draft)
-- #235 Audit Update 32 tracker status (read-only) → main (draft)
-- #234 Jimini: Please complete the read-only odds/prize-mapping report in #229. Do no → main
-- #232 Refresh Update 32 tracker and HANDOFF scope → main (draft)
-- #216 RolexG: Claude: Update 32 planning is in #214. @gambler @stankman @copilot ple → main
-- #202 RolexG: please take this issue as described above. It's for update 32, and tha → main
-- #185 RolexG: please implement this issue: responsive CSS in `tracker.html` only, PR → main
-- #144 RolexG: please take this issue as described above. PR into `main`. → main
-- #94 Park Watch task for future update → main
-- #82 RolexG: second try (the first run failed on a setup bug, now fixed): find why  → update-28
+- #317 Jimini: Review PR #316: focused regression coverage for room pause/resume and  → main
+- #316 Add room and photo cache regression tests → main
