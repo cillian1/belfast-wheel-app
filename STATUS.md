@@ -11,4 +11,3 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 **Other open PRs**
 
 - #317 Jimini: Review PR #316: focused regression coverage for room pause/resume and  → main
-- #316 Add room and photo cache regression tests → main
