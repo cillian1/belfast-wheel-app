@@ -67,9 +67,9 @@ const gold = { special: 'W', mult: 3 }, purple = { special: 'B', mult: 6 }, plai
 assert.equal(raceHelpers.raceBigAt([gold, purple, plain], 2), 1, 'highest-multiplier special gets the big tag');
 assert.equal(raceHelpers.raceBigAt([{ special: 'B', mult: 3 }, gold], 0), 1, 'gold wins a multiplier tie');
 assert.equal(raceHelpers.raceBigAt([plain, {}], 1), 1, 'races without specials keep the random big-tag slot');
-assert.equal(raceHelpers.raceTagValue(100, gold), 300);
-assert.equal(raceHelpers.raceTagValue(100, plain), 100);
-assert.deepEqual(replayRace(0x87654321, [gold, purple, plain]), { randomBigAt: 0, bigAt: 1, winner: 2, tag: 600 });
+assert.equal(raceHelpers.raceTagValue(100, gold), 292);
+assert.equal(raceHelpers.raceTagValue(100, plain), 92);
+assert.deepEqual(replayRace(0x87654321, [gold, purple, plain]), { randomBigAt: 0, bigAt: 1, winner: 2, tag: 592 });
 assert.deepEqual(replayRace(0x87654321, [gold, purple, plain]), replayRace(0x87654321, [gold, purple, plain]), 'race tags and winner remain stable for the same replay seed');
 assert.deepEqual(replayRace(0x87654321, [plain, {}]), replayRace(0x87654321, [plain, {}]), 'no-special race preserves seeded tag and winner choices');
 

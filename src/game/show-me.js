@@ -143,8 +143,8 @@ function onFile(e) {
   if (busy) { e.target.value = ''; return; }
   const f = e.target.files && e.target.files[0]; if (!f) return;
   const url = URL.createObjectURL(f), im = new Image();
-  im.onload = () => { enterPhoto(im); e.target.value = ''; };
-  im.onerror = () => { e.target.value = ''; setVerdict({ eyebrow: 'Show me', title: 'That picture would not open', body: 'Try again with a normal photo from the camera.', show: true }); };
+  im.onload = () => { enterPhoto(im); e.target.value = ''; URL.revokeObjectURL(url); };
+  im.onerror = () => { e.target.value = ''; URL.revokeObjectURL(url); setVerdict({ eyebrow: 'Show me', title: 'That picture would not open', body: 'Try again with a normal photo from the camera.', show: true }); };
   im.src = url;
 }
 $('#cam').addEventListener('change', onFile);

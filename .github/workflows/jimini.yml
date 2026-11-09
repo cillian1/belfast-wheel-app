@@ -80,7 +80,9 @@ jobs:
         env:
           FROM: ${{ steps.task.outputs.from }}
           BRANCH: ${{ steps.task.outputs.branch }}
-        run: git checkout -B "$BRANCH" "origin/$FROM"
+        run: |
+          git fetch --no-tags --depth=1 origin "$FROM"
+          git checkout -B "$BRANCH" FETCH_HEAD
       - uses: actions/setup-node@v4
         if: steps.task.outputs.skip == 'false' && steps.task.outputs.write == 'true'
         with:

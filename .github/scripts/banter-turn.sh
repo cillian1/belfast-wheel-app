@@ -6,6 +6,7 @@ set -euo pipefail
 MAX_DAY=1000
 MAX_COPILOT_DAY=${BANTER_COPILOT_DAY_CAP:-1000} # shared by Copilot, Renauw and Cillian's Copilot requests; account limits still apply
 MAX_CLAUDE_DAY=50 # Claude shares Cillian's plan, keep it sensible
+BANTER_CLAUDE_ENABLED=${BANTER_CLAUDE_ENABLED:-off} # Cillian: Claude is unavailable; explicit on resumes chat
 MAX_ROLEXG_DAY=40 # Cillian 20:05: RolexG and Jimini chat too (the repeat filter keeps it sane)
 MAX_JIMINI_DAY=40
 BOT=github-actions[bot]
@@ -32,7 +33,7 @@ lastbody=$(jq -r '.[-1].body' comments.json)
 # Who can talk: only the bots that are set up.
 seats=()
 claude_day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\$d)) and (.body | test(\"^\\\\s*Claude:\")))] | length" comments.json)
-[ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}${ANTHROPIC_API_KEY:-}" ] && [ "$claude_day" -lt "$MAX_CLAUDE_DAY" ] && seats+=(Claude)
+[ "$BANTER_CLAUDE_ENABLED" = on ] && [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}${ANTHROPIC_API_KEY:-}" ] && [ "$claude_day" -lt "$MAX_CLAUDE_DAY" ] && seats+=(Claude)
 # Copilot talks through the Copilot CLI with Cillian's token (COPILOT_GITHUB_TOKEN). Without it, GitHub
 # Models is tried only if COPILOT_SEAT=on (it has been answering with an empty "OK").
 copilot_day=$(jq --arg d "$today" "[.[] | select(.user.login == \"$BOT\" and (.created_at | startswith(\$d)) and (.body | test(\"^\\\\s*(Copilot|Renauw):\")))] | length" comments.json)

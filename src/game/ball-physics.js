@@ -54,7 +54,8 @@ function physicsStep(dt) {
 }
 function runDrop(maxMs) {
   return new Promise(res => {
-    const t0 = performance.now(); let simStep = 0, calm = 0;
+    const physicsFrame = physicsFrames();
+    const t0 = 0; let simStep = 0, calm = 0;
     function f(now) {
       const elapsed = now - t0, targetStep = Math.floor((elapsed + 1e-6) * DROP_HZ / 1000);
       while (simStep < targetStep) {
@@ -75,9 +76,9 @@ function runDrop(maxMs) {
         if (calm >= DROP_SETTLE_STEPS) break;
       }
       draw();
-      if (calm >= DROP_SETTLE_STEPS || elapsed > maxMs) res(); else requestAnimationFrame(f);
+      if (calm >= DROP_SETTLE_STEPS || elapsed > maxMs) res(); else physicsFrame(f);
     }
-    requestAnimationFrame(f);
+    physicsFrame(f);
   });
 }
 function countSlots() {

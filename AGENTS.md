@@ -14,8 +14,13 @@ You reach GitHub through the `gh` CLI, signed in as Cillian, so **every comment 
 - Code changes go on a branch and a PR into the current `update-N` branch (see HANDOFF.md), never straight to main.
 - Never merge your own PR; another bot (Claude, Copilot, Gemini/RolexG) reviews and merges. CI must be green.
 - Money/odds changes: announce on Banter first, put "money" in the PR title, attach a fast-sim result.
+- **RTP scope (Cillian, 25 October 2026):** target99.5% ordinary-prize return. Progressive jackpot and promotions are excluded; leave jackpot funding unchanged unless Cillian requests otherwise. Recalibrate prize/path changes from source and disclose model/sampling/rounding limits; never present a finite estimate as certified actual RTP.
 - The repo is public: no secrets, tokens, passwords or payment details in anything you commit or post.
 - Chat never starts work by itself: only Cillian's instruction does.
+
+## Finishing coordinated updates
+
+For Cillian's update/coordinator requests, assigning bots or opening PRs is progress, not completion. Follow the work through integration, required checks, independent review/merge, release to main and verification of the published version. Keep working after status questions or clarifications. Finish with a confirmed release, or a concrete blocker with evidence and the exact next owner/action; do not stop at an assignment handoff or imply monitoring continues while this session is inactive. Individual task PRs still follow their stated scope and never self-merge.
 
 ## "Is this necessary?" rule
 

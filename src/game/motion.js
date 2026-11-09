@@ -326,7 +326,8 @@ async function rollDiceRun() {
       d.vx = Math.cos(a) * sp; d.vy = Math.sin(a) * sp; d.vz = (1.2 + Math.random() * .9) * power; d.z = d.z || 0;
       d.va = 0; d.w = [(Math.random() - .5) * 34, (Math.random() - .5) * 34, (Math.random() - .5) * 14]; if (!d.M) d.M = randRot();
     });
-    let last = performance.now(), calm = 0, el = 0;
+    const physicsFrame = physicsFrames();
+    let last = 0, calm = 0, el = 0;
     await new Promise(res => {
       function f(now) {
         const dt = Math.max(0, Math.min(.033, (now - last) / 1000)); last = now; el += dt;
@@ -360,9 +361,9 @@ async function rollDiceRun() {
         const still = dice.every(d => d.z === 0 && d.vz === 0 && Math.hypot(d.vx, d.vy) < .03 && Math.hypot(...d.w) < 1.5);
         calm = still ? calm + 1 : 0;
         draw();
-        if (calm > 12 || el > 9) res(); else requestAnimationFrame(f);
+        if (calm > 12 || el > 9) res(); else physicsFrame(f);
       }
-      requestAnimationFrame(f);
+      physicsFrame(f);
     });
     const from = dice.map(d => d.M), to = dice.map(d => snapRot(d.M));
     await animate(260, t => { dice.forEach((d, i) => d.M = lerpRot(from[i], to[i], easeOut(t))); draw(); });

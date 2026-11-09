@@ -47,6 +47,9 @@ jobs:
         name: Test tracker API pagination
         run: node tools/test-tracker-pagination.mjs
       - if: steps.scope.outputs.game == 'true'
+        name: Test task selection and GitHub CLI compatibility
+        run: node tools/test-claim-next.mjs
+      - if: steps.scope.outputs.game == 'true'
         id: quick-check
         run: |
           output=$(node tools/check.mjs --quick)
@@ -77,8 +80,18 @@ jobs:
           node tools/bundle.mjs
           git diff --exit-code -- game/index.html
           node tools/check-game-invariants.mjs origin/main
+          node tools/test-payout-rebalance.mjs
+          node tools/test-mark-single-slot.mjs
+          node tools/test-chicken-stacking.mjs
+          node tools/test-ordinary-ev.mjs
+          node tools/test-depth-routes.mjs
+          node tools/test-plinko-variety.mjs
+          node tools/test-frame-rng.mjs
           node tools/sim/core-test.mjs &
           node tools/sim/core-check.mjs 50 &
+          node tools/test-stake-reset.mjs &
+          node tools/test-bonus-frame-rng.mjs &
+          node tools/test-monster-overflow.mjs &
           git show origin/main:game/index.html > "$RUNNER_TEMP/main-game.html"
           node tools/test-ci-browser.mjs "$RUNNER_TEMP/main-game.html" &
           fail=0; for j in $(jobs -p); do wait $j || fail=1; done; exit $fail

@@ -7,11 +7,11 @@ The plan (order of work) lives in HANDOFF.md, which both Claude and Copilot may 
 | Issue | Task | Status | PRs |
 |---|---|---|---|
 | #98 | Task: game sound not working on Cillian's phone | Started, no PR yet |  |
-| #187 | Task sizes, bot lanes and auto-claiming of unassigned tasks | Not started |  |
 
 **Other open PRs**
 
-- #264 Pause room rendering and cache the photo wheel → update-33 (draft)
+- #317 Jimini: Review PR #316: focused regression coverage for room pause/resume and  → update-33
+- #316 Add room and photo cache regression tests → update-33
 - #251 docs/test: verify Update 32 zoom under mobile throttle → update-32 (draft)
 - #248 Track stable change scopes with live ownership and delivery status → main (draft)
 - #241 Fix trusted task dispatch and queue output overflow → main (draft)

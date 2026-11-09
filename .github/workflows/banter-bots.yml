@@ -59,7 +59,7 @@ jobs:
       - name: Install Claude Code
         env:
           HAS_CLAUDE: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' || secrets.ANTHROPIC_API_KEY != '' }}
-        if: env.HAS_CLAUDE == 'true'
+        if: env.HAS_CLAUDE == 'true' && vars.BANTER_CLAUDE_ENABLED == 'on'
         run: npm install -g @anthropic-ai/claude-code
       - name: Install the Copilot CLI
         env:
@@ -78,6 +78,7 @@ jobs:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL }}
+          BANTER_CLAUDE_ENABLED: ${{ vars.BANTER_CLAUDE_ENABLED || 'off' }}
           COPILOT_MODEL: ${{ vars.COPILOT_MODEL }}
           COPILOT_SEAT: ${{ vars.COPILOT_SEAT }}
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_CLI_TOKEN || secrets.COPILOT_ASSIGN_TOKEN }}

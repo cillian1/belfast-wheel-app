@@ -1,7 +1,18 @@
 // ---------- the bonus round: rollercoaster, the planet wheel, twelve-sided dice, the Monster tank ----------
 // Owns bonus-room dice, coaster, planet, and Monster tank behavior.
-const TANK_LEVELS = [{ at: 0, v: 30 }, { at: 68, v: 50 }, { at: 78, v: 80 }, { at: 90, v: 150 }];
+const TANK_LEVELS = [{ at: 0, v: 27 }, { at: 68, v: 45 }, { at: 78, v: 72 }, { at: 90, v: 135 }];
 const TANK_CAP = 120;
+function monsterPrize(total) {
+  const amount = Math.max(0, Number.isFinite(total) ? total : 0);
+  const base = TANK_LEVELS.reduce((a, level) => amount >= level.at ? level.v : a, TANK_LEVELS[0].v);
+  const overflow = Math.max(0, amount - TANK_CAP) * TANK_LEVELS[TANK_LEVELS.length - 1].v / TANK_CAP;
+  return { base, overflow, total: base + overflow };
+}
+function monsterOverflowCents(total) {
+  const prize = monsterPrize(total);
+  return Math.max(0, Math.round(Number($m(prize.total)) * 100) - Math.round(Number($m(prize.base)) * 100));
+}
+
 const COSMIC = [1000, 5000, 10000, 1000, 5000, 1000, 10000, 5000, 1000, 5000, 10000, 5000];
 // the planet wheel is a trick, so its prizes are plain text: never real money
 const FAKE_EUR = '€', fakeEur = v => FAKE_EUR + v.toLocaleString('en-IE');
@@ -192,12 +203,17 @@ function drawPlanetScene(now) {
 }
 function drawMonster(now) {
   const M = mon;
+  // A viewport change rebuilds the canvas and clears its cached room sprites.
+  if (!faces.can || faces.can.height !== Math.round(N * .066)) faces.can = buildCan();
+  if (M.cans.some(can => can.sp) && (!faces.canW || faces.canW.height !== Math.round(N * .066))) {
+    faces.canW = buildCan('W'); faces.canB = buildCan('B');
+  }
   ctx.save(); rrect(ctx, D, D, N - 2 * D, N - 2 * D, N * .05); ctx.clip();
   ctx.fillStyle = grad(ctx, 0, 0, 0, N, [[0, '#0b0f0a'], [1, '#050705']]); ctx.fillRect(0, 0, N, N);
   // the tank
   const x0 = N * .3, x1 = N * .7, y0 = N * .48, y1 = N * .95, H = y1 - y0, lvlY = v => y1 - v / TANK_CAP * H;
   rrect(ctx, x0, y0, x1 - x0, H, N * .02); ctx.fillStyle = 'rgba(160,255,120,.04)'; ctx.fill();
-  const fy = lvlY(M.fill);
+  const fy = lvlY(Math.min(TANK_CAP, Math.max(0, M.fill)));
   ctx.save(); rrect(ctx, x0, y0, x1 - x0, H, N * .02); ctx.clip();
   const lg = ctx.createLinearGradient(0, fy, 0, y1); lg.addColorStop(0, '#c8ff6a'); lg.addColorStop(.1, '#7cff3a'); lg.addColorStop(1, '#1f7a10');
   ctx.beginPath(); ctx.moveTo(x0, y1); for (let sx = x0; sx <= x1; sx += N / 60) ctx.lineTo(sx, fy + Math.sin(sx / N * 30 + now * .006) * N * .004 * (M.pouring ? 2 : 1)); ctx.lineTo(x1, y1); ctx.fillStyle = lg; ctx.fill();
@@ -226,6 +242,7 @@ function drawMonster(now) {
   ctx.strokeStyle = frame; ctx.lineWidth = 4 * D; ctx.stroke(); ctx.restore();
   ctx.beginPath(); ctx.moveTo(x0 + N * .015, y0 + N * .01); ctx.lineTo(x1 - N * .015, y0 + N * .01);
   ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = D; ctx.stroke();
+  drawMonsterOverflow(now);
   // pour streams, then the dice, the dots and the cans on top
   M.cans.forEach(k => { if (k.state === 'pour') { ctx.beginPath(); ctx.moveTo(k.x, k.y + N * .02); ctx.lineTo(k.x + Math.sin(now * .03) * N * .003, fy); ctx.strokeStyle = k.sp === 'W' ? 'rgba(255,214,90,.9)' : k.sp === 'B' ? 'rgba(190,130,255,.9)' : 'rgba(140,255,70,.85)'; ctx.lineWidth = N * (k.sp ? .014 : .008); ctx.stroke(); } });
   M.dice.forEach(d => {
@@ -239,39 +256,86 @@ function drawMonster(now) {
   ctx.restore();
 }
 
+function drawMonsterOverflow(now) {
+  const M = mon, excess = Math.max(0, M.fill - TANK_CAP);
+  if (!excess) return;
+  const growth = 1 + Math.min(.65, excess / TANK_CAP * .65);
+  const x = N * .14, y = N * .72, w = N * .15 * growth;
+  const h = GHOST_IMAGE.naturalWidth ? w * GHOST_IMAGE.naturalHeight / GHOST_IMAGE.naturalWidth : w * 1.4;
+  const pulse = M.overflowPhase === 'gulp' ? Math.sin((M.overflowT || 0) * Math.PI) * N * .015 : 0;
+  ctx.save();
+  if (GHOST_IMAGE.complete && GHOST_IMAGE.naturalWidth) ctx.drawImage(GHOST_IMAGE, x - w / 2, y - h / 2 - pulse, w, h);
+  const mouthY = y - h * .2 - pulse;
+  if (M.pouring || M.overflowPhase === 'gulp') {
+    ctx.beginPath(); ctx.moveTo(N * .31, N * .49);
+    ctx.quadraticCurveTo(N * .22, N * .4, x, mouthY);
+    ctx.strokeStyle = '#a6ff54'; ctx.lineWidth = N * .012; ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(x, mouthY, w * .1, w * .065, 0, 0, TAU); ctx.fillStyle = '#28170d'; ctx.fill();
+  }
+  ctx.font = `700 ${N * .025}px ${LABEL_FONT}`; ctx.textAlign = 'center'; ctx.fillStyle = '#d5ff8c';
+  ctx.fillText('PHELAN’S OVERFLOW', N * .24, N * .43);
+  if (M.overflowPhase === 'poo' || M.overflowPhase === 'done') {
+    const t = M.overflowPhase === 'done' ? 1 : M.overflowT || 0;
+    const px = N * .18, py = N * .91;
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath(); ctx.ellipse(px, py - i * N * .012, N * (.035 - i * .008), N * .016, -.15, 0, TAU);
+      ctx.fillStyle = i % 2 ? '#825029' : '#64401f'; ctx.fill();
+    }
+    for (let i = 0; i < 7; i++) {
+      const u = Math.max(0, Math.min(1, (t - i * .07) / .5));
+      if (!u) continue;
+      const cx = lerp(x + w * .25, N * (.1 + i * .032), u), cy = lerp(y + h * .3, N * .94, u) - Math.sin(u * Math.PI) * N * .12;
+      ctx.beginPath(); ctx.arc(cx, cy, N * .012, 0, TAU); ctx.fillStyle = '#ffd464'; ctx.fill();
+      ctx.fillStyle = '#5b3b0b'; ctx.font = `700 ${N * .018}px ${LABEL_FONT}`; ctx.fillText('€', cx, cy + N * .006);
+    }
+    ctx.fillStyle = '#ffe49a'; ctx.font = `700 ${N * .031}px ${LABEL_FONT}`;
+    ctx.fillText('EXTRA €' + (monsterOverflowCents(M.fill) / 100).toFixed(2), N * .24, N * .985);
+  }
+  ctx.restore();
+}
+
 async function roll12(dice) {
   dice.forEach(d => { const a = -Math.PI / 2 + (Math.random() - .5) * 2.6, sp = N * (.35 + Math.random() * .45); d.vx = Math.cos(a) * sp; d.vy = Math.sin(a) * sp + N * .15; d.vz = 2.6 + Math.random() * 1.4; d.w = [(Math.random() - .5) * 18, (Math.random() - .5) * 18, (Math.random() - .5) * 8]; });
   const x0 = N * .06, x1 = N * .94, y0 = N * .06, y1 = N * .42, rad = N * .052;
-  let last = performance.now(), calm = 0, el = 0;
+  let last = performance.now(), calm = 0, el = 0, pending = 0;
+  // Dice outcomes depend on simulation ticks, never on display frame rate.
+  const fixedDt = 1 / 60;
   await new Promise(res => {
     function f(now) {
-      const dt = Math.max(0, Math.min(.033, (now - last) / 1000)); last = now; el += dt;
-      for (let k = 0; k < 4; k++) {
-        const h = dt / 4;
-        dice.forEach(d => {
-          d.vz -= 3.4 * h; d.z += d.vz * h; d.x += d.vx * h; d.y += d.vy * h; d.M = spinRot(d.M, d.w, h);
-          if (d.z <= 0) {
-            d.z = 0;
-            if (d.vz < -.35) { d.vz = -d.vz * .52; d.w = d.w.map(x => x * .75 + (Math.random() - .5) * 6); d.vx += (Math.random() - .5) * N * .12; d.vy += (Math.random() - .5) * N * .12; tick(.5 + Math.min(.6, -d.vz * .2), 1200 + cosmeticRandom() * 500); }
-            else d.vz = 0;
-            d.vx *= .975; d.vy *= .975; d.w = d.w.map(x => x * .985);
-            // on the felt it rolls: spin follows the direction it travels
-            const rl = 1 / (N * .045); d.w[0] = lerp(d.w[0], -d.vy * rl, .04); d.w[1] = lerp(d.w[1], d.vx * rl, .04);
+      pending += Math.max(0, Math.min(.25, (now - last) / 1000)); last = now;
+      let settled = false;
+      while (pending + 1e-9 >= fixedDt && !settled) {
+        pending -= fixedDt;
+        const dt = fixedDt; el += dt;
+        for (let k = 0; k < 4; k++) {
+          const h = dt / 4;
+          dice.forEach(d => {
+            d.vz -= 3.4 * h; d.z += d.vz * h; d.x += d.vx * h; d.y += d.vy * h; d.M = spinRot(d.M, d.w, h);
+            if (d.z <= 0) {
+              d.z = 0;
+              if (d.vz < -.35) { d.vz = -d.vz * .52; d.w = d.w.map(x => x * .75 + (Math.random() - .5) * 6); d.vx += (Math.random() - .5) * N * .12; d.vy += (Math.random() - .5) * N * .12; tick(.5 + Math.min(.6, -d.vz * .2), 1200 + cosmeticRandom() * 500); }
+              else d.vz = 0;
+              d.vx *= .975; d.vy *= .975; d.w = d.w.map(x => x * .985);
+              // on the felt it rolls: spin follows the direction it travels
+              const rl = 1 / (N * .045); d.w[0] = lerp(d.w[0], -d.vy * rl, .04); d.w[1] = lerp(d.w[1], d.vx * rl, .04);
+            }
+            if (d.x < x0 + rad) { d.x = x0 + rad; d.vx = Math.abs(d.vx) * .6; } if (d.x > x1 - rad) { d.x = x1 - rad; d.vx = -Math.abs(d.vx) * .6; }
+            if (d.y < y0 + rad) { d.y = y0 + rad; d.vy = Math.abs(d.vy) * .6; } if (d.y > y1 - rad) { d.y = y1 - rad; d.vy = -Math.abs(d.vy) * .6; }
+          });
+          for (let i = 0; i < dice.length; i++) for (let j = i + 1; j < dice.length; j++) {
+            const a = dice[i], b = dice[j], dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy;
+            if (d2 >= 4 * rad * rad || d2 < 1e-6) continue;
+            const dd = Math.sqrt(d2), nx = dx / dd, ny = dy / dd, ov = (2 * rad - dd) / 2;
+            a.x -= nx * ov; a.y -= ny * ov; b.x += nx * ov; b.y += ny * ov;
+            const vn = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny; if (vn < 0) { const jn = -.8 * vn; a.vx -= jn * nx; a.vy -= jn * ny; b.vx += jn * nx; b.vy += jn * ny; }
           }
-          if (d.x < x0 + rad) { d.x = x0 + rad; d.vx = Math.abs(d.vx) * .6; } if (d.x > x1 - rad) { d.x = x1 - rad; d.vx = -Math.abs(d.vx) * .6; }
-          if (d.y < y0 + rad) { d.y = y0 + rad; d.vy = Math.abs(d.vy) * .6; } if (d.y > y1 - rad) { d.y = y1 - rad; d.vy = -Math.abs(d.vy) * .6; }
-        });
-        for (let i = 0; i < dice.length; i++) for (let j = i + 1; j < dice.length; j++) {
-          const a = dice[i], b = dice[j], dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy;
-          if (d2 >= 4 * rad * rad || d2 < 1e-6) continue;
-          const dd = Math.sqrt(d2), nx = dx / dd, ny = dy / dd, ov = (2 * rad - dd) / 2;
-          a.x -= nx * ov; a.y -= ny * ov; b.x += nx * ov; b.y += ny * ov;
-          const vn = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny; if (vn < 0) { const jn = -.8 * vn; a.vx -= jn * nx; a.vy -= jn * ny; b.vx += jn * nx; b.vy += jn * ny; }
         }
+        const still = dice.every(d => d.z === 0 && d.vz === 0 && Math.hypot(d.vx, d.vy) < N * .02 && Math.hypot(...d.w) < 1.5);
+        calm = still ? calm + 1 : 0;
+        settled = calm > 12 || el > 13;
       }
-      const still = dice.every(d => d.z === 0 && d.vz === 0 && Math.hypot(d.vx, d.vy) < N * .02 && Math.hypot(...d.w) < 1.5);
-      calm = still ? calm + 1 : 0; draw();
-      if (calm > 12 || el > 13) res(); else requestAnimationFrame(f);
+      draw();
+      if (settled) res(); else requestAnimationFrame(f);
     }
     requestAnimationFrame(f);
   });

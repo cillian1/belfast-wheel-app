@@ -2,35 +2,12 @@
 
 ## NOW: the plan (everyone edits this; live status is in STATUS.md)
 
-- **Shipped:** Update 28 "Read the Manual" (game 28, build 65) shipped on 2026-10-22. The team workflow change is merged as PR #85.
-- **Update 29 release:** "Stacked Fowl" (game 29, build 66) is ready for review in open, non-draft PR #95. PR #90 (merge commit `757676e`) and PR #91 (merge commit `1895451`) are merged into `update-29`. Cillian waived paired fast-sim evidence for this release only; the cancelled comparison produced no valid result, and no payback or speed claim is made.
-- **Active (Cillian unparked 14:21 Oct 22):** Fast-sim PR #92. Merge once RolexG posts a before/after timing and one paired result on the PR, CI is green, and someone other than RolexG reviews it.
-- **Parked:** Watch #78 is rescheduled for the next update with a new repro (PR #82 stays parked).
-- **PR #34 stays CLOSED.**
-- **Update 30:** holding branch `update-30` (cut from main after the 29 release, 2026-10-22 13:55). In it so far: PR #100 (money: free spins only on a 10c bet; Cillian's pick 13:45, Gemini said merge). Queue (Cillian 14:31: #103 FIRST): #103 browser-free sim core (Copilot, top priority), then #78 Watch (stale "spinning", Mark's wheel not mirrored), then #97 Watch keyboard, with #98 sound in parallel. All PRs go into `update-30`.
-- **Update 30 who-does-what (Claude's plan, Cillian asked 15:13 Oct 22):**
-  - Copilot builds: #103/PR #104 (browser-free sim, wheel/room first), then #78 via #102 (delayed replay Watch), then #97 Watch keyboard.
-  - RolexG builds: #98 sound (from tomorrow; it hit its 8-task cap today). #109 wallet `db.txn` fix moved to Copilot (PR #110, money, no payback change). #92 is closed for good.
-  - Gemini reviews Copilot's PRs. Claude or Copilot reviews and merges RolexG's.
-  - Jimini checks the rest of #108 (only real, reproducible findings become tasks) and lists what that smoke test should cover.
-  - Claude does the update-30 release check and keeps this plan current.
-  - Low-end phone check: Cillian won't test it (15:16). Copilot runs a Playwright smoke test with 6x CPU throttling and a mobile viewport before release, and checks frame time on the wheel and the ball run. Skip it if it blocks the release.
-- **Update 31 (coordinator: Claude, Cillian's vote 20:53-20:58 Oct 22). Branch `update-31`, cut from main. All PRs go there.**
-  - Copilot: #119/PR #120, URGENT money fix. Mark's farm stacked gold chicken must keep 2:1 landing odds (Austin's bug). Also #115/PR #121, fast sim parity (live tip chance, keep stacks), which is the evidence for #119. Then #98 sound.
-  - Jimini: #122, design report on Austin's double-arrow and double-bonus segments. Cillian picks a version, then it gets built.
-  - Gemini: reviews Copilot's PRs. #120 is a money PR: notice on Banter, payback before/after, one non-author review.
-  - RolexG: picks up #98 sound if Copilot hasn't started it once RolexG's daily cap resets. Claude or Copilot merge RolexG's PRs.
-  - The Gambler: #141 (independent odds check of #120), then #140 (its watcher honours the issue's base branch).
-  - Rebalanced 21:57 (Cillian: assign idle bots): #98 sound merged (PR #112). RolexG: #142, run the sound test in CI. Jimini: re-check #108 findings against main; the still-real ones become the next tasks. Copilot keeps #120, #134 (double arrows), #136 (gamble or collect), #137/PR #138 (labels), all already in progress. Gemini reviews them.
-  - Claude: coordinates, merges, release check.
-- **Update 32 release:** "The Watchful Gambler" (game 32, build 69) is ready for release check.
-- **Update 33 (lead: Jimini, Oct 24). Branch `update-33`, cut from main. All PRs go there.**
-  - RolexG builds: #258 tasks (Smoothness & Show me).
-  - Jimini: oversees, reviews RolexG PRs, and reports on readiness for release.
-  - Gemini: reviews RolexG PRs.
-  - Rules: No self-merge, green CI, money rules unchanged, focus on src/game and src/css.
-- **Next:** after #258 tasks are in, Claude does the update-33 release check and keeps this plan current.
-- **Last updated:** 2026-10-24 by Jimini, Update 33 lead and scope definition.
+- **Shipped Update40 “One Chicken, One Slot”, game40/build77**, release #314 independently merged with greenCI at2026-10-25 20:16 Europe/London (ad938352). Public version and normalwedge formula verified; issue #312 DONE. Austin reports a2x special chicken appearing to occupy2Mark-wheel slots. Actual allocation was already one per chicken; forming wedge incorrectly grew to chicken size, overlapping neighbours. Drawing now grows every wedge only toscale1; farm chicken growth and prize multipliers persist. Regression helper completed actualdrawFarm/one-to-one-slot test; oldcodefails. Gemini independently reviewed/merged integration #313 and release.
+- Pure visual fix: prize tables, winner selection, RNG calls, normalization, actual slot odds and jackpot unchanged. Update39 ordinary-prize99.5%MODEL TARGET/EV15.25068635 carried forward; same50k/10k datasets reused with source fingerprint rebound, not a new simulation sample. Evidence/limits [here](docs/ordinary-rtp.md); not certified actual RTP. No live data writes.
+- Update39 Pyramid ordinary doors€3.13–€4.96 on20c, race8base haircut/floor1, Monster10%reduction remain included. Update38 deep backups remain inside deep. APK3 unchanged; earlier live resets completed, do not repeat.
+- Coordinator The Gambler completed release and public verification. Claude unavailable and not a dependency. Cut: large-chicken wedge visualbug only. Update40 live; close/reopen app to load.
+
+
 
 **Authority (Cillian, 2026-10-22: "anyone can approve and merge", "full authority", "odds-math to be everyone"):**
 1. Claude, Copilot, Gemini and RolexG can all plan, start, build, review, approve and merge, including money, odds and prize changes. Nobody waits for Cillian's nod or asks him about approvals or merges.

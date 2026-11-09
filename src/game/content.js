@@ -37,6 +37,7 @@ const MOVE_DEFS = {
   UB: { lbl: [], up: true, bonus: true, go: () => 'Bonus, and go back up' },
   MW: { lbl: ['MORE', 'WILDS'], boost: 'W', go: () => 'More Wilds: no move from this wheel' },
   MB: { lbl: ['MORE', 'BONUS'], boost: 'B', go: () => 'More Bonus: no move from this wheel' },
+  MD: { lbl: ['MORE', 'DEEPER'], deep: true, even: true, go: () => 'Go more deeper' },
   ED: { lbl: ['EVEN', 'DEEPER'], deep: true, even: true, go: () => 'Go even deeper' },
   D2: { lbl: [], deep: 2, go: () => 'go two levels deeper' },
   U2: { lbl: [], up: 2, go: () => 'go back up two levels' },
@@ -51,15 +52,18 @@ const LAYER_ORDERS = [
   ['BN', 'B', 'MW', 'F', 'C', 'WD', 'U2', 'X', 'BN', 'NR', 'F', 'WD', 'C', 'R', 'BN', 'X', 'L', 'WD', 'F', 'B', 'BN', 'R', 'NL', 'MB', 'L', 'BN', 'L', 'NR', 'WD', 'B', 'C', 'BN', 'NL', 'X', 'WD', 'NR', 'F', 'BN', 'C', 'R', 'WD', 'X', 'BN', 'NR'],
   ['BN', 'NL', 'X', 'WD', 'NR', 'MW', 'F', 'BN', 'C', 'R', 'WD', 'X', 'U2', 'BN', 'F', 'B', 'WD', 'R', 'MB', 'NL', 'BN', 'L'],
   ['BN', 'NR', 'F', 'WD', 'C', 'R', 'BN', 'UP', 'L', 'WD', 'F', 'B', 'BN', 'R', 'X', 'D2', 'NL', 'WD', 'L', 'U2', 'BN', 'B'],
-  ['BN', 'C', 'ED', 'R', 'WD', 'X', 'UP', 'BN', 'F', 'B', 'WD', 'R', 'UP', 'BN', 'L', 'GD', 'F', 'NR', 'WD', 'B', 'U2', 'BN', 'NL'],
-  // the hidden fifth wheel, only reached through Go even deeper on the last wheel: more Wilds and ankhs than any other wheel
-  ['BN', 'C', 'WD', 'R', 'BN', 'X', 'WD', 'F', 'BN', 'B', 'GD', 'U2', 'WD', 'L', 'BN', 'NR', 'WD', 'F', 'BN', 'X', 'WD', 'R', 'BN', 'C', 'WD', 'L', 'BN', 'B'],
+  ['BN', 'C', 'MD', 'R', 'WD', 'X', 'UP', 'BN', 'F', 'B', 'WD', 'R', 'UP', 'BN', 'L', 'GD', 'F', 'NR', 'WD', 'B', 'U2', 'BN', 'NL'],
+  // Unlocks persist for this run, including when an up slice takes you back out.
+  ['BN', 'MD', 'WD', 'R', 'BN', 'X', 'WD', 'F', 'BN', 'B', 'GD', 'U2', 'WD', 'L', 'BN', 'NR', 'WD', 'F', 'BN', 'X', 'WD', 'R', 'BN', 'C', 'WD', 'L', 'BN', 'B'],
+  ['BN', 'C', 'WD', 'ED', 'BN', 'UP', 'WD', 'F', 'BN', 'B', 'GD', 'U2', 'WD', 'L', 'BN', 'NR'],
+  ['BN', 'C', 'WD', 'R', 'BN', 'UP', 'WD', 'F', 'BN', 'B', 'GD', 'U2', 'WD', 'L', 'BN', 'NR'],
 ];
 const REPLACE = ['F', 'L', 'R', 'B', 'NL', 'NR', 'X', 'C'];
 // dead variants: 'W' = Wilds greyed, 'B' = Bonus greyed, 'WB' = both
 const DEAD_KEYS = ['W', 'B', 'WB'];
 const MAXD = LAYER_ORDERS.length; // every inner wheel, the hidden fifth included
-var DEPTH = MAXD - 1; // inner wheels this run; the dice well sits in the last one (Go even deeper adds the fifth)
+const BASE_DEPTH = 4;
+var DEPTH = BASE_DEPTH; // extra wheels unlock one at a time; reset only on a new run
 const DEAD_ORDERS = {};
 DEAD_KEYS.forEach(v => DEAD_ORDERS[v] = LAYER_ORDERS.map((o, k) => { let j = k * 3; return o.map(key => (key === 'WD' && v.includes('W')) || (key === 'BN' && v.includes('B')) ? REPLACE[j++ % REPLACE.length] + (key === 'WD' ? '*' : '#') : key); }));
 const STANK = [
@@ -93,6 +97,14 @@ const FINAL_POOL = [
   { lbl: ['BLACK', 'TAXI'], t: 'Black taxi tour', b: 'and flag down a black taxi and ask for the tour' },
   { lbl: ['LATE', 'CAFÉ'], t: 'A late café', b: 'and get a coffee somewhere still open' },
   { lbl: ['ROOFTOP', 'BAR'], t: 'Rooftop bar', b: 'and find a bar with a roof terrace' },
+  { lbl: ['ST GEORGE', 'MARKET'], t: "St George's Market", b: "and browse St George's Market" },
+  { lbl: ['ULSTER', 'MUSEUM'], t: 'Ulster Museum', b: 'and explore the Ulster Museum' },
+  { lbl: ['BOTANIC', 'GARDENS'], t: 'Botanic Gardens', b: 'and wander through Botanic Gardens' },
+  { lbl: ['TITANIC', 'QUARTER'], t: 'Titanic Quarter', b: 'and take a look around Titanic Quarter' },
+  { lbl: ['PEACE', 'WALL'], t: 'The Peace Wall', b: 'and see the Peace Wall' },
+  { lbl: ['BIG FISH'], t: 'The Big Fish', b: 'and find the Big Fish by the Lagan' },
+  { lbl: ['BELFAST', 'CASTLE'], t: 'Belfast Castle', b: 'and head up to Belfast Castle' },
+  { lbl: ['ALBERT', 'CLOCK'], t: 'The Albert Clock', b: 'and visit the Albert Clock' },
 ];
 const SLOT_TINTS = [['#1d2f66', '#78a3f2'], ['#5a3d0d', '#f0c66a'], ['#5a1f33', '#ec93ae'], ['#0f4a3a', '#62d4aa'], ['#3b1f66', '#b58ff2'], ['#5a2a14', '#e8a172'], ['#2b3036', '#dde3e8'], ['#123d5c', '#70c6f0']];
 let FINAL = [];
