@@ -86,6 +86,7 @@ jobs:
           node tools/test-ordinary-ev.mjs
           node tools/test-depth-routes.mjs
           node tools/test-plinko-variety.mjs
+          node tools/test-room-photo-cache.mjs
           node tools/test-frame-rng.mjs
           node tools/sim/core-test.mjs &
           node tools/sim/core-check.mjs 50 &
